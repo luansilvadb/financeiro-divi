@@ -12,11 +12,8 @@ const tipo = ref<'gasto' | 'ganho'>('gasto')
 const valor = ref(0)
 const descricao = ref('')
 
-const fonte_id = ref('meu_cartao')
-const pagueiPorOutro = ref(false)
 const intencao = ref<'solo' | 'split'>('solo')
-const responsabilidade = ref<'eu' | 'por_amigo' | 'pelo_amigo'>('eu')
-const amigo_id = ref('')
+const fonte_id = ref('eu')
 
 const beneficiarios_selecionados = ref<string[]>(['eu'])
 const membros = [
