@@ -41,16 +41,24 @@ const toggleDrilldown = (id: string) => {
 }
 
 const getMemberDetails = (id: string) => {
-  const credits = props.transacoes.filter(t => t.origem_id === id)
-  const debits = props.transacoes.filter(t => t.divisoes.some(d => d.beneficiario_id === id))
+  // Filtra transações onde o membro participou de algum pagamento
+  const credits = props.transacoes.filter(t => 
+    t.pagamentos.some(p => p.membro_id === id)
+  )
+  const debits = props.transacoes.filter(t => 
+    t.divisoes.some(d => d.beneficiario_id === id)
+  )
   
   return {
-    credits: credits.map(t => ({
-      id: t.id,
-      descricao: t.descricao,
-      valor: t.total,
-      data: t.data
-    })),
+    credits: credits.map(t => {
+      const pagamento = t.pagamentos.find(p => p.membro_id === id)!
+      return {
+        id: t.id,
+        descricao: t.descricao,
+        valor: pagamento.valor, // Usa o valor específico que ele pagou, não o total
+        data: t.data
+      }
+    }),
     debits: debits.map(t => {
       const divisao = t.divisoes.find(d => d.beneficiario_id === id)!
       return {
