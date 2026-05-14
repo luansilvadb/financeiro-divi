@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { Check, User, Save, ArrowLeft, ArrowRight } from 'lucide-vue-next'
+import { ArrowRight } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import { Divisao } from '../../modules/ledger/core/domain/Divisao'
@@ -121,7 +121,7 @@ const finalizar = () => {
     id: crypto.randomUUID(),
     descricao: descricao.value,
     total,
-    origem_id: fonte_id.value,
+    origem_id: fonte_id.value!,
     pagador_id: 'eu', 
     divisoes,
     status: 'pendente',
@@ -229,7 +229,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
         <div class="space-y-6">
           <div class="flex justify-between items-center mb-4">
             <p class="font-bold text-gray-800">Com quem vamos dividir?</p>
-            <button @click="beneficiarios_selecionados.length === props.membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = props.membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
+            <button @click="beneficiarios_selecionados.length === props.membros.length ? beneficiarios_selecionados = [] : beneficiarios_selecionados = props.membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
               {{ beneficiarios_selecionados.length === props.membros.length ? 'Limpar' : 'Marcar todos' }}
             </button>
           </div>
@@ -247,6 +247,25 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
               <span :class="['text-xs font-bold transition-colors', beneficiarios_selecionados.includes(membro.id) ? 'text-green-600' : 'text-gray-400']">
                 {{ membro.nome.split(' ')[0] }}
               </span>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <p class="font-bold text-gray-800">Quem pagou o valor total?</p>
+            <div class="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
+              <div 
+                v-for="membro in props.membros" 
+                :key="membro.id"
+                @click="fonte_id = membro.id"
+                class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
+              >
+                <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all border-4', fonte_id === membro.id ? 'bg-blue-600 border-blue-100 text-white scale-105' : 'bg-gray-100 border-transparent text-gray-400']">
+                  {{ membro.nome.charAt(0) }}
+                </div>
+                <span :class="['text-xs font-bold transition-colors', fonte_id === membro.id ? 'text-blue-600' : 'text-gray-400']">
+                  {{ membro.nome.split(' ')[0] }}
+                </span>
+              </div>
             </div>
           </div>
 
