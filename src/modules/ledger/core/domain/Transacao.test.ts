@@ -20,7 +20,6 @@ describe('Transação Entity', () => {
       descricao: 'Pizza',
       total,
       pagamentos,
-      pagador_id: 'user2',
       divisoes,
       status: 'pendente',
       data: new Date()
@@ -44,7 +43,6 @@ describe('Transação Entity', () => {
       descricao: 'Pizza',
       total,
       pagamentos,
-      pagador_id: 'user2',
       divisoes,
       status: 'pendente',
       data: new Date()
@@ -65,7 +63,6 @@ describe('Transação Entity', () => {
       descricao: 'Pizza',
       total,
       pagamentos,
-      pagador_id: 'user2',
       divisoes,
       status: 'pendente',
       data: new Date()

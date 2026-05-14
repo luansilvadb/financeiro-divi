@@ -13,7 +13,6 @@ export interface TransacaoProps {
   descricao: string
   total: Dinheiro
   pagamentos: Pagamento[]
-  pagador_id: string
   divisoes: Divisao[]
   status: TransacaoStatus
   data: Date
@@ -46,7 +45,6 @@ export class Transacao {
   public readonly descricao: string
   public readonly total: Dinheiro
   public readonly pagamentos: Pagamento[]
-  public readonly pagador_id: string
   public readonly divisoes: Divisao[]
   public readonly status: TransacaoStatus
   public readonly data: Date
@@ -59,7 +57,6 @@ export class Transacao {
     this.descricao = props.descricao
     this.total = props.total
     this.pagamentos = props.pagamentos
-    this.pagador_id = props.pagador_id
     this.divisoes = props.divisoes
     this.status = props.status
     this.data = props.data
