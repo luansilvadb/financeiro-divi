@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { Check, User, Save, ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
@@ -8,9 +8,17 @@ import { Divisao } from '../../modules/ledger/core/domain/Divisao'
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
 const step = ref(1)
+const totalSteps = 3
 const tipo = ref<'gasto' | 'ganho'>('gasto')
 const valor = ref(0)
 const descricao = ref('')
+
+const canAdvance = computed(() => {
+  if (step.value === 1) return true
+  if (step.value === 2) return valor.value > 0 && descricao.value.length > 0
+  if (step.value === 3) return beneficiarios_selecionados.value.length > 0
+  return false
+})
 
 const intencao = ref<'solo' | 'split'>('solo')
 const fonte_id = ref('eu')
@@ -119,7 +127,18 @@ const prevStep = () => step.value--
 </script>
 
 <template>
-  <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
+  <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
+    <!-- Barra de Progresso -->
+    <div class="w-full h-1 bg-gray-100 mb-6 overflow-hidden rounded-full">
+      <div 
+        class="h-full bg-blue-500 transition-all duration-500 ease-out"
+        :style="{ width: `${(step / totalSteps) * 100}%` }"
+      ></div>
+    </div>
+    <div class="text-[10px] uppercase font-bold text-gray-400 mb-4 text-center">
+      Passo {{ step }} de {{ totalSteps }}
+    </div>
+
     <div v-if="step === 1">
       <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
       <div class="grid grid-cols-1 gap-4">
@@ -154,9 +173,9 @@ const prevStep = () => step.value--
 
     <div v-else-if="step === 2">
       <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
-        {{ tipo === 'gasto' ? 'Quanto você gastou?' : 'Quanto você recebeu?' }}
+        Quais os dados do lançamento?
       </h2>
-      <div class="mb-10 text-center bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200">
+      <div class="mb-6 text-center bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200">
         <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Valor Total</div>
         <div class="flex items-center justify-center">
           <span class="text-gray-400 text-3xl font-mono mr-2">R$</span>
@@ -170,77 +189,18 @@ const prevStep = () => step.value--
           />
         </div>
       </div>
-      <div class="flex gap-4">
-        <button @click="prevStep" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
-        <button 
-          @click="nextStep" 
-          :disabled="valor <= 0"
-          class="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-100 disabled:opacity-50 disabled:shadow-none"
-        >
-          Próximo ➔
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="step === 3">
-      <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
-        {{ tipo === 'gasto' ? 'Com o que você gastou?' : 'De onde veio esse dinheiro?' }}
-      </h2>
       <div class="mb-10">
         <input 
           v-model="descricao" 
           type="text" 
-          :placeholder="tipo === 'gasto' ? 'Ex: Pizza, Aluguel, Sorvete...' : 'Ex: Salário, Venda do sofá...'" 
+          :placeholder="tipo === 'gasto' ? 'O que você comprou?' : 'De onde veio?'" 
           class="w-full p-5 text-xl border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:outline-none bg-gray-50 transition-colors"
         />
       </div>
-      <div class="flex gap-4">
-        <button @click="prevStep" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
-        <button 
-          @click="nextStep" 
-          :disabled="!descricao"
-          class="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-100 disabled:opacity-50 disabled:shadow-none"
-        >
-          Próximo ➔
-        </button>
-      </div>
     </div>
 
-    <div v-else-if="step === 4">
-      <div v-if="intencao === 'solo'" class="space-y-6">
-        <h2 class="text-xl font-bold mb-2 text-gray-800 text-center">Isso é só seu, Luan?</h2>
-        <p class="text-sm text-gray-400 text-center mb-8">Escolha como quer registrar esse gasto.</p>
-        
-        <div class="space-y-4">
-          <button 
-            @click="intencao = 'solo'; finalizar()"
-            class="w-full flex items-center gap-5 p-6 bg-white border-2 border-gray-100 rounded-3xl hover:border-blue-500 transition-all text-left group"
-          >
-            <div class="bg-blue-50 p-4 rounded-2xl text-3xl group-hover:bg-blue-100 transition-colors">🙋‍♂️</div>
-            <div class="flex-1">
-              <span class="block font-bold text-gray-800 text-lg">Pagar sozinho</span>
-              <span class="text-sm text-gray-500">Registrar 100% no meu nome</span>
-            </div>
-            <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-blue-500" />
-          </button>
-
-          <button 
-            @click="intencao = 'split'"
-            class="w-full flex items-center gap-5 p-6 bg-green-50 border-2 border-green-100 rounded-3xl hover:border-green-500 transition-all text-left group"
-          >
-            <div class="bg-white p-4 rounded-2xl text-3xl group-hover:bg-green-100 transition-colors">👥</div>
-            <div class="flex-1">
-              <span class="block font-bold text-gray-800 text-lg">Dividir com a galera</span>
-              <span class="text-sm text-gray-500">Repartir com os amigos</span>
-            </div>
-            <ArrowRight class="w-6 h-6 text-gray-400 group-hover:text-green-500 transform rotate-90" />
-          </button>
-        </div>
-        
-        <button @click="prevStep" class="w-full mt-4 text-sm text-gray-400 font-bold">Voltar</button>
-      </div>
-
-      <div v-else class="space-y-6">
+    <div v-else-if="step === 3">
+      <div class="space-y-6">
         <div class="flex justify-between items-center mb-4">
           <p class="font-bold text-gray-800">Com quem vamos dividir?</p>
           <button @click="beneficiarios_selecionados.length === membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
@@ -276,58 +236,29 @@ const prevStep = () => step.value--
             </span>
           </div>
         </div>
-
-        <p v-if="beneficiarios_selecionados.length === 1" class="text-center text-xs font-bold text-amber-500">
-          ⚠️ Só você? Toque nos amigos para dividir!
-        </p>
-
-        <div class="flex gap-4 mt-6">
-          <button @click="intencao = 'solo'" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400">Voltar</button>
-          <button 
-            @click="nextStep" 
-            :disabled="beneficiarios_selecionados.length === 0"
-            class="flex-1 bg-green-600 text-white p-5 rounded-2xl font-bold shadow-xl shadow-green-100"
-          >
-            Próximo ➔
-          </button>
-        </div>
       </div>
     </div>
 
-    <div v-else-if="step === 5">
-      <h2 class="text-xl font-bold mb-2 text-gray-800 text-center">Quem passou o cartão?</h2>
-      <p class="text-sm text-gray-400 text-center mb-8">Selecione quem tirou o dinheiro do bolso agora.</p>
-      
-      <div class="space-y-3 mb-8">
-        <div 
-          v-for="membroId in beneficiarios_selecionados" 
-          :key="membroId"
-          @click="fonte_id = membroId"
-          :class="['flex items-center justify-between p-5 border-2 rounded-2xl cursor-pointer transition-all', fonte_id === membroId ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:border-blue-200']"
-        >
-          <div class="flex items-center gap-4">
-            <div :class="['w-12 h-12 rounded-full flex items-center justify-center font-bold transition-colors', fonte_id === membroId ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400']">
-              {{ membros.find(m => m.id === membroId)?.nome.charAt(0) }}
-            </div>
-            <span :class="['font-bold', fonte_id === membroId ? 'text-blue-700' : 'text-gray-700']">
-              {{ membros.find(m => m.id === membroId)?.nome }}
-            </span>
-          </div>
-          <div :class="['w-6 h-6 rounded-full border-2 flex items-center justify-center', fonte_id === membroId ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200']">
-            <Check v-if="fonte_id === membroId" class="w-4 h-4" />
-          </div>
-        </div>
-      </div>
-
-      <div class="flex gap-4">
-        <button @click="prevStep" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
-        <button 
-          @click="finalizar" 
-          class="flex-1 bg-green-600 text-white p-5 rounded-2xl font-bold hover:bg-green-700 transition shadow-xl shadow-green-100 flex items-center justify-center gap-2"
-        >
-          <Save class="w-5 h-5" /> Salvar
-        </button>
-      </div>
+    <!-- Sticky Footer -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-3 md:relative md:bg-transparent md:border-none md:p-0 md:mt-8">
+      <button v-if="step > 1" @click="prevStep" class="flex-1 px-6 py-4 bg-gray-50 text-gray-500 font-bold rounded-2xl">
+        Voltar
+      </button>
+      <button 
+        v-if="step < totalSteps" 
+        @click="nextStep" 
+        :disabled="!canAdvance"
+        class="flex-1 px-6 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-50"
+      >
+        Próximo
+      </button>
+      <button 
+        v-else 
+        @click="finalizar" 
+        class="flex-1 px-6 py-4 bg-green-600 text-white font-bold rounded-2xl shadow-lg shadow-green-200"
+      >
+        Salvar
+      </button>
     </div>
   </div>
 </template>
