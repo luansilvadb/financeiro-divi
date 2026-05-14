@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Check, User, Save, ArrowLeft } from 'lucide-vue-next'
 // Note: Dinheiro will be used later for validation/formatting
 // import { Dinheiro } from '../../shared/primitives/Dinheiro'
+
+const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
 const step = ref(1)
 const valor = ref(0)
@@ -18,6 +20,24 @@ const membros = [
   { id: 'colega_x', nome: 'Colega X' },
   { id: 'colega_y', nome: 'Colega Y' }
 ]
+
+onMounted(() => {
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.step) step.value = data.step
+      if (data.valor) valor.value = data.valor
+      if (data.descricao) descricao.value = data.descricao
+      if (data.fonte_id) fonte_id.value = data.fonte_id
+      if (data.pagador_id) pagador_id.value = data.pagador_id
+      if (data.pagueiPorOutro !== undefined) pagueiPorOutro.value = data.pagueiPorOutro
+      if (data.beneficiarios_selecionados) beneficiarios_selecionados.value = data.beneficiarios_selecionados
+    } catch (e) {
+      console.error('Erro ao restaurar rascunho:', e)
+    }
+  }
+})
 
 const toggleBeneficiario = (id: string) => {
   if (beneficiarios_selecionados.value.includes(id)) {
