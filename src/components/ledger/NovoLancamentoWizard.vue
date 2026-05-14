@@ -38,9 +38,7 @@ onMounted(() => {
       if (data.valor) valor.value = data.valor
       if (data.descricao) descricao.value = data.descricao
       if (data.fonte_id) fonte_id.value = data.fonte_id
-      if (data.responsabilidade) responsabilidade.value = data.responsabilidade
-      if (data.amigo_id) amigo_id.value = data.amigo_id
-      if (data.pagueiPorOutro !== undefined) pagueiPorOutro.value = data.pagueiPorOutro
+      if (data.intencao) intencao.value = data.intencao
       if (data.beneficiarios_selecionados) beneficiarios_selecionados.value = data.beneficiarios_selecionados
     } catch (e) {
       console.error('Erro ao restaurar rascunho:', e)
@@ -55,9 +53,7 @@ watch(
     valor: valor.value,
     descricao: descricao.value,
     fonte_id: fonte_id.value,
-    responsabilidade: responsabilidade.value,
-    amigo_id: amigo_id.value,
-    pagueiPorOutro: pagueiPorOutro.value,
+    intencao: intencao.value,
     beneficiarios_selecionados: [...beneficiarios_selecionados.value]
   }),
   (newState) => {
@@ -81,11 +77,8 @@ const finalizar = () => {
   // We'll treat Ganho as a negative expense for now or a reverse credit.
   const total = tipo.value === 'ganho' ? Dinheiro.deCentavos(-totalRaw.centavos) : totalRaw
 
-  // Determine beneficiaries based on responsibility
-  let finalBeneficiarios = [...beneficiarios_selecionados.value]
-  if (responsabilidade.value === 'por_amigo' && amigo_id.value) {
-    finalBeneficiarios = [amigo_id.value]
-  }
+  // Determine beneficiaries based on intent
+  const finalBeneficiarios = intencao.value === 'solo' ? ['eu'] : [...beneficiarios_selecionados.value]
 
   const partes = total.distribuir(finalBeneficiarios.length)
   
@@ -93,17 +86,17 @@ const finalizar = () => {
     return new Divisao(id, partes[index])
   })
 
-  // Mapping based on spec:
-  // Eu mesmo: origem=eu, pagador=eu
-  // Eu paguei para amigo: origem=eu, pagador=amigo
-  // Amigo pagou para mim: origem=amigo, pagador=eu
+  // Mapping:
+  // origem_id is who swiped (fonte_id)
+  // pagador_id is 'eu' by default for simple ledger entries, 
+  // or can be the same as origem if it's a direct debt.
   
   const transacao = new Transacao({
     id: crypto.randomUUID(),
     descricao: descricao.value,
     total,
-    origem_id: responsabilidade.value === 'pelo_amigo' ? amigo_id.value : 'eu',
-    pagador_id: responsabilidade.value === 'por_amigo' ? amigo_id.value : 'eu',
+    origem_id: fonte_id.value,
+    pagador_id: 'eu', 
     divisoes,
     status: 'pendente',
     data: new Date()
@@ -119,8 +112,8 @@ const finalizar = () => {
   valor.value = 0
   descricao.value = ''
   tipo.value = 'gasto'
-  responsabilidade.value = 'eu'
-  amigo_id.value = ''
+  intencao.value = 'solo'
+  fonte_id.value = 'eu'
   beneficiarios_selecionados.value = ['eu']
 }
 
