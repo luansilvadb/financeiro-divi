@@ -81,12 +81,19 @@ watch(
   { deep: true }
 )
 
+watch(beneficiarios_selecionados, (newList) => {
+  intencao.value = newList.length > 1 ? 'split' : 'solo'
+}, { deep: true })
+
 const toggleBeneficiario = (id: string) => {
   if (beneficiarios_selecionados.value.includes(id)) {
     beneficiarios_selecionados.value = beneficiarios_selecionados.value.filter(b => b !== id)
   } else {
     beneficiarios_selecionados.value.push(id)
   }
+  
+  // Atualiza intenção baseado na seleção
+  intencao.value = beneficiarios_selecionados.value.length > 1 ? 'split' : 'solo'
 }
 
 const finalizar = () => {
@@ -96,8 +103,8 @@ const finalizar = () => {
   // We'll treat Ganho as a negative expense for now or a reverse credit.
   const total = tipo.value === 'ganho' ? Dinheiro.deCentavos(-totalRaw.centavos) : totalRaw
 
-  // Determine beneficiaries based on intent
-  const finalBeneficiarios = intencao.value === 'solo' ? ['eu'] : [...beneficiarios_selecionados.value]
+  // Determine beneficiaries based on selection
+  const finalBeneficiarios = [...beneficiarios_selecionados.value]
 
   const partes = total.distribuir(finalBeneficiarios.length)
   

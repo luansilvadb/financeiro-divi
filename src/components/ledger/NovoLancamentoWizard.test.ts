@@ -101,4 +101,41 @@ describe('NovoLancamentoWizard', () => {
     expect(transacao.divisoes).toHaveLength(1)
     expect(transacao.divisoes[0].beneficiario_id).toBe('eu')
   })
+
+  it('deve permitir selecionar múltiplos beneficiários e calcular a divisão', async () => {
+    const wrapper = mount(NovoLancamentoWizard)
+    
+    // Passo 1 -> Passo 2 (Gasto)
+    await wrapper.findAll('button').find(b => b.text().includes('Um gasto'))?.trigger('click')
+    vi.advanceTimersByTime(200)
+    await wrapper.vm.$nextTick()
+    
+    // Passo 2 -> Passo 3 (Valor: 120, Descrição: Pizza)
+    await wrapper.find('input[type="number"]').setValue(120)
+    await wrapper.find('input[type="text"]').setValue('Pizza')
+    await wrapper.find('button.bg-blue-600').trigger('click')
+    
+    // Passo 3: Inicialmente apenas 'eu' (Luan)
+    expect(wrapper.text()).toContain('R$ 120,00') // Total
+    expect(wrapper.text()).toContain('R$ 120,00') // Para cada um (1 pessoa)
+    
+    // Selecionar Maria (segundo membro)
+    // Os membros são: { id: 'eu', nome: 'Luan (Você)' }, { id: 'maria', nome: 'Maria' }, ...
+    const avatars = wrapper.findAll('.w-16.h-16')
+    await avatars[1].trigger('click') // Clica na Maria
+    
+    expect(wrapper.text()).toContain('R$ 60,00') // Para cada um (2 pessoas)
+    
+    // Clicar em "Marcar todos"
+    await wrapper.find('button.text-green-600').trigger('click')
+    expect(wrapper.text()).toContain('R$ 30,00') // Para cada um (4 pessoas)
+    
+    // Finalizar
+    await wrapper.find('button.bg-green-600').trigger('click')
+    
+    expect(wrapper.emitted('salvar')).toBeTruthy()
+    const transacao: any = wrapper.emitted('salvar')![0][0]
+    expect(transacao.divisoes).toHaveLength(4)
+    expect(transacao.divisoes.every((d: any) => d.valor.centavos === 3000)).toBe(true)
+  })
 })
