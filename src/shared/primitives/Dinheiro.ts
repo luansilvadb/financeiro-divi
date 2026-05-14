@@ -20,6 +20,10 @@ export class Dinheiro {
     return new Dinheiro(this.centavos + outro.centavos)
   }
 
+  subtrair(outro: Dinheiro): Dinheiro {
+    return new Dinheiro(this.centavos - outro.centavos)
+  }
+
   equals(outro: Dinheiro): boolean {
     return this.centavos === outro.centavos
   }

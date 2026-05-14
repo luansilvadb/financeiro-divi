@@ -25,4 +25,10 @@ describe('Dinheiro Value Object', () => {
     expect(d1.equals(d2)).toBe(true)
     expect(d1.equals(d3)).toBe(false)
   })
+
+  it('deve subtrair dois valores', () => {
+    const d1 = Dinheiro.deReais(20)
+    const d2 = Dinheiro.deReais(5.50)
+    expect(d1.subtrair(d2).centavos).toBe(1450)
+  })
 })
