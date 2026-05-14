@@ -39,6 +39,22 @@ onMounted(() => {
   }
 })
 
+watch(
+  () => ({
+    step: step.value,
+    valor: valor.value,
+    descricao: descricao.value,
+    fonte_id: fonte_id.value,
+    pagador_id: pagador_id.value,
+    pagueiPorOutro: pagueiPorOutro.value,
+    beneficiarios_selecionados: [...beneficiarios_selecionados.value]
+  }),
+  (newState) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState))
+  },
+  { deep: true }
+)
+
 const toggleBeneficiario = (id: string) => {
   if (beneficiarios_selecionados.value.includes(id)) {
     beneficiarios_selecionados.value = beneficiarios_selecionados.value.filter(b => b !== id)
