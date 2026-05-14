@@ -217,77 +217,90 @@ const prevStep = () => step.value--
     </div>
 
     <div v-else-if="step === 4">
-      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">"Quem vai pagar esse gasto?"</h2>
-      
-      <div v-if="!amigo_id && (responsabilidade === 'por_amigo' || responsabilidade === 'pelo_amigo')" class="space-y-4 mb-6">
-        <p class="text-sm text-gray-500 text-center">Selecione o amigo envolvido:</p>
-        <div class="grid grid-cols-1 gap-2">
+      <div v-if="intencao === 'solo'" class="space-y-6">
+        <h2 class="text-xl font-bold mb-2 text-gray-800 text-center">Isso é só seu, Luan?</h2>
+        <p class="text-sm text-gray-400 text-center mb-8">Escolha como quer registrar esse gasto.</p>
+        
+        <div class="space-y-4">
           <button 
-            v-for="membro in membros.filter(m => m.id !== 'eu')" 
-            :key="membro.id"
-            @click="amigo_id = membro.id"
-            class="flex items-center gap-3 p-4 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition"
+            @click="intencao = 'solo'; finalizar()"
+            class="w-full flex items-center gap-5 p-6 bg-white border-2 border-gray-100 rounded-3xl hover:border-blue-500 transition-all text-left group"
           >
-            <User class="w-5 h-5 text-gray-400" />
-            <span class="font-bold text-gray-700">{{ membro.nome }}</span>
+            <div class="bg-blue-50 p-4 rounded-2xl text-3xl group-hover:bg-blue-100 transition-colors">🙋‍♂️</div>
+            <div class="flex-1">
+              <span class="block font-bold text-gray-800 text-lg">Pagar sozinho</span>
+              <span class="text-sm text-gray-500">Registrar 100% no meu nome</span>
+            </div>
+            <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-blue-500" />
+          </button>
+
+          <button 
+            @click="intencao = 'split'"
+            class="w-full flex items-center gap-5 p-6 bg-green-50 border-2 border-green-100 rounded-3xl hover:border-green-500 transition-all text-left group"
+          >
+            <div class="bg-white p-4 rounded-2xl text-3xl group-hover:bg-green-100 transition-colors">👥</div>
+            <div class="flex-1">
+              <span class="block font-bold text-gray-800 text-lg">Dividir com a galera</span>
+              <span class="text-sm text-gray-500">Repartir com os amigos</span>
+            </div>
+            <ArrowRight class="w-6 h-6 text-gray-400 group-hover:text-green-500 transform rotate-90" />
           </button>
         </div>
-        <button @click="responsabilidade = 'eu'" class="w-full text-sm text-blue-600 font-bold">Voltar para as opções</button>
+        
+        <button @click="prevStep" class="w-full mt-4 text-sm text-gray-400 font-bold">Voltar</button>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-4 mb-8">
-        <button 
-          @click="responsabilidade = 'eu'; amigo_id = ''; nextStep()"
-          :class="['flex items-center justify-between p-4 border-2 rounded-2xl transition group', responsabilidade === 'eu' && !amigo_id ? 'border-blue-500 bg-blue-50' : 'border-gray-50 bg-white hover:border-blue-200']"
-        >
-          <div class="flex items-center gap-4">
-            <span class="text-3xl">🙋‍♂️</span>
-            <div class="text-left">
-              <span class="block font-bold text-gray-800">Eu mesmo!</span>
-              <span class="text-xs text-gray-500">Eu passei o meu cartão ou dinheiro.</span>
-            </div>
-          </div>
-        </button>
+      <div v-else class="space-y-6">
+        <div class="flex justify-between items-center mb-4">
+          <p class="font-bold text-gray-800">Com quem vamos dividir?</p>
+          <button @click="beneficiarios_selecionados.length === membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
+            {{ beneficiarios_selecionados.length === membros.length ? 'Limpar' : 'Marcar todos' }}
+          </button>
+        </div>
 
-        <button 
-          @click="responsabilidade = 'por_amigo'; amigo_id = ''"
-          :class="['flex items-center justify-between p-4 border-2 rounded-2xl transition group', responsabilidade === 'por_amigo' ? 'border-blue-500 bg-blue-50' : 'border-gray-50 bg-white hover:border-blue-200']"
-        >
-          <div class="flex items-center gap-4">
-            <span class="text-3xl">🤝</span>
-            <div class="text-left">
-              <span class="block font-bold text-gray-800">Eu paguei para um amigo</span>
-              <span class="text-xs text-gray-500">{{ amigo_id ? `Pago para ${membros.find(m => m.id === amigo_id)?.nome}` : 'Passei meu cartão para outra pessoa.' }}</span>
+        <div class="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar">
+          <div 
+            v-for="membro in membros" 
+            :key="membro.id"
+            @click="toggleBeneficiario(membro.id)"
+            class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
+          >
+            <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all border-4', beneficiarios_selecionados.includes(membro.id) ? 'bg-green-500 border-green-100 text-white scale-105' : 'bg-gray-100 border-transparent text-gray-400']">
+              {{ membro.nome.charAt(0) }}
             </div>
+            <span :class="['text-xs font-bold transition-colors', beneficiarios_selecionados.includes(membro.id) ? 'text-green-600' : 'text-gray-400']">
+              {{ membro.nome.split(' ')[0] }}
+            </span>
           </div>
-          <Check v-if="amigo_id && responsabilidade === 'por_amigo'" class="w-5 h-5 text-blue-600" />
-        </button>
+        </div>
 
-        <button 
-          @click="responsabilidade = 'pelo_amigo'; amigo_id = ''"
-          :class="['flex items-center justify-between p-4 border-2 rounded-2xl transition group', responsabilidade === 'pelo_amigo' ? 'border-blue-500 bg-blue-50' : 'border-gray-50 bg-white hover:border-blue-200']"
-        >
-          <div class="flex items-center gap-4">
-            <span class="text-3xl">👤</span>
-            <div class="text-left">
-              <span class="block font-bold text-gray-800">Um amigo pagou para mim</span>
-              <span class="text-xs text-gray-500">{{ amigo_id ? `Pago por ${membros.find(m => m.id === amigo_id)?.nome}` : 'Meu amigo passou o cartão dele.' }}</span>
-            </div>
+        <div :class="['p-5 rounded-3xl border-2 transition-all', beneficiarios_selecionados.length > 1 ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100']">
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Para cada um</span>
           </div>
-          <Check v-if="amigo_id && responsabilidade === 'pelo_amigo'" class="w-5 h-5 text-blue-600" />
-        </button>
-      </div>
+          <div class="flex justify-between items-baseline">
+            <span class="text-lg font-bold text-gray-700">R$ {{ valor.toFixed(2).replace('.', ',') }}</span>
+            <span :class="['text-2xl font-black', beneficiarios_selecionados.length > 1 ? 'text-green-600' : 'text-amber-600']">
+              R$ {{ (valor / (beneficiarios_selecionados.length || 1)).toFixed(2).replace('.', ',') }}
+            </span>
+          </div>
+        </div>
 
-      <div class="flex gap-3">
-        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
-        <button 
-          v-if="responsabilidade !== 'eu'"
-          @click="nextStep" 
-          :disabled="!amigo_id"
-          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
-        >
-          Próximo
-        </button>
+        <p v-if="beneficiarios_selecionados.length === 1" class="text-center text-xs font-bold text-amber-500">
+          ⚠️ Só você? Toque nos amigos para dividir!
+        </p>
+
+        <div class="flex gap-4 mt-6">
+          <button @click="intencao = 'solo'" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400">Voltar</button>
+          <button 
+            @click="nextStep" 
+            :disabled="beneficiarios_selecionados.length === 0"
+            class="flex-1 bg-green-600 text-white p-5 rounded-2xl font-bold shadow-xl shadow-green-100"
+          >
+            Próximo ➔
+          </button>
+        </div>
       </div>
     </div>
 
