@@ -111,11 +111,12 @@ describe('NovoLancamentoWizard', () => {
     
     // Passo 3 -> Finalizar
     // Selecionar quem participa (Luan)
-    const avatars = wrapper.findAll('.w-16.h-16')
-    await avatars[0].trigger('click')
+    const participantAvatars = wrapper.findAll('.w-16.h-16')
+    await participantAvatars[0].trigger('click')
     
-    // Selecionar quem paga (Luan)
-    await avatars[4].trigger('click')
+    // Definir pagamento (Luan pagou 100)
+    const paymentInputs = wrapper.findAll('input[placeholder="0,00"]')
+    await paymentInputs[0].setValue(100)
     
     await wrapper.find('button.bg-green-600').trigger('click')
     
@@ -125,9 +126,12 @@ describe('NovoLancamentoWizard', () => {
     expect(transacao.total.centavos).toBe(10000)
     expect(transacao.divisoes).toHaveLength(1)
     expect(transacao.divisoes[0].beneficiario_id).toBe('eu')
+    expect(transacao.pagamentos).toHaveLength(1)
+    expect(transacao.pagamentos[0].membro_id).toBe('eu')
+    expect(transacao.pagamentos[0].valor.centavos).toBe(10000)
   })
 
-  it('deve permitir selecionar múltiplos beneficiários e calcular a divisão', async () => {
+  it('deve permitir selecionar múltiplos beneficiários e múltiplos pagadores', async () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
@@ -145,30 +149,32 @@ describe('NovoLancamentoWizard', () => {
     // Passo 3: Inicialmente vazio
     expect(wrapper.text()).toContain('R$ 120,00') // Total
     
-    // Selecionar Luan (primeiro membro)
-    const avatars = wrapper.findAll('.w-16.h-16')
-    await avatars[0].trigger('click')
-    expect(wrapper.text()).toContain('R$ 120,00') // Para cada um (1 pessoa)
-
-    // Selecionar Maria (segundo membro)
-    await avatars[1].trigger('click') // Clica na Maria
+    // Selecionar Luan e Maria como beneficiários
+    const participantAvatars = wrapper.findAll('.w-16.h-16')
+    await participantAvatars[0].trigger('click') // Luan
+    await participantAvatars[1].trigger('click') // Maria
     
     expect(wrapper.text()).toContain('R$ 60,00') // Para cada um (2 pessoas)
     
-    // Clicar em "Marcar todos"
-    await wrapper.find('button.text-green-600').trigger('click')
-    expect(wrapper.text()).toContain('R$ 30,00') // Para cada um (4 pessoas)
+    // Definir pagamentos parciais (Luan: 50, Maria: 70)
+    const paymentInputs = wrapper.findAll('input[placeholder="0,00"]')
+    await paymentInputs[0].setValue(50)
+    await paymentInputs[1].setValue(70)
     
-    // Selecionar quem pagou (Maria - índice 5)
-    await avatars[5].trigger('click')
+    expect(wrapper.text()).toContain('✅ Equilibrado')
 
     // Finalizar
     await wrapper.find('button.bg-green-600').trigger('click')
     
     expect(wrapper.emitted('salvar')).toBeTruthy()
     const transacao: any = wrapper.emitted('salvar')![0][0]
-    expect(transacao.divisoes).toHaveLength(4)
-    expect(transacao.divisoes.every((d: any) => d.valor.centavos === 3000)).toBe(true)
-    expect(transacao.origem_id).toBe('maria')
+    expect(transacao.divisoes).toHaveLength(2)
+    expect(transacao.pagamentos).toHaveLength(2)
+    
+    const pagLuan = transacao.pagamentos.find((p: any) => p.membro_id === 'eu')
+    const pagMaria = transacao.pagamentos.find((p: any) => p.membro_id === 'maria')
+    
+    expect(pagLuan.valor.centavos).toBe(5000)
+    expect(pagMaria.valor.centavos).toBe(7000)
   })
 })

@@ -9,6 +9,14 @@ import WizardFooter from './WizardFooter.vue'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
+interface Props {
+  membros: { id: string; nome: string }[]
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits(['salvar', 'cancelar'])
+
 const step = ref(1)
 const totalSteps = 3
 const tipo = ref<'gasto' | 'ganho' | null>(null)
@@ -52,13 +60,14 @@ const intencao = ref<'solo' | 'split'>('solo')
 
 const beneficiarios_selecionados = ref<string[]>([])
 
-interface Props {
-  membros: { id: string; nome: string }[]
-}
-
-const props = defineProps<Props>()
-
-const emit = defineEmits(['salvar', 'cancelar'])
+// Watch for step changes to focus valorInput in step 2
+watch(step, (newStep) => {
+  if (newStep === 2) {
+    setTimeout(() => {
+      valorInput.value?.focus()
+    }, 400) // Wait for transition
+  }
+})
 
 onMounted(() => {
   const saved = localStorage.getItem(STORAGE_KEY)
