@@ -132,105 +132,107 @@ const prevStep = () => step.value--
   <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
     <WizardProgressBar :current-step="step" :total-steps="totalSteps" />
 
-    <div v-if="step === 1">
-      <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
-      <div class="grid grid-cols-1 gap-4">
-        <button 
-          @click="tipo = 'gasto'; nextStep()"
-          class="flex items-center justify-between p-6 border-2 border-red-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group shadow-sm hover:shadow-md"
-        >
-          <div class="flex items-center gap-5">
-            <div class="bg-red-100 p-3 rounded-xl text-3xl">💸</div>
-            <div class="text-left">
-              <span class="block font-bold text-gray-800 text-lg">Um gasto</span>
-              <span class="text-sm text-gray-500">Dinheiro que saiu da conta</span>
+    <Transition name="slide-fade" mode="out-in">
+      <div v-if="step === 1" key="step1">
+        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
+        <div class="grid grid-cols-1 gap-4">
+          <button 
+            @click="tipo = 'gasto'; nextStep()"
+            class="flex items-center justify-between p-6 border-2 border-red-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group shadow-sm hover:shadow-md"
+          >
+            <div class="flex items-center gap-5">
+              <div class="bg-red-100 p-3 rounded-xl text-3xl">💸</div>
+              <div class="text-left">
+                <span class="block font-bold text-gray-800 text-lg">Um gasto</span>
+                <span class="text-sm text-gray-500">Dinheiro que saiu da conta</span>
+              </div>
             </div>
-          </div>
-          <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-red-500 transform group-hover:translate-x-1 transition-transform" />
-        </button>
-        <button 
-          @click="tipo = 'ganho'; nextStep()"
-          class="flex items-center justify-between p-6 border-2 border-green-50 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group shadow-sm hover:shadow-md"
-        >
-          <div class="flex items-center gap-5">
-            <div class="bg-green-100 p-3 rounded-xl text-3xl">💰</div>
-            <div class="text-left">
-              <span class="block font-bold text-gray-800 text-lg">Um ganho</span>
-              <span class="text-sm text-gray-500">Dinheiro que entrou na conta</span>
+            <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-red-500 transform group-hover:translate-x-1 transition-transform" />
+          </button>
+          <button 
+            @click="tipo = 'ganho'; nextStep()"
+            class="flex items-center justify-between p-6 border-2 border-green-50 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group shadow-sm hover:shadow-md"
+          >
+            <div class="flex items-center gap-5">
+              <div class="bg-green-100 p-3 rounded-xl text-3xl">💰</div>
+              <div class="text-left">
+                <span class="block font-bold text-gray-800 text-lg">Um ganho</span>
+                <span class="text-sm text-gray-500">Dinheiro que entrou na conta</span>
+              </div>
             </div>
-          </div>
-          <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-green-500 transform group-hover:translate-x-1 transition-transform" />
-        </button>
+            <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-green-500 transform group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div v-else-if="step === 2">
-      <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
-        Quais os dados do lançamento?
-      </h2>
-      <div class="mb-6 text-center bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200">
-        <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Valor Total</div>
-        <div class="flex items-center justify-center">
-          <span class="text-gray-400 text-3xl font-mono mr-2">R$</span>
+      <div v-else-if="step === 2" key="step2">
+        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
+          Quais os dados do lançamento?
+        </h2>
+        <div class="mb-6 text-center bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Valor Total</div>
+          <div class="flex items-center justify-center">
+            <span class="text-gray-400 text-3xl font-mono mr-2">R$</span>
+            <input 
+              v-model.number="valor" 
+              type="number" 
+              step="0.01"
+              placeholder="0,00" 
+              autofocus
+              class="w-3/4 text-6xl font-mono text-center bg-transparent border-none focus:outline-none text-blue-600 font-bold"
+            />
+          </div>
+        </div>
+        <div class="mb-10">
           <input 
-            v-model.number="valor" 
-            type="number" 
-            step="0.01"
-            placeholder="0,00" 
-            autofocus
-            class="w-3/4 text-6xl font-mono text-center bg-transparent border-none focus:outline-none text-blue-600 font-bold"
+            v-model="descricao" 
+            type="text" 
+            :placeholder="tipo === 'gasto' ? 'O que você comprou?' : 'De onde veio?'" 
+            class="w-full p-5 text-xl border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:outline-none bg-gray-50 transition-colors"
           />
         </div>
       </div>
-      <div class="mb-10">
-        <input 
-          v-model="descricao" 
-          type="text" 
-          :placeholder="tipo === 'gasto' ? 'O que você comprou?' : 'De onde veio?'" 
-          class="w-full p-5 text-xl border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:outline-none bg-gray-50 transition-colors"
-        />
-      </div>
-    </div>
 
-    <div v-else-if="step === 3">
-      <div class="space-y-6">
-        <div class="flex justify-between items-center mb-4">
-          <p class="font-bold text-gray-800">Com quem vamos dividir?</p>
-          <button @click="beneficiarios_selecionados.length === membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
-            {{ beneficiarios_selecionados.length === membros.length ? 'Limpar' : 'Marcar todos' }}
-          </button>
-        </div>
+      <div v-else-if="step === 3" key="step3">
+        <div class="space-y-6">
+          <div class="flex justify-between items-center mb-4">
+            <p class="font-bold text-gray-800">Com quem vamos dividir?</p>
+            <button @click="beneficiarios_selecionados.length === membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
+              {{ beneficiarios_selecionados.length === membros.length ? 'Limpar' : 'Marcar todos' }}
+            </button>
+          </div>
 
-        <div class="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar">
-          <div 
-            v-for="membro in membros" 
-            :key="membro.id"
-            @click="toggleBeneficiario(membro.id)"
-            class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
-          >
-            <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all border-4', beneficiarios_selecionados.includes(membro.id) ? 'bg-green-500 border-green-100 text-white scale-105' : 'bg-gray-100 border-transparent text-gray-400']">
-              {{ membro.nome.charAt(0) }}
+          <div class="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar">
+            <div 
+              v-for="membro in membros" 
+              :key="membro.id"
+              @click="toggleBeneficiario(membro.id)"
+              class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
+            >
+              <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all border-4', beneficiarios_selecionados.includes(membro.id) ? 'bg-green-500 border-green-100 text-white scale-105' : 'bg-gray-100 border-transparent text-gray-400']">
+                {{ membro.nome.charAt(0) }}
+              </div>
+              <span :class="['text-xs font-bold transition-colors', beneficiarios_selecionados.includes(membro.id) ? 'text-green-600' : 'text-gray-400']">
+                {{ membro.nome.split(' ')[0] }}
+              </span>
             </div>
-            <span :class="['text-xs font-bold transition-colors', beneficiarios_selecionados.includes(membro.id) ? 'text-green-600' : 'text-gray-400']">
-              {{ membro.nome.split(' ')[0] }}
-            </span>
           </div>
-        </div>
 
-        <div :class="['p-5 rounded-3xl border-2 transition-all', beneficiarios_selecionados.length > 1 ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100']">
-          <div class="flex justify-between items-center mb-3">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Para cada um</span>
-          </div>
-          <div class="flex justify-between items-baseline">
-            <span class="text-lg font-bold text-gray-700">R$ {{ valor.toFixed(2).replace('.', ',') }}</span>
-            <span :class="['text-2xl font-black', beneficiarios_selecionados.length > 1 ? 'text-green-600' : 'text-amber-600']">
-              R$ {{ (valor / (beneficiarios_selecionados.length || 1)).toFixed(2).replace('.', ',') }}
-            </span>
+          <div :class="['p-5 rounded-3xl border-2 transition-all', beneficiarios_selecionados.length > 1 ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100']">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Para cada um</span>
+            </div>
+            <div class="flex justify-between items-baseline">
+              <span class="text-lg font-bold text-gray-700">R$ {{ valor.toFixed(2).replace('.', ',') }}</span>
+              <span :class="['text-2xl font-black', beneficiarios_selecionados.length > 1 ? 'text-green-600' : 'text-amber-600']">
+                R$ {{ (valor / (beneficiarios_selecionados.length || 1)).toFixed(2).replace('.', ',') }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Transition>
 
     <WizardFooter 
       :step="step" 
@@ -242,3 +244,20 @@ const prevStep = () => step.value--
     />
   </div>
 </template>
+
+<style scoped>
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-enter-from {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+.slide-fade-leave-to {
+  transform: translateX(-20px);
+  opacity: 0;
+}
+</style>
