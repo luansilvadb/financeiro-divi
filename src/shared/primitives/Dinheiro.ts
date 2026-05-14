@@ -15,4 +15,12 @@ export class Dinheiro {
       currency: 'BRL',
     }).replace(/\s/g, '\u00a0'); // Fix for non-breaking space in some environments
   }
+
+  somar(outro: Dinheiro): Dinheiro {
+    return new Dinheiro(this.centavos + outro.centavos)
+  }
+
+  equals(outro: Dinheiro): boolean {
+    return this.centavos === outro.centavos
+  }
 }
