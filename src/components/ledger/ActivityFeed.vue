@@ -49,7 +49,13 @@ const formatDate = (date: Date) => {
         <div class="flex justify-between items-center text-xs text-gray-500">
           <div class="flex items-center gap-1">
             <User class="w-3 h-3" />
-            <span>Pago por <strong>{{ getMembroNome(t.origem_id) }}</strong></span>
+            <span>
+              Pago por 
+              <strong>{{ getMembroNome(t.pagamentos[0].membro_id) }}</strong>
+              <template v-if="t.pagamentos.length > 1">
+                e mais {{ t.pagamentos.length - 1 }}
+              </template>
+            </span>
           </div>
           <span>{{ formatDate(t.data) }}</span>
         </div>
