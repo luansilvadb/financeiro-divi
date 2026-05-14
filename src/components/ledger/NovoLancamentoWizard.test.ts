@@ -13,13 +13,24 @@ describe('NovoLancamentoWizard', () => {
     vi.useRealTimers()
   })
 
+  const membros = [
+    { id: 'eu', nome: 'Luan (Você)' },
+    { id: 'maria', nome: 'Maria' },
+    { id: 'joao', nome: 'João' },
+    { id: 'paula', nome: 'Paula' }
+  ]
+
   it('deve ter 3 passos totais e começar no passo 1', () => {
-    const wrapper = mount(NovoLancamentoWizard)
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
     expect(wrapper.text()).toContain('Passo 1 de 3')
   })
 
   it('deve exibir a barra de progresso com a largura correta', () => {
-    const wrapper = mount(NovoLancamentoWizard)
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
     const progressBar = wrapper.find('.bg-blue-500')
     
     expect(progressBar.exists()).toBe(true)
@@ -28,7 +39,9 @@ describe('NovoLancamentoWizard', () => {
   })
 
   it('deve avançar do passo 1 para o 2 ao clicar em Gasto', async () => {
-    const wrapper = mount(NovoLancamentoWizard)
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
     const btnGasto = wrapper.findAll('button').find(b => b.text().includes('Um gasto'))
     await btnGasto?.trigger('click')
     
@@ -39,7 +52,9 @@ describe('NovoLancamentoWizard', () => {
   })
 
   it('deve desabilitar o botão próximo no passo 2 se valor ou descrição estiverem vazios', async () => {
-    const wrapper = mount(NovoLancamentoWizard)
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
     // Ir para passo 2
     const btnGasto = wrapper.findAll('button').find(b => b.text().includes('Um gasto'))
     await btnGasto?.trigger('click')
@@ -59,7 +74,8 @@ describe('NovoLancamentoWizard', () => {
   it('deve dar foco automático no input de valor ao entrar no passo 2', async () => {
     // Para testar foco no jsdom, precisamos anexar ao document
     const wrapper = mount(NovoLancamentoWizard, {
-      attachTo: document.body
+      attachTo: document.body,
+      props: { membros }
     })
     
     // Passo 1 -> Passo 2
@@ -79,7 +95,9 @@ describe('NovoLancamentoWizard', () => {
   })
 
   it('deve emitir o evento salvar com a transação correta ao finalizar', async () => {
-    const wrapper = mount(NovoLancamentoWizard)
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
     
     // Passo 1 -> Passo 2
     await wrapper.findAll('button').find(b => b.text().includes('Um gasto'))?.trigger('click')
@@ -103,7 +121,9 @@ describe('NovoLancamentoWizard', () => {
   })
 
   it('deve permitir selecionar múltiplos beneficiários e calcular a divisão', async () => {
-    const wrapper = mount(NovoLancamentoWizard)
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
     
     // Passo 1 -> Passo 2 (Gasto)
     await wrapper.findAll('button').find(b => b.text().includes('Um gasto'))?.trigger('click')

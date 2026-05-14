@@ -38,12 +38,12 @@ watch(step, (newStep) => {
 const fonte_id = ref('eu')
 
 const beneficiarios_selecionados = ref<string[]>(['eu'])
-const membros = [
-  { id: 'eu', nome: 'Luan (Você)' },
-  { id: 'maria', nome: 'Maria' },
-  { id: 'joao', nome: 'João' },
-  { id: 'paula', nome: 'Paula' }
-]
+
+interface Props {
+  membros: { id: string; nome: string }[]
+}
+
+const props = defineProps<Props>()
 
 const emit = defineEmits(['salvar', 'cancelar'])
 
@@ -229,14 +229,14 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
         <div class="space-y-6">
           <div class="flex justify-between items-center mb-4">
             <p class="font-bold text-gray-800">Com quem vamos dividir?</p>
-            <button @click="beneficiarios_selecionados.length === membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
-              {{ beneficiarios_selecionados.length === membros.length ? 'Limpar' : 'Marcar todos' }}
+            <button @click="beneficiarios_selecionados.length === props.membros.length ? beneficiarios_selecionados = ['eu'] : beneficiarios_selecionados = props.membros.map(m => m.id)" class="text-xs font-bold text-green-600 uppercase tracking-tighter">
+              {{ beneficiarios_selecionados.length === props.membros.length ? 'Limpar' : 'Marcar todos' }}
             </button>
           </div>
 
           <div class="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar">
             <div 
-              v-for="membro in membros" 
+              v-for="membro in props.membros" 
               :key="membro.id"
               @click="toggleBeneficiario(membro.id)"
               class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
