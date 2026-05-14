@@ -68,16 +68,10 @@ const toggleBeneficiario = (id: string) => {
 
 const finalizar = () => {
   const total = Dinheiro.deReais(valor.value)
-  const valorPorPessoa = Dinheiro.deCentavos(Math.floor(total.centavos / beneficiarios_selecionados.value.length))
-  
-  // Distribute remainder to first person (simple approach for V1)
-  const remainder = total.centavos % beneficiarios_selecionados.value.length
+  const partes = total.distribuir(beneficiarios_selecionados.value.length)
   
   const divisoes = beneficiarios_selecionados.value.map((id, index) => {
-    const valorDivisao = index === 0 
-      ? Dinheiro.deCentavos(valorPorPessoa.centavos + remainder)
-      : valorPorPessoa
-    return new Divisao(id, valorDivisao)
+    return new Divisao(id, partes[index])
   })
 
   const transacao = new Transacao({

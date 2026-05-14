@@ -77,7 +77,7 @@ watch(
 )
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/components/ledger/NovoLancamentoWizard.vue
@@ -89,7 +89,7 @@ git commit -m "feat: add auto-save watcher to wizard"
 **Files:**
 - Modify: `src/components/ledger/NovoLancamentoWizard.vue`
 
-- [ ] **Step 1: Update finalizar to remove storage key**
+- [x] **Step 1: Update finalizar to remove storage key**
 
 ```typescript
 const finalizar = () => {
@@ -103,7 +103,7 @@ const finalizar = () => {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/components/ledger/NovoLancamentoWizard.vue

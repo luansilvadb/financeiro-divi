@@ -117,7 +117,7 @@ Add `fonte_id`, `pagador_id`, and `pagueiPorOutro` (boolean).
 </div>
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 `git add src/components/ledger/NovoLancamentoWizard.vue && git commit -m "feat: add step 2 with toggle logic"`
 
 ---
@@ -127,8 +127,8 @@ Add `fonte_id`, `pagador_id`, and `pagueiPorOutro` (boolean).
 **Files:**
 - Modify: `src/components/ledger/NovoLancamentoWizard.vue`
 
-- [ ] **Step 1: Implement Step 3 UI (Equal Split)**
+- [x] **Step 1: Implement Step 3 UI (Equal Split)**
 Add simple multi-select for beneficiaries and a "Salvar" button that logs the data.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 `git add src/components/ledger/NovoLancamentoWizard.vue && git commit -m "feat: add step 3 and finalize wizard"`
