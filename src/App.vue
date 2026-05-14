@@ -4,8 +4,7 @@ import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
-import type { Transacao } from './modules/ledger/core/domain/Transacao'
-import type { Dinheiro } from './shared/primitives/Dinheiro'
+import { Transacao } from './modules/ledger/core/domain/Transacao'
 
 const currentView = ref<'dashboard' | 'wizard'>('dashboard')
 const repository = new LocalStorageTransacaoRepository()
@@ -48,6 +47,7 @@ const handleSalvarTransacao = async (t: Transacao) => {
         v-if="currentView === 'dashboard'" 
         :saldos="saldos" 
         :membros="membros"
+        :transacoes="transacoes"
         @novo-lancamento="currentView = 'wizard'"
       />
       

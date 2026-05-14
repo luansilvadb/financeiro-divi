@@ -14,6 +14,17 @@ export interface TransacaoProps {
   data: Date
 }
 
+function validarSomaDivisoes(divisoes: Divisao[], total: Dinheiro) {
+  const soma = divisoes.reduce(
+    (acc, divisao) => acc.somar(divisao.valor),
+    Dinheiro.deCentavos(0)
+  )
+
+  if (!soma.equals(total)) {
+    throw new Error('A soma das divisões deve ser igual ao total da transação')
+  }
+}
+
 export class Transacao {
   public readonly id: string
   public readonly descricao: string
@@ -25,7 +36,7 @@ export class Transacao {
   public readonly data: Date
 
   constructor(props: TransacaoProps) {
-    this.validarSomaDivisoes(props.divisoes, props.total)
+    validarSomaDivisoes(props.divisoes, props.total)
     
     this.id = props.id
     this.descricao = props.descricao
@@ -35,16 +46,5 @@ export class Transacao {
     this.divisoes = props.divisoes
     this.status = props.status
     this.data = props.data
-  }
-
-  private validarSomaDivisoes(divisoes: Divisao[], total: Dinheiro) {
-    const soma = divisoes.reduce(
-      (acc, divisao) => acc.somar(divisao.valor),
-      Dinheiro.deCentavos(0)
-    )
-
-    if (!soma.equals(total)) {
-      throw new Error('A soma das divisões deve ser igual ao total da transação')
-    }
   }
 }
