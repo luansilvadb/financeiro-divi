@@ -47,4 +47,8 @@ export class Dinheiro {
   isNegativo(): boolean {
     return this.centavos < 0
   }
+
+  multiplicar(fator: number): Dinheiro {
+    return new Dinheiro(Math.round(this.centavos * fator))
+  }
 }

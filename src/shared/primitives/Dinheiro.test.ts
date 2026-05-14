@@ -57,4 +57,10 @@ describe('Dinheiro Value Object', () => {
       expect(Dinheiro.deCentavos(-10).isNegativo()).toBe(true)
     })
   })
+
+  it('deve multiplicar por um fator (arredondando centavos)', () => {
+    // 10.55 * 0.5 = 5.275 -> 5.28
+    const d = Dinheiro.deReais(10.55)
+    expect(d.multiplicar(0.5).centavos).toBe(528)
+  })
 })
