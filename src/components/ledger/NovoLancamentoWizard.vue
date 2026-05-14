@@ -140,45 +140,53 @@ const prevStep = () => step.value--
     </div>
 
     <div v-else-if="step === 2">
-      <h2 class="text-xl font-bold mb-4">Quem e Como?</h2>
-      
-      <label class="block text-sm font-medium text-gray-700 mb-2">De onde saiu o dinheiro?</label>
-      <div class="grid grid-cols-2 gap-2 mb-6">
-        <button 
-          @click="fonte_id = 'meu_cartao'"
-          :class="['p-2 border rounded transition', fonte_id === 'meu_cartao' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-200']"
-        >
-          Meu Cartão
-        </button>
-        <button 
-          @click="fonte_id = 'dinheiro'"
-          :class="['p-2 border rounded transition', fonte_id === 'dinheiro' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-200']"
-        >
-          Dinheiro Vivo
-        </button>
+      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">
+        {{ tipo === 'gasto' ? '"Qual é o valor desse gasto?"' : '"Qual o valor que você recebeu?"' }}
+      </h2>
+      <div class="mb-8 text-center bg-gray-50 p-6 rounded-2xl border-2 border-dashed border-gray-200">
+        <span class="text-gray-400 text-2xl mr-2">R$</span>
+        <input 
+          v-model.number="valor" 
+          type="number" 
+          step="0.01"
+          placeholder="0,00" 
+          autofocus
+          class="w-3/4 text-5xl font-mono text-center bg-transparent border-b-4 border-blue-500 focus:outline-none text-blue-600"
+        />
       </div>
-
-      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-6 border border-gray-100">
-        <span class="text-sm font-medium text-gray-700">Paguei por outra pessoa?</span>
+      <div class="flex gap-3">
+        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
         <button 
-          @click="pagueiPorOutro = !pagueiPorOutro"
-          :class="['relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2', pagueiPorOutro ? 'bg-blue-600' : 'bg-gray-200']"
+          @click="nextStep" 
+          :disabled="valor <= 0"
+          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
         >
-          <span :class="['pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out', pagueiPorOutro ? 'translate-x-5' : 'translate-x-0']"></span>
+          Próximo
         </button>
       </div>
+    </div>
 
-      <div v-if="pagueiPorOutro" class="mb-6 space-y-2">
-        <label class="block text-sm font-medium text-gray-700">Quem é o dono da dívida?</label>
-        <select v-model="pagador_id" class="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500 bg-white">
-          <option value="colega_x">Colega X</option>
-          <option value="grupo">O Grupo</option>
-        </select>
+    <div v-else-if="step === 3">
+      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">
+        {{ tipo === 'gasto' ? '"Me conta, o que você pagou?"' : '"Me conta, de onde veio esse dinheiro?"' }}
+      </h2>
+      <div class="mb-8">
+        <input 
+          v-model="descricao" 
+          type="text" 
+          :placeholder="tipo === 'gasto' ? 'Ex: Pizza, Aluguel, Sorvete...' : 'Ex: Salário, Venda do sofá...'" 
+          class="w-full p-4 text-lg border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50"
+        />
       </div>
-
-      <div class="flex gap-2">
-        <button @click="prevStep" class="flex-1 border p-3 rounded-lg hover:bg-gray-50 transition">Voltar</button>
-        <button @click="nextStep" class="flex-1 bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Próximo</button>
+      <div class="flex gap-3">
+        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+        <button 
+          @click="nextStep" 
+          :disabled="!descricao"
+          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+        >
+          Próximo
+        </button>
       </div>
     </div>
 
