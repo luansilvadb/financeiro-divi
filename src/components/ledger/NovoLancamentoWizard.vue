@@ -160,37 +160,53 @@ const prevStep = () => step.value--
       </div>
     </div>
 
-    <div v-else-if="step === 5">
-      <h2 class="text-xl font-bold mb-2 text-gray-800 text-center italic font-serif">"Além de você, quem mais aproveitou isso?"</h2>
-      <p class="text-xs text-gray-400 text-center mb-6">(Isso ajuda a dividir o valor entre os amigos)</p>
-      
-      <div class="space-y-2 mb-8">
-        <div 
-          v-for="membro in membros" 
-          :key="membro.id"
-          @click="toggleBeneficiario(membro.id)"
-          :class="['flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-50']"
-        >
-          <div class="flex items-center gap-3">
-            <div :class="['p-2 rounded-full', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400']">
-              <User class="w-5 h-5" />
-            </div>
-            <span :class="['font-bold', beneficiarios_selecionados.includes(membro.id) ? 'text-blue-700' : 'text-gray-700']">
-              {{ membro.nome }}
-            </span>
-          </div>
-          <Check v-if="beneficiarios_selecionados.includes(membro.id)" class="w-6 h-6 text-blue-600" />
-        </div>
+    <div v-else-if="step === 2">
+      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">
+        {{ tipo === 'gasto' ? '"Qual é o valor desse gasto?"' : '"Qual o valor que você recebeu?"' }}
+      </h2>
+      <div class="mb-8 text-center bg-gray-50 p-6 rounded-2xl border-2 border-dashed border-gray-200">
+        <span class="text-gray-400 text-2xl mr-2">R$</span>
+        <input 
+          v-model.number="valor" 
+          type="number" 
+          step="0.01"
+          placeholder="0,00" 
+          autofocus
+          class="w-3/4 text-5xl font-mono text-center bg-transparent border-b-4 border-blue-500 focus:outline-none text-blue-600"
+        />
       </div>
-
       <div class="flex gap-3">
         <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
         <button 
-          @click="finalizar" 
-          :disabled="beneficiarios_selecionados.length === 0 || valor <= 0"
-          class="flex-1 bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-2"
+          @click="nextStep" 
+          :disabled="valor <= 0"
+          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
         >
-          <Save class="w-5 h-5" /> Salvar
+          Próximo
+        </button>
+      </div>
+    </div>
+
+    <div v-else-if="step === 3">
+      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">
+        {{ tipo === 'gasto' ? '"Me conta, o que você pagou?"' : '"Me conta, de onde veio esse dinheiro?"' }}
+      </h2>
+      <div class="mb-8">
+        <input 
+          v-model="descricao" 
+          type="text" 
+          :placeholder="tipo === 'gasto' ? 'Ex: Pizza, Aluguel, Sorvete...' : 'Ex: Salário, Venda do sofá...'" 
+          class="w-full p-4 text-lg border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50"
+        />
+      </div>
+      <div class="flex gap-3">
+        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+        <button 
+          @click="nextStep" 
+          :disabled="!descricao"
+          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+        >
+          Próximo
         </button>
       </div>
     </div>
@@ -266,6 +282,41 @@ const prevStep = () => step.value--
           class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
         >
           Próximo
+        </button>
+      </div>
+    </div>
+
+    <div v-else-if="step === 5">
+      <h2 class="text-xl font-bold mb-2 text-gray-800 text-center italic font-serif">"Além de você, quem mais aproveitou isso?"</h2>
+      <p class="text-xs text-gray-400 text-center mb-6">(Isso ajuda a dividir o valor entre os amigos)</p>
+      
+      <div class="space-y-2 mb-8">
+        <div 
+          v-for="membro in membros" 
+          :key="membro.id"
+          @click="toggleBeneficiario(membro.id)"
+          :class="['flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-50']"
+        >
+          <div class="flex items-center gap-3">
+            <div :class="['p-2 rounded-full', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400']">
+              <User class="w-5 h-5" />
+            </div>
+            <span :class="['font-bold', beneficiarios_selecionados.includes(membro.id) ? 'text-blue-700' : 'text-gray-700']">
+              {{ membro.nome }}
+            </span>
+          </div>
+          <Check v-if="beneficiarios_selecionados.includes(membro.id)" class="w-6 h-6 text-blue-600" />
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+        <button 
+          @click="finalizar" 
+          :disabled="beneficiarios_selecionados.length === 0 || valor <= 0"
+          class="flex-1 bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-2"
+        >
+          <Save class="w-5 h-5" /> Salvar
         </button>
       </div>
     </div>
