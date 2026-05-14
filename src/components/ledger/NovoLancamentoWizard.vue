@@ -15,6 +15,8 @@ const tipo = ref<'gasto' | 'ganho' | null>(null)
 const valor = ref(0)
 const descricao = ref('')
 
+const valorInput = ref<HTMLInputElement | null>(null)
+
 const canAdvance = computed(() => {
   if (step.value === 1) return true
   if (step.value === 2) return valor.value > 0 && descricao.value.length > 0
@@ -23,6 +25,16 @@ const canAdvance = computed(() => {
 })
 
 const intencao = ref<'solo' | 'split'>('solo')
+
+// Watch for step changes to focus valorInput in step 2
+watch(step, (newStep) => {
+  if (newStep === 2) {
+    setTimeout(() => {
+      valorInput.value?.focus()
+    }, 400) // Wait for transition
+  }
+})
+
 const fonte_id = ref('eu')
 
 const beneficiarios_selecionados = ref<string[]>(['eu'])
@@ -182,26 +194,26 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
         <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
           Quais os dados do lançamento?
         </h2>
-        <div class="mb-6 text-center bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200">
-          <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Valor Total</div>
-          <div class="flex items-center justify-center">
-            <span class="text-gray-400 text-3xl font-mono mr-2">R$</span>
+        
+        <div class="mb-10 text-center bg-blue-50/50 p-10 rounded-[2.5rem] border-2 border-blue-100 group transition-all hover:bg-blue-50">
+          <div class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Valor Total</div>
+          <div class="flex items-baseline justify-center gap-2 mb-8">
+            <span class="text-blue-300 text-2xl font-bold">R$</span>
             <input 
+              ref="valorInput"
               v-model.number="valor" 
               type="number" 
               step="0.01"
-              placeholder="0,00" 
-              autofocus
-              class="w-3/4 text-6xl font-mono text-center bg-transparent border-none focus:outline-none text-blue-600 font-bold"
+              class="w-48 text-6xl font-black text-blue-600 bg-transparent border-none focus:outline-none mono tracking-tighter text-center"
+              placeholder="0,00"
             />
           </div>
-        </div>
-        <div class="mb-10">
+          
           <input 
             v-model="descricao" 
             type="text" 
             :placeholder="tipo === 'gasto' ? 'O que você comprou?' : 'De onde veio?'" 
-            class="w-full p-5 text-xl border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:outline-none bg-gray-50 transition-colors"
+            class="w-full p-5 text-lg border-2 border-blue-100/50 rounded-2xl focus:border-blue-200 focus:outline-none bg-white/50 transition-all text-center placeholder:text-blue-300 text-blue-600"
           />
         </div>
       </div>

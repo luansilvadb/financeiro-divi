@@ -56,6 +56,28 @@ describe('NovoLancamentoWizard', () => {
     expect(nextBtn.attributes('disabled')).toBeUndefined()
   })
 
+  it('deve dar foco automático no input de valor ao entrar no passo 2', async () => {
+    // Para testar foco no jsdom, precisamos anexar ao document
+    const wrapper = mount(NovoLancamentoWizard, {
+      attachTo: document.body
+    })
+    
+    // Passo 1 -> Passo 2
+    const btnGasto = wrapper.findAll('button').find(b => b.text().includes('Um gasto'))
+    await btnGasto?.trigger('click')
+    
+    vi.advanceTimersByTime(200) // Próximo passo após clique (selecionarTipo)
+    await wrapper.vm.$nextTick()
+    
+    vi.advanceTimersByTime(400) // Aguarda o watch(step) focus timeout
+    await wrapper.vm.$nextTick()
+    
+    const input = wrapper.find('input[type="number"]').element as HTMLInputElement
+    expect(document.activeElement).toBe(input)
+    
+    wrapper.unmount()
+  })
+
   it('deve emitir o evento salvar com a transação correta ao finalizar', async () => {
     const wrapper = mount(NovoLancamentoWizard)
     
