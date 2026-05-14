@@ -18,8 +18,7 @@ describe('MemoryTransacaoRepository', () => {
       id: 'tx-1',
       descricao: 'Teste',
       total,
-      origem_id: 'user1',
-      pagador_id: 'user1',
+      pagamentos: [{ membro_id: 'user1', valor: total }],
       divisoes,
       status: 'pendente',
       data: new Date()
@@ -41,8 +40,7 @@ describe('MemoryTransacaoRepository', () => {
       id: 'tx-1',
       descricao: 'T1',
       total: Dinheiro.deReais(10),
-      origem_id: 'u1',
-      pagador_id: 'u1',
+      pagamentos: [{ membro_id: 'u1', valor: Dinheiro.deReais(10) }],
       divisoes: [new Divisao('u1', Dinheiro.deReais(10))],
       status: 'pendente',
       data: new Date()
@@ -51,8 +49,7 @@ describe('MemoryTransacaoRepository', () => {
       id: 'tx-2',
       descricao: 'T2',
       total: Dinheiro.deReais(20),
-      origem_id: 'u2',
-      pagador_id: 'u2',
+      pagamentos: [{ membro_id: 'u2', valor: Dinheiro.deReais(20) }],
       divisoes: [new Divisao('u2', Dinheiro.deReais(20))],
       status: 'pendente',
       data: new Date()

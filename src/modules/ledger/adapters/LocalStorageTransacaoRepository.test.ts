@@ -15,8 +15,7 @@ describe('LocalStorageTransacaoRepository', () => {
       id: '1',
       descricao: 'Teste',
       total: Dinheiro.deReais(100),
-      origem_id: 'origem',
-      pagador_id: 'pagador',
+      pagamentos: [{ membro_id: 'origem', valor: Dinheiro.deReais(100) }],
       divisoes: [new Divisao('beneficiario', Dinheiro.deReais(100))],
       status: 'pendente',
       data: new Date('2024-01-01T10:00:00Z')
@@ -39,8 +38,7 @@ describe('LocalStorageTransacaoRepository', () => {
       id: '2',
       descricao: 'Persistência',
       total: Dinheiro.deReais(50),
-      origem_id: 'o',
-      pagador_id: 'p',
+      pagamentos: [{ membro_id: 'o', valor: Dinheiro.deReais(50) }],
       divisoes: [new Divisao('b', Dinheiro.deReais(50))],
       status: 'pendente',
       data: new Date()
