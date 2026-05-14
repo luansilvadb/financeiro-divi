@@ -1,59 +1,48 @@
-# Spec: Wizard Conversacional e Humano (DIVI)
+# Spec: Wizard Conversacional Premium (DIVI)
 
 **Data:** 2026-05-14
 **Status:** Aprovado
-**Objetivo:** Transformar o Wizard de novo lançamento em uma experiência conversacional, intuitiva e amigável ("nível criança"), removendo termos técnicos em favor de uma linguagem natural e contextual.
+**Objetivo:** Criar uma experiência de registro de gastos 100% intuitiva e "viva", onde o usuário decide a intenção de divisão de forma mandatória, evitando erros e facilitando o entendimento humano.
 
-## Design de Conversa
+## Fluxo de Conversa
 
-O Wizard será dividido em 5 etapas baseadas em perguntas diretas:
+O Wizard será dividido em passos claros com foco em UI/UX premium:
 
-### Passo 1: O Início da Conversa
+### Passo 1: O Início
 *   **Pergunta:** "Você quer anotar um gasto ou um ganho?"
-*   **Opções:**
-    *   💸 **"Um gasto"** (Ex: Pizza, Aluguel, Uber)
-    *   💰 **"Um ganho"** (Ex: Salário, Reembolso, Venda)
+*   **Ação:** Botões gigantes com emojis (💸 Gasto / 💰 Ganho).
 
 ### Passo 2: O Valor
-*   **Pergunta (Gasto):** "Qual é o valor desse gasto?"
-*   **Pergunta (Ganho):** "Qual o valor que você recebeu?"
-*   **UI:** Campo numérico grande com prefixo "R$".
+*   **Pergunta:** "Qual é o valor desse gasto/ganho?"
+*   **UI:** Campo numérico com prefixo R$ em destaque (Calculadora Visual).
 
-### Passo 3: O Motivo (Descrição)
-*   **Pergunta (Gasto):** "Me conta, o que você pagou?"
-*   **Pergunta (Ganho):** "Me conta, de onde veio esse dinheiro?"
-*   **Placeholder:** "Ex: Pizza com a galera, Aluguel, Cinema..."
+### Passo 3: O Motivo
+*   **Pergunta:** "Me conta, o que você pagou/recebeu?"
+*   **UI:** Input de texto simples com placeholders amigáveis.
 
-### Passo 4: O Pagador e Responsabilidade
-*   **Pergunta:** "Quem vai pagar esse gasto?"
-*   **Opções:**
-    *   🙋‍♂️ **"Eu mesmo!"** (Eu passei o cartão/dinheiro e a conta é minha ou do grupo)
-    *   🤝 **"Eu paguei para um amigo"** (Eu passei o cartão, mas o gasto é de outra pessoa)
-    *   👤 **"Um amigo pagou para mim"** (O amigo passou o cartão dele, mas eu sou o dono da dívida)
+### Passo 4: Intenção e Divisão (O Diferencial)
+*   **Pergunta:** "Isso é só seu, [Nome do Usuário]?"
+*   **Opção A (Só meu):** Registra 100% para o usuário e pula para o fim.
+*   **Opção B (Dividir):** Expande um painel (Grid de Avatares).
+    *   **Grid de Seleção:** Toque nas fotos dos amigos para incluir/excluir da divisão.
+    *   **Cálculo em Tempo Real:** Mostra "R$ XX,XX para cada" conforme seleciona.
+    *   **Segurança:** Aviso visual (cor amarela) se apenas 1 pessoa estiver marcada.
 
-### Passo 5: A Divisão (Aproveitamento)
-*   **Pergunta:** "Além de você, quem mais aproveitou isso?"
-*   **Subtexto:** "(Isso ajuda a dividir o valor entre os amigos)"
-*   **UI:** Lista de membros com fotos/iniciais e checks grandes.
+### Passo 5: A Origem (Quem passou o cartão)
+*   **Pergunta:** "Quem passou o cartão ou deu o dinheiro?"
+*   **Opções:** Lista dos participantes selecionados no Passo 4 (Padrão: Usuário logado).
 
-## Mapeamento Lógico (Desenvolvedor)
+## Mapeamento Lógico
 
-| Opção Passo 4 | Origem (Quem tirou o $) | Divisão (Quem aproveitou) | Resultado Esperado |
-| :--- | :--- | :--- | :--- |
-| **Eu mesmo** | `origem_id = 'eu'` | Selecionados no Passo 5 | Dívida dividida entre os selecionados |
-| **Eu paguei para amigo** | `origem_id = 'eu'` | Amigo selecionado no Passo 5 | Amigo deve 100% para 'eu' |
-| **Amigo pagou para mim**| `origem_id = 'amigo_id'` | Selecionados no Passo 5 | 'eu' (e outros) devem para Amigo |
+| Escolha | Origem (`origem_id`) | Participantes (`divisoes`) |
+| :--- | :--- | :--- |
+| **Só meu** | Usuário Logado | [Usuário Logado] |
+| **Dividir (Eu paguei)** | Usuário Logado | [Selecionados no Grid] |
+| **Dividir (Amigo pagou)** | Amigo Selecionado | [Selecionados no Grid] |
 
 ## Arquitetura Técnica
 
-1.  **Componente:** `NovoLancamentoWizard.vue` será refatorado para suportar o novo fluxo.
-2.  **Estado:** Adicionar `tipo` ('gasto' | 'ganho') ao estado reativo.
-3.  **UI/UX:** 
-    *   Animações de transição suave.
-    *   Botões grandes com emojis para facilitar o toque e entendimento.
-    *   Remover títulos técnicos como "Fonte" ou "Beneficiários".
-
-## Critérios de Sucesso
-*   Um usuário leigo consegue completar o fluxo sem hesitação.
-*   Termos como "Fonte", "Beneficiário" e "Origem" foram 100% removidos da UI.
-*   O rascunho continua funcionando (auto-save) entre os passos.
+1.  **Componente:** `NovoLancamentoWizard.vue` será o host do fluxo.
+2.  **Sub-componentes:** Criar `GridSelecaoMembros.vue` para reutilizar a lógica de avatares.
+3.  **Animações:** Usar transições do Vue 3 (`<Transition>`) para a expansão do painel de divisão.
+4.  **Estado:** Manter o rascunho no `localStorage` para não perder o progresso.
