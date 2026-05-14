@@ -1,5 +1,9 @@
+<script setup lang="ts">
+import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
+</script>
+
 <template>
-  <div class="min-h-screen bg-gray-100 flex items-center justify-center">
-    <h1 class="text-3xl font-bold text-blue-600">DIVI - Orquestrador Financeiro</h1>
+  <div class="min-h-screen bg-gray-100 py-10">
+    <NovoLancamentoWizard />
   </div>
 </template>
