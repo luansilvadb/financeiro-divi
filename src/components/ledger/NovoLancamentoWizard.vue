@@ -13,8 +13,9 @@ const valor = ref(0)
 const descricao = ref('')
 
 const fonte_id = ref('meu_cartao')
-const pagador_id = ref('eu')
 const pagueiPorOutro = ref(false)
+const responsabilidade = ref<'eu' | 'por_amigo' | 'pelo_amigo'>('eu')
+const amigo_id = ref('')
 
 const beneficiarios_selecionados = ref<string[]>(['eu'])
 const membros = [
@@ -35,7 +36,8 @@ onMounted(() => {
       if (data.valor) valor.value = data.valor
       if (data.descricao) descricao.value = data.descricao
       if (data.fonte_id) fonte_id.value = data.fonte_id
-      if (data.pagador_id) pagador_id.value = data.pagador_id
+      if (data.responsabilidade) responsabilidade.value = data.responsabilidade
+      if (data.amigo_id) amigo_id.value = data.amigo_id
       if (data.pagueiPorOutro !== undefined) pagueiPorOutro.value = data.pagueiPorOutro
       if (data.beneficiarios_selecionados) beneficiarios_selecionados.value = data.beneficiarios_selecionados
     } catch (e) {
@@ -51,7 +53,8 @@ watch(
     valor: valor.value,
     descricao: descricao.value,
     fonte_id: fonte_id.value,
-    pagador_id: pagador_id.value,
+    responsabilidade: responsabilidade.value,
+    amigo_id: amigo_id.value,
     pagueiPorOutro: pagueiPorOutro.value,
     beneficiarios_selecionados: [...beneficiarios_selecionados.value]
   }),
@@ -190,37 +193,77 @@ const prevStep = () => step.value--
       </div>
     </div>
 
-    <div v-else-if="step === 3">
-      <h2 class="text-xl font-bold mb-4">Para Quem?</h2>
-      <p class="text-sm text-gray-500 mb-4">Selecione quem se beneficiou dessa despesa (Divisão Igual).</p>
+    <div v-else-if="step === 4">
+      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">"Quem vai pagar esse gasto?"</h2>
       
-      <div class="space-y-2 mb-6">
-        <div 
-          v-for="membro in membros" 
-          :key="membro.id"
-          @click="toggleBeneficiario(membro.id)"
-          :class="['flex items-center justify-between p-3 border rounded-lg cursor-pointer transition', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-200']"
-        >
-          <div class="flex items-center gap-3">
+      <div v-if="!amigo_id && (responsabilidade === 'por_amigo' || responsabilidade === 'pelo_amigo')" class="space-y-4 mb-6">
+        <p class="text-sm text-gray-500 text-center">Selecione o amigo envolvido:</p>
+        <div class="grid grid-cols-1 gap-2">
+          <button 
+            v-for="membro in membros.filter(m => m.id !== 'eu')" 
+            :key="membro.id"
+            @click="amigo_id = membro.id"
+            class="flex items-center gap-3 p-4 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition"
+          >
             <User class="w-5 h-5 text-gray-400" />
-            <span :class="['font-medium', beneficiarios_selecionados.includes(membro.id) ? 'text-blue-700' : 'text-gray-700']">
-              {{ membro.nome }}
-            </span>
-          </div>
-          <Check v-if="beneficiarios_selecionados.includes(membro.id)" class="w-5 h-5 text-blue-600" />
+            <span class="font-bold text-gray-700">{{ membro.nome }}</span>
+          </button>
         </div>
+        <button @click="responsabilidade = 'eu'" class="w-full text-sm text-blue-600 font-bold">Voltar para as opções</button>
       </div>
 
-      <div class="flex gap-2">
-        <button @click="prevStep" class="flex-1 border p-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition">
-          <ArrowLeft class="w-5 h-5" /> Voltar
-        </button>
+      <div v-else class="grid grid-cols-1 gap-4 mb-8">
         <button 
-          @click="finalizar" 
-          :disabled="beneficiarios_selecionados.length === 0 || valor <= 0"
-          class="flex-1 bg-green-600 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="responsabilidade = 'eu'; amigo_id = ''; nextStep()"
+          :class="['flex items-center justify-between p-4 border-2 rounded-2xl transition group', responsabilidade === 'eu' && !amigo_id ? 'border-blue-500 bg-blue-50' : 'border-gray-50 bg-white hover:border-blue-200']"
         >
-          <Save class="w-5 h-5" /> Salvar
+          <div class="flex items-center gap-4">
+            <span class="text-3xl">🙋‍♂️</span>
+            <div class="text-left">
+              <span class="block font-bold text-gray-800">Eu mesmo!</span>
+              <span class="text-xs text-gray-500">Eu passei o meu cartão ou dinheiro.</span>
+            </div>
+          </div>
+        </button>
+
+        <button 
+          @click="responsabilidade = 'por_amigo'; amigo_id = ''"
+          :class="['flex items-center justify-between p-4 border-2 rounded-2xl transition group', responsabilidade === 'por_amigo' ? 'border-blue-500 bg-blue-50' : 'border-gray-50 bg-white hover:border-blue-200']"
+        >
+          <div class="flex items-center gap-4">
+            <span class="text-3xl">🤝</span>
+            <div class="text-left">
+              <span class="block font-bold text-gray-800">Eu paguei para um amigo</span>
+              <span class="text-xs text-gray-500">{{ amigo_id ? `Pago para ${membros.find(m => m.id === amigo_id)?.nome}` : 'Passei meu cartão para outra pessoa.' }}</span>
+            </div>
+          </div>
+          <Check v-if="amigo_id && responsabilidade === 'por_amigo'" class="w-5 h-5 text-blue-600" />
+        </button>
+
+        <button 
+          @click="responsabilidade = 'pelo_amigo'; amigo_id = ''"
+          :class="['flex items-center justify-between p-4 border-2 rounded-2xl transition group', responsabilidade === 'pelo_amigo' ? 'border-blue-500 bg-blue-50' : 'border-gray-50 bg-white hover:border-blue-200']"
+        >
+          <div class="flex items-center gap-4">
+            <span class="text-3xl">👤</span>
+            <div class="text-left">
+              <span class="block font-bold text-gray-800">Um amigo pagou para mim</span>
+              <span class="text-xs text-gray-500">{{ amigo_id ? `Pago por ${membros.find(m => m.id === amigo_id)?.nome}` : 'Meu amigo passou o cartão dele.' }}</span>
+            </div>
+          </div>
+          <Check v-if="amigo_id && responsabilidade === 'pelo_amigo'" class="w-5 h-5 text-blue-600" />
+        </button>
+      </div>
+
+      <div class="flex gap-3">
+        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+        <button 
+          v-if="responsabilidade !== 'eu'"
+          @click="nextStep" 
+          :disabled="!amigo_id"
+          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+        >
+          Próximo
         </button>
       </div>
     </div>
