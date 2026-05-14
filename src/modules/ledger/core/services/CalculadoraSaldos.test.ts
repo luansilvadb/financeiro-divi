@@ -91,4 +91,32 @@ describe('CalculadoraSaldos', () => {
     const saldos = CalculadoraSaldos.calcular([])
     expect(saldos.size).toBe(0)
   })
+
+  it('deve calcular acertos (quem paga quem) corretamente', () => {
+    const saldos = new Map<string, Dinheiro>([
+      ['A', Dinheiro.deReais(10)],  // Credor (+10)
+      ['B', Dinheiro.deReais(-10)], // Devedor (-10)
+    ])
+    const acertos = CalculadoraSaldos.calcularAcertos(saldos)
+    expect(acertos).toHaveLength(1)
+    expect(acertos[0].de).toBe('B')
+    expect(acertos[0].para).toBe('A')
+    expect(acertos[0].valor.centavos).toBe(1000)
+  })
+
+  it('deve lidar com múltiplos credores e devedores no netting', () => {
+    const saldos = new Map<string, Dinheiro>([
+      ['A', Dinheiro.deReais(50)],  // Credor (+50)
+      ['B', Dinheiro.deReais(-30)], // Devedor (-30)
+      ['C', Dinheiro.deReais(-20)], // Devedor (-20)
+    ])
+    const acertos = CalculadoraSaldos.calcularAcertos(saldos)
+    
+    // B deve pagar 30 para A, C deve pagar 20 para A
+    expect(acertos).toContainEqual(expect.objectContaining({ de: 'B', para: 'A' }))
+    expect(acertos).toContainEqual(expect.objectContaining({ de: 'C', para: 'A' }))
+    
+    const totalAcertado = acertos.reduce((acc, a) => acc + a.valor.centavos, 0)
+    expect(totalAcertado).toBe(5000)
+  })
 })
