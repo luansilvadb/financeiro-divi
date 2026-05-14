@@ -12,9 +12,11 @@ export class CalculadoraSaldos {
     const saldosCentavos = new Map<string, number>()
 
     for (const t of transacoes) {
-      // Crédito para quem pagou (origem_id)
-      const saldoAtualOrigem = saldosCentavos.get(t.origem_id) || 0
-      saldosCentavos.set(t.origem_id, saldoAtualOrigem + t.total.centavos)
+      // Crédito para quem pagou (pagamentos)
+      for (const p of t.pagamentos) {
+        const saldoAtualPagador = saldosCentavos.get(p.membro_id) || 0
+        saldosCentavos.set(p.membro_id, saldoAtualPagador + p.valor.centavos)
+      }
 
       // Débito para os beneficiários
       for (const d of t.divisoes) {

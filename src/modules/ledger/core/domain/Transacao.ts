@@ -3,11 +3,16 @@ import { Divisao } from './Divisao'
 
 export type TransacaoStatus = 'pendente' | 'auditado' | 'em_disputa'
 
+export interface Pagamento {
+  membro_id: string
+  valor: Dinheiro
+}
+
 export interface TransacaoProps {
   id: string
   descricao: string
   total: Dinheiro
-  origem_id: string
+  pagamentos: Pagamento[]
   pagador_id: string
   divisoes: Divisao[]
   status: TransacaoStatus
@@ -25,11 +30,22 @@ function validarSomaDivisoes(divisoes: Divisao[], total: Dinheiro) {
   }
 }
 
+function validarSomaPagamentos(pagamentos: Pagamento[], total: Dinheiro) {
+  const soma = pagamentos.reduce(
+    (acc, pagamento) => acc.somar(pagamento.valor),
+    Dinheiro.deCentavos(0)
+  )
+
+  if (!soma.equals(total)) {
+    throw new Error('A soma dos pagamentos deve ser igual ao total da transação')
+  }
+}
+
 export class Transacao {
   public readonly id: string
   public readonly descricao: string
   public readonly total: Dinheiro
-  public readonly origem_id: string
+  public readonly pagamentos: Pagamento[]
   public readonly pagador_id: string
   public readonly divisoes: Divisao[]
   public readonly status: TransacaoStatus
@@ -37,11 +53,12 @@ export class Transacao {
 
   constructor(props: TransacaoProps) {
     validarSomaDivisoes(props.divisoes, props.total)
+    validarSomaPagamentos(props.pagamentos, props.total)
     
     this.id = props.id
     this.descricao = props.descricao
     this.total = props.total
-    this.origem_id = props.origem_id
+    this.pagamentos = props.pagamentos
     this.pagador_id = props.pagador_id
     this.divisoes = props.divisoes
     this.status = props.status
