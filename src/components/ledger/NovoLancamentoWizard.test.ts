@@ -110,6 +110,13 @@ describe('NovoLancamentoWizard', () => {
     await wrapper.find('button.bg-blue-600').trigger('click')
     
     // Passo 3 -> Finalizar
+    // Selecionar quem participa (Luan)
+    const avatars = wrapper.findAll('.w-16.h-16')
+    await avatars[0].trigger('click')
+    
+    // Selecionar quem paga (Luan)
+    await avatars[4].trigger('click')
+    
     await wrapper.find('button.bg-green-600').trigger('click')
     
     expect(wrapper.emitted('salvar')).toBeTruthy()
@@ -135,13 +142,15 @@ describe('NovoLancamentoWizard', () => {
     await wrapper.find('input[type="text"]').setValue('Pizza')
     await wrapper.find('button.bg-blue-600').trigger('click')
     
-    // Passo 3: Inicialmente apenas 'eu' (Luan)
+    // Passo 3: Inicialmente vazio
     expect(wrapper.text()).toContain('R$ 120,00') // Total
-    expect(wrapper.text()).toContain('R$ 120,00') // Para cada um (1 pessoa)
     
-    // Selecionar Maria (segundo membro)
-    // Os membros são: { id: 'eu', nome: 'Luan (Você)' }, { id: 'maria', nome: 'Maria' }, ...
+    // Selecionar Luan (primeiro membro)
     const avatars = wrapper.findAll('.w-16.h-16')
+    await avatars[0].trigger('click')
+    expect(wrapper.text()).toContain('R$ 120,00') // Para cada um (1 pessoa)
+
+    // Selecionar Maria (segundo membro)
     await avatars[1].trigger('click') // Clica na Maria
     
     expect(wrapper.text()).toContain('R$ 60,00') // Para cada um (2 pessoas)
@@ -150,6 +159,9 @@ describe('NovoLancamentoWizard', () => {
     await wrapper.find('button.text-green-600').trigger('click')
     expect(wrapper.text()).toContain('R$ 30,00') // Para cada um (4 pessoas)
     
+    // Selecionar quem pagou (Maria - índice 5)
+    await avatars[5].trigger('click')
+
     // Finalizar
     await wrapper.find('button.bg-green-600').trigger('click')
     
@@ -157,5 +169,6 @@ describe('NovoLancamentoWizard', () => {
     const transacao: any = wrapper.emitted('salvar')![0][0]
     expect(transacao.divisoes).toHaveLength(4)
     expect(transacao.divisoes.every((d: any) => d.valor.centavos === 3000)).toBe(true)
+    expect(transacao.origem_id).toBe('maria')
   })
 })
