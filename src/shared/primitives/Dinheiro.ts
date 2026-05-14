@@ -27,4 +27,24 @@ export class Dinheiro {
   equals(outro: Dinheiro): boolean {
     return this.centavos === outro.centavos
   }
+
+  maiorQue(outro: Dinheiro): boolean {
+    return this.centavos > outro.centavos
+  }
+
+  menorQue(outro: Dinheiro): boolean {
+    return this.centavos < outro.centavos
+  }
+
+  isZero(): boolean {
+    return this.centavos === 0
+  }
+
+  isPositivo(): boolean {
+    return this.centavos > 0
+  }
+
+  isNegativo(): boolean {
+    return this.centavos < 0
+  }
 }

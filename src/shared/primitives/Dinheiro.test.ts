@@ -31,4 +31,30 @@ describe('Dinheiro Value Object', () => {
     const d2 = Dinheiro.deReais(5.50)
     expect(d1.subtrair(d2).centavos).toBe(1450)
   })
+
+  describe('Comparisons', () => {
+    it('deve verificar maiorQue', () => {
+      const d1 = Dinheiro.deReais(20)
+      const d2 = Dinheiro.deReais(10)
+      expect(d1.maiorQue(d2)).toBe(true)
+      expect(d2.maiorQue(d1)).toBe(false)
+    })
+
+    it('deve verificar menorQue', () => {
+      const d1 = Dinheiro.deReais(10)
+      const d2 = Dinheiro.deReais(20)
+      expect(d1.menorQue(d2)).toBe(true)
+      expect(d2.menorQue(d1)).toBe(false)
+    })
+
+    it('deve verificar se é zero', () => {
+      expect(Dinheiro.deCentavos(0).isZero()).toBe(true)
+      expect(Dinheiro.deCentavos(1).isZero()).toBe(false)
+    })
+
+    it('deve verificar se é positivo ou negativo', () => {
+      expect(Dinheiro.deCentavos(10).isPositivo()).toBe(true)
+      expect(Dinheiro.deCentavos(-10).isNegativo()).toBe(true)
+    })
+  })
 })
