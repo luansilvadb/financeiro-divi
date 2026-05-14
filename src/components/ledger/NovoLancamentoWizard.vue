@@ -14,14 +14,16 @@ const descricao = ref('')
 
 const fonte_id = ref('meu_cartao')
 const pagueiPorOutro = ref(false)
+const intencao = ref<'solo' | 'split'>('solo')
 const responsabilidade = ref<'eu' | 'por_amigo' | 'pelo_amigo'>('eu')
 const amigo_id = ref('')
 
 const beneficiarios_selecionados = ref<string[]>(['eu'])
 const membros = [
-  { id: 'eu', nome: 'Eu' },
-  { id: 'colega_x', nome: 'Colega X' },
-  { id: 'colega_y', nome: 'Colega Y' }
+  { id: 'eu', nome: 'Luan (Você)' },
+  { id: 'maria', nome: 'Maria' },
+  { id: 'joao', nome: 'João' },
+  { id: 'paula', nome: 'Paula' }
 ]
 
 const emit = defineEmits(['salvar', 'cancelar'])
@@ -129,30 +131,30 @@ const prevStep = () => step.value--
 <template>
   <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
     <div v-if="step === 1">
-      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">"Você quer anotar um gasto ou um ganho?"</h2>
+      <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
       <div class="grid grid-cols-1 gap-4">
         <button 
           @click="tipo = 'gasto'; nextStep()"
-          class="flex items-center justify-between p-5 border-2 border-red-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group shadow-sm hover:shadow-md"
+          class="flex items-center justify-between p-6 border-2 border-red-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group shadow-sm hover:shadow-md"
         >
-          <div class="flex items-center gap-4">
-            <span class="text-4xl">💸</span>
+          <div class="flex items-center gap-5">
+            <div class="bg-red-100 p-3 rounded-xl text-3xl">💸</div>
             <div class="text-left">
               <span class="block font-bold text-gray-800 text-lg">Um gasto</span>
-              <span class="text-sm text-gray-500">Ex: Pizza, Aluguel, Uber</span>
+              <span class="text-sm text-gray-500">Dinheiro que saiu da conta</span>
             </div>
           </div>
           <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-red-500 transform group-hover:translate-x-1 transition-transform" />
         </button>
         <button 
           @click="tipo = 'ganho'; nextStep()"
-          class="flex items-center justify-between p-5 border-2 border-green-50 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group shadow-sm hover:shadow-md"
+          class="flex items-center justify-between p-6 border-2 border-green-50 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group shadow-sm hover:shadow-md"
         >
-          <div class="flex items-center gap-4">
-            <span class="text-4xl">💰</span>
+          <div class="flex items-center gap-5">
+            <div class="bg-green-100 p-3 rounded-xl text-3xl">💰</div>
             <div class="text-left">
               <span class="block font-bold text-gray-800 text-lg">Um ganho</span>
-              <span class="text-sm text-gray-500">Ex: Salário, Reembolso</span>
+              <span class="text-sm text-gray-500">Dinheiro que entrou na conta</span>
             </div>
           </div>
           <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-green-500 transform group-hover:translate-x-1 transition-transform" />
@@ -161,52 +163,55 @@ const prevStep = () => step.value--
     </div>
 
     <div v-else-if="step === 2">
-      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">
-        {{ tipo === 'gasto' ? '"Qual é o valor desse gasto?"' : '"Qual o valor que você recebeu?"' }}
+      <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
+        {{ tipo === 'gasto' ? 'Quanto você gastou?' : 'Quanto você recebeu?' }}
       </h2>
-      <div class="mb-8 text-center bg-gray-50 p-6 rounded-2xl border-2 border-dashed border-gray-200">
-        <span class="text-gray-400 text-2xl mr-2">R$</span>
-        <input 
-          v-model.number="valor" 
-          type="number" 
-          step="0.01"
-          placeholder="0,00" 
-          autofocus
-          class="w-3/4 text-5xl font-mono text-center bg-transparent border-b-4 border-blue-500 focus:outline-none text-blue-600"
-        />
+      <div class="mb-10 text-center bg-gray-50 p-8 rounded-3xl border-2 border-dashed border-gray-200">
+        <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Valor Total</div>
+        <div class="flex items-center justify-center">
+          <span class="text-gray-400 text-3xl font-mono mr-2">R$</span>
+          <input 
+            v-model.number="valor" 
+            type="number" 
+            step="0.01"
+            placeholder="0,00" 
+            autofocus
+            class="w-3/4 text-6xl font-mono text-center bg-transparent border-none focus:outline-none text-blue-600 font-bold"
+          />
+        </div>
       </div>
-      <div class="flex gap-3">
-        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+      <div class="flex gap-4">
+        <button @click="prevStep" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
         <button 
           @click="nextStep" 
           :disabled="valor <= 0"
-          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+          class="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-100 disabled:opacity-50 disabled:shadow-none"
         >
-          Próximo
+          Próximo ➔
         </button>
       </div>
     </div>
 
     <div v-else-if="step === 3">
-      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">
-        {{ tipo === 'gasto' ? '"Me conta, o que você pagou?"' : '"Me conta, de onde veio esse dinheiro?"' }}
+      <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">
+        {{ tipo === 'gasto' ? 'Com o que você gastou?' : 'De onde veio esse dinheiro?' }}
       </h2>
-      <div class="mb-8">
+      <div class="mb-10">
         <input 
           v-model="descricao" 
           type="text" 
           :placeholder="tipo === 'gasto' ? 'Ex: Pizza, Aluguel, Sorvete...' : 'Ex: Salário, Venda do sofá...'" 
-          class="w-full p-4 text-lg border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50"
+          class="w-full p-5 text-xl border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:outline-none bg-gray-50 transition-colors"
         />
       </div>
-      <div class="flex gap-3">
-        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+      <div class="flex gap-4">
+        <button @click="prevStep" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
         <button 
           @click="nextStep" 
           :disabled="!descricao"
-          class="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+          class="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-100 disabled:opacity-50 disabled:shadow-none"
         >
-          Próximo
+          Próximo ➔
         </button>
       </div>
     </div>
