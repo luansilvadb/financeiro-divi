@@ -1,0 +1,47 @@
+<h2>O "Quem vai pagar?" (Passo 4) 💳</h2>
+<p class="subtitle">Resolvendo a dúvida do cartão emprestado com opções claras.</p>
+
+<div class="mockup">
+  <div class="mockup-body" style="padding: 20px;">
+    <p style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">"Quem vai pagar esse gasto?"</p>
+    
+    <div class="options">
+      <div class="option" data-choice="eu" onclick="toggleSelect(this)">
+        <div class="letter">1</div>
+        <div class="content">
+          <h3>"Eu mesmo!"</h3>
+          <p>Eu passei o meu cartão ou dei meu dinheiro.</p>
+        </div>
+      </div>
+      
+      <div class="option" data-choice="por-amigo" onclick="toggleSelect(this)">
+        <div class="letter">2</div>
+        <div class="content">
+          <h3>"Eu paguei para um amigo"</h3>
+          <p>Eu passei o meu cartão, mas a conta não é minha.</p>
+        </div>
+      </div>
+
+      <div class="option" data-choice="pelo-amigo" onclick="toggleSelect(this)">
+        <div class="letter">3</div>
+        <div class="content">
+          <h3>"Um amigo pagou para mim"</h3>
+          <p>Meu amigo passou o cartão dele, mas eu vou pagar ele depois.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Como o sistema entende isso:</h3>
+  <ul>
+    <li><strong>Opção 1</strong>: Você é o pagador e o beneficiário (sem dívida).</li>
+    <li><strong>Opção 2</strong>: Você é o pagador, o amigo fica devendo para você.</li>
+    <li><strong>Opção 3</strong>: O amigo é o pagador, você fica devendo para ele.</li>
+  </ul>
+</div>
+
+<div style="display:flex;align-items:center;justify-content:center;min-height:10vh">
+  <p class="subtitle">Essa lógica com esses nomes de botões resolve o problema do entendimento?</p>
+</div>
