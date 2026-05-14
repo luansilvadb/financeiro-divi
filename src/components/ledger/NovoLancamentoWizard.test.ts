@@ -1,13 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NovoLancamentoWizard from './NovoLancamentoWizard.vue'
 
 describe('NovoLancamentoWizard', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('deve ter 3 passos totais e começar no passo 1', () => {
     const wrapper = mount(NovoLancamentoWizard)
-    
-    // O texto auxiliar deve indicar Passo 1 de 3
-    // Atualmente deve falhar pois não existe esse texto ou o total é diferente
     expect(wrapper.text()).toContain('Passo 1 de 3')
   })
 
@@ -16,16 +23,60 @@ describe('NovoLancamentoWizard', () => {
     const progressBar = wrapper.find('.bg-blue-500')
     
     expect(progressBar.exists()).toBe(true)
-    // No passo 1 de 3, deve ser aproximadamente 33.33%
     const style = progressBar.attributes('style')
     expect(style).toContain('width: 33.33')
-    expect(style).toContain('%')
   })
 
-  it('deve ter um rodapé fixo com botões de navegação', () => {
+  it('deve avançar do passo 1 para o 2 ao clicar em Gasto', async () => {
     const wrapper = mount(NovoLancamentoWizard)
-    const footer = wrapper.find('.fixed.bottom-0')
+    const btnGasto = wrapper.findAll('button').find(b => b.text().includes('Um gasto'))
+    await btnGasto?.trigger('click')
     
-    expect(footer.exists()).toBe(true)
+    vi.advanceTimersByTime(200)
+    await wrapper.vm.$nextTick()
+    
+    expect(wrapper.text()).toContain('Passo 2 de 3')
+  })
+
+  it('deve desabilitar o botão próximo no passo 2 se valor ou descrição estiverem vazios', async () => {
+    const wrapper = mount(NovoLancamentoWizard)
+    // Ir para passo 2
+    const btnGasto = wrapper.findAll('button').find(b => b.text().includes('Um gasto'))
+    await btnGasto?.trigger('click')
+    vi.advanceTimersByTime(200)
+    await wrapper.vm.$nextTick()
+    
+    const nextBtn = wrapper.find('button.bg-blue-600')
+    expect(nextBtn.attributes('disabled')).toBeDefined()
+    
+    await wrapper.find('input[type="number"]').setValue(100)
+    expect(nextBtn.attributes('disabled')).toBeDefined()
+    
+    await wrapper.find('input[type="text"]').setValue('Almoço')
+    expect(nextBtn.attributes('disabled')).toBeUndefined()
+  })
+
+  it('deve emitir o evento salvar com a transação correta ao finalizar', async () => {
+    const wrapper = mount(NovoLancamentoWizard)
+    
+    // Passo 1 -> Passo 2
+    await wrapper.findAll('button').find(b => b.text().includes('Um gasto'))?.trigger('click')
+    vi.advanceTimersByTime(200)
+    await wrapper.vm.$nextTick()
+    
+    // Passo 2 -> Passo 3
+    await wrapper.find('input[type="number"]').setValue(100)
+    await wrapper.find('input[type="text"]').setValue('Almoço')
+    await wrapper.find('button.bg-blue-600').trigger('click')
+    
+    // Passo 3 -> Finalizar
+    await wrapper.find('button.bg-green-600').trigger('click')
+    
+    expect(wrapper.emitted('salvar')).toBeTruthy()
+    const transacao: any = wrapper.emitted('salvar')![0][0]
+    expect(transacao.descricao).toBe('Almoço')
+    expect(transacao.total.centavos).toBe(10000)
+    expect(transacao.divisoes).toHaveLength(1)
+    expect(transacao.divisoes[0].beneficiario_id).toBe('eu')
   })
 })

@@ -11,7 +11,7 @@ const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
 const step = ref(1)
 const totalSteps = 3
-const tipo = ref<'gasto' | 'ganho'>('gasto')
+const tipo = ref<'gasto' | 'ganho' | null>(null)
 const valor = ref(0)
 const descricao = ref('')
 
@@ -126,6 +126,13 @@ const finalizar = () => {
 
 const nextStep = () => step.value++
 const prevStep = () => step.value--
+
+const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
+  tipo.value = novoTipo
+  setTimeout(() => {
+    nextStep()
+  }, 200)
+}
 </script>
 
 <template>
@@ -137,8 +144,11 @@ const prevStep = () => step.value--
         <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
         <div class="grid grid-cols-1 gap-4">
           <button 
-            @click="tipo = 'gasto'; nextStep()"
-            class="flex items-center justify-between p-6 border-2 border-red-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group shadow-sm hover:shadow-md"
+            @click="selecionarTipo('gasto')"
+            :class="[
+              'flex items-center justify-between p-6 border-2 rounded-2xl transition-all group shadow-sm hover:shadow-md',
+              tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-red-50 hover:border-red-500 hover:bg-red-50'
+            ]"
           >
             <div class="flex items-center gap-5">
               <div class="bg-red-100 p-3 rounded-xl text-3xl">💸</div>
@@ -147,11 +157,14 @@ const prevStep = () => step.value--
                 <span class="text-sm text-gray-500">Dinheiro que saiu da conta</span>
               </div>
             </div>
-            <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-red-500 transform group-hover:translate-x-1 transition-transform" />
+            <ArrowRight :class="['w-6 h-6 transform group-hover:translate-x-1 transition-all', tipo === 'gasto' ? 'text-red-500' : 'text-gray-300 group-hover:text-red-500']" />
           </button>
           <button 
-            @click="tipo = 'ganho'; nextStep()"
-            class="flex items-center justify-between p-6 border-2 border-green-50 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group shadow-sm hover:shadow-md"
+            @click="selecionarTipo('ganho')"
+            :class="[
+              'flex items-center justify-between p-6 border-2 rounded-2xl transition-all group shadow-sm hover:shadow-md',
+              tipo === 'ganho' ? 'border-green-500 bg-green-50' : 'border-green-50 hover:border-green-500 hover:bg-green-50'
+            ]"
           >
             <div class="flex items-center gap-5">
               <div class="bg-green-100 p-3 rounded-xl text-3xl">💰</div>
@@ -160,7 +173,7 @@ const prevStep = () => step.value--
                 <span class="text-sm text-gray-500">Dinheiro que entrou na conta</span>
               </div>
             </div>
-            <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-green-500 transform group-hover:translate-x-1 transition-transform" />
+            <ArrowRight :class="['w-6 h-6 transform group-hover:translate-x-1 transition-all', tipo === 'ganho' ? 'text-green-500' : 'text-gray-300 group-hover:text-green-500']" />
           </button>
         </div>
       </div>
