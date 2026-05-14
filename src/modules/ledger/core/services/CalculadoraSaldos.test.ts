@@ -12,7 +12,6 @@ describe('CalculadoraSaldos', () => {
       descricao: 'Aluguel',
       total: Dinheiro.deReais(100),
       pagamentos: [{ membro_id: 'A', valor: Dinheiro.deReais(100) }],
-      pagador_id: 'A',
       status: 'pendente',
       data: new Date(),
       divisoes: [
@@ -34,7 +33,6 @@ describe('CalculadoraSaldos', () => {
       descricao: 'T1',
       total: Dinheiro.deReais(100),
       pagamentos: [{ membro_id: 'A', valor: Dinheiro.deReais(100) }],
-      pagador_id: 'A',
       status: 'pendente',
       data: new Date(),
       divisoes: [
@@ -49,7 +47,6 @@ describe('CalculadoraSaldos', () => {
       descricao: 'T2',
       total: Dinheiro.deReais(40),
       pagamentos: [{ membro_id: 'B', valor: Dinheiro.deReais(40) }],
-      pagador_id: 'B',
       status: 'pendente',
       data: new Date(),
       divisoes: [
@@ -71,7 +68,6 @@ describe('CalculadoraSaldos', () => {
       descricao: 'Presente',
       total: Dinheiro.deReais(60),
       pagamentos: [{ membro_id: 'A', valor: Dinheiro.deReais(60) }],
-      pagador_id: 'A',
       status: 'pendente',
       data: new Date(),
       divisoes: [
