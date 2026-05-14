@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { Check, User, Save, ArrowLeft } from 'lucide-vue-next'
-// Note: Dinheiro will be used later for validation/formatting
-// import { Dinheiro } from '../../shared/primitives/Dinheiro'
+import { Dinheiro } from '../../shared/primitives/Dinheiro'
+import { Transacao } from '../../modules/ledger/core/domain/Transacao'
+import { Divisao } from '../../modules/ledger/core/domain/Divisao'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
@@ -10,7 +11,7 @@ const step = ref(1)
 const valor = ref(0)
 const descricao = ref('')
 
-const fonte_id = ref('meu_cartao')
+const fonte_id = ref('eu') // Changed to match member IDs for simplicity
 const pagador_id = ref('eu')
 const pagueiPorOutro = ref(false)
 
@@ -20,6 +21,8 @@ const membros = [
   { id: 'colega_x', nome: 'Colega X' },
   { id: 'colega_y', nome: 'Colega Y' }
 ]
+
+const emit = defineEmits(['salvar', 'cancelar'])
 
 onMounted(() => {
   const saved = localStorage.getItem(STORAGE_KEY)
@@ -64,18 +67,35 @@ const toggleBeneficiario = (id: string) => {
 }
 
 const finalizar = () => {
-  console.log('Transação Finalizada:', {
-    valor: valor.value,
-    descricao: descricao.value,
-    fonte: fonte_id.value,
-    pagador: pagueiPorOutro.value ? pagador_id.value : 'eu',
-    beneficiarios: beneficiarios_selecionados.value
+  const total = Dinheiro.deReais(valor.value)
+  const valorPorPessoa = Dinheiro.deCentavos(Math.floor(total.centavos / beneficiarios_selecionados.value.length))
+  
+  // Distribute remainder to first person (simple approach for V1)
+  const remainder = total.centavos % beneficiarios_selecionados.value.length
+  
+  const divisoes = beneficiarios_selecionados.value.map((id, index) => {
+    const valorDivisao = index === 0 
+      ? Dinheiro.deCentavos(valorPorPessoa.centavos + remainder)
+      : valorPorPessoa
+    return new Divisao(id, valorDivisao)
   })
+
+  const transacao = new Transacao({
+    id: crypto.randomUUID(),
+    descricao: descricao.value,
+    total,
+    origem_id: fonte_id.value,
+    pagador_id: pagueiPorOutro.value ? pagador_id.value : 'eu',
+    divisoes,
+    status: 'pendente',
+    data: new Date()
+  })
+
+  emit('salvar', transacao)
 
   // Clear draft
   localStorage.removeItem(STORAGE_KEY)
 
-  alert('Transação salva com sucesso! (Veja o console)')
   // Reset wizard
   step.value = 1
   valor.value = 0
