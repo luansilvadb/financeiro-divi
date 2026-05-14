@@ -1,0 +1,26 @@
+<h2>How should DIVI handle expense splits?</h2>
+<p class="subtitle">The brief mentions "weights" (e.g., room size, income). Which model should be the default?</p>
+
+<div class="options">
+  <div class="option" data-choice="weights" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Dynamic Weights (Recommended)</h3>
+      <p>Assign numbers (e.g., 2 for Master Room, 1 for Small Room). System calculates shares automatically.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="fixed" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Fixed Percentages / Amounts</h3>
+      <p>Manual entry for every expense (e.g., Person A pays 60%, Person B 40%).</p>
+    </div>
+  </div>
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid / Per-Category</h3>
+      <p>Rent by weight, Groceries equally, Utilities by usage. Complex but flexible.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,36 @@
+<h2>Proposed Architecture: DIVI V1</h2>
+<p class="subtitle">A high-precision financial orchestrator with a focus on auditability.</p>
+
+<div class="mockup">
+  <div class="mockup-header">System Components</div>
+  <div class="mockup-body">
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      <div class="section">
+        <strong>Frontend: Vue 3 + TypeScript (Vite)</strong>
+        <ul>
+          <li><strong>PWA:</strong> Offline support for entry, OCR for receipts.</li>
+          <li><strong>Store:</strong> Pinia for state management.</li>
+          <li><strong>UI:</strong> Vanilla CSS (SFC style) for custom, polished look.</li>
+        </ul>
+      </div>
+      <div class="section">
+        <strong>Backend: Supabase</strong>
+        <ul>
+          <li><strong>Auth:</strong> Email/Password + Social (Google).</li>
+          <li><strong>Database:</strong> PostgreSQL (RLS for P2P privacy).</li>
+          <li><strong>Storage:</strong> Comprovantes (Receipts) images.</li>
+        </ul>
+      </div>
+      <div class="section">
+        <strong>Core Logic: Ledger Service</strong>
+        <ul>
+          <li>Distinguishes <em>Quem Pagou</em>, <em>Quem Deve</em>, and <em>Beneficiários</em>.</li>
+          <li>Handles hybrid splits (Weights, Equal, Fixed).</li>
+          <li>Immutable logs for every transaction change.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>Does this architecture look right for the "Walking Skeleton"?</p>
