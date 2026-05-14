@@ -99,9 +99,24 @@ O `NovoLancamentoWizard` deve persistir o estado parcial no `localStorage` a cad
 - Chave: `divi_rascunho_novo_lancamento`.
 - Ao abrir o wizard, o sistema verifica se existe um rascunho e oferece a recuperação.
 
-## 8. Próximos Passos
+## 8. Dashboard e Saldos
+
+### Lógica de Cálculo de Saldo (Netting)
+Para cada membro, o saldo líquido é calculado como:
+- **Crédito (+):** Soma de todas as transações onde o membro é a `origem_id` (Fonte).
+- **Débito (-):** Soma de todas as participações do membro nas divisões (`divisao.valor`) de todas as transações.
+
+O sistema deve consolidar esses valores para sugerir o menor número de transferências entre os membros para zerar os saldos da casa.
+
+### UI: Dashboard (Activity Feed & Balances)
+- **Sumário de Saldos:** Exibição clara do saldo individual e das transferências sugeridas (Netting).
+- **Drilldown de Auditoria:** Ao clicar em um saldo, exibir a lista de transações (Créditos e Débitos) que geraram aquele valor.
+- **Feed de Atividades:** Lista cronológica de todas as transações com status e descrição.
+
+## 9. Próximos Passos
 1. Setup do projeto Vue 3 + Tailwind + Vitest. (CONCLUÍDO)
 2. Implementação do Módulo de Ledger (Core Domain). (CONCLUÍDO)
 3. Implementação do componente de UI `NovoLancamentoWizard`. (CONCLUÍDO)
-4. Implementação de Persistência Local (LocalStorage) e Auto-save.
-5. Integração com Supabase (Adapters).
+4. Implementação de Persistência Local (LocalStorage) e Auto-save. (CONCLUÍDO)
+5. Implementação da Lógica de Saldos e Dashboard.
+6. Integração com Supabase (Adapters).

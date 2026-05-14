@@ -1,0 +1,35 @@
+<h2>Dashboard: Visualizando a "Verdade"</h2>
+<p class="subtitle">Como mostrar quem deve quanto, sem gerar confusão?</p>
+
+<div class="options">
+  <div class="option" data-choice="balance_cards" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Cards de Saldo</h3>
+      <p>Foco no indivíduo: "Luan deve R$ 50", "Flatmate recebe R$ 30". Direto ao ponto.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="net_settlement" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Liquidação Simplificada (Netting)</h3>
+      <p>O sistema calcula o menor número de transferências possíveis. "Luan paga R$ 20 para Flatmate".</p>
+    </div>
+  </div>
+  <div class="option" data-choice="audit_log" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Histórico Detalhado (Auditoria)</h3>
+      <p>Foco na transparência: Lista cronológica de quem pagou o quê, permitindo "Raise Flag".</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 20px;">
+  <h3>Lógica do Dashboard</h3>
+  <p>Para calcular o saldo de um membro:</p>
+  <ul>
+    <li><strong>(+) Créditos:</strong> Transações onde ele foi a <code>Fonte</code> (tirou do próprio bolso).</li>
+    <li><strong>(-) Débitos:</strong> Transações onde ele foi o <code>Pagador</code> ou <code>Beneficiário</code> (usufruiu do dinheiro).</li>
+  </ul>
+</div>

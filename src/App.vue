@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
+import ActivityFeed from './components/ledger/ActivityFeed.vue'
 import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from './modules/ledger/core/domain/Transacao'
@@ -43,13 +44,19 @@ const handleSalvarTransacao = async (t: Transacao) => {
     </header>
 
     <main>
-      <DashboardSaldos 
-        v-if="currentView === 'dashboard'" 
-        :saldos="saldos" 
-        :membros="membros"
-        :transacoes="transacoes"
-        @novo-lancamento="currentView = 'wizard'"
-      />
+      <div v-if="currentView === 'dashboard'" class="space-y-6">
+        <DashboardSaldos 
+          :saldos="saldos" 
+          :membros="membros"
+          :transacoes="transacoes"
+          @novo-lancamento="currentView = 'wizard'"
+        />
+
+        <ActivityFeed 
+          :transacoes="transacoes"
+          :membros="membros"
+        />
+      </div>
       
       <NovoLancamentoWizard 
         v-else-if="currentView === 'wizard'"
