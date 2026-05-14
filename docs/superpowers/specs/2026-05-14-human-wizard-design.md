@@ -8,20 +8,20 @@
 
 O Wizard será dividido em 5 etapas baseadas em perguntas diretas:
 
-### Passo 1: O Tipo de Registro
-*   **Pergunta:** "O que você deseja registrar agora?"
+### Passo 1: O Início da Conversa
+*   **Pergunta:** "Você quer anotar um gasto ou um ganho?"
 *   **Opções:**
-    *   💸 **"Gastei dinheiro"** (Cria uma despesa)
-    *   💰 **"Recebi dinheiro"** (Cria uma receita/reembolso)
+    *   💸 **"Um gasto"** (Ex: Pizza, Aluguel, Uber)
+    *   💰 **"Um ganho"** (Ex: Salário, Reembolso, Venda)
 
 ### Passo 2: O Valor
-*   **Pergunta (Despesa):** "Qual é o valor dessa despesa?"
-*   **Pergunta (Receita):** "Qual o valor que você recebeu?"
+*   **Pergunta (Gasto):** "Qual é o valor desse gasto?"
+*   **Pergunta (Ganho):** "Qual o valor que você recebeu?"
 *   **UI:** Campo numérico grande com prefixo "R$".
 
 ### Passo 3: O Motivo (Descrição)
-*   **Pergunta (Despesa):** "Me conta, o que você pagou?"
-*   **Pergunta (Receita):** "Me conta, de onde veio esse dinheiro?"
+*   **Pergunta (Gasto):** "Me conta, o que você pagou?"
+*   **Pergunta (Ganho):** "Me conta, de onde veio esse dinheiro?"
 *   **Placeholder:** "Ex: Pizza com a galera, Aluguel, Cinema..."
 
 ### Passo 4: O Pagador
