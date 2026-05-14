@@ -305,34 +305,35 @@ const prevStep = () => step.value--
     </div>
 
     <div v-else-if="step === 5">
-      <h2 class="text-xl font-bold mb-2 text-gray-800 text-center italic font-serif">"Além de você, quem mais aproveitou isso?"</h2>
-      <p class="text-xs text-gray-400 text-center mb-6">(Isso ajuda a dividir o valor entre os amigos)</p>
+      <h2 class="text-xl font-bold mb-2 text-gray-800 text-center">Quem passou o cartão?</h2>
+      <p class="text-sm text-gray-400 text-center mb-8">Selecione quem tirou o dinheiro do bolso agora.</p>
       
-      <div class="space-y-2 mb-8">
+      <div class="space-y-3 mb-8">
         <div 
-          v-for="membro in membros" 
-          :key="membro.id"
-          @click="toggleBeneficiario(membro.id)"
-          :class="['flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-50']"
+          v-for="membroId in beneficiarios_selecionados" 
+          :key="membroId"
+          @click="fonte_id = membroId"
+          :class="['flex items-center justify-between p-5 border-2 rounded-2xl cursor-pointer transition-all', fonte_id === membroId ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:border-blue-200']"
         >
-          <div class="flex items-center gap-3">
-            <div :class="['p-2 rounded-full', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400']">
-              <User class="w-5 h-5" />
+          <div class="flex items-center gap-4">
+            <div :class="['w-12 h-12 rounded-full flex items-center justify-center font-bold transition-colors', fonte_id === membroId ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400']">
+              {{ membros.find(m => m.id === membroId)?.nome.charAt(0) }}
             </div>
-            <span :class="['font-bold', beneficiarios_selecionados.includes(membro.id) ? 'text-blue-700' : 'text-gray-700']">
-              {{ membro.nome }}
+            <span :class="['font-bold', fonte_id === membroId ? 'text-blue-700' : 'text-gray-700']">
+              {{ membros.find(m => m.id === membroId)?.nome }}
             </span>
           </div>
-          <Check v-if="beneficiarios_selecionados.includes(membro.id)" class="w-6 h-6 text-blue-600" />
+          <div :class="['w-6 h-6 rounded-full border-2 flex items-center justify-center', fonte_id === membroId ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200']">
+            <Check v-if="fonte_id === membroId" class="w-4 h-4" />
+          </div>
         </div>
       </div>
 
-      <div class="flex gap-3">
-        <button @click="prevStep" class="flex-1 border-2 border-gray-100 p-4 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
+      <div class="flex gap-4">
+        <button @click="prevStep" class="flex-1 bg-white border-2 border-gray-100 p-5 rounded-2xl font-bold text-gray-400 hover:bg-gray-50 transition">Voltar</button>
         <button 
           @click="finalizar" 
-          :disabled="beneficiarios_selecionados.length === 0 || valor <= 0"
-          class="flex-1 bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-2"
+          class="flex-1 bg-green-600 text-white p-5 rounded-2xl font-bold hover:bg-green-700 transition shadow-xl shadow-green-100 flex items-center justify-center gap-2"
         >
           <Save class="w-5 h-5" /> Salvar
         </button>
