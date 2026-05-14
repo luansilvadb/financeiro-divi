@@ -17,25 +17,38 @@ const descricao = ref('')
 
 const valorInput = ref<HTMLInputElement | null>(null)
 
+const pagamentos = ref<Record<string, number>>({})
+
+// Inicializar pagamentos com 0 para todos os membros
+watch(() => props.membros, (novos) => {
+  novos.forEach(m => {
+    if (pagamentos.value[m.id] === undefined) {
+      pagamentos.value[m.id] = 0
+    }
+  })
+}, { immediate: true })
+
+const somaPagamentos = computed(() => {
+  return Object.values(pagamentos.value).reduce((acc, val) => acc + (val || 0), 0)
+})
+
+const restantePagamento = computed(() => {
+  return valor.value - somaPagamentos.value
+})
+
+const pagamentosEquilibrados = computed(() => {
+  // Usar pequena margem para evitar erros de ponto flutuante no input manual
+  return Math.abs(restantePagamento.value) < 0.001
+})
+
 const canAdvance = computed(() => {
   if (step.value === 1) return tipo.value !== null
   if (step.value === 2) return valor.value > 0 && descricao.value.length > 0
-  if (step.value === 3) return beneficiarios_selecionados.value.length > 0 && fonte_id.value !== null
+  if (step.value === 3) return beneficiarios_selecionados.value.length > 0 && pagamentosEquilibrados.value
   return false
 })
 
 const intencao = ref<'solo' | 'split'>('solo')
-
-// Watch for step changes to focus valorInput in step 2
-watch(step, (newStep) => {
-  if (newStep === 2) {
-    setTimeout(() => {
-      valorInput.value?.focus()
-    }, 400) // Wait for transition
-  }
-})
-
-const fonte_id = ref<string | null>(null)
 
 const beneficiarios_selecionados = ref<string[]>([])
 
@@ -56,9 +69,9 @@ onMounted(() => {
       if (data.step) step.value = data.step
       if (data.valor) valor.value = data.valor
       if (data.descricao) descricao.value = data.descricao
-      if (data.fonte_id) fonte_id.value = data.fonte_id
       if (data.intencao) intencao.value = data.intencao
       if (data.beneficiarios_selecionados) beneficiarios_selecionados.value = data.beneficiarios_selecionados
+      if (data.pagamentos) pagamentos.value = data.pagamentos
     } catch (e) {
       console.error('Erro ao restaurar rascunho:', e)
     }
@@ -71,9 +84,9 @@ watch(
     step: step.value,
     valor: valor.value,
     descricao: descricao.value,
-    fonte_id: fonte_id.value,
     intencao: intencao.value,
-    beneficiarios_selecionados: [...beneficiarios_selecionados.value]
+    beneficiarios_selecionados: [...beneficiarios_selecionados.value],
+    pagamentos: { ...pagamentos.value }
   }),
   (newState) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newState))
@@ -99,30 +112,29 @@ const toggleBeneficiario = (id: string) => {
 const finalizar = () => {
   const totalRaw = Dinheiro.deReais(valor.value)
   // Invert total if it's a "ganho" (income) for the system's ledger logic
-  // Note: Standard DIVI ledger treats everything as expense units. 
-  // We'll treat Ganho as a negative expense for now or a reverse credit.
   const total = tipo.value === 'ganho' ? Dinheiro.deCentavos(-totalRaw.centavos) : totalRaw
 
   // Determine beneficiaries based on selection
   const finalBeneficiarios = [...beneficiarios_selecionados.value]
-
   const partes = total.distribuir(finalBeneficiarios.length)
   
   const divisoes = finalBeneficiarios.map((id, index) => {
     return new Divisao(id, partes[index])
   })
 
-  // Mapping:
-  // origem_id is who swiped (fonte_id)
-  // pagador_id is 'eu' by default for simple ledger entries, 
-  // or can be the same as origem if it's a direct debt.
-  
+  // Gerar lista de pagamentos
+  const listaPagamentos = Object.entries(pagamentos.value)
+    .filter(([_, val]) => (val || 0) > 0)
+    .map(([membro_id, val]) => ({
+      membro_id,
+      valor: Dinheiro.deReais(val)
+    }))
+
   const transacao = new Transacao({
     id: crypto.randomUUID(),
     descricao: descricao.value,
     total,
-    origem_id: fonte_id.value!,
-    pagador_id: 'eu', 
+    pagamentos: listaPagamentos,
     divisoes,
     status: 'pendente',
     data: new Date()
@@ -139,8 +151,10 @@ const finalizar = () => {
   descricao.value = ''
   tipo.value = null
   intencao.value = 'solo'
-  fonte_id.value = null
   beneficiarios_selecionados.value = []
+  Object.keys(pagamentos.value).forEach(id => {
+    pagamentos.value[id] = 0
+  })
 }
 
 const nextStep = () => step.value++
@@ -250,21 +264,32 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
             </div>
           </div>
 
-          <div class="space-y-4">
-            <p class="font-bold text-gray-800">Quem pagou o valor total?</p>
-            <div class="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
-              <div 
-                v-for="membro in props.membros" 
-                :key="membro.id"
-                @click="fonte_id = membro.id"
-                class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
-              >
-                <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all border-4', fonte_id === membro.id ? 'bg-blue-600 border-blue-100 text-white scale-105' : 'bg-gray-100 border-transparent text-gray-400']">
+          <div class="space-y-4 border-t pt-6">
+            <div class="flex justify-between items-center">
+              <p class="font-bold text-gray-800">Quem abriu a carteira?</p>
+              <div :class="['text-[10px] font-black px-2 py-1 rounded-full transition-all', pagamentosEquilibrados ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 animate-pulse']">
+                {{ pagamentosEquilibrados ? '✅ Equilibrado' : `Faltam R$ ${restantePagamento.toFixed(2)}` }}
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div v-for="membro in props.membros" :key="membro.id" class="flex items-center gap-4 bg-gray-50/50 p-3 rounded-2xl border border-transparent hover:border-blue-100 transition-all">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm shadow-sm">
                   {{ membro.nome.charAt(0) }}
                 </div>
-                <span :class="['text-xs font-bold transition-colors', fonte_id === membro.id ? 'text-blue-600' : 'text-gray-400']">
-                  {{ membro.nome.split(' ')[0] }}
-                </span>
+                <div class="flex-1">
+                  <span class="block text-sm font-bold text-gray-700">{{ membro.nome }}</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 focus-within:border-blue-500 transition-all shadow-sm">
+                  <span class="text-[10px] font-bold text-gray-400">R$</span>
+                  <input 
+                    v-model.number="pagamentos[membro.id]" 
+                    type="number" 
+                    step="0.01"
+                    class="w-20 text-right font-bold text-gray-800 focus:outline-none bg-transparent text-sm"
+                    placeholder="0,00"
+                  />
+                </div>
               </div>
             </div>
           </div>
