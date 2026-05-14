@@ -5,6 +5,7 @@ import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import { Divisao } from '../../modules/ledger/core/domain/Divisao'
 import WizardProgressBar from './WizardProgressBar.vue'
+import WizardFooter from './WizardFooter.vue'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
@@ -231,26 +232,13 @@ const prevStep = () => step.value--
       </div>
     </div>
 
-    <!-- Sticky Footer -->
-    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-3 md:relative md:bg-transparent md:border-none md:p-0 md:mt-8">
-      <button v-if="step > 1" @click="prevStep" class="flex-1 px-6 py-4 bg-gray-50 text-gray-500 font-bold rounded-2xl">
-        Voltar
-      </button>
-      <button 
-        v-if="step < totalSteps" 
-        @click="nextStep" 
-        :disabled="!canAdvance"
-        class="flex-1 px-6 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-50"
-      >
-        Próximo
-      </button>
-      <button 
-        v-else 
-        @click="finalizar" 
-        class="flex-1 px-6 py-4 bg-green-600 text-white font-bold rounded-2xl shadow-lg shadow-green-200"
-      >
-        Salvar
-      </button>
-    </div>
+    <WizardFooter 
+      :step="step" 
+      :total-steps="totalSteps" 
+      :can-advance="canAdvance"
+      @next="nextStep"
+      @prev="prevStep"
+      @finish="finalizar"
+    />
   </div>
 </template>
