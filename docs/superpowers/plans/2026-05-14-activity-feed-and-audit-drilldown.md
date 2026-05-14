@@ -105,7 +105,7 @@ import ActivityFeed from './components/ledger/ActivityFeed.vue'
 **Files:**
 - Modify: `src/components/ledger/DashboardSaldos.vue`
 
-- [ ] **Step 1: Update DashboardSaldos.vue script**
+- [x] **Step 1: Update DashboardSaldos.vue script**
 
 ```vue
 <script setup lang="ts">
