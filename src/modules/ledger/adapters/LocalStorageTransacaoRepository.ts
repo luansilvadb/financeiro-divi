@@ -28,12 +28,34 @@ export class LocalStorageTransacaoRepository implements ITransacaoRepository {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
 
-    const raw = JSON.parse(data) as any[]
-    return raw.map(t => new Transacao({
-      ...t,
-      total: Dinheiro.deCentavos(t.total.centavos),
-      data: new Date(t.data),
-      divisoes: t.divisoes.map((d: any) => new Divisao(d.beneficiario_id, Dinheiro.deCentavos(d.valor.centavos)))
-    }))
+    try {
+      const raw = JSON.parse(data) as any[]
+      const transacoes: Transacao[] = []
+
+      for (const t of raw) {
+        try {
+          // Validação básica de estrutura
+          if (!t.total || typeof t.total.centavos !== 'number') continue
+          if (!t.divisoes || !Array.isArray(t.divisoes)) continue
+
+          const transacao = new Transacao({
+            ...t,
+            total: Dinheiro.deCentavos(t.total.centavos),
+            data: new Date(t.data),
+            divisoes: t.divisoes
+              .filter((d: any) => d.valor && typeof d.valor.centavos === 'number')
+              .map((d: any) => new Divisao(d.beneficiario_id, Dinheiro.deCentavos(d.valor.centavos)))
+          })
+          transacoes.push(transacao)
+        } catch (e) {
+          console.error('Ignorando transação corrompida:', t.id, e)
+        }
+      }
+
+      return transacoes
+    } catch (e) {
+      console.error('Erro ao ler LocalStorage, limpando dados corrompidos:', e)
+      return []
+    }
   }
 }
