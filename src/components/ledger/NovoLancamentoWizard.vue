@@ -18,9 +18,9 @@ const descricao = ref('')
 const valorInput = ref<HTMLInputElement | null>(null)
 
 const canAdvance = computed(() => {
-  if (step.value === 1) return true
+  if (step.value === 1) return tipo.value !== null
   if (step.value === 2) return valor.value > 0 && descricao.value.length > 0
-  if (step.value === 3) return beneficiarios_selecionados.value.length > 0
+  if (step.value === 3) return beneficiarios_selecionados.value.length > 0 && fonte_id.value !== null
   return false
 })
 
@@ -35,9 +35,9 @@ watch(step, (newStep) => {
   }
 })
 
-const fonte_id = ref('eu')
+const fonte_id = ref<string | null>(null)
 
-const beneficiarios_selecionados = ref<string[]>(['eu'])
+const beneficiarios_selecionados = ref<string[]>([])
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -137,10 +137,10 @@ const finalizar = () => {
   step.value = 1
   valor.value = 0
   descricao.value = ''
-  tipo.value = 'gasto'
+  tipo.value = null
   intencao.value = 'solo'
-  fonte_id.value = 'eu'
-  beneficiarios_selecionados.value = ['eu']
+  fonte_id.value = null
+  beneficiarios_selecionados.value = []
 }
 
 const nextStep = () => step.value++
