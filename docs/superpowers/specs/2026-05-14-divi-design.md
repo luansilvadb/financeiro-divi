@@ -61,8 +61,47 @@ A entidade central `Transação` deve conter:
 - `status`: Pendente, Auditado, Em Disputa (Flag).
 - `versao`: Controle de versão para imutabilidade.
 
-## 6. Próximos Passos
-1. Setup do projeto Vue 3 + Tailwind + Vitest.
-2. Implementação do Módulo de Ledger (Core Domain).
-3. Integração com Supabase (Adapters).
-4. Implementação da UI de Lançamento de Despesas.
+## 6. Interface de Usuário (UI)
+
+### Fluxo "Novo Lançamento" (Wizard de 3 Passos)
+O foco é reduzir a carga cognitiva mantendo a precisão do Ledger.
+
+- **Passo 1: Quanto e O Quê?**
+  - Input de valor (Dinheiro) com teclado numérico.
+  - Campo de descrição rápida.
+- **Passo 2: Quem e Como?**
+  - Seleção da **Fonte** (Cartão, Dinheiro, etc.).
+  - Toggle "Paguei por outra pessoa":
+    - Se ativado: Abre seletor para definir o **Pagador** (Quem é o dono da dívida).
+    - Se desativado: **Pagador** é definido automaticamente como o usuário logado.
+- **Passo 3: Para Quem? (Divisão)**
+  - Seleção de Beneficiários (múltipla escolha).
+  - Seletor de Tipo de Divisão:
+    - **Igual:** Divide o valor total igualmente entre os selecionados.
+    - **Pesos:** Permite atribuir pesos (ex: master 2, small 1).
+    - **Valores Fixos:** Entrada manual de valores para cada membro.
+
+## 7. Persistência e Ports
+
+### Port: ITransacaoRepository
+Interface definida no `core/ports` para abstrair a persistência:
+- `salvar(transacao: Transacao): Promise<void>`
+- `buscarPorId(id: string): Promise<Transacao | null>`
+- `listarTodas(): Promise<Transacao[]>`
+
+### Adapter: LocalStorage (V1)
+Implementação inicial para persistência local:
+- Serializa objetos `Transacao` para JSON.
+- Gerencia o estado no `localStorage` do navegador.
+
+### Lógica de Rascunho (Auto-save)
+O `NovoLancamentoWizard` deve persistir o estado parcial no `localStorage` a cada mudança de passo:
+- Chave: `divi_rascunho_novo_lancamento`.
+- Ao abrir o wizard, o sistema verifica se existe um rascunho e oferece a recuperação.
+
+## 8. Próximos Passos
+1. Setup do projeto Vue 3 + Tailwind + Vitest. (CONCLUÍDO)
+2. Implementação do Módulo de Ledger (Core Domain). (CONCLUÍDO)
+3. Implementação do componente de UI `NovoLancamentoWizard`. (CONCLUÍDO)
+4. Implementação de Persistência Local (LocalStorage) e Auto-save.
+5. Integração com Supabase (Adapters).

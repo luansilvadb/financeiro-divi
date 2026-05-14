@@ -5,8 +5,6 @@ import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { Divisao } from '../core/domain/Divisao'
 
 describe('LocalStorageTransacaoRepository', () => {
-  const STORAGE_KEY = 'divi_transactions'
-
   beforeEach(() => {
     localStorage.clear()
   })
@@ -34,5 +32,27 @@ describe('LocalStorageTransacaoRepository', () => {
     expect(buscada?.data).toBeInstanceOf(Date)
     expect(buscada?.data.toISOString()).toBe('2024-01-01T10:00:00.000Z')
     expect(buscada?.divisoes[0].valor).toBeInstanceOf(Dinheiro)
+  })
+
+  it('deve persistir dados entre instâncias diferentes do repositório', async () => {
+    const transacao = new Transacao({
+      id: '2',
+      descricao: 'Persistência',
+      total: Dinheiro.deReais(50),
+      origem_id: 'o',
+      pagador_id: 'p',
+      divisoes: [new Divisao('b', Dinheiro.deReais(50))],
+      status: 'pendente',
+      data: new Date()
+    })
+
+    const repo1 = new LocalStorageTransacaoRepository()
+    await repo1.salvar(transacao)
+
+    const repo2 = new LocalStorageTransacaoRepository()
+    const buscada = await repo2.buscarPorId('2')
+
+    expect(buscada?.id).toBe('2')
+    expect(buscada?.descricao).toBe('Persistência')
   })
 })

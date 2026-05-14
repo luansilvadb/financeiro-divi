@@ -1,0 +1,47 @@
+<h2>Mockup: Passo 2 - Quem pagou?</h2>
+<p class="subtitle">Resolvendo a lógica "Fonte vs Pagador" sem complicação.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Passo 2 de 3</div>
+  <div class="mockup-body">
+    <div class="section">
+      <div class="label">O dinheiro saiu de onde? (Fonte)</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button class="mock-button" style="background: #3b82f6; color: white;">Meu Cartão</button>
+        <button class="mock-button">Cartão do Colega</button>
+        <button class="mock-button">Dinheiro Vivo</button>
+        <button class="mock-button">Outro...</button>
+      </div>
+    </div>
+
+    <div class="section" style="border-top: 1px solid #ddd; pt-4">
+      <div class="label">Quem é o dono dessa dívida? (Pagador)</div>
+      <div style="display: flex; gap: 8px;">
+        <div style="padding: 8px 16px; border-radius: 20px; border: 2px solid #3b82f6; background: #eff6ff">Eu</div>
+        <div style="padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd;">O Grupo</div>
+        <div style="padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd;">Colega X</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; font-size: 0.9em;">
+      <strong>Resumo:</strong> Eu usei meu cartão para pagar uma dívida que é minha.
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="simple_default" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Padrão Simples</h3>
+      <p>A maioria das vezes a Fonte = Pagador. O app deve sugerir isso primeiro.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="explicit_toggle" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Toggle "Paguei para outro"</h3>
+      <p>Esconde a complexidade. Só mostra "Quem é o dono" se eu marcar que não é meu.</p>
+    </div>
+  </div>
+</div>

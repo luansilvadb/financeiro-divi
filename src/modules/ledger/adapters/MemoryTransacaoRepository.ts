@@ -1,4 +1,4 @@
-import { ITransacaoRepository } from '../core/ports/ITransacaoRepository'
+import type { ITransacaoRepository } from '../core/ports/ITransacaoRepository'
 import { Transacao } from '../core/domain/Transacao'
 
 export class MemoryTransacaoRepository implements ITransacaoRepository {

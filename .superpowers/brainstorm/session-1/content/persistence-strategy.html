@@ -1,0 +1,30 @@
+<h2>Estratégia Local-First (Mocked Adapters)</h2>
+<p class="subtitle">Como simularemos a persistência antes do Supabase.</p>
+
+<div class="options">
+  <div class="option" data-choice="local_storage" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>LocalStorage Adapter</h3>
+      <p>Persistência simples no navegador. Ideal para testar o fluxo de ponta a ponta sem internet.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="memory_adapter" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>In-Memory Adapter</h3>
+      <p>Dados resetam ao atualizar a página. Foco total em testes de unidade e velocidade de desenvolvimento.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 20px;">
+  <h3>Proposta de Schema Relacional</h3>
+  <p>Mesmo local-first, vamos modelar como se fosse SQL para facilitar a migração futura:</p>
+  <ul>
+    <li><strong>Casas:</strong> id, nome, membros_ids.</li>
+    <li><strong>Membros:</strong> id, nome, email.</li>
+    <li><strong>Transações:</strong> id, total, fonte_id, pagador_id, status.</li>
+    <li><strong>Divisões:</strong> transacao_id, beneficiario_id, valor.</li>
+  </ul>
+</div>

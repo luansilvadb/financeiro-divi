@@ -1,0 +1,39 @@
+<h2>Arquitetura do Adapter: LocalStorage</h2>
+<p class="subtitle">Implementando a persistência sem violar o isolamento do Core.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Fluxo de Dados</div>
+  <div class="mockup-body">
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      <div class="section">
+        <strong>1. Core (Use Case)</strong>
+        <p>Chama <code>repo.salvar(transacao)</code> sem saber onde os dados vão parar.</p>
+      </div>
+      <div class="section">
+        <strong>2. Port (Interface)</strong>
+        <p><code>ITransacaoRepository</code> define o contrato esperado pelo Core.</p>
+      </div>
+      <div class="section" style="background: #eff6ff; padding: 10px; border-radius: 4px;">
+        <strong>3. Adapter (LocalStorage)</strong>
+        <p>Implementa o contrato convertendo <code>Transacao</code> (Entidade) para JSON no <code>localStorage</code>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="auto_save" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Auto-save no Wizard</h3>
+      <p>Salvar rascunho automaticamente a cada passo concluído.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="seed_data" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Seed Data</h3>
+      <p>Iniciar com membros e casas pré-cadastrados para facilitar o teste.</p>
+    </div>
+  </div>
+</div>

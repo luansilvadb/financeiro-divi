@@ -1,4 +1,4 @@
-import { ITransacaoRepository } from '../core/ports/ITransacaoRepository'
+import type { ITransacaoRepository } from '../core/ports/ITransacaoRepository'
 import { Transacao } from '../core/domain/Transacao'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { Divisao } from '../core/domain/Divisao'
