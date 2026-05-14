@@ -51,4 +51,40 @@ export class Dinheiro {
   multiplicar(fator: number): Dinheiro {
     return new Dinheiro(Math.round(this.centavos * fator))
   }
+
+  distribuir(n: number): Dinheiro[] {
+    const quociente = Math.floor(this.centavos / n)
+    let resto = this.centavos % n
+
+    const resultados: Dinheiro[] = []
+    for (let i = 0; i < n; i++) {
+      const adicional = resto > 0 ? 1 : (resto < 0 ? -1 : 0)
+      resultados.push(new Dinheiro(quociente + adicional))
+      if (resto > 0) resto--
+      else if (resto < 0) resto++
+    }
+    return resultados
+  }
+
+  distribuirPorPesos(pesos: number[]): Dinheiro[] {
+    const totalPesos = pesos.reduce((acc, p) => acc + p, 0)
+    let centavosRestantes = this.centavos
+
+    const valores = pesos.map(p => {
+      const valor = Math.floor(this.centavos * p / totalPesos)
+      centavosRestantes -= valor
+      return valor
+    })
+
+    // Distribuir o resto (centavos órfãos) pelos primeiros pesos
+    for (let i = 0; i < Math.abs(centavosRestantes); i++) {
+      if (centavosRestantes > 0) {
+        valores[i]++
+      } else {
+        valores[i]--
+      }
+    }
+
+    return valores.map(c => new Dinheiro(c))
+  }
 }

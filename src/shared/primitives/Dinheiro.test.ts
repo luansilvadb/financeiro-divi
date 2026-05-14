@@ -63,4 +63,41 @@ describe('Dinheiro Value Object', () => {
     const d = Dinheiro.deReais(10.55)
     expect(d.multiplicar(0.5).centavos).toBe(528)
   })
+
+  describe('Allocation', () => {
+    it('deve distribuir o valor proporcionalmente sem perder centavos', () => {
+      // R$ 0,05 distribuído em 3 partes iguais
+      // 5 centavos / 3 = 1.666...
+      // Deve resultar em [2, 2, 1] ou [2, 1, 2] etc, totalizando 5.
+      const d = Dinheiro.deCentavos(5)
+      const partes = d.distribuir(3)
+      
+      expect(partes.length).toBe(3)
+      const soma = partes.reduce((acc, p) => acc + p.centavos, 0)
+      expect(soma).toBe(5)
+      expect(partes[0].centavos).toBe(2)
+      expect(partes[1].centavos).toBe(2)
+      expect(partes[2].centavos).toBe(1)
+    })
+
+    it('deve distribuir por pesos', () => {
+      // R$ 1,00 (100 centavos) com pesos 70 e 30
+      const d = Dinheiro.deReais(1)
+      const partes = d.distribuirPorPesos([70, 30])
+      expect(partes[0].centavos).toBe(70)
+      expect(partes[1].centavos).toBe(30)
+    })
+
+    it('deve distribuir por pesos com centavos órfãos', () => {
+      // R$ 0,05 distribuído com pesos 1, 1, 1 (33.3% cada)
+      // 5 / 3 = 1.666...
+      // Deve resultar em [2, 2, 1]
+      const d = Dinheiro.deCentavos(5)
+      const partes = d.distribuirPorPesos([1, 1, 1])
+      expect(partes[0].centavos).toBe(2)
+      expect(partes[1].centavos).toBe(2)
+      expect(partes[2].centavos).toBe(1)
+      expect(partes.reduce((acc, p) => acc + p.centavos, 0)).toBe(5)
+    })
+  })
 })
