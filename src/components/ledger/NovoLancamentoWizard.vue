@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Check, User, Save, ArrowLeft } from 'lucide-vue-next'
 // Note: Dinheiro will be used later for validation/formatting
 // import { Dinheiro } from '../../shared/primitives/Dinheiro'
 
@@ -10,6 +11,38 @@ const descricao = ref('')
 const fonte_id = ref('meu_cartao')
 const pagador_id = ref('eu')
 const pagueiPorOutro = ref(false)
+
+const beneficiarios_selecionados = ref<string[]>(['eu'])
+const membros = [
+  { id: 'eu', nome: 'Eu' },
+  { id: 'colega_x', nome: 'Colega X' },
+  { id: 'colega_y', nome: 'Colega Y' }
+]
+
+const toggleBeneficiario = (id: string) => {
+  if (beneficiarios_selecionados.value.includes(id)) {
+    beneficiarios_selecionados.value = beneficiarios_selecionados.value.filter(b => b !== id)
+  } else {
+    beneficiarios_selecionados.value.push(id)
+  }
+}
+
+const finalizar = () => {
+  console.log('Transação Finalizada:', {
+    valor: valor.value,
+    descricao: descricao.value,
+    fonte: fonte_id.value,
+    pagador: pagueiPorOutro.value ? pagador_id.value : 'eu',
+    beneficiarios: beneficiarios_selecionados.value
+  })
+  alert('Transação salva com sucesso! (Veja o console)')
+  // Reset wizard
+  step.value = 1
+  valor.value = 0
+  descricao.value = ''
+  pagueiPorOutro.value = false
+  beneficiarios_selecionados.value = ['eu']
+}
 
 const nextStep = () => step.value++
 const prevStep = () => step.value--
@@ -83,6 +116,41 @@ const prevStep = () => step.value--
       <div class="flex gap-2">
         <button @click="prevStep" class="flex-1 border p-3 rounded-lg hover:bg-gray-50 transition">Voltar</button>
         <button @click="nextStep" class="flex-1 bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Próximo</button>
+      </div>
+    </div>
+
+    <div v-else-if="step === 3">
+      <h2 class="text-xl font-bold mb-4">Para Quem?</h2>
+      <p class="text-sm text-gray-500 mb-4">Selecione quem se beneficiou dessa despesa (Divisão Igual).</p>
+      
+      <div class="space-y-2 mb-6">
+        <div 
+          v-for="membro in membros" 
+          :key="membro.id"
+          @click="toggleBeneficiario(membro.id)"
+          :class="['flex items-center justify-between p-3 border rounded-lg cursor-pointer transition', beneficiarios_selecionados.includes(membro.id) ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-200']"
+        >
+          <div class="flex items-center gap-3">
+            <User class="w-5 h-5 text-gray-400" />
+            <span :class="['font-medium', beneficiarios_selecionados.includes(membro.id) ? 'text-blue-700' : 'text-gray-700']">
+              {{ membro.nome }}
+            </span>
+          </div>
+          <Check v-if="beneficiarios_selecionados.includes(membro.id)" class="w-5 h-5 text-blue-600" />
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button @click="prevStep" class="flex-1 border p-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition">
+          <ArrowLeft class="w-5 h-5" /> Voltar
+        </button>
+        <button 
+          @click="finalizar" 
+          :disabled="beneficiarios_selecionados.length === 0 || valor <= 0"
+          class="flex-1 bg-green-600 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Save class="w-5 h-5" /> Salvar
+        </button>
       </div>
     </div>
   </div>
