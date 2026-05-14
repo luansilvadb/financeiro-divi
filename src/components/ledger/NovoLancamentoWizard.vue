@@ -71,6 +71,10 @@ const finalizar = () => {
     pagador: pagueiPorOutro.value ? pagador_id.value : 'eu',
     beneficiarios: beneficiarios_selecionados.value
   })
+
+  // Clear draft
+  localStorage.removeItem(STORAGE_KEY)
+
   alert('Transação salva com sucesso! (Veja o console)')
   // Reset wizard
   step.value = 1
