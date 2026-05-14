@@ -12,9 +12,10 @@ const repository = new LocalStorageTransacaoRepository()
 const transacoes = ref<Transacao[]>([])
 
 const membros = [
-  { id: 'eu', nome: 'Eu' },
-  { id: 'colega_x', nome: 'Colega X' },
-  { id: 'colega_y', nome: 'Colega Y' }
+  { id: 'eu', nome: 'Luan (Você)' },
+  { id: 'maria', nome: 'Maria' },
+  { id: 'joao', nome: 'João' },
+  { id: 'paula', nome: 'Paula' }
 ]
 
 const carregarTransacoes = async () => {
@@ -60,6 +61,7 @@ const handleSalvarTransacao = async (t: Transacao) => {
       
       <NovoLancamentoWizard 
         v-else-if="currentView === 'wizard'"
+        :membros="membros"
         @salvar="handleSalvarTransacao"
         @cancelar="currentView = 'dashboard'"
       />
