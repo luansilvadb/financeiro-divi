@@ -8,10 +8,11 @@ import { Divisao } from '../../modules/ledger/core/domain/Divisao'
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
 const step = ref(1)
+const tipo = ref<'gasto' | 'ganho'>('gasto')
 const valor = ref(0)
 const descricao = ref('')
 
-const fonte_id = ref('eu') // Changed to match member IDs for simplicity
+const fonte_id = ref('meu_cartao')
 const pagador_id = ref('eu')
 const pagueiPorOutro = ref(false)
 
@@ -29,6 +30,7 @@ onMounted(() => {
   if (saved) {
     try {
       const data = JSON.parse(saved)
+      if (data.tipo) tipo.value = data.tipo
       if (data.step) step.value = data.step
       if (data.valor) valor.value = data.valor
       if (data.descricao) descricao.value = data.descricao
@@ -44,6 +46,7 @@ onMounted(() => {
 
 watch(
   () => ({
+    tipo: tipo.value,
     step: step.value,
     valor: valor.value,
     descricao: descricao.value,
@@ -105,29 +108,35 @@ const prevStep = () => step.value--
 <template>
   <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
     <div v-if="step === 1">
-      <h2 class="text-xl font-bold mb-4">Quanto e O Quê?</h2>
-      <div class="mb-4 text-center">
-        <span class="text-gray-500 mr-2">R$</span>
-        <input 
-          v-model.number="valor" 
-          type="number" 
-          step="0.01"
-          placeholder="0,00" 
-          class="w-3/4 text-4xl font-mono text-center border-b-2 border-blue-500 focus:outline-none"
-        />
+      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center italic font-serif">"Você quer anotar um gasto ou um ganho?"</h2>
+      <div class="grid grid-cols-1 gap-4">
+        <button 
+          @click="tipo = 'gasto'; nextStep()"
+          class="flex items-center justify-between p-5 border-2 border-red-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group shadow-sm hover:shadow-md"
+        >
+          <div class="flex items-center gap-4">
+            <span class="text-4xl">💸</span>
+            <div class="text-left">
+              <span class="block font-bold text-gray-800 text-lg">Um gasto</span>
+              <span class="text-sm text-gray-500">Ex: Pizza, Aluguel, Uber</span>
+            </div>
+          </div>
+          <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-red-500 transform group-hover:translate-x-1 transition-transform" />
+        </button>
+        <button 
+          @click="tipo = 'ganho'; nextStep()"
+          class="flex items-center justify-between p-5 border-2 border-green-50 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group shadow-sm hover:shadow-md"
+        >
+          <div class="flex items-center gap-4">
+            <span class="text-4xl">💰</span>
+            <div class="text-left">
+              <span class="block font-bold text-gray-800 text-lg">Um ganho</span>
+              <span class="text-sm text-gray-500">Ex: Salário, Reembolso</span>
+            </div>
+          </div>
+          <ArrowRight class="w-6 h-6 text-gray-300 group-hover:text-green-500 transform group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
-      <input 
-        v-model="descricao" 
-        type="text" 
-        placeholder="Descrição (ex: Pizza)" 
-        class="w-full p-2 mb-6 border rounded"
-      />
-      <button 
-        @click="nextStep" 
-        class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition"
-      >
-        Próximo
-      </button>
     </div>
 
     <div v-else-if="step === 2">
