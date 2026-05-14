@@ -4,6 +4,7 @@ import { Check, User, Save, ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import { Divisao } from '../../modules/ledger/core/domain/Divisao'
+import WizardProgressBar from './WizardProgressBar.vue'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
@@ -128,16 +129,7 @@ const prevStep = () => step.value--
 
 <template>
   <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
-    <!-- Barra de Progresso -->
-    <div class="w-full h-1 bg-gray-100 mb-6 overflow-hidden rounded-full">
-      <div 
-        class="h-full bg-blue-500 transition-all duration-500 ease-out"
-        :style="{ width: `${(step / totalSteps) * 100}%` }"
-      ></div>
-    </div>
-    <div class="text-[10px] uppercase font-bold text-gray-400 mb-4 text-center">
-      Passo {{ step }} de {{ totalSteps }}
-    </div>
+    <WizardProgressBar :current-step="step" :total-steps="totalSteps" />
 
     <div v-if="step === 1">
       <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
