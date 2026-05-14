@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { Check, User, Save, ArrowLeft } from 'lucide-vue-next'
+import { Check, User, Save, ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import { Divisao } from '../../modules/ledger/core/domain/Divisao'
