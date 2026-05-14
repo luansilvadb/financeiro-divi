@@ -24,24 +24,34 @@ O Wizard será dividido em 5 etapas baseadas em perguntas diretas:
 *   **Pergunta (Ganho):** "Me conta, de onde veio esse dinheiro?"
 *   **Placeholder:** "Ex: Pizza com a galera, Aluguel, Cinema..."
 
-### Passo 4: O Pagador
-*   **Pergunta:** "Quem foi que pagou essa conta?"
+### Passo 4: O Pagador e Responsabilidade
+*   **Pergunta:** "Quem vai pagar esse gasto?"
 *   **Opções:**
-    *   🙋‍♂️ **"Fui eu mesmo!"** (pagador_id = 'eu')
-    *   👤 **"Um amigo pagou"** (abre seleção de membro)
+    *   🙋‍♂️ **"Eu mesmo!"** (Eu passei o cartão/dinheiro e a conta é minha ou do grupo)
+    *   🤝 **"Eu paguei para um amigo"** (Eu passei o cartão, mas o gasto é de outra pessoa)
+    *   👤 **"Um amigo pagou para mim"** (O amigo passou o cartão dele, mas eu sou o dono da dívida)
 
 ### Passo 5: A Divisão (Aproveitamento)
 *   **Pergunta:** "Além de você, quem mais aproveitou isso?"
 *   **Subtexto:** "(Isso ajuda a dividir o valor entre os amigos)"
 *   **UI:** Lista de membros com fotos/iniciais e checks grandes.
 
+## Mapeamento Lógico (Desenvolvedor)
+
+| Opção Passo 4 | Origem (Quem tirou o $) | Divisão (Quem aproveitou) | Resultado Esperado |
+| :--- | :--- | :--- | :--- |
+| **Eu mesmo** | `origem_id = 'eu'` | Selecionados no Passo 5 | Dívida dividida entre os selecionados |
+| **Eu paguei para amigo** | `origem_id = 'eu'` | Amigo selecionado no Passo 5 | Amigo deve 100% para 'eu' |
+| **Amigo pagou para mim**| `origem_id = 'amigo_id'` | Selecionados no Passo 5 | 'eu' (e outros) devem para Amigo |
+
 ## Arquitetura Técnica
 
 1.  **Componente:** `NovoLancamentoWizard.vue` será refatorado para suportar o novo fluxo.
-2.  **Estado:** Adicionar `tipo` ('despesa' | 'receita') ao estado reativo e ao rascunho (auto-save).
-3.  **Lógica de Finalização:** 
-    *   Se for **Receita**, inverter o sinal dos valores ou tratar como um crédito inverso (a ser definido na implementação da `CalculadoraSaldos`). *Nota: Por enquanto, manteremos o foco em Despesa mas a UI já estará preparada para ambos.*
-4.  **UX:** Animações de transição suave (fade-in/slide) entre os passos.
+2.  **Estado:** Adicionar `tipo` ('gasto' | 'ganho') ao estado reativo.
+3.  **UI/UX:** 
+    *   Animações de transição suave.
+    *   Botões grandes com emojis para facilitar o toque e entendimento.
+    *   Remover títulos técnicos como "Fonte" ou "Beneficiários".
 
 ## Critérios de Sucesso
 *   Um usuário leigo consegue completar o fluxo sem hesitação.
