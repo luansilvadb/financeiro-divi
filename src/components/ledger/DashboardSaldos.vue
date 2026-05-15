@@ -83,7 +83,7 @@ const getMemberDetails = (id: string) => {
             valor: p.valor
           }))
     }
-  }).sort((a, b) => b.data.getTime() - a.data.getTime())
+  }).sort((a, b) => a.data.getTime() - b.data.getTime())
 }
 
 const formatarDinheiro = (valor: Dinheiro) => {
