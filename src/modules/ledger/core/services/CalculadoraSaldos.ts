@@ -71,6 +71,16 @@ export class CalculadoraSaldos {
       if (credor.saldo === 0) j++
     }
 
+    // Verificação de integridade: a soma dos saldos residuais deve ser zero
+    const saldoResidual = devedores.reduce((acc, d) => acc + d.saldo, 0) + 
+                          credores.reduce((acc, c) => acc + c.saldo, 0)
+    
+    if (saldoResidual > 0) {
+      // Isso indica que o input 'saldos' não somava zero (erro em algum lugar do fluxo de dados)
+      console.error('Saldos desbalanceados detectados:', { devedores, credores, saldoResidual })
+      throw new Error('Erro de integridade: Os saldos informados para o acerto de contas não estão balanceados.')
+    }
+
     return acertos
   }
 }
