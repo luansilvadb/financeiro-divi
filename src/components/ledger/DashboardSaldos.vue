@@ -155,7 +155,7 @@ const formatarDinheiro = (valor: Dinheiro) => {
                     <!-- Barra de Proporção Visual -->
                     <div class="flex w-24 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
                       <div 
-                        :class="['h-full', m.net.isPositivo() ? 'bg-emerald-500' : 'bg-red-500']" 
+                        :class="['h-full', m.net.isZero() ? 'bg-slate-300' : (m.net.isPositivo() ? 'bg-emerald-500' : 'bg-red-500')]" 
                         :style="{ width: (m.total.centavos > 0 ? (m.consumed.centavos / m.total.centavos * 100) : 0) + '%' }"
                       ></div>
                       <div class="flex-1 h-full bg-slate-200"></div>
@@ -165,7 +165,7 @@ const formatarDinheiro = (valor: Dinheiro) => {
                     <div :class="['text-lg font-mono font-black', m.net.isZero() ? 'text-slate-400' : (m.net.isPositivo() ? 'text-emerald-600' : 'text-red-500')]">
                       {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
                     </div>
-                    <div :class="['text-[8px] font-black uppercase tracking-tighter', m.net.isPositivo() ? 'text-emerald-500' : 'text-red-400']">
+                    <div :class="['text-[8px] font-black uppercase tracking-tighter', m.net.isZero() ? 'text-slate-300' : (m.net.isPositivo() ? 'text-emerald-500' : 'text-red-400')]">
                       Impacto no Saldo
                     </div>
                   </div>
@@ -183,8 +183,20 @@ const formatarDinheiro = (valor: Dinheiro) => {
                   </div>
                 </div>
                 
+                <!-- Metadados da Transação -->
+                <div class="mt-4 pt-3 border-t border-slate-50 space-y-1">
+                  <div class="flex justify-between items-center text-[10px] text-slate-400">
+                    <span class="font-bold uppercase tracking-tight">Total da nota</span>
+                    <span class="font-mono">{{ formatarDinheiro(m.total) }}</span>
+                  </div>
+                  <div class="text-[9px] text-slate-400 leading-tight">
+                    <span class="font-bold uppercase">Dividido com:</span>
+                    {{ m.todos_beneficiarios.join(', ') }}
+                  </div>
+                </div>
+
                 <!-- Saldo Acumulado Sutil -->
-                <div class="mt-4 pt-3 border-t border-slate-50 flex justify-end items-center gap-2">
+                <div class="mt-3 pt-3 border-t border-slate-50 flex justify-end items-center gap-2">
                   <span class="text-[8px] font-black uppercase text-slate-300 tracking-widest">Saldo Acumulado</span>
                   <span class="text-xs font-mono font-bold text-slate-400 opacity-80">{{ formatarDinheiro(m.acumulado) }}</span>
                 </div>
