@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Clock, User } from 'lucide-vue-next'
 import type { Transacao } from '../../modules/ledger/core/domain/Transacao'
+import { Dinheiro } from '../../shared/primitives/Dinheiro'
 
 interface Props {
   transacoes: Transacao[]
@@ -21,6 +22,13 @@ const sortedTransacoes = computed(() => {
 
 const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+const formatarDinheiro = (valor: any) => {
+  if (valor && typeof valor.formatar === 'function') {
+    return valor.formatar()
+  }
+  return Dinheiro.deCentavos(valor?.centavos || 0).formatar()
 }
 </script>
 
@@ -43,7 +51,7 @@ const formatDate = (date: Date) => {
       >
         <div class="flex justify-between items-start mb-1">
           <span class="font-bold text-gray-800 text-sm">{{ t.descricao }}</span>
-          <span class="font-bold text-blue-600">{{ t.total.formatar() }}</span>
+          <span class="font-bold text-blue-600">{{ formatarDinheiro(t.total) }}</span>
         </div>
         
         <div class="flex justify-between items-center text-xs text-gray-500">

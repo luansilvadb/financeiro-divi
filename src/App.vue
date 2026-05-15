@@ -12,7 +12,7 @@ const repository = new LocalStorageTransacaoRepository()
 const transacoes = ref<Transacao[]>([])
 
 const membros = [
-  { id: 'eu', nome: 'Luan (Você)' },
+  { id: 'luan', nome: 'Luan' },
   { id: 'maria', nome: 'Maria' },
   { id: 'joao', nome: 'João' },
   { id: 'paula', nome: 'Paula' }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { User, ArrowRight, PlusCircle, TrendingUp, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from 'lucide-vue-next'
+import { User, ArrowRight, PlusCircle, TrendingUp, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { CalculadoraSaldos } from '../../modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
@@ -41,38 +41,57 @@ const toggleDrilldown = (id: string) => {
 }
 
 const getMemberDetails = (id: string) => {
-  // Filtra transações onde o membro participou de algum pagamento
-  const credits = props.transacoes.filter(t => 
-    t.pagamentos.some(p => p.membro_id === id)
-  )
-  const debits = props.transacoes.filter(t => 
+  const relevantTransactions = props.transacoes.filter(t => 
+    t.pagamentos.some(p => p.membro_id === id) || 
     t.divisoes.some(d => d.beneficiario_id === id)
   )
   
-  return {
-    credits: credits.map(t => {
-      const pagamento = t.pagamentos.find(p => p.membro_id === id)!
-      return {
-        id: t.id,
-        descricao: t.descricao,
-        valor: pagamento.valor, // Usa o valor específico que ele pagou, não o total
-        data: t.data
-      }
-    }),
-    debits: debits.map(t => {
-      const divisao = t.divisoes.find(d => d.beneficiario_id === id)!
-      return {
-        id: t.id,
-        descricao: t.descricao,
-        valor: divisao.valor,
-        data: t.data
-      }
-    })
-  }
+  return relevantTransactions.map(t => {
+    const pRaw = t.pagamentos.find(p => p.membro_id === id)?.valor
+    const dRaw = t.divisoes.find(d => d.beneficiario_id === id)?.valor
+    
+    // Hidrata os valores se forem POJOs
+    const paid = (pRaw && typeof pRaw.subtrair === 'function') 
+      ? pRaw 
+      : Dinheiro.deCentavos((pRaw as any)?.centavos || 0)
+      
+    const consumed = (dRaw && typeof dRaw.subtrair === 'function')
+      ? dRaw
+      : Dinheiro.deCentavos((dRaw as any)?.centavos || 0)
+
+    const net = paid.subtrair(consumed)
+    
+    return {
+      id: t.id,
+      descricao: t.descricao,
+      total: t.total,
+      paid,
+      consumed,
+      net,
+      data: t.data,
+      todos_pagadores: t.pagamentos.map(p => getMembroNome(p.membro_id)),
+      todos_beneficiarios: t.divisoes.map(d => getMembroNome(d.beneficiario_id)),
+      pagamentos_detalhados: (t.divisoes.length > 1)
+        ? props.membros
+            .filter(m => t.pagamentos.some(p => p.membro_id === m.id) || t.divisoes.some(d => d.beneficiario_id === m.id))
+            .map(m => ({
+              nome: m.nome,
+              valor: t.pagamentos.find(p => p.membro_id === m.id)?.valor || Dinheiro.deCentavos(0)
+            }))
+        : t.pagamentos.map(p => ({
+            nome: getMembroNome(p.membro_id),
+            valor: p.valor
+          }))
+    }
+  }).sort((a, b) => b.data.getTime() - a.data.getTime())
 }
 
 const formatarDinheiro = (valor: Dinheiro) => {
-  return valor.formatar()
+  if (typeof valor.formatar === 'function') {
+    return valor.formatar()
+  }
+  // Se for um POJO (objeto simples vindo do banco/JSON), reconstrói a instância
+  return Dinheiro.deCentavos((valor as any).centavos || 0).formatar()
 }
 </script>
 
@@ -118,32 +137,61 @@ const formatarDinheiro = (valor: Dinheiro) => {
           </div>
 
           <!-- Drilldown Detail -->
-          <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-4 animate-fade-in">
-            <div v-if="getMemberDetails(item.id).credits.length > 0">
-              <div class="text-[10px] uppercase font-bold text-green-600 mb-2 tracking-wider flex items-center gap-1">
-                <ArrowUpRight class="w-3 h-3" /> Créditos (Pagou)
-              </div>
-              <div class="space-y-1">
-                <div v-for="c in getMemberDetails(item.id).credits" :key="c.id" class="flex justify-between text-sm">
-                  <span class="text-gray-600">{{ c.descricao }}</span>
-                  <span class="font-medium text-green-600">+{{ formatarDinheiro(c.valor) }}</span>
-                </div>
-              </div>
+          <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-2 animate-fade-in rounded-b-xl">
+            <div v-if="getMemberDetails(item.id).length > 0" class="overflow-x-auto">
+              <table class="w-full text-[10px] text-left border-collapse">
+                <thead>
+                  <tr class="text-gray-400 uppercase tracking-wider border-b border-gray-50">
+                    <th class="py-2 font-bold">Descrição</th>
+                    <th class="py-2 font-bold text-right">Pagou</th>
+                    <th class="py-2 font-bold text-right">Consumiu</th>
+                    <th class="py-2 font-bold text-right">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                  <tr v-for="m in getMemberDetails(item.id)" :key="m.id" class="text-gray-600">
+                    <td class="py-2 pr-2">
+                      <div class="font-medium text-gray-800">
+                        {{ m.descricao }}
+                        <span class="text-[10px] text-gray-400 font-normal ml-0.5">({{ formatarDinheiro(m.total) }})</span>
+                      </div>
+                      <div class="text-[9px] text-gray-400 leading-tight mt-1.5 space-y-1">
+                        <div class="flex items-baseline gap-1.5">
+                          <span class="font-bold">-</span>
+                          <template v-if="m.todos_beneficiarios.length > 1">
+                            Dividido com: {{ m.todos_beneficiarios.filter(n => n !== getMembroNome(item.id)).join(', ') }}
+                          </template>
+                          <template v-else-if="m.todos_beneficiarios[0] !== getMembroNome(item.id)">
+                            Destinado a: {{ m.todos_beneficiarios[0] }}
+                          </template>
+                          <template v-else>
+                            Lançamento individual
+                          </template>
+                        </div>
+                        <div class="pl-2.5 space-y-0.5 border-l border-gray-100 ml-0.5">
+                          <div v-for="p in m.pagamentos_detalhados" :key="p.nome" class="flex items-center gap-1.5">
+                            <span class="text-[7px] opacity-50">•</span> 
+                            <span class="font-medium text-gray-400">{{ p.nome }}:</span>
+                            <span>{{ formatarDinheiro(p.valor) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td :class="['py-2 text-right', m.paid.isZero() ? 'text-gray-300' : 'text-green-600']">
+                      {{ formatarDinheiro(m.paid) }}
+                    </td>
+                    <td :class="['py-2 text-right', m.consumed.isZero() ? 'text-gray-300' : 'text-red-600']">
+                      {{ formatarDinheiro(m.consumed) }}
+                    </td>
+                    <td :class="['py-2 text-right font-bold', m.net.isZero() ? 'text-gray-400' : (m.net.isPositivo() ? 'text-green-600' : 'text-red-600')]">
+                      {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div v-if="getMemberDetails(item.id).debits.length > 0">
-              <div class="text-[10px] uppercase font-bold text-red-600 mb-2 tracking-wider flex items-center gap-1">
-                <ArrowDownRight class="w-3 h-3" /> Débitos (Consumiu)
-              </div>
-              <div class="space-y-1">
-                <div v-for="d in getMemberDetails(item.id).debits" :key="d.id" class="flex justify-between text-sm">
-                  <span class="text-gray-600">{{ d.descricao }}</span>
-                  <span class="font-medium text-red-600">-{{ formatarDinheiro(d.valor) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="getMemberDetails(item.id).credits.length === 0 && getMemberDetails(item.id).debits.length === 0" class="text-center text-xs text-gray-400 italic">
+            <div v-else class="text-center py-4 text-xs text-gray-400 italic">
               Nenhuma movimentação para este membro.
             </div>
           </div>

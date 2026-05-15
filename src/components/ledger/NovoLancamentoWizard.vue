@@ -60,12 +60,12 @@ const intencao = ref<'solo' | 'split'>('solo')
 
 const beneficiarios_selecionados = ref<string[]>([])
 
-// Watch for step changes to focus valorInput in step 2
+// Focus input in step 2
 watch(step, (newStep) => {
   if (newStep === 2) {
     setTimeout(() => {
       valorInput.value?.focus()
-    }, 400) // Wait for transition
+    }, 150) // Reduced from 400ms
   }
 })
 
@@ -87,6 +87,8 @@ onMounted(() => {
   }
 })
 
+// Debounced save to localStorage
+let saveTimeout: ReturnType<typeof setTimeout>
 watch(
   () => ({
     tipo: tipo.value,
@@ -98,7 +100,10 @@ watch(
     pagamentos: { ...pagamentos.value }
   }),
   (newState) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState))
+    clearTimeout(saveTimeout)
+    saveTimeout = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState))
+    }, 500) // Only save after 500ms of inactivity
   },
   { deep: true }
 )
@@ -171,9 +176,10 @@ const prevStep = () => step.value--
 
 const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
   tipo.value = novoTipo
+  // Reduced delay from 200ms to 50ms for snappier feel
   setTimeout(() => {
     nextStep()
-  }, 200)
+  }, 50)
 }
 </script>
 
@@ -333,7 +339,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
 <style scoped>
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all 0.3s ease-out;
+  transition: all 0.2s ease-out;
 }
 
 .slide-fade-enter-from {
