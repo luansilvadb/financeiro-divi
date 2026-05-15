@@ -47,7 +47,7 @@ const handleSalvarTransacao = async (t: Transacao) => {
       <button 
         v-if="currentView === 'wizard'"
         @click="currentView = 'dashboard'"
-        class="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 rounded-full transition-all"
+        class="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 rounded-full"
         aria-label="Cancelar lançamento"
       >
         <X class="w-6 h-6" />
@@ -81,11 +81,10 @@ const handleSalvarTransacao = async (t: Transacao) => {
       &copy; 2026 DIVI - Máquina da Verdade
     </footer>
 
-    <!-- Floating Action Button (FAB) -->
     <button 
       v-if="currentView === 'dashboard'"
       @click="currentView = 'wizard'"
-      class="fixed bottom-10 right-6 w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center shadow-2xl border-4 border-white ring-4 ring-blue-900/5 hover:bg-blue-800 active:scale-90 transition-all z-[9999]"
+      class="fixed bottom-10 right-6 w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center shadow-2xl border-4 border-white ring-4 ring-blue-900/5 hover:bg-blue-800 z-[9999]"
       aria-label="Novo lançamento"
     >
       <Plus class="w-10 h-10 stroke-[3px]" />
