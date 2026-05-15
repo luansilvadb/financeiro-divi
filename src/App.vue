@@ -66,20 +66,20 @@ const handleSalvarTransacao = async (t: Transacao) => {
         @salvar="handleSalvarTransacao"
         @cancelar="currentView = 'dashboard'"
       />
-
-      <!-- Floating Action Button (FAB) -->
-      <button 
-        v-if="currentView === 'dashboard'"
-        @click="currentView = 'wizard'"
-        class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 active:scale-95 transition-all z-50"
-        aria-label="Novo lançamento"
-      >
-        <PlusCircle class="w-8 h-8" />
-      </button>
     </main>
 
     <footer class="max-w-md mx-auto mt-12 text-center text-gray-400 text-xs">
       &copy; 2026 DIVI - Máquina da Verdade
     </footer>
+
+    <!-- Floating Action Button (FAB) -->
+    <button 
+      v-if="currentView === 'dashboard'"
+      @click="currentView = 'wizard'"
+      class="fixed bottom-10 right-6 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 active:scale-95 transition-all z-[9999]"
+      aria-label="Novo lançamento"
+    >
+      <PlusCircle class="w-8 h-8" />
+    </button>
   </div>
 </template>
