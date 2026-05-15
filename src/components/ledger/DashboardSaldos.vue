@@ -213,6 +213,45 @@ const formatarDinheiro = (valor: Dinheiro) => {
                       </svg>
                     </button>
                   </div>
+
+                  <!-- Nível 3: Auditoria (Progressive Disclosure) -->
+                  <div v-if="expandedTransactionId === m.id" class="bg-slate-50/80 border-y border-slate-100 p-6 space-y-5 animate-fade-in">
+                    <div class="flex justify-between items-center">
+                      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total Bruto da Nota</span>
+                      <span class="text-sm font-mono font-bold text-slate-900">{{ formatarDinheiro(m.total) }}</span>
+                    </div>
+
+                    <div class="space-y-4">
+                      <div v-for="p in m.pagamentos_detalhados" :key="p.nome" class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-white shadow-sm uppercase">
+                          {{ p.nome.substring(0, 1) }}
+                        </div>
+                        <div class="flex-1">
+                          <div class="flex justify-between text-[11px] font-bold text-slate-700">
+                            <span>{{ p.nome }}</span>
+                            <span class="text-slate-500">Parte: {{ formatarDinheiro(p.valor) }}</span>
+                          </div>
+                          <div class="text-[9px] text-slate-400 mt-0.5 italic">
+                            {{ p.valor.centavos > 0 ? 'Contribuiu no pagamento' : 'Não contribuiu no pagamento' }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Rodapé: Saldo Acumulado (Âncora) -->
+                  <div :class="['px-6 py-3 flex justify-between items-center border-t', 
+                                 m.net.isPositivo() ? 'bg-emerald-500/[0.04] border-emerald-50' : 
+                                 (m.net.isZero() ? 'bg-slate-500/[0.04] border-slate-50' : 'bg-red-500/[0.04] border-red-50')]">
+                    <span :class="['text-[11px] font-bold uppercase tracking-widest', 
+                                    m.net.isPositivo() ? 'text-emerald-900/40' : (m.net.isZero() ? 'text-slate-900/30' : 'text-red-900/40')]">
+                      Saldo após lançamento
+                    </span>
+                    <div :class="['text-sm font-mono font-bold', 
+                                   m.net.isPositivo() ? 'text-emerald-600/70' : (m.net.isZero() ? 'text-slate-400/70' : 'text-red-600/70')]">
+                      {{ m.acumulado.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.acumulado) }}
+                    </div>
+                  </div>
                 </div>
               </div>
 
