@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { User, ArrowRight, PlusCircle, TrendingUp, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { User, ArrowRight, TrendingUp, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { CalculadoraSaldos } from '../../modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
@@ -101,13 +101,6 @@ const formatarDinheiro = (valor: Dinheiro) => {
     <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Saldos</h2>
-        <button 
-          @click="emit('novo-lancamento')"
-          class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-full font-medium hover:bg-blue-700 transition shadow-sm"
-        >
-          <PlusCircle class="w-5 h-5" />
-          Novo
-        </button>
       </div>
 
       <div class="space-y-4">
