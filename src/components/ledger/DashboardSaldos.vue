@@ -46,7 +46,7 @@ const getMemberDetails = (id: string) => {
     t.divisoes.some(d => d.beneficiario_id === id)
   )
   
-  return relevantTransactions.map(t => {
+  const rawDetails = relevantTransactions.map(t => {
     const pRaw = t.pagamentos.find(p => p.membro_id === id)?.valor
     const dRaw = t.divisoes.find(d => d.beneficiario_id === id)?.valor
     
@@ -84,6 +84,13 @@ const getMemberDetails = (id: string) => {
           }))
     }
   }).sort((a, b) => a.data.getTime() - b.data.getTime())
+
+  // Cálculo do Saldo Acumulado
+  let runningBalance = Dinheiro.deCentavos(0)
+  return rawDetails.map(d => {
+    runningBalance = runningBalance.somar(d.net)
+    return { ...d, acumulado: runningBalance }
+  })
 }
 
 const formatarDinheiro = (valor: Dinheiro) => {
