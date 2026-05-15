@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { ArrowRight, X } from 'lucide-vue-next'
+import { ArrowRight } from 'lucide-vue-next'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import { Divisao } from '../../modules/ledger/core/domain/Divisao'
@@ -184,14 +184,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
 </script>
 
 <template>
-  <div class="relative max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
-    <button 
-      @click="emit('cancelar')"
-      class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all z-10"
-      aria-label="Fechar"
-    >
-      <X class="w-6 h-6" />
-    </button>
+  <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
     <WizardProgressBar :current-step="step" :total-steps="totalSteps" />
 
     <Transition name="slide-fade" mode="out-in">

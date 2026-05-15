@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ActivityFeed from './components/ledger/ActivityFeed.vue'
-import { Plus } from 'lucide-vue-next'
+import { Plus, X } from 'lucide-vue-next'
 import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from './modules/ledger/core/domain/Transacao'
@@ -40,9 +40,18 @@ const handleSalvarTransacao = async (t: Transacao) => {
 
 <template>
   <div class="min-h-screen bg-gray-100 py-10 px-4 pb-24">
-    <header class="max-w-md mx-auto mb-8 text-center">
+    <header class="relative max-w-md mx-auto mb-8 text-center">
       <h1 class="text-3xl font-extrabold text-blue-900 tracking-tight">DIVI</h1>
       <p class="text-blue-600 font-medium">Orquestrador Financeiro</p>
+      
+      <button 
+        v-if="currentView === 'wizard'"
+        @click="currentView = 'dashboard'"
+        class="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 rounded-full transition-all"
+        aria-label="Cancelar lançamento"
+      >
+        <X class="w-6 h-6" />
+      </button>
     </header>
 
     <main>
