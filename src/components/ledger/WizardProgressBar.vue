@@ -9,7 +9,7 @@ defineProps<{
   <div>
     <div class="w-full h-1 bg-gray-100 mb-6 overflow-hidden rounded-full">
       <div 
-        class="h-full bg-blue-500 transition-all duration-700 ease-in-out"
+        class="h-full bg-blue-500"
         :style="{ width: `${(currentStep / totalSteps) * 100}%` }"
       ></div>
     </div>
