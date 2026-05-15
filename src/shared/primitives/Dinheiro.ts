@@ -53,7 +53,7 @@ export class Dinheiro {
   }
 
   distribuir(n: number): Dinheiro[] {
-    const quociente = Math.floor(this.centavos / n)
+    const quociente = Math.trunc(this.centavos / n)
     let resto = this.centavos % n
 
     const resultados: Dinheiro[] = []
@@ -71,7 +71,7 @@ export class Dinheiro {
     let centavosRestantes = this.centavos
 
     const valores = pesos.map(p => {
-      const valor = Math.floor(this.centavos * p / totalPesos)
+      const valor = Math.trunc(this.centavos * p / totalPesos)
       centavosRestantes -= valor
       return valor
     })
