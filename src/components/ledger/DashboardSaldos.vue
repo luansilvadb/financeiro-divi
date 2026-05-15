@@ -155,65 +155,32 @@ const formatarDinheiro = (valor: Dinheiro) => {
           <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-2 animate-fade-in rounded-b-xl">
             <template v-for="details in [getMemberDetails(item.id)]" :key="item.id">
               <div v-if="details.length > 0" class="space-y-4">
-                <div v-for="m in details" :key="m.id" class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                  <!-- Cabeçalho do Card -->
-                  <div class="flex justify-between items-start mb-4">
+                <div v-for="m in details" :key="m.id" 
+                     class="bg-[#FAFAFA] rounded-[24px] shadow-sm border border-slate-100 relative overflow-hidden flex flex-col transition-all active:scale-[0.98]">
+                  
+                  <!-- Borda Semântica Lateral -->
+                  <div :class="['absolute top-0 left-0 w-1.5 h-full', 
+                                 m.net.isPositivo() ? 'bg-emerald-500' : (m.net.isZero() ? 'bg-slate-300' : 'bg-red-500')]"></div>
+
+                  <!-- Nível 1: Cabeçalho (Simetria Óptica) -->
+                  <div class="p-6 pb-4 flex justify-between items-center">
                     <div class="flex-1">
-                      <h3 class="text-sm font-bold text-slate-800">{{ m.descricao }}</h3>
-                      <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{{ formatDate(m.data) }}</p>
-                      
-                      <!-- Barra de Proporção Visual -->
-                      <div class="flex w-24 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
-                        <div 
-                          :class="['h-full', m.net.isZero() ? 'bg-slate-300' : (m.net.isPositivo() ? 'bg-emerald-500' : 'bg-red-500')]" 
-                          :style="{ width: (m.total.centavos > 0 ? (m.consumed.centavos / m.total.centavos * 100) : 0) + '%' }"
-                        ></div>
-                        <div class="flex-1 h-full bg-slate-200"></div>
-                      </div>
+                      <h2 class="text-[17px] font-bold text-slate-800 leading-tight">{{ m.descricao }}</h2>
+                      <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black mt-2 uppercase tracking-tighter border',
+                                      m.net.isPositivo() ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                                      (m.net.isZero() ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-red-50 text-red-600 border-red-100')]">
+                        {{ m.net.isPositivo() ? 'CRÉDITO' : (m.net.isZero() ? 'NEUTRO' : 'DÉBITO') }}
+                      </span>
                     </div>
                     <div class="text-right">
-                      <div :class="['text-lg font-mono font-black', m.net.isZero() ? 'text-slate-400' : (m.net.isPositivo() ? 'text-emerald-600' : 'text-red-500')]">
-                        {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
+                      <div :class="['text-2xl font-mono font-black tracking-tighter', 
+                                    m.net.isPositivo() ? 'text-emerald-600' : (m.net.isZero() ? 'text-slate-400' : 'text-red-600')]">
+                        {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net).replace('R$', '').trim() }}
                       </div>
-                      <div :class="['text-[8px] font-black uppercase tracking-tighter', m.net.isZero() ? 'text-slate-300' : (m.net.isPositivo() ? 'text-emerald-500' : 'text-red-400')]">
-                        Impacto no Saldo
-                      </div>
+                      <p class="text-[10px] font-bold text-slate-300 mt-1 uppercase tracking-widest">{{ formatDataCurta(m.data) }}</p>
                     </div>
                   </div>
-
-                  <!-- Seção de Fluxo (Sua Parte / Desembolso) -->
-                  <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
-                    <div :class="{ 'opacity-40': m.paid.isZero() }">
-                      <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Você desembolsou</span>
-                      <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.paid) }}</span>
-                    </div>
-                    <div>
-                      <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Sua parte</span>
-                      <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.consumed) }}</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Metadados da Transação -->
-                  <div class="mt-4 pt-3 border-t border-slate-50 space-y-1">
-                    <div class="flex justify-between items-center text-[10px] text-slate-400">
-                      <span class="font-bold uppercase tracking-tight">Total da nota</span>
-                      <span class="font-mono">{{ formatarDinheiro(m.total) }}</span>
-                    </div>
-                    <div class="text-[9px] text-slate-400 leading-tight">
-                      <span class="font-bold uppercase">Pagamentos:</span>
-                      {{ m.pagamentos_detalhados.map(p => `${p.nome} (${formatarDinheiro(p.valor)})`).join(', ') }}
-                    </div>
-                    <div class="text-[9px] text-slate-400 leading-tight">
-                      <span class="font-bold uppercase">Dividido com:</span>
-                      {{ m.todos_beneficiarios.join(', ') }}
-                    </div>
-                  </div>
-
-                  <!-- Saldo Acumulado Sutil -->
-                  <div class="mt-3 pt-3 border-t border-slate-50 flex justify-end items-center gap-2">
-                    <span class="text-[8px] font-black uppercase text-slate-300 tracking-widest">Saldo Acumulado</span>
-                    <span class="text-xs font-mono font-bold text-slate-400 opacity-80">{{ formatarDinheiro(m.acumulado) }}</span>
-                  </div>
+                  <!-- Placeholder para as próximas tasks: grid de fluxo, avatares, etc. -->
                 </div>
               </div>
 
