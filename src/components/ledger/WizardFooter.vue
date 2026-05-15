@@ -13,7 +13,7 @@ defineEmits(['next', 'prev', 'finish']);
     <button 
       v-if="step > 1" 
       @click="$emit('prev')" 
-      class="flex-1 px-8 py-5 bg-gray-100 text-gray-500 font-bold rounded-3xl hover:bg-gray-200 transition-colors"
+      class="flex-1 px-8 py-5 bg-gray-100 text-gray-500 font-bold rounded-3xl hover:bg-gray-200"
     >
       Voltar
     </button>

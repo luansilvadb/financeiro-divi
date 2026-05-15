@@ -204,7 +204,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
                 <span class="text-sm text-gray-500">Dinheiro que saiu da conta</span>
               </div>
             </div>
-            <ArrowRight :class="['w-6 h-6 transform', tipo === 'gasto' ? 'text-red-500' : 'text-gray-300 group-hover:text-red-500']" />
+            <ArrowRight :class="['w-6 h-6', tipo === 'gasto' ? 'text-red-500' : 'text-gray-300 group-hover:text-red-500']" />
           </button>
           <button 
             @click="selecionarTipo('ganho')"
@@ -220,7 +220,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
                 <span class="text-sm text-gray-500">Dinheiro que entrou na conta</span>
               </div>
             </div>
-            <ArrowRight :class="['w-6 h-6 transform', tipo === 'ganho' ? 'text-green-500' : 'text-gray-300 group-hover:text-green-500']" />
+            <ArrowRight :class="['w-6 h-6', tipo === 'ganho' ? 'text-green-500' : 'text-gray-300 group-hover:text-green-500']" />
           </button>
         </div>
       </div>

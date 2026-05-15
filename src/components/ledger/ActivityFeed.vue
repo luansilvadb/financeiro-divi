@@ -47,7 +47,7 @@ const formatarDinheiro = (valor: any) => {
       <div 
         v-for="t in sortedTransacoes" 
         :key="t.id"
-        class="p-4 hover:bg-gray-50 transition"
+        class="p-4 hover:bg-gray-50"
       >
         <div class="flex justify-between items-start mb-1">
           <span class="font-bold text-gray-800 text-sm">{{ t.descricao }}</span>
