@@ -21,7 +21,7 @@ defineEmits(['next', 'prev', 'finish']);
       v-if="step < totalSteps" 
       @click="$emit('next')" 
       :disabled="!canAdvance"
-      class="flex-[2] px-8 py-5 bg-blue-600 text-white font-bold rounded-3xl shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none hover:scale-[1.02] active:scale-95 transition-all"
+      class="flex-[2] px-8 py-5 bg-blue-600 text-white font-bold rounded-3xl shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none"
     >
       Próximo
     </button>
@@ -29,7 +29,7 @@ defineEmits(['next', 'prev', 'finish']);
       v-else 
       @click="$emit('finish')" 
       :disabled="!canAdvance"
-      class="flex-[2] px-8 py-5 bg-green-600 text-white font-bold rounded-3xl shadow-lg shadow-green-100 disabled:opacity-50 disabled:shadow-none hover:scale-[1.02] active:scale-95 transition-all"
+      class="flex-[2] px-8 py-5 bg-green-600 text-white font-bold rounded-3xl shadow-lg shadow-green-100 disabled:opacity-50 disabled:shadow-none"
     >
       Salvar
     </button>
