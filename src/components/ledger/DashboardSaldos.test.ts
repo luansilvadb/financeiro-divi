@@ -21,6 +21,7 @@ describe('DashboardSaldos', () => {
       descricao: 'Almoço',
       total: Dinheiro.deCentavos(2000),
       data: new Date('2024-05-15'),
+      status: 'pendente',
       pagamentos: [{ membro_id: '1', valor: Dinheiro.deCentavos(2000) }],
       divisoes: [
         { beneficiario_id: '1', valor: Dinheiro.deCentavos(1000) },

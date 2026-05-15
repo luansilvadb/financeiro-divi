@@ -131,7 +131,7 @@ const formatarDinheiro = (valor: Dinheiro) => {
         >
           <div 
             @click="toggleDrilldown(item.id)"
-            :class="['flex items-center justify-between p-3 cursor-pointer transition', selectedMemberId === item.id ? 'bg-blue-50' : 'bg-gray-50 hover:bg-gray-100']"
+            :class="['flex items-center justify-between p-3 cursor-pointer', selectedMemberId === item.id ? 'bg-blue-50' : 'bg-gray-50 hover:bg-gray-100']"
           >
             <div class="flex items-center gap-3">
               <div :class="['p-2 rounded-full', item.saldo.centavos >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600']">
@@ -150,11 +150,11 @@ const formatarDinheiro = (valor: Dinheiro) => {
           </div>
 
           <!-- Drilldown Detail -->
-          <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-2 animate-fade-in rounded-b-xl">
+          <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-2 rounded-b-xl">
             <template v-for="details in [getMemberDetails(item.id)]" :key="item.id">
               <div v-if="details.length > 0" class="space-y-4">
                 <div v-for="m in details" :key="m.id" 
-                     class="bg-[#FAFAFA] rounded-[24px] shadow-sm border border-slate-100 relative overflow-hidden flex flex-col transition-all active:scale-[0.98]">
+                     class="bg-[#FAFAFA] rounded-[24px] shadow-sm border border-slate-100 relative overflow-hidden flex flex-col">
                   
                   <!-- Borda Semântica Lateral -->
                   <div :class="['absolute top-0 left-0 w-1.5 h-full', 
@@ -205,9 +205,9 @@ const formatarDinheiro = (valor: Dinheiro) => {
                       </span>
                     </div>
                     <button @click="toggleTransaction(m.id)" 
-                            class="flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-slate-50 text-[10px] font-bold text-slate-600 border border-slate-100 active:scale-95 transition-all">
+                            class="flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-slate-50 text-[10px] font-bold text-slate-600 border border-slate-100">
                       {{ expandedTransactionId === m.id ? 'OCULTAR' : 'DETALHES' }}
-                      <svg :class="['w-3 h-3 transition-transform duration-300', expandedTransactionId === m.id ? 'rotate-180' : '']" 
+                      <svg :class="['w-3 h-3', expandedTransactionId === m.id ? 'rotate-180' : '']" 
                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M19 9l-7 7-7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
@@ -215,7 +215,7 @@ const formatarDinheiro = (valor: Dinheiro) => {
                   </div>
 
                   <!-- Nível 3: Auditoria (Progressive Disclosure) -->
-                  <div v-if="expandedTransactionId === m.id" class="bg-slate-50/80 border-y border-slate-100 p-6 space-y-5 animate-fade-in">
+                  <div v-if="expandedTransactionId === m.id" class="bg-slate-50/80 border-y border-slate-100 p-6 space-y-5">
                     <div class="flex justify-between items-center">
                       <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total Bruto da Nota</span>
                       <span class="text-sm font-mono font-bold text-slate-900">{{ formatarDinheiro(m.total) }}</span>
