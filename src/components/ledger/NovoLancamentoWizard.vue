@@ -187,14 +187,13 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
   <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
     <WizardProgressBar :current-step="step" :total-steps="totalSteps" />
 
-    <Transition name="slide-fade" mode="out-in">
-      <div v-if="step === 1" key="step1">
+    <div v-if="step === 1" key="step1">
         <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">O que você deseja registrar?</h2>
         <div class="grid grid-cols-1 gap-4">
           <button 
             @click="selecionarTipo('gasto')"
             :class="[
-              'flex items-center justify-between p-6 border-2 rounded-2xl transition-all group shadow-sm hover:shadow-md',
+              'flex items-center justify-between p-6 border-2 rounded-2xl group shadow-sm',
               tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-red-50 hover:border-red-500 hover:bg-red-50'
             ]"
           >
@@ -205,12 +204,12 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
                 <span class="text-sm text-gray-500">Dinheiro que saiu da conta</span>
               </div>
             </div>
-            <ArrowRight :class="['w-6 h-6 transform group-hover:translate-x-1 transition-all', tipo === 'gasto' ? 'text-red-500' : 'text-gray-300 group-hover:text-red-500']" />
+            <ArrowRight :class="['w-6 h-6 transform', tipo === 'gasto' ? 'text-red-500' : 'text-gray-300 group-hover:text-red-500']" />
           </button>
           <button 
             @click="selecionarTipo('ganho')"
             :class="[
-              'flex items-center justify-between p-6 border-2 rounded-2xl transition-all group shadow-sm hover:shadow-md',
+              'flex items-center justify-between p-6 border-2 rounded-2xl group shadow-sm',
               tipo === 'ganho' ? 'border-green-500 bg-green-50' : 'border-green-50 hover:border-green-500 hover:bg-green-50'
             ]"
           >
@@ -221,7 +220,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
                 <span class="text-sm text-gray-500">Dinheiro que entrou na conta</span>
               </div>
             </div>
-            <ArrowRight :class="['w-6 h-6 transform group-hover:translate-x-1 transition-all', tipo === 'ganho' ? 'text-green-500' : 'text-gray-300 group-hover:text-green-500']" />
+            <ArrowRight :class="['w-6 h-6 transform', tipo === 'ganho' ? 'text-green-500' : 'text-gray-300 group-hover:text-green-500']" />
           </button>
         </div>
       </div>
@@ -231,7 +230,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
           Quais os dados do lançamento?
         </h2>
         
-        <div class="mb-10 text-center bg-blue-50/50 p-10 rounded-[2.5rem] border-2 border-blue-100 group transition-all hover:bg-blue-50">
+        <div class="mb-10 text-center bg-blue-50/50 p-10 rounded-[2.5rem] border-2 border-blue-100 group">
           <div class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Valor Total</div>
           <div class="flex items-baseline justify-center gap-2 mb-8">
             <span class="text-blue-300 text-2xl font-bold">R$</span>
@@ -249,7 +248,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
             v-model="descricao" 
             type="text" 
             :placeholder="tipo === 'gasto' ? 'O que você comprou?' : 'De onde veio?'" 
-            class="w-full p-5 text-lg border-2 border-blue-100/50 rounded-2xl focus:border-blue-200 focus:outline-none bg-white/50 transition-all text-center placeholder:text-blue-300 text-blue-600"
+            class="w-full p-5 text-lg border-2 border-blue-100/50 rounded-2xl focus:border-blue-200 focus:outline-none bg-white/50 text-center placeholder:text-blue-300 text-blue-600"
           />
         </div>
       </div>
@@ -270,10 +269,10 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
               @click="toggleBeneficiario(membro.id)"
               class="flex flex-col items-center gap-2 cursor-pointer min-w-[70px]"
             >
-              <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all border-4', beneficiarios_selecionados.includes(membro.id) ? 'bg-green-500 border-green-100 text-white scale-105' : 'bg-gray-100 border-transparent text-gray-400']">
+              <div :class="['w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl border-4', beneficiarios_selecionados.includes(membro.id) ? 'bg-green-500 border-green-100 text-white' : 'bg-gray-100 border-transparent text-gray-400']">
                 {{ membro.nome.charAt(0) }}
               </div>
-              <span :class="['text-xs font-bold transition-colors', beneficiarios_selecionados.includes(membro.id) ? 'text-green-600' : 'text-gray-400']">
+              <span :class="['text-xs font-bold', beneficiarios_selecionados.includes(membro.id) ? 'text-green-600' : 'text-gray-400']">
                 {{ membro.nome.split(' ')[0] }}
               </span>
             </div>
@@ -282,20 +281,20 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
           <div class="space-y-4 border-t pt-6">
             <div class="flex justify-between items-center">
               <p class="font-bold text-gray-800">Quem abriu a carteira?</p>
-              <div :class="['text-[10px] font-black px-2 py-1 rounded-full transition-all', pagamentosEquilibrados ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 animate-pulse']">
+              <div :class="['text-[10px] font-black px-2 py-1 rounded-full', pagamentosEquilibrados ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700']">
                 {{ pagamentosEquilibrados ? '✅ Equilibrado' : `Faltam R$ ${restantePagamento.toFixed(2)}` }}
               </div>
             </div>
 
             <div class="space-y-3">
-              <div v-for="membro in props.membros" :key="membro.id" class="flex items-center gap-4 bg-gray-50/50 p-3 rounded-2xl border border-transparent hover:border-blue-100 transition-all">
+              <div v-for="membro in props.membros" :key="membro.id" class="flex items-center gap-4 bg-gray-50/50 p-3 rounded-2xl border border-transparent hover:border-blue-100">
                 <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm shadow-sm">
                   {{ membro.nome.charAt(0) }}
                 </div>
                 <div class="flex-1">
                   <span class="block text-sm font-bold text-gray-700">{{ membro.nome }}</span>
                 </div>
-                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 focus-within:border-blue-500 transition-all shadow-sm">
+                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 focus-within:border-blue-500 shadow-sm">
                   <span class="text-[10px] font-bold text-gray-400">R$</span>
                   <input 
                     v-model.number="pagamentos[membro.id]" 
@@ -309,7 +308,7 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
             </div>
           </div>
 
-          <div :class="['p-5 rounded-3xl border-2 transition-all', beneficiarios_selecionados.length > 1 ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100']">
+          <div :class="['p-5 rounded-3xl border-2', beneficiarios_selecionados.length > 1 ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100']">
             <div class="flex justify-between items-center mb-3">
               <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
               <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Para cada um</span>
@@ -323,7 +322,6 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
           </div>
         </div>
       </div>
-    </Transition>
 
     <WizardFooter 
       :step="step" 
@@ -336,19 +334,3 @@ const selecionarTipo = (novoTipo: 'gasto' | 'ganho') => {
   </div>
 </template>
 
-<style scoped>
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.2s ease-out;
-}
-
-.slide-fade-enter-from {
-  transform: translateX(20px);
-  opacity: 0;
-}
-
-.slide-fade-leave-to {
-  transform: translateX(-20px);
-  opacity: 0;
-}
-</style>
