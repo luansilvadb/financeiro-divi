@@ -145,7 +145,8 @@ const formatarDinheiro = (valor: Dinheiro) => {
                     <th class="py-2 font-bold">Descrição</th>
                     <th class="py-2 font-bold text-right">Pagou</th>
                     <th class="py-2 font-bold text-right">Consumiu</th>
-                    <th class="py-2 font-bold text-right">Saldo</th>
+                    <th class="py-2 font-bold text-right">Lançamento</th>
+                    <th class="py-2 font-bold text-right bg-blue-50/50 text-blue-600 rounded-t-lg px-2">Acumulado</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
@@ -185,6 +186,9 @@ const formatarDinheiro = (valor: Dinheiro) => {
                     </td>
                     <td :class="['py-2 text-right font-bold', m.net.isZero() ? 'text-gray-400' : (m.net.isPositivo() ? 'text-green-600' : 'text-red-600')]">
                       {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
+                    </td>
+                    <td :class="['py-2 text-right font-bold bg-blue-50/30 px-2', m.acumulado.isZero() ? 'text-gray-400' : (m.acumulado.isPositivo() ? 'text-green-600' : 'text-red-600')]">
+                      {{ m.acumulado.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.acumulado) }}
                     </td>
                   </tr>
                 </tbody>
