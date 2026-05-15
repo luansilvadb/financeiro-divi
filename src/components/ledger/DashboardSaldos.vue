@@ -144,68 +144,74 @@ const formatarDinheiro = (valor: Dinheiro) => {
 
           <!-- Drilldown Detail -->
           <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-2 animate-fade-in rounded-b-xl">
-            <div v-if="getMemberDetails(item.id).length > 0" class="space-y-4">
-              <div v-for="m in getMemberDetails(item.id)" :key="m.id" class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <!-- Cabeçalho do Card -->
-                <div class="flex justify-between items-start mb-4">
-                  <div class="flex-1">
-                    <h3 class="text-sm font-bold text-slate-800">{{ m.descricao }}</h3>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{{ formatDate(m.data) }}</p>
-                    
-                    <!-- Barra de Proporção Visual -->
-                    <div class="flex w-24 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
-                      <div 
-                        :class="['h-full', m.net.isZero() ? 'bg-slate-300' : (m.net.isPositivo() ? 'bg-emerald-500' : 'bg-red-500')]" 
-                        :style="{ width: (m.total.centavos > 0 ? (m.consumed.centavos / m.total.centavos * 100) : 0) + '%' }"
-                      ></div>
-                      <div class="flex-1 h-full bg-slate-200"></div>
+            <template v-for="details in [getMemberDetails(item.id)]" :key="item.id">
+              <div v-if="details.length > 0" class="space-y-4">
+                <div v-for="m in details" :key="m.id" class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                  <!-- Cabeçalho do Card -->
+                  <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                      <h3 class="text-sm font-bold text-slate-800">{{ m.descricao }}</h3>
+                      <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{{ formatDate(m.data) }}</p>
+                      
+                      <!-- Barra de Proporção Visual -->
+                      <div class="flex w-24 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                        <div 
+                          :class="['h-full', m.net.isZero() ? 'bg-slate-300' : (m.net.isPositivo() ? 'bg-emerald-500' : 'bg-red-500')]" 
+                          :style="{ width: (m.total.centavos > 0 ? (m.consumed.centavos / m.total.centavos * 100) : 0) + '%' }"
+                        ></div>
+                        <div class="flex-1 h-full bg-slate-200"></div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div :class="['text-lg font-mono font-black', m.net.isZero() ? 'text-slate-400' : (m.net.isPositivo() ? 'text-emerald-600' : 'text-red-500')]">
+                        {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
+                      </div>
+                      <div :class="['text-[8px] font-black uppercase tracking-tighter', m.net.isZero() ? 'text-slate-300' : (m.net.isPositivo() ? 'text-emerald-500' : 'text-red-400')]">
+                        Impacto no Saldo
+                      </div>
                     </div>
                   </div>
-                  <div class="text-right">
-                    <div :class="['text-lg font-mono font-black', m.net.isZero() ? 'text-slate-400' : (m.net.isPositivo() ? 'text-emerald-600' : 'text-red-500')]">
-                      {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
-                    </div>
-                    <div :class="['text-[8px] font-black uppercase tracking-tighter', m.net.isZero() ? 'text-slate-300' : (m.net.isPositivo() ? 'text-emerald-500' : 'text-red-400')]">
-                      Impacto no Saldo
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Seção de Fluxo (Sua Parte / Desembolso) -->
-                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
-                  <div :class="{ 'opacity-40': m.paid.isZero() }">
-                    <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Você desembolsou</span>
-                    <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.paid) }}</span>
+                  <!-- Seção de Fluxo (Sua Parte / Desembolso) -->
+                  <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                    <div :class="{ 'opacity-40': m.paid.isZero() }">
+                      <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Você desembolsou</span>
+                      <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.paid) }}</span>
+                    </div>
+                    <div>
+                      <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Sua parte</span>
+                      <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.consumed) }}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Sua parte</span>
-                    <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.consumed) }}</span>
+                  
+                  <!-- Metadados da Transação -->
+                  <div class="mt-4 pt-3 border-t border-slate-50 space-y-1">
+                    <div class="flex justify-between items-center text-[10px] text-slate-400">
+                      <span class="font-bold uppercase tracking-tight">Total da nota</span>
+                      <span class="font-mono">{{ formatarDinheiro(m.total) }}</span>
+                    </div>
+                    <div class="text-[9px] text-slate-400 leading-tight">
+                      <span class="font-bold uppercase">Pagamentos:</span>
+                      {{ m.pagamentos_detalhados.map(p => `${p.nome} (${formatarDinheiro(p.valor)})`).join(', ') }}
+                    </div>
+                    <div class="text-[9px] text-slate-400 leading-tight">
+                      <span class="font-bold uppercase">Dividido com:</span>
+                      {{ m.todos_beneficiarios.join(', ') }}
+                    </div>
                   </div>
-                </div>
-                
-                <!-- Metadados da Transação -->
-                <div class="mt-4 pt-3 border-t border-slate-50 space-y-1">
-                  <div class="flex justify-between items-center text-[10px] text-slate-400">
-                    <span class="font-bold uppercase tracking-tight">Total da nota</span>
-                    <span class="font-mono">{{ formatarDinheiro(m.total) }}</span>
-                  </div>
-                  <div class="text-[9px] text-slate-400 leading-tight">
-                    <span class="font-bold uppercase">Dividido com:</span>
-                    {{ m.todos_beneficiarios.join(', ') }}
-                  </div>
-                </div>
 
-                <!-- Saldo Acumulado Sutil -->
-                <div class="mt-3 pt-3 border-t border-slate-50 flex justify-end items-center gap-2">
-                  <span class="text-[8px] font-black uppercase text-slate-300 tracking-widest">Saldo Acumulado</span>
-                  <span class="text-xs font-mono font-bold text-slate-400 opacity-80">{{ formatarDinheiro(m.acumulado) }}</span>
+                  <!-- Saldo Acumulado Sutil -->
+                  <div class="mt-3 pt-3 border-t border-slate-50 flex justify-end items-center gap-2">
+                    <span class="text-[8px] font-black uppercase text-slate-300 tracking-widest">Saldo Acumulado</span>
+                    <span class="text-xs font-mono font-bold text-slate-400 opacity-80">{{ formatarDinheiro(m.acumulado) }}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div v-else class="text-center py-4 text-xs text-gray-400 italic">
-              Nenhuma movimentação para este membro.
-            </div>
+              <div v-else class="text-center py-4 text-xs text-gray-400 italic">
+                Nenhuma movimentação para este membro.
+              </div>
+            </template>
           </div>
         </div>
       </div>
