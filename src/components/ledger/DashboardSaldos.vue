@@ -93,6 +93,12 @@ const getMemberDetails = (id: string) => {
   })
 }
 
+const formatDate = (date: Date) => {
+  return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    .replace('.','')
+    .replace(' de ', ' ')
+}
+
 const formatarDinheiro = (valor: Dinheiro) => {
   if (typeof valor.formatar === 'function') {
     return valor.formatar()
@@ -138,61 +144,51 @@ const formatarDinheiro = (valor: Dinheiro) => {
 
           <!-- Drilldown Detail -->
           <div v-if="selectedMemberId === item.id" class="bg-white border-x border-b border-blue-50 p-4 space-y-2 animate-fade-in rounded-b-xl">
-            <div v-if="getMemberDetails(item.id).length > 0" class="overflow-x-auto">
-              <table class="w-full text-[10px] text-left border-collapse">
-                <thead>
-                  <tr class="text-gray-400 uppercase tracking-wider border-b border-gray-50">
-                    <th class="py-2 font-bold">Descrição</th>
-                    <th class="py-2 font-bold text-right">Pagou</th>
-                    <th class="py-2 font-bold text-right">Consumiu</th>
-                    <th class="py-2 font-bold text-right">Lançamento</th>
-                    <th class="py-2 font-bold text-right bg-blue-50/50 text-blue-600 rounded-t-lg px-2">Acumulado</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50">
-                  <tr v-for="m in getMemberDetails(item.id)" :key="m.id" class="text-gray-600">
-                    <td class="py-2 pr-2">
-                      <div class="font-medium text-gray-800">
-                        {{ m.descricao }}
-                        <span class="text-[10px] text-gray-400 font-normal ml-0.5">({{ formatarDinheiro(m.total) }})</span>
-                      </div>
-                      <div class="text-[9px] text-gray-400 leading-tight mt-1.5 space-y-1">
-                        <div class="flex items-baseline gap-1.5">
-                          <span class="font-bold">-</span>
-                          <template v-if="m.todos_beneficiarios.length > 1">
-                            Dividido com: {{ m.todos_beneficiarios.filter(n => n !== getMembroNome(item.id)).join(', ') }}
-                          </template>
-                          <template v-else-if="m.todos_beneficiarios[0] !== getMembroNome(item.id)">
-                            Destinado a: {{ m.todos_beneficiarios[0] }}
-                          </template>
-                          <template v-else>
-                            Lançamento individual
-                          </template>
-                        </div>
-                        <div class="pl-2.5 space-y-0.5 border-l border-gray-100 ml-0.5">
-                          <div v-for="p in m.pagamentos_detalhados" :key="p.nome" class="flex items-center gap-1.5">
-                            <span class="text-[7px] opacity-50">•</span> 
-                            <span class="font-medium text-gray-400">{{ p.nome }}:</span>
-                            <span>{{ formatarDinheiro(p.valor) }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td :class="['py-2 text-right', m.paid.isZero() ? 'text-gray-300' : 'text-green-600']">
-                      {{ formatarDinheiro(m.paid) }}
-                    </td>
-                    <td :class="['py-2 text-right', m.consumed.isZero() ? 'text-gray-300' : 'text-red-600']">
-                      {{ formatarDinheiro(m.consumed) }}
-                    </td>
-                    <td :class="['py-2 text-right font-bold', m.net.isZero() ? 'text-gray-400' : (m.net.isPositivo() ? 'text-green-600' : 'text-red-600')]">
+            <div v-if="getMemberDetails(item.id).length > 0" class="space-y-4">
+              <div v-for="m in getMemberDetails(item.id)" :key="m.id" class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <!-- Cabeçalho do Card -->
+                <div class="flex justify-between items-start mb-4">
+                  <div class="flex-1">
+                    <h3 class="text-sm font-bold text-slate-800">{{ m.descricao }}</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{{ formatDate(m.data) }}</p>
+                    
+                    <!-- Barra de Proporção Visual -->
+                    <div class="flex w-24 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                      <div 
+                        :class="['h-full', m.net.isPositivo() ? 'bg-emerald-500' : 'bg-red-500']" 
+                        :style="{ width: (m.total.centavos > 0 ? (m.consumed.centavos / m.total.centavos * 100) : 0) + '%' }"
+                      ></div>
+                      <div class="flex-1 h-full bg-slate-200"></div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div :class="['text-lg font-mono font-black', m.net.isZero() ? 'text-slate-400' : (m.net.isPositivo() ? 'text-emerald-600' : 'text-red-500')]">
                       {{ m.net.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.net) }}
-                    </td>
-                    <td :class="['py-2 text-right font-bold bg-blue-50/30 px-2', m.acumulado.isZero() ? 'text-gray-400' : (m.acumulado.isPositivo() ? 'text-green-600' : 'text-red-600')]">
-                      {{ m.acumulado.isPositivo() ? '+' : '' }}{{ formatarDinheiro(m.acumulado) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    </div>
+                    <div :class="['text-[8px] font-black uppercase tracking-tighter', m.net.isPositivo() ? 'text-emerald-500' : 'text-red-400']">
+                      Impacto no Saldo
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Seção de Fluxo (Sua Parte / Desembolso) -->
+                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                  <div :class="{ 'opacity-40': m.paid.isZero() }">
+                    <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Você desembolsou</span>
+                    <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.paid) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Sua parte</span>
+                    <span class="text-xs font-mono font-bold text-slate-700">{{ formatarDinheiro(m.consumed) }}</span>
+                  </div>
+                </div>
+                
+                <!-- Saldo Acumulado Sutil -->
+                <div class="mt-4 pt-3 border-t border-slate-50 flex justify-end items-center gap-2">
+                  <span class="text-[8px] font-black uppercase text-slate-300 tracking-widest">Saldo Acumulado</span>
+                  <span class="text-xs font-mono font-bold text-slate-400 opacity-80">{{ formatarDinheiro(m.acumulado) }}</span>
+                </div>
+              </div>
             </div>
 
             <div v-else class="text-center py-4 text-xs text-gray-400 italic">
