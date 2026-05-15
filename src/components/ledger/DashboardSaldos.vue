@@ -15,9 +15,18 @@ const props = defineProps<Props>()
 const emit = defineEmits(['novo-lancamento'])
 
 const selectedMemberId = ref<string | null>(null)
+const expandedTransactionId = ref<string | null>(null)
+
+const toggleTransaction = (id: string) => {
+  expandedTransactionId.value = expandedTransactionId.value === id ? null : id
+}
 
 const getMembroNome = (id: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
+}
+
+const formatDataCurta = (date: Date) => {
+  return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase()
 }
 
 const acertos = computed(() => {
