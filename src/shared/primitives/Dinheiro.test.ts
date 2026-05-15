@@ -99,5 +99,34 @@ describe('Dinheiro Value Object', () => {
       expect(partes[2].centavos).toBe(1)
       expect(partes.reduce((acc, p) => acc + p.centavos, 0)).toBe(5)
     })
+
+    describe('Property-Based Constraints (Invariantes)', () => {
+      const cenarios = [
+        { total: 1000, partes: 3 },   // R$ 10,00 por 3
+        { total: 5, partes: 3 },      // R$ 0,05 por 3
+        { total: -1000, partes: 3 },  // Estorno de R$ 10,00 por 3
+        { total: -5, partes: 3 },     // Estorno de R$ 0,05 por 3
+        { total: 100, partes: 1 },    // Individual
+        { total: 100, partes: 10 }    // Divisão exata
+      ]
+
+      cenarios.forEach(({ total, partes: n }) => {
+        it(`deve respeitar invariantes para total ${total} e n=${n}`, () => {
+          const d = Dinheiro.deCentavos(total)
+          const resultados = d.distribuir(n)
+
+          // Propriedade 1: A soma das partes deve ser EXATAMENTE igual ao total original
+          const soma = resultados.reduce((acc, p) => acc + p.centavos, 0)
+          expect(soma).toBe(total)
+
+          // Propriedade 2: A diferença entre a maior e a menor parte deve ser no máximo 1 centavo
+          // Isso garante que a distribuição foi a mais justa possível (sem favoritismo excessivo)
+          const centavos = resultados.map(p => p.centavos)
+          const max = Math.max(...centavos)
+          const min = Math.min(...centavos)
+          expect(max - min).toBeLessThanOrEqual(1)
+        })
+      })
+    })
   })
 })
