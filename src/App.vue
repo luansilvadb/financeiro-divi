@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ActivityFeed from './components/ledger/ActivityFeed.vue'
+import { PlusCircle } from 'lucide-vue-next'
 import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from './modules/ledger/core/domain/Transacao'
@@ -38,7 +39,7 @@ const handleSalvarTransacao = async (t: Transacao) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 py-10 px-4">
+  <div class="min-h-screen bg-gray-100 py-10 px-4 pb-24">
     <header class="max-w-md mx-auto mb-8 text-center">
       <h1 class="text-3xl font-extrabold text-blue-900 tracking-tight">DIVI</h1>
       <p class="text-blue-600 font-medium">Orquestrador Financeiro</p>
@@ -65,6 +66,16 @@ const handleSalvarTransacao = async (t: Transacao) => {
         @salvar="handleSalvarTransacao"
         @cancelar="currentView = 'dashboard'"
       />
+
+      <!-- Floating Action Button (FAB) -->
+      <button 
+        v-if="currentView === 'dashboard'"
+        @click="currentView = 'wizard'"
+        class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 active:scale-95 transition-all z-50"
+        aria-label="Novo lançamento"
+      >
+        <PlusCircle class="w-8 h-8" />
+      </button>
     </main>
 
     <footer class="max-w-md mx-auto mt-12 text-center text-gray-400 text-xs">
