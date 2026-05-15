@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ActivityFeed from './components/ledger/ActivityFeed.vue'
-import { PlusCircle } from 'lucide-vue-next'
+import { Plus } from 'lucide-vue-next'
 import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from './modules/ledger/core/domain/Transacao'
@@ -72,14 +72,17 @@ const handleSalvarTransacao = async (t: Transacao) => {
       &copy; 2026 DIVI - Máquina da Verdade
     </footer>
 
-    <!-- Floating Action Button (FAB) -->
+    <!-- Floating Action Button (FAB) Moderno -->
     <button 
       v-if="currentView === 'dashboard'"
       @click="currentView = 'wizard'"
-      class="fixed bottom-10 right-6 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 active:scale-95 transition-all z-[9999]"
+      class="fixed bottom-10 right-6 w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center shadow-[0_10px_25px_-5px_rgba(37,99,235,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-1 active:scale-95 transition-all duration-300 z-[9999] group"
       aria-label="Novo lançamento"
     >
-      <PlusCircle class="w-8 h-8" />
+      <Plus class="w-8 h-8 transition-transform duration-500 group-hover:rotate-90" />
+      
+      <!-- Efeito de brilho interno sutil -->
+      <div class="absolute inset-0 rounded-2xl border border-white/20 pointer-events-none"></div>
     </button>
   </div>
 </template>
