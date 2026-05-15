@@ -17,10 +17,6 @@ const emit = defineEmits(['novo-lancamento'])
 const selectedMemberId = ref<string | null>(null)
 const expandedTransactionId = ref<string | null>(null)
 
-const toggleTransaction = (id: string) => {
-  expandedTransactionId.value = expandedTransactionId.value === id ? null : id
-}
-
 const getMembroNome = (id: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
@@ -46,6 +42,14 @@ const toggleDrilldown = (id: string) => {
     selectedMemberId.value = null
   } else {
     selectedMemberId.value = id
+  }
+}
+
+const toggleTransaction = (id: string) => {
+  if (expandedTransactionId.value === id) {
+    expandedTransactionId.value = null
+  } else {
+    expandedTransactionId.value = id
   }
 }
 
@@ -100,12 +104,6 @@ const getMemberDetails = (id: string) => {
     runningBalance = runningBalance.somar(d.net)
     return { ...d, acumulado: runningBalance }
   })
-}
-
-const formatDate = (date: Date) => {
-  return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-    .replace('.','')
-    .replace(' de ', ' ')
 }
 
 const formatarDinheiro = (valor: Dinheiro) => {
@@ -180,7 +178,41 @@ const formatarDinheiro = (valor: Dinheiro) => {
                       <p class="text-[10px] font-bold text-slate-300 mt-1 uppercase tracking-widest">{{ formatDataCurta(m.data) }}</p>
                     </div>
                   </div>
-                  <!-- Placeholder para as próximas tasks: grid de fluxo, avatares, etc. -->
+
+                  <!-- Nível 2: Grid de Fluxo Simétrica -->
+                  <div class="mx-6 py-5 flex border-t border-slate-50">
+                    <div class="flex-1 space-y-1 pr-4 border-r border-slate-50">
+                      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Você Pagou</span>
+                      <p class="text-sm font-mono font-bold text-slate-800">{{ formatarDinheiro(m.paid) }}</p>
+                    </div>
+                    <div class="flex-1 space-y-1 pl-6">
+                      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sua Parte</span>
+                      <p class="text-sm font-mono font-bold text-slate-800">{{ formatarDinheiro(m.consumed) }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Nível 2: Avatares e Botão Detalhes -->
+                  <div class="px-6 pb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <div class="flex -space-x-2">
+                        <div v-for="pagador in m.pagamentos_detalhados.slice(0, 3)" :key="pagador.nome"
+                             class="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-600 uppercase">
+                          {{ pagador.nome.substring(0, 1) }}
+                        </div>
+                      </div>
+                      <span v-if="m.pagamentos_detalhados.length > 3" class="text-[10px] font-bold text-slate-400">
+                        +{{ m.pagamentos_detalhados.length - 3 }} outros
+                      </span>
+                    </div>
+                    <button @click="toggleTransaction(m.id)" 
+                            class="flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-slate-50 text-[10px] font-bold text-slate-600 border border-slate-100 active:scale-95 transition-all">
+                      {{ expandedTransactionId === m.id ? 'OCULTAR' : 'DETALHES' }}
+                      <svg :class="['w-3 h-3 transition-transform duration-300', expandedTransactionId === m.id ? 'rotate-180' : '']" 
+                           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 9l-7 7-7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
