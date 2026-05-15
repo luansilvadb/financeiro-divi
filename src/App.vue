@@ -72,17 +72,14 @@ const handleSalvarTransacao = async (t: Transacao) => {
       &copy; 2026 DIVI - Máquina da Verdade
     </footer>
 
-    <!-- Floating Action Button (FAB) Moderno -->
+    <!-- Floating Action Button (FAB) -->
     <button 
       v-if="currentView === 'dashboard'"
       @click="currentView = 'wizard'"
-      class="fixed bottom-10 right-6 w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center shadow-[0_10px_25px_-5px_rgba(37,99,235,0.4)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-1 active:scale-95 transition-all duration-300 z-[9999] group"
+      class="fixed bottom-10 right-6 w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center shadow-2xl border-4 border-white ring-4 ring-blue-900/5 hover:bg-blue-800 active:scale-90 transition-all z-[9999]"
       aria-label="Novo lançamento"
     >
-      <Plus class="w-8 h-8 transition-transform duration-500 group-hover:rotate-90" />
-      
-      <!-- Efeito de brilho interno sutil -->
-      <div class="absolute inset-0 rounded-2xl border border-white/20 pointer-events-none"></div>
+      <Plus class="w-10 h-10 stroke-[3px]" />
     </button>
   </div>
 </template>
