@@ -165,13 +165,7 @@ const handleGravar = async () => {
     </header>
 
     <div class="flex-1 p-5 sm:p-6 bg-white overflow-y-auto custom-scrollbar">
-      <transition
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        mode="out-in"
-      >
-        <div :key="step" class="w-full">
+      <div :key="step" class="w-full">
           <div v-if="step === 1" class="grid gap-3">
             <button
               @click="selecionarFluxo('expense', 'pix', null)"
@@ -319,8 +313,7 @@ const handleGravar = async () => {
             </div>
           </div>
         </div>
-      </transition>
-    </div>
+      </div>
 
     <footer class="p-5 sm:p-6 border-t border-[#f2f0ed] bg-white flex gap-3">
       <button
