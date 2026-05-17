@@ -1,0 +1,45 @@
+<div class="mockup">
+  <div class="mockup-header">Estratégia: Core Domain (CalculadoraSaldos)</div>
+  <div class="mockup-body">
+    <h3>Novo Método: <code>obterExtratoMembro(id, transacoes)</code></h3>
+    <p>Em vez de o componente calcular tudo, o <strong>Service</strong> retornará uma lista de objetos ricos:</p>
+    
+    <div class="code-block" style="background: #f4f4f4; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem; margin: 1rem 0;">
+      {<br>
+      &nbsp;&nbsp;transacaoId: string,<br>
+      &nbsp;&nbsp;descricao: string,<br>
+      &nbsp;&nbsp;data: Date,<br>
+      &nbsp;&nbsp;valorLiquido: Dinheiro, // (Pagou - Consumiu)<br>
+      &nbsp;&nbsp;saldoAcumulado: Dinheiro // (O saldo após esta transação)<br>
+      }[]
+    </div>
+
+    <ul class="pros-cons">
+      <li class="pros"><strong>Testes Blindados:</strong> Podemos testar o cálculo do saldo acumulado com 100% de precisão no Vitest.</li>
+      <li class="pros"><strong>UI mais burra:</strong> O componente apenas faz o loop e exibe os dados.</li>
+      <li class="pros"><strong>Performance:</strong> Centraliza o loop pesado em um único lugar otimizado.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Próximo Passo: Modularização Visual</h3>
+  <p>Após movermos essa lógica, vamos quebrar o <code>DashboardSaldos.vue</code>. Qual dessas partes você acha que deve ser o primeiro sub-componente?</p>
+  
+  <div class="options" data-multiselect>
+    <div class="option" data-choice="card-membro" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content">
+        <h3>CardSaldoMembro.vue</h3>
+        <p>O card individual na lista de saldos, incluindo o estado aberto/fechado.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="extrato-detalhe" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content">
+        <h3>ExtratoDetalhado.vue</h3>
+        <p>A "borda semântica" e o fluxo de transações que aparece no drilldown.</p>
+      </div>
+    </div>
+  </div>
+</div>

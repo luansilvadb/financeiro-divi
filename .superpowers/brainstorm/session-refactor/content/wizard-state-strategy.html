@@ -1,0 +1,25 @@
+<h2>Refatoração do Wizard: Estratégia de Estado</h2>
+<p class="subtitle">Antes de quebrarmos o componente em pedaços menores, precisamos decidir como o estado (dados do formulário, passo atual, persistência) será gerenciado.</p>
+
+<div class="options">
+  <div class="option" data-choice="state-prop-emit" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Props & Emits (Tradicional)</h3>
+      <p>O componente pai (NovoLancamentoWizard) mantém todo o estado e passa para os filhos via props. Os filhos notificam mudanças via emits.</p>
+    </div>
+  </div>
+  
+  <div class="option" data-choice="composable" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Composable (Moderno)</h3>
+      <p>Extraímos um <code>useNovoLancamentoWizard</code> que gerencia o estado, validações e persistência. Tanto o pai quanto os filhos podem consumir esse estado diretamente.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Minha Recomendação</h3>
+  <p>A <strong>Opção B</strong> é muito mais poderosa. Ela remove ~150 linhas de lógica pura do componente visual e torna os sub-passos muito mais limpos, pois eles não precisam repassar "emits" para cima o tempo todo.</p>
+</div>

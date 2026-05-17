@@ -2,10 +2,12 @@ import { ref, onMounted, computed } from 'vue'
 import { Membro } from '../core/domain/Membro'
 import { LocalStorageMembroRepository } from '../adapters/LocalStorageMembroRepository'
 
-export function useMembros() {
-  const repository = new LocalStorageMembroRepository()
-  const membros = ref<Membro[]>([])
+// Estado global compartilhado por todas as instâncias do composable (Singleton)
+const repository = new LocalStorageMembroRepository()
+const membros = ref<Membro[]>([])
+const carregado = ref(false)
 
+export function useMembros() {
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
   const carregar = async () => {
@@ -27,6 +29,7 @@ export function useMembros() {
     }
     
     membros.value = lista
+    carregado.value = true
   }
 
   const adicionarMembro = async (nome: string) => {
@@ -44,7 +47,11 @@ export function useMembros() {
     }
   }
 
-  onMounted(carregar)
+  onMounted(async () => {
+    if (!carregado.value) {
+      await carregar()
+    }
+  })
 
   return {
     membros,

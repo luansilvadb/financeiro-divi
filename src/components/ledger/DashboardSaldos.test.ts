@@ -88,4 +88,26 @@ describe('DashboardSaldos', () => {
     expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('R$ 20,00')
     expect(wrapper.text()).toContain('Contribuiu no pagamento')
   })
+
+  it('deve exibir membros inativos se eles tiverem transações', () => {
+    const membrosComInativo = [
+      ...membros,
+      { id: '3', nome: 'Inativo Com Historico', ativo: false },
+      { id: '4', nome: 'Inativo Sem Historico', ativo: false }
+    ]
+
+    const saldosComInativo = new Map(saldos)
+    saldosComInativo.set('3', Dinheiro.deCentavos(0)) // Tem histórico mas saldo zero
+
+    const wrapper = mount(DashboardSaldos, {
+      props: { 
+        membros: membrosComInativo, 
+        saldos: saldosComInativo, 
+        transacoes 
+      }
+    })
+
+    expect(wrapper.text()).toContain('Inativo Com Historico')
+    expect(wrapper.text()).not.toContain('Inativo Sem Historico')
+  })
 })

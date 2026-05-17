@@ -99,8 +99,9 @@ export class CalculadoraSaldos {
     const transacoesOrdenadas = [...transacoes].sort((a, b) => a.data.getTime() - b.data.getTime())
     
     let saldoAcumulado = Dinheiro.deCentavos(0)
-    
-    return transacoesOrdenadas.map(t => {
+    const extratoCompleto: ItemExtrato[] = []
+
+    for (const t of transacoesOrdenadas) {
       const centavosPagos = t.pagamentos
         .filter(p => p.membro_id === membroId)
         .reduce((acc, p) => acc + p.valor.centavos, 0)
@@ -109,22 +110,28 @@ export class CalculadoraSaldos {
         .filter(d => d.beneficiario_id === membroId)
         .reduce((acc, d) => acc + d.valor.centavos, 0)
 
+      const participou = centavosPagos !== 0 || centavosConsumidos !== 0
+
       const valorPago = Dinheiro.deCentavos(centavosPagos)
       const valorConsumido = Dinheiro.deCentavos(centavosConsumidos)
       const valorLiquido = valorPago.subtrair(valorConsumido)
       
       saldoAcumulado = saldoAcumulado.somar(valorLiquido)
       
-      return {
-        id: t.id,
-        descricao: t.descricao,
-        data: t.data,
-        valorPago,
-        valorConsumido,
-        valorLiquido,
-        saldoAcumulado,
-        transacao: t
+      if (participou) {
+        extratoCompleto.push({
+          id: t.id,
+          descricao: t.descricao,
+          data: t.data,
+          valorPago,
+          valorConsumido,
+          valorLiquido,
+          saldoAcumulado,
+          transacao: t
+        })
       }
-    })
+    }
+
+    return extratoCompleto
   }
 }

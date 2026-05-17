@@ -8,7 +8,7 @@ import ItemExtratoCard from './dashboard/ItemExtratoCard.vue'
 
 interface Props {
   saldos: Map<string, Dinheiro>
-  membros: { id: string; nome: string }[]
+  membros: { id: string; nome: string; ativo?: boolean }[]
   transacoes: Transacao[]
 }
 
@@ -16,11 +16,16 @@ const props = defineProps<Props>()
 const selectedMemberId = ref<string | null>(null)
 
 const saldosList = computed(() => {
-  return props.membros.map(m => ({
-    id: m.id,
-    nome: m.nome,
-    saldo: props.saldos.get(m.id) || Dinheiro.deCentavos(0)
-  })).sort((a, b) => b.saldo.centavos - a.saldo.centavos)
+  return props.membros
+    .map(m => ({
+      id: m.id,
+      nome: m.nome,
+      ativo: m.ativo ?? true,
+      saldo: props.saldos.get(m.id) || Dinheiro.deCentavos(0),
+      temTransacoes: props.saldos.has(m.id)
+    }))
+    .filter(item => item.ativo || item.temTransacoes)
+    .sort((a, b) => b.saldo.centavos - a.saldo.centavos)
 })
 
 const getExtrato = (id: string) => {

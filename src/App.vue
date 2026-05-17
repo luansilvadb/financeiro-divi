@@ -13,7 +13,7 @@ import { useMembros } from './modules/ledger/composables/useMembros'
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const repository = new LocalStorageTransacaoRepository()
 const transacoes = ref<Transacao[]>([])
-const { ativos: membros, carregar: carregarMembros } = useMembros()
+const { ativos, membros: todosMembros, carregar: carregarMembros } = useMembros()
 
 const carregarTransacoes = async () => {
   transacoes.value = await repository.listarTodas()
@@ -68,20 +68,20 @@ const handleSalvarTransacao = async (t: Transacao) => {
       <div v-if="currentView === 'dashboard'" class="space-y-6">
         <DashboardSaldos 
           :saldos="saldos" 
-          :membros="membros"
+          :membros="todosMembros"
           :transacoes="transacoes"
           @novo-lancamento="currentView = 'wizard'"
         />
 
         <ActivityFeed 
           :transacoes="transacoes"
-          :membros="membros"
+          :membros="todosMembros"
         />
       </div>
       
       <NovoLancamentoWizard 
         v-else-if="currentView === 'wizard'"
-        :membros="membros"
+        :membros="ativos"
         @salvar="handleSalvarTransacao"
         @cancelar="currentView = 'dashboard'"
       />

@@ -1,0 +1,48 @@
+<h2>Plano de Quebra de Componentes</h2>
+<p class="subtitle">Vamos dividir os componentes gigantes em partes menores, focadas e fáceis de testar.</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">NovoLancamentoWizard.vue</div>
+    <div class="mockup-body">
+      <ul class="pros-cons">
+        <li class="pros"><strong>WizardStep1:</strong> Seleção de Gasto/Ganho</li>
+        <li class="pros"><strong>WizardStep2:</strong> Valor, Descrição e Data</li>
+        <li class="pros"><strong>WizardStep3:</strong> Divisão e Quem Pagou</li>
+        <li class="pros"><strong>WizardShared:</strong> Navegação e Progresso (já existem alguns)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">DashboardSaldos.vue</div>
+    <div class="mockup-body">
+      <ul class="pros-cons">
+        <li class="pros"><strong>ListaSaldos:</strong> Grid principal de membros</li>
+        <li class="pros"><strong>CardSaldoMembro:</strong> O item individual com clique</li>
+        <li class="pros"><strong>TransacaoDrilldown:</strong> O card detalhado de auditoria</li>
+        <li class="pros"><strong>SugestaoAcertos:</strong> Painel de "quem paga quem"</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Como vamos proceder?</h3>
+  <div class="options" data-multiselect>
+    <div class="option" data-choice="wizard-first" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content">
+        <h3>Começar pelo Wizard</h3>
+        <p>É o componente mais complexo em termos de estado. Refatorar aqui traz ganhos imediatos na lógica de entrada de dados.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="dashboard-first" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content">
+        <h3>Começar pelo Dashboard</h3>
+        <p>Focado em visualização e auditoria. Mais simples de quebrar em componentes puramente visuais.</p>
+      </div>
+    </div>
+  </div>
+</div>

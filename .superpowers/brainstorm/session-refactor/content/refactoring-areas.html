@@ -1,0 +1,33 @@
+<h2>Refatoração e Limpeza: Onde começar?</h2>
+<p class="subtitle">Identifiquei três áreas principais que podem ser simplificadas para melhorar a manutenção e reduzir a complexidade.</p>
+
+<div class="options">
+  <div class="option" data-choice="components" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Quebra de Componentes "Gigantes"</h3>
+      <p>Extrair sub-componentes de <code>NovoLancamentoWizard.vue</code> e <code>DashboardSaldos.vue</code> para torná-los mais focados e testáveis.</p>
+    </div>
+  </div>
+  
+  <div class="option" data-choice="composables" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Extração de Composables</h3>
+      <p>Mover a lógica de persistência de rascunhos (localStorage) e gerenciamento de passos do Wizard para composables reutilizáveis.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ui-primitives" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Padronização de Primitivos de UI</h3>
+      <p>Criar componentes base para inputs, botões e cards, eliminando a repetição massiva de classes Tailwind no código.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Minha Recomendação</h3>
+  <p>Eu recomendo começar pela <strong>Extração de Composables (B)</strong>. Isso vai limpar instantaneamente os componentes principais de lógica "não-visual", facilitando muito a quebra subsequente dos componentes (A).</p>
+</div>
