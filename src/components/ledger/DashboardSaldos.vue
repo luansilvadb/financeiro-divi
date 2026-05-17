@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
+import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
+import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -14,16 +17,29 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura'])
 
+const {
+  confirmarAcertosManual,
+  registrarReembolsoParcialManual,
+  atualizarGastoDivisoesManual,
+  gastos: globalGastos,
+  acertos: globalAcertos
+} = useCartoesEFaturas()
+
+// Estado interativo do editor de divisão por gasto
+const gastoExpandidoId = ref<string | null>(null)
+const modoDivisao = ref<'IGUAL' | 'CUSTOMIZADO' | 'PORCENTAGEM'>('IGUAL')
+const valoresDivisao = ref<Record<string, number>>({}) // membroId -> valor (R$ ou %)
+
+// Estado de Pix Parcial por acerto
+const acertoPixId = ref<string | null>(null)
+const valorPixInput = ref<number>(0)
+
 const getMembroNome = (id: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
 
 const getCartaoNome = (cartaoId: string) => {
   return props.cartoes.find(c => c.id === cartaoId)?.nome || 'Cartão'
-}
-
-const acertosDaFatura = (faturaId: string) => {
-  return props.acertosPendentes.filter(a => a.faturaId === faturaId && !a.pago)
 }
 
 const formatarDinheiro = (centavos: number) => {
@@ -41,59 +57,356 @@ const getAdiantamento = (faturaId: string, membroId: string) => {
 const calcularTotalFatura = (faturaId: string) => {
   return props.membros.reduce((sum, m) => sum + getConsumo(faturaId, m.id), 0)
 }
+
+// Filtra acertos pertencentes a uma fatura fechada específica
+const acertosDaFatura = (faturaId: string) => {
+  const list = props.acertosPendentes && props.acertosPendentes.length > 0
+    ? props.acertosPendentes
+    : globalAcertos.value
+  return list.filter(a => a.faturaId === faturaId)
+}
+
+// Verifica se a fatura fechada já possui acertos gerados (está no estado de acerto ativo)
+const faturaTemAcertosAtivos = (faturaId: string) => {
+  return acertosDaFatura(faturaId).length > 0
+}
+
+// Gastos associados à fatura
+const gastosDaFatura = (faturaId: string) => {
+  const list = props.gastos && props.gastos.length > 0
+    ? props.gastos
+    : globalGastos.value
+  return list.filter(g => g.faturaId === faturaId)
+}
+
+// Inicia o painel de divisão interativo
+const iniciarEdicaoDivisao = (gasto: any) => {
+  gastoExpandidoId.value = gasto.id
+  modoDivisao.value = 'IGUAL'
+  
+  // Preenche valores padrão iniciais com base nas divisões atuais do gasto
+  const record: Record<string, number> = {}
+  props.membros.forEach(m => {
+    const div = gasto.divisoes.find((d: any) => d.membroId === m.id)
+    record[m.id] = div ? formatarDinheiro(div.valor.centavos) : 0
+  })
+  valoresDivisao.value = record
+}
+
+// Muda o comprador de um gasto na revisão
+const alterarCompradorGasto = async (gasto: any, novoCompradorId: string) => {
+  // Mantém as divisões mas atualiza comprador
+  const divisoesAtuais = gasto.divisoes.map((d: any) => new DivisaoDeGasto(d.membroId, d.valor))
+  
+  // Como mudamos o comprador, atualizamos no banco
+  const idx = globalGastos.value.findIndex(g => g.id === gasto.id)
+  if (idx >= 0) {
+    const original = globalGastos.value[idx]
+    const novoGasto = new (gasto.constructor || Gasto)({
+      id: original.id,
+      faturaId: original.faturaId,
+      descricao: original.descricao,
+      valorTotal: original.valorTotal,
+      compradorId: novoCompradorId,
+      divisoes: divisoesAtuais
+    })
+    await gastoRepoSalvar(novoGasto)
+  }
+}
+
+// Salva o gasto no repositório auxiliar
+const gastoRepoSalvar = async (novoGasto: any) => {
+  const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
+  await new LocalStorageGastoRepository().salvar(novoGasto)
+  // Força atualização reativa
+  await useCartoesEFaturas().inicializar()
+}
+
+// Salva a divisão interativa configurada
+const salvarDivisaoCustomizada = async (gasto: any) => {
+  const totalGastoCentavos = gasto.valorTotal.centavos
+  let divisoesNovas: DivisaoDeGasto[] = []
+
+  if (modoDivisao.value === 'IGUAL') {
+    const partes = gasto.valorTotal.distribuir(props.membros.length)
+    divisoesNovas = props.membros.map((m, idx) => new DivisaoDeGasto(m.id, partes[idx]))
+  } else if (modoDivisao.value === 'CUSTOMIZADO') {
+    divisoesNovas = props.membros.map(m => new DivisaoDeGasto(m.id, Dinheiro.deReais(valoresDivisao.value[m.id] || 0)))
+  } else if (modoDivisao.value === 'PORCENTAGEM') {
+    // Calcula os valores em centavos proporcionalmente
+    let somaCentavosDistribuida = 0
+    const divisoesPre: { membroId: string; centavos: number }[] = []
+    
+    props.membros.forEach(m => {
+      const pct = valoresDivisao.value[m.id] || 0
+      const centavos = Math.round((pct / 100) * totalGastoCentavos)
+      somaCentavosDistribuida += centavos
+      divisoesPre.push({ membroId: m.id, centavos })
+    })
+
+    // Corrige eventual arredondamento no último membro com saldo ativo
+    const diff = totalGastoCentavos - somaCentavosDistribuida
+    if (diff !== 0 && divisoesPre.length > 0) {
+      divisoesPre[divisoesPre.length - 1].centavos += diff
+    }
+
+    divisoesNovas = divisoesPre.map(d => new DivisaoDeGasto(d.membroId, Dinheiro.deCentavos(d.centavos)))
+  }
+
+  await atualizarGastoDivisoesManual(gasto.id, divisoesNovas)
+  gastoExpandidoId.value = null
+}
+
+// Validação em tempo real do editor de divisão
+const somaDivisaoIncorreta = (gasto: any) => {
+  if (modoDivisao.value === 'IGUAL') return false
+  if (modoDivisao.value === 'CUSTOMIZADO') {
+    const soma = props.membros.reduce((acc, m) => acc + (valoresDivisao.value[m.id] || 0), 0)
+    return Math.abs(soma - formatarDinheiro(gasto.valorTotal.centavos)) > 0.01
+  }
+  if (modoDivisao.value === 'PORCENTAGEM') {
+    const soma = props.membros.reduce((acc, m) => acc + (valoresDivisao.value[m.id] || 0), 0)
+    return Math.abs(soma - 100) > 0.01
+  }
+  return false
+}
+
+// Inicia Pix
+const iniciarPix = (acerto: any) => {
+  acertoPixId.value = acerto.id
+  valorPixInput.value = formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0))
+}
+
+// Envia reembolso Pix parcial/total
+const enviarReembolsoPix = async (acertoId: string) => {
+  if (valorPixInput.value <= 0) return
+  await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
+  acertoPixId.value = null
+}
 </script>
 
 <template>
   <div class="max-w-md mx-auto space-y-6">
-    <!-- Seção 1: Faturas Fechadas (Acertos Ativos) -->
-    <div v-if="faturasFechadas.length > 0" class="bg-amber-50 rounded-2xl p-6 border border-amber-200 shadow-sm">
-      <h3 class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-4">⚠️ Faturas Fechadas (Acertos Pendentes)</h3>
+    <!-- Seção 1: Faturas Fechadas (Fluxos de Revisão ou Acertos Ativos) -->
+    <div v-for="fatura in faturasFechadas" :key="fatura.id" class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-xl text-white overflow-hidden relative">
+      <!-- Glow Decorativo superior -->
+      <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
       
-      <div v-for="fatura in faturasFechadas" :key="fatura.id" class="space-y-4 mb-4 last:mb-0">
-        <div class="flex justify-between items-center border-b border-amber-200/50 pb-2">
-          <div class="flex flex-col">
-            <span class="font-bold text-slate-800 text-sm">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-            <span class="text-[10px] text-amber-700 font-semibold uppercase tracking-wider">Responsável: {{ getMembroNome(fatura.responsavelId) }}</span>
-          </div>
-          <button 
-            @click="emit('reabrirFatura', fatura.id)"
-            class="text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-amber-200/40 hover:bg-amber-200/70 px-2 py-1 rounded-lg transition-all border border-amber-300/30 flex items-center gap-1 shadow-sm"
-          >
-            ↩️ Desfazer
-          </button>
+      <!-- Cabeçalho da Fatura -->
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-5">
+        <div>
+          <span class="text-xs font-black text-indigo-400 uppercase tracking-widest block mb-1">
+            {{ faturaTemAcertosAtivos(fatura.id) ? '⚠️ Faturas Fechadas (Acertos Ativos)' : '🔍 Faturas Fechadas (Em Revisão)' }}
+          </span>
+          <span class="font-extrabold text-lg flex items-center gap-2">
+            💳 Nubank <span class="text-slate-500 text-xs font-normal">• {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+          </span>
+          <span class="text-[10px] text-slate-400 block mt-1">
+            Responsável: <strong class="text-slate-200">{{ getMembroNome(fatura.responsavelId) }}</strong>
+          </span>
+        </div>
+        <button 
+          @click="emit('reabrirFatura', fatura.id)"
+          class="text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl transition-all border border-slate-700/50 flex items-center gap-1 shadow-sm"
+        >
+          ↩️ Reabrir
+        </button>
+      </div>
+
+      <!-- SUB-ESTADO A: EM REVISÃO (Sem acertos gerados ainda) -->
+      <div v-if="!faturaTemAcertosAtivos(fatura.id)" class="space-y-4">
+        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4 text-xs text-indigo-200 leading-relaxed">
+          💡 <strong>Modo de Revisão Coletivo:</strong> Verifique quem fez cada compra e como ela será dividida. Quando terminar, confirme para gerar os Pix.
         </div>
 
-        <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="flex justify-between items-center bg-white p-3 rounded-xl border border-amber-100 shadow-sm">
-          <div>
-            <span class="font-bold text-slate-800 text-sm">{{ getMembroNome(acerto.membroId) }} deve para {{ getMembroNome(fatura.responsavelId) }}</span>
+        <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider mb-2">🛍️ Extrato da Fatura</h4>
+        
+        <div v-for="gasto in gastosDaFatura(fatura.id)" :key="gasto.id" class="bg-slate-800/40 rounded-2xl border border-slate-800 p-4 space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-extrabold text-sm block text-slate-200">{{ gasto.descricao }}</span>
+              <span class="text-xs text-slate-400 mt-1 block">
+                Comprador: 
+                <select 
+                  :value="gasto.compradorId" 
+                  @change="alterarCompradorGasto(gasto, ($event.target as HTMLSelectElement).value)"
+                  class="bg-slate-900 border border-slate-700 rounded-lg text-xs px-2 py-0.5 text-white font-bold ml-1 outline-none"
+                >
+                  <option v-for="m in membros" :key="m.id" :value="m.id">{{ m.nome }}</option>
+                </select>
+              </span>
+            </div>
+            <div class="text-right">
+              <span class="font-black text-indigo-400 text-sm block">R$ {{ formatarDinheiro(gasto.valorTotal.centavos).toFixed(2).replace('.', ',') }}</span>
+              <button 
+                @click="iniciarEdicaoDivisao(gasto)"
+                class="text-[10px] font-bold text-slate-400 hover:text-white underline mt-1"
+              >
+                ✏️ Editar Divisão
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="text-red-600 font-extrabold">R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}</span>
-            <button @click="emit('quitarAcerto', acerto.id)" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-500 transition-colors shadow-sm">Quitar</button>
+
+          <!-- Divisões do gasto detalhadas -->
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span 
+              v-for="div in gasto.divisoes" 
+              :key="div.membroId" 
+              class="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300"
+            >
+              {{ getMembroNome(div.membroId) }}: R$ {{ formatarDinheiro(div.valor.centavos).toFixed(2).replace('.', ',') }}
+            </span>
+          </div>
+
+          <!-- Painel Interativo de Edição de Divisão expandido -->
+          <div v-if="gastoExpandidoId === gasto.id" class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 mt-3 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+              <span class="text-xs font-black uppercase text-indigo-400">Tipo de Divisão</span>
+              <div class="flex gap-1">
+                <button 
+                  v-for="mode in ['IGUAL', 'CUSTOMIZADO', 'PORCENTAGEM'] as const"
+                  :key="mode"
+                  @click="modoDivisao = mode"
+                  :class="[
+                    'text-[9px] font-black px-2 py-1 rounded-lg transition-all',
+                    modoDivisao === mode ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  ]"
+                >
+                  {{ mode === 'IGUAL' ? '🛍️ Igual' : mode === 'CUSTOMIZADO' ? '✏️ Valor' : '📊 %' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Inputs Dinâmicos para membros da casa -->
+            <div class="space-y-3">
+              <div v-for="membro in membros" :key="membro.id" class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-300">{{ membro.nome }}</span>
+                <div class="flex items-center gap-1.5">
+                  <span v-if="modoDivisao !== 'IGUAL'" class="text-slate-500 font-bold">
+                    {{ modoDivisao === 'CUSTOMIZADO' ? 'R$' : '%' }}
+                  </span>
+                  <input 
+                    v-model.number="valoresDivisao[membro.id]"
+                    type="number"
+                    step="any"
+                    :disabled="modoDivisao === 'IGUAL'"
+                    class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-1 text-center font-black text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Aviso de Validação do somatório -->
+            <div v-if="somaDivisaoIncorreta(gasto)" class="text-[10px] font-black text-rose-400 text-center leading-relaxed">
+              ⚠️ A soma deve bater exatamente com 
+              {{ modoDivisao === 'CUSTOMIZADO' ? 'R$ ' + formatarDinheiro(gasto.valorTotal.centavos).toFixed(2) : '100%' }}
+            </div>
+
+            <div class="flex gap-2 justify-end pt-2 border-t border-slate-800">
+              <button 
+                @click="gastoExpandidoId = null" 
+                class="text-xs font-bold text-slate-400 hover:text-white px-3 py-1.5 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button 
+                @click="salvarDivisaoCustomizada(gasto)" 
+                :disabled="somaDivisaoIncorreta(gasto)"
+                class="text-xs font-black bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white px-4 py-1.5 rounded-lg shadow-md transition-all"
+              >
+                Salvar Divisão
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmar acertos finais da Fatura -->
+        <button 
+          @click="confirmarAcertosManual(fatura.id)"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-600/20 mt-6 transition-all text-center text-sm"
+        >
+          🔒 Confirmar Divisão e Gerar Acertos
+        </button>
+      </div>
+
+      <!-- SUB-ESTADO B: ACERTOS ATIVOS (Com amortizações parciais de Pix) -->
+      <div v-else class="space-y-4">
+        <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider mb-2">💸 Saldos de Reembolso Pendentes</h4>
+
+        <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="bg-slate-800/40 rounded-2xl border border-slate-800 p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="font-extrabold text-sm block text-slate-200">
+                {{ getMembroNome(acerto.membroId) }} deve para {{ getMembroNome(fatura.responsavelId) }}
+              </span>
+              <span class="text-[10px] text-slate-400 mt-1 block">
+                Total Acerto: R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}
+              </span>
+            </div>
+            <div class="text-right">
+              <span :class="['font-black text-sm block', acerto.pago ? 'text-emerald-400' : 'text-rose-400']">
+                {{ acerto.pago ? '✅ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') + ' Restante' }}
+              </span>
+              <button 
+                v-if="!acerto.pago"
+                @click="iniciarPix(acerto)"
+                class="text-[10px] font-black text-indigo-400 hover:text-indigo-300 underline mt-1"
+              >
+                Registrar Pix
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso do Reembolso -->
+          <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+            <div 
+              class="bg-indigo-500 h-full rounded-full transition-all duration-300"
+              :style="{ width: `${((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100}%` }"
+            ></div>
+          </div>
+
+          <!-- Amortização Pix Parcial expandido -->
+          <div v-if="acertoPixId === acerto.id" class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 mt-2 space-y-3">
+            <span class="text-xs font-black uppercase text-indigo-400 block mb-2">Registrar Pagamento Pix</span>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400 text-xs font-bold">R$</span>
+              <input 
+                v-model.number="valorPixInput"
+                type="number"
+                step="0.01"
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 font-black text-white focus:outline-none focus:border-indigo-500 text-xs"
+              />
+              <button 
+                @click="enviarReembolsoPix(acerto.id)"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs px-4 py-2 rounded-lg"
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Seção 2: Faturas Abertas (Previsão de Gastos) -->
-    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">🔍 Faturas Abertas (Previsão de Gastos)</h3>
+    <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+      <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">🔍 Faturas Abertas (Previsão de Gastos)</h3>
       
       <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-slate-100 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-5">
           <div class="flex flex-col">
-            <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-            <span class="text-xs text-slate-500 font-semibold">Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
+            <span class="font-extrabold text-slate-800 text-base">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+            <span class="text-xs text-slate-500 font-bold mt-0.5">Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
           </div>
-          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
+          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-black bg-slate-900 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-colors">Fechar Fatura</button>
         </div>
 
         <div class="space-y-3">
-          <div v-for="membro in membros" :key="membro.id" class="flex flex-col border-b border-slate-50 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
+          <div v-for="membro in membros" :key="membro.id" class="flex flex-col border-b border-slate-50 pb-2.5 mb-2.5 last:border-0 last:pb-0 last:mb-0">
             <div class="flex justify-between items-center text-sm">
               <span class="font-bold text-slate-700">
                 {{ membro.nome }} 
-                <span v-if="membro.id === fatura.responsavelId" class="text-[10px] text-indigo-500 font-extrabold uppercase ml-1">(Dono)</span>:
+                <span v-if="membro.id === fatura.responsavelId" class="text-[9px] text-indigo-600 font-black uppercase ml-1 bg-indigo-50 px-1.5 py-0.5 rounded-md">Dono</span>:
               </span>
               <span class="font-extrabold text-slate-800">
                 Pendente: R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}

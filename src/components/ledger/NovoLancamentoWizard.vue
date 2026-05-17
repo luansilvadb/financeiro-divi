@@ -20,6 +20,7 @@ const {
   tipo,
   valor,
   descricao,
+  compradorSelecionadoId, // <- NOVO
   beneficiarios_selecionados,
   cartaoSelecionadoId,
   adiantamentoRemetenteId,
@@ -35,7 +36,7 @@ const {
 const valorInput = ref<HTMLInputElement | null>(null)
 
 const focarValorInput = () => {
-  if ((tipo.value === 'GASTO' && step.value === 3) || (tipo.value === 'ADIANTAMENTO' && step.value === 4)) {
+  if ((tipo.value === 'GASTO' && step.value === 4) || (tipo.value === 'ADIANTAMENTO' && step.value === 4)) {
     setTimeout(() => {
       valorInput.value?.focus()
     }, 150)
@@ -61,14 +62,6 @@ const selecionarAdiantamentoCartao = (id: string) => {
 const selecionarRemetente = (id: string) => {
   adiantamentoRemetenteId.value = id
   next()
-}
-
-const marcarTodos = () => {
-  beneficiarios_selecionados.value = props.membros.map(m => m.id)
-}
-
-const limparTodos = () => {
-  beneficiarios_selecionados.value = []
 }
 
 const finalizar = async () => {
@@ -97,7 +90,7 @@ const finalizar = async () => {
           <span class="text-3xl">🛍️</span>
           <div>
             <strong class="block text-gray-800 text-base">Novo Gasto no Cartão</strong>
-            <span class="text-xs text-gray-500">Registrar uma compra e dividir entre quem consumiu</span>
+            <span class="text-xs text-gray-500">Registrar uma compra (divisão detalhada posterior)</span>
           </div>
         </button>
 
@@ -144,8 +137,32 @@ const finalizar = async () => {
         </div>
       </div>
 
-      <!-- Passo 3: Dados do Gasto -->
+      <!-- Passo 3: Quem passou o cartão? -->
       <div v-else-if="step === 3" key="gasto-step3">
+        <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">Quem passou o cartão?</h2>
+        
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <button 
+            v-for="membro in props.membros" 
+            :key="membro.id"
+            @click="compradorSelecionadoId = membro.id; next(); focarValorInput();"
+            :class="[
+              'p-4 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all',
+              compradorSelecionadoId === membro.id 
+                ? 'border-blue-600 bg-blue-50/50 shadow-sm' 
+                : 'border-slate-50 hover:border-blue-600/30'
+            ]"
+          >
+            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-700">
+              {{ membro.nome[0].toUpperCase() }}
+            </div>
+            <span class="font-bold text-sm text-gray-800">{{ membro.nome }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Passo 4: Dados do Gasto -->
+      <div v-else-if="step === 4" key="gasto-step4">
         <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Qual o valor e descrição?</h2>
         
         <div class="mb-10 text-center bg-blue-50/50 p-10 rounded-[2.5rem] border-2 border-blue-100 group">
@@ -168,45 +185,6 @@ const finalizar = async () => {
             placeholder="O que você comprou?" 
             class="w-full p-5 text-lg border-2 border-blue-100/50 rounded-2xl focus:border-blue-200 focus:outline-none bg-white/50 text-center placeholder:text-blue-300 text-blue-600"
           />
-        </div>
-      </div>
-
-      <!-- Passo 4: Quem Consumiu -->
-      <div v-else-if="step === 4" key="gasto-step4">
-        <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">Quem consumiu esse gasto?</h2>
-        
-        <div class="flex justify-center gap-4 mb-8">
-          <button 
-            @click="marcarTodos" 
-            class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Selecionar Todos
-          </button>
-          <button 
-            @click="limparTodos" 
-            class="text-xs font-bold text-gray-600 hover:text-gray-800 bg-gray-50 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Limpar Todos
-          </button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 mb-8">
-          <button 
-            v-for="membro in props.membros" 
-            :key="membro.id"
-            @click="toggleBeneficiario(membro.id)"
-            :class="[
-              'p-4 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all',
-              beneficiarios_selecionados.includes(membro.id) 
-                ? 'border-indigo-600 bg-indigo-50/50 shadow-sm' 
-                : 'border-slate-50 hover:border-indigo-600/30'
-            ]"
-          >
-            <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-lg font-bold text-indigo-700">
-              {{ membro.nome[0].toUpperCase() }}
-            </div>
-            <span class="font-bold text-sm text-gray-800">{{ membro.nome }}</span>
-          </button>
         </div>
       </div>
     </div>
