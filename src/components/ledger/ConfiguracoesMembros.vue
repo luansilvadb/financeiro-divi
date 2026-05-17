@@ -66,7 +66,7 @@ const handleAdicionar = async () => {
       <!-- Adicionar Novo -->
       <Card class="p-8 shadow-subtle bg-card rounded-cards space-y-4">
         <h3 class="text-[10px] font-bold text-ash uppercase tracking-widest ml-1">Novo Morador</h3>
-        <div class="flex gap-2">
+        <div class="flex gap-3">
           <input 
             v-model="novoNome"
             type="text" 
@@ -79,7 +79,7 @@ const handleAdicionar = async () => {
             :disabled="!novoNome.trim()"
             :variant="novoNome.trim() ? 'primary' : 'secondary'"
             size="icon"
-            class="h-12 w-12 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-30 border border-stone-surface flex items-center justify-center"
+            class="h-12 w-12 shrink-0 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-30 border border-stone-surface flex items-center justify-center"
             :class="novoNome.trim() ? 'bg-ember text-white hover:bg-ember/90 shadow-sm border-transparent' : ''"
           >
             <UserPlus class="w-5 h-5" />
