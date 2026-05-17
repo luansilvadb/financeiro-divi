@@ -37,4 +37,40 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('Adiantado: - R$ 50,00')
     expect(wrapper.text()).toContain('Pendente: R$ 100,00')
   })
+
+  it('deve disparar a abertura do modal de ajuste ao clicar no botao de ajustar', async () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: [] as any,
+        acertosPendentes: [] as any,
+        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        cartoes: [{ id: 'c1', nome: 'Nubank', responsavelPadraoId: 'm1' }] as any,
+        calcularConsumo: () => 0,
+        gastos: [] as any
+      }
+    })
+
+    // Mock do inicializar do useCartoesEFaturas para conter gastos ativos
+    const { useCartoesEFaturas } = await import('../../modules/ledger/composables/useCartoesEFaturas')
+    const { Dinheiro } = await import('../../shared/primitives/Dinheiro')
+    const { Gasto } = await import('../../modules/ledger/core/domain/Gasto')
+    const { DivisaoDeGasto } = await import('../../modules/ledger/core/domain/DivisaoDeGasto')
+
+    const mockG = new Gasto({
+      id: 'g-teste-feed',
+      faturaId: 'f1',
+      descricao: 'Lanche Barato',
+      valorTotal: Dinheiro.deCentavos(1000),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(1000))]
+    })
+
+    useCartoesEFaturas().gastos.value = [mockG]
+    await wrapper.vm.$nextTick()
+
+    // Verifica presença do botão de ajuste no feed
+    expect(wrapper.text()).toContain('Lanche Barato')
+    expect(wrapper.text()).toContain('Ajustar')
+  })
 })

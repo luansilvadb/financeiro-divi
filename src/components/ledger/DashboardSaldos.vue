@@ -16,6 +16,7 @@ import HistoricoFaturas from './dashboard/HistoricoFaturas.vue'
 import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
 import ModalAcertoCompensacao from './dashboard/ModalAcertoCompensacao.vue'
 import ActivityFeed from './ActivityFeed.vue'
+import ModalAjustarGasto from './ModalAjustarGasto.vue'
 import { 
   Plus, 
   Settings, 
@@ -55,6 +56,7 @@ const {
   removerPagamentoBancoManual,
   fecharFaturaManual,
   quitarAcertoMembro,
+  atualizarGastoCompletoManual,
   gastos: globalGastos,
   acertos: globalAcertos
 } = useCartoesEFaturas()
@@ -78,6 +80,34 @@ const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string
   await fecharFaturaManual(faturaId, responsavelId)
   showModalFechar.value = false
   faturaParaFechar.value = null
+  await useCartoesEFaturas().inicializar()
+}
+
+// Estado do modal de Ajuste (✏️ Ajustar)
+const showModalAjustar = ref(false)
+const gastoParaAjustar = ref<any | null>(null)
+
+const abrirAjustarGasto = (gastoId: string) => {
+  const gasto = globalGastos.value.find(g => g.id === gastoId)
+  if (gasto) {
+    gastoParaAjustar.value = gasto
+    showModalAjustar.value = true
+  }
+}
+
+const confirmarAjusteGasto = async (dados: {
+  descricao: string
+  valorTotal: any
+  compradorId: string
+  method: 'pix' | 'card'
+  cardOwner: string | null
+  divisoes: any[]
+  installments: number
+}) => {
+  if (!gastoParaAjustar.value) return
+  await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
+  showModalAjustar.value = false
+  gastoParaAjustar.value = null
   await useCartoesEFaturas().inicializar()
 }
 
@@ -812,6 +842,7 @@ const excluirGasto = async (id: string) => {
         :membros="props.membros"
         :is-month-locked="isMonthLocked"
         @desfazerGasto="excluirGasto"
+        @ajustarGasto="abrirAjustarGasto"
       />
     </div>
 
@@ -877,6 +908,16 @@ const excluirGasto = async (id: string) => {
       :suggested-value="nettingTarget?.val || 0"
       @cancel="showModalNetting = false"
       @confirm="confirmarBaixaNetting"
+    />
+
+    <!-- Modal de Ajuste de Lançamento (✏️ Ajustar) -->
+    <ModalAjustarGasto 
+      :visible="showModalAjustar"
+      :gasto="gastoParaAjustar"
+      :membros="props.membros"
+      :cartoes="props.cartoes"
+      @cancel="showModalAjustar = false"
+      @save="confirmarAjusteGasto"
     />
   </div>
 </template>

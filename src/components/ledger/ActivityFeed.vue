@@ -11,7 +11,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['desfazerGasto'])
+const emit = defineEmits(['desfazerGasto', 'ajustarGasto'])
 
 const sortedGastos = computed(() => {
   return [...props.gastos].sort((a, b) => b.id.localeCompare(a.id)) // Ordenação estável descendente
@@ -68,6 +68,15 @@ const handleDelete = (id: string) => {
 
         <!-- Ações do Feed -->
         <div class="flex justify-end gap-2 border-t border-divi-border/30 pt-2.5">
+          <button 
+            v-if="!g.isSettlement"
+            type="button"
+            @click="emit('ajustarGasto', g.id)"
+            :disabled="props.isMonthLocked"
+            class="px-3 py-1.5 text-[9.5px] font-black bg-divi-primary/10 hover:bg-divi-primary/20 text-divi-primary rounded-lg border border-divi-primary/20 transition-all disabled:opacity-40"
+          >
+            ✏️ Ajustar
+          </button>
           <button 
             type="button"
             @click="handleDelete(g.id)"
