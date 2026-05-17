@@ -106,135 +106,156 @@ const salvar = () => {
 <template>
   <div 
     v-if="show && props.gasto" 
-    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
+    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm z-[9999] flex justify-center sm:items-center items-end sm:p-6 p-0 animate-in fade-in duration-200"
   >
-    <div class="bg-card shadow-lg w-full max-w-md rounded-cards p-6 border border-stone-surface flex flex-col max-h-[90vh] text-graphite">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6 border-b border-stone-surface pb-4">
-        <div>
-          <h3 class="text-lg font-bold text-charcoal">Rateio & Comprador</h3>
-          <span class="text-xs text-ash font-bold block mt-1">Ajuste de rateio de forma simples</span>
-        </div>
-        <button 
-          @click="emit('close')"
-          class="w-8 h-8 rounded-full bg-stone-surface hover:bg-stone text-ash hover:text-charcoal font-bold flex items-center justify-center transition-all"
-        >
-          ✕
-        </button>
-      </div>
+    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
+    <div 
+      class="bg-card shadow-lg w-full sm:max-w-md border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
+    >
+      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
+      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
 
-      <!-- Info Gasto -->
-      <div class="bg-stone-surface border border-stone-surface rounded-cards p-4 mb-5 flex justify-between items-center">
-        <div>
-          <span class="text-[10px] uppercase font-bold tracking-widest text-ember">Gasto sob Revisão</span>
-          <strong class="block text-charcoal text-sm mt-0.5">{{ props.gasto.descricao }}</strong>
-        </div>
-        <div class="text-right">
-          <span class="text-xs font-bold text-ash">Valor</span>
-          <strong class="block text-ember text-lg font-bold">R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</strong>
-        </div>
-      </div>
-
-      <div class="space-y-5 overflow-y-auto flex-1 pr-1">
-        <!-- 1. Comprador -->
-        <div class="space-y-2">
-          <label class="text-xs font-bold uppercase text-ash tracking-wider block">Quem Comprou (Dono do gasto)</label>
-          <SeletorMembros 
-            :membros="props.membros"
-            v-model="compradorId"
-          />
-        </div>
-
-        <!-- 2. Rateio e Divisão -->
-        <div class="bg-stone-surface/30 border border-stone-surface rounded-cards p-4 space-y-4">
-          <div class="flex justify-between items-center pb-2 border-b border-stone-surface">
-            <span class="text-xs font-bold uppercase text-ash tracking-wider">Configurar Rateio</span>
-            <div class="flex bg-stone-surface p-0.5 rounded-lg border border-stone-surface">
-              <button 
-                type="button"
-                @click="setModo('IGUAL')"
-                :class="[
-                  'text-[10px] font-bold px-2.5 py-1 rounded-md transition-all',
-                  modo === 'IGUAL' ? 'bg-midnight text-white shadow-sm' : 'text-ash hover:text-charcoal'
-                ]"
-              >
-                ⚖️ Igual
-              </button>
-              <button 
-                type="button"
-                @click="setModo('MANUAL')"
-                :class="[
-                  'text-[10px] font-bold px-2.5 py-1 rounded-md transition-all',
-                  modo === 'MANUAL' ? 'bg-midnight text-white shadow-sm' : 'text-ash hover:text-charcoal'
-                ]"
-              >
-                ✏️ Manual
-              </button>
-            </div>
+      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col">
+        <!-- Header -->
+        <div class="flex justify-between items-center border-b border-stone-surface pb-4 shrink-0">
+          <div>
+            <h3 class="text-lg font-bold text-charcoal">Rateio & Comprador</h3>
+            <span class="text-xs text-ash font-bold block mt-1">Ajuste de rateio de forma simples</span>
           </div>
+          <button 
+            @click="emit('close')"
+            class="w-8 h-8 rounded-full bg-stone-surface hover:bg-stone text-ash hover:text-charcoal font-bold flex items-center justify-center transition-all"
+          >
+            ✕
+          </button>
+        </div>
 
-          <!-- Participantes -->
+        <!-- Info Gasto -->
+        <div class="bg-stone-surface border border-stone-surface rounded-cards p-4 flex justify-between items-center shrink-0">
+          <div>
+            <span class="text-[10px] uppercase font-bold tracking-widest text-ember">Gasto sob Revisão</span>
+            <strong class="block text-charcoal text-sm mt-0.5">{{ props.gasto.descricao }}</strong>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-bold text-ash">Valor</span>
+            <strong class="block text-ember text-lg font-bold">R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</strong>
+          </div>
+        </div>
+
+        <div class="space-y-5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+          <!-- 1. Comprador -->
           <div class="space-y-2">
-            <span class="text-xs font-bold text-ash">Quem divide essa conta:</span>
+            <label class="text-xs font-bold uppercase text-ash tracking-wider block">Quem Comprou (Dono do gasto)</label>
             <SeletorMembros 
               :membros="props.membros"
-              v-model="participantes"
-              :multiple="true"
-              @update:model-value="modo === 'MANUAL' ? recalcularSugestaoManual() : null"
+              v-model="compradorId"
             />
           </div>
 
-          <!-- Valores Detalhados -->
-          <div v-if="participantes.length > 0" class="pt-3 border-t border-stone-surface">
-            <!-- Modo IGUAL -->
-            <div v-if="modo === 'IGUAL'" class="bg-[#fbfaf9] border border-stone-surface p-4 rounded-cards text-center">
-              <span class="text-[10px] text-ash font-bold block mb-1">Cada pessoa paga</span>
-              <strong class="text-xl font-bold text-charcoal">R$ {{ valorSugeridoIgual.toFixed(2).replace('.', ',') }}</strong>
+          <!-- 2. Rateio e Divisão -->
+          <div class="bg-stone-surface/30 border border-stone-surface rounded-cards p-4 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-stone-surface">
+              <span class="text-xs font-bold uppercase text-ash tracking-wider">Configurar Rateio</span>
+              <div class="flex bg-stone-surface p-0.5 rounded-lg border border-stone-surface">
+                <button 
+                  type="button"
+                  @click="setModo('IGUAL')"
+                  :class="[
+                    'text-[10px] font-bold px-2.5 py-1 rounded-md transition-all',
+                    modo === 'IGUAL' ? 'bg-midnight text-white shadow-sm' : 'text-ash hover:text-charcoal'
+                  ]"
+                >
+                  ⚖️ Igual
+                </button>
+                <button 
+                  type="button"
+                  @click="setModo('MANUAL')"
+                  :class="[
+                    'text-[10px] font-bold px-2.5 py-1 rounded-md transition-all',
+                    modo === 'MANUAL' ? 'bg-midnight text-white shadow-sm' : 'text-ash hover:text-charcoal'
+                  ]"
+                >
+                  ✏️ Manual
+                </button>
+              </div>
             </div>
 
-            <!-- Modo MANUAL -->
-            <div v-else class="space-y-3">
-              <div v-for="id in participantes" :key="id" class="flex justify-between items-center text-xs">
-                <span class="font-bold text-charcoal">{{ props.membros.find(m => m.id === id)?.nome }}</span>
-                <div class="flex items-center gap-1.5">
-                  <span class="text-ash font-bold">R$</span>
-                  <input 
-                    type="number"
-                    step="0.01"
-                    v-model.number="valores[id]"
-                    class="w-24 px-2 py-1.5 text-center font-bold text-charcoal rounded-lg border border-stone-surface bg-[#fbfaf9] focus:border-ember outline-none"
-                  />
-                </div>
+            <!-- Participantes -->
+            <div class="space-y-2">
+              <span class="text-xs font-bold text-ash">Quem divide essa conta:</span>
+              <SeletorMembros 
+                :membros="props.membros"
+                v-model="participantes"
+                :multiple="true"
+                @update:model-value="modo === 'MANUAL' ? recalcularSugestaoManual() : null"
+              />
+            </div>
+
+            <!-- Valores Detalhados -->
+            <div v-if="participantes.length > 0" class="pt-3 border-t border-stone-surface">
+              <!-- Modo IGUAL -->
+              <div v-if="modo === 'IGUAL'" class="bg-[#fbfaf9] border border-stone-surface p-4 rounded-cards text-center">
+                <span class="text-[10px] text-ash font-bold block mb-1">Cada pessoa paga</span>
+                <strong class="text-xl font-bold text-charcoal">R$ {{ valorSugeridoIgual.toFixed(2).replace('.', ',') }}</strong>
               </div>
 
-              <!-- Erro de Soma Manual -->
-              <div v-if="erroSoma" class="text-[10px] font-bold text-coral-red leading-normal bg-coral-red/5 border border-coral-red/25 p-2 rounded-cards text-center animate-pulse">
-                ⚠️ A soma dos valores (R$ {{ somaManual.toFixed(2).replace('.', ',') }}) deve fechar exatamente R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}.
+              <!-- Modo MANUAL -->
+              <div v-else class="space-y-3">
+                <div v-for="id in participantes" :key="id" class="flex justify-between items-center text-xs">
+                  <span class="font-bold text-charcoal">{{ props.membros.find(m => m.id === id)?.nome }}</span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-ash font-bold">R$</span>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      v-model.number="valores[id]"
+                      class="w-24 px-2 py-1.5 text-center font-bold text-charcoal rounded-lg border border-stone-surface bg-[#fbfaf9] focus:border-ember outline-none"
+                    />
+                  </div>
+                </div>
+
+                <!-- Erro de Soma Manual -->
+                <div v-if="erroSoma" class="text-[10px] font-bold text-coral-red leading-normal bg-coral-red/5 border border-coral-red/25 p-2 rounded-cards text-center animate-pulse">
+                  ⚠️ A soma dos valores (R$ {{ somaManual.toFixed(2).replace('.', ',') }}) deve fechar exatamente R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}.
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Footer Buttons -->
-      <div class="border-t border-stone-surface pt-4 mt-6 flex gap-3">
-        <button 
-          @click="emit('close')"
-          class="flex-1 py-3 border border-stone-surface bg-[#f6f4ef] hover:bg-stone-surface rounded-buttonspill text-xs font-semibold text-charcoal transition-all active:scale-[0.98]"
-        >
-          Cancelar
-        </button>
-        <button 
-          @click="salvar"
-          :disabled="!podeSalvar"
-          :class="[
-            'flex-1 py-3 rounded-buttonspill text-xs font-semibold text-white transition-all',
-            podeSalvar ? 'bg-midnight hover:bg-charcoal-primary shadow-sm' : 'bg-[#e2dfd9] text-smoke cursor-not-allowed shadow-none'
-          ]"
-        >
-          Salvar Rateio
-        </button>
+        <!-- Footer Buttons -->
+        <div class="border-t border-stone-surface pt-4 mt-6 flex gap-3 shrink-0">
+          <button 
+            @click="emit('close')"
+            class="flex-1 py-3 border border-stone-surface bg-[#f6f4ef] hover:bg-stone-surface rounded-buttonspill text-xs font-semibold text-charcoal transition-all active:scale-[0.98]"
+          >
+            Cancelar
+          </button>
+          <button 
+            @click="salvar"
+            :disabled="!podeSalvar"
+            :class="[
+              'flex-1 py-3 rounded-buttonspill text-xs font-semibold text-white transition-all',
+              podeSalvar ? 'bg-midnight hover:bg-charcoal-primary shadow-sm' : 'bg-[#e2dfd9] text-smoke cursor-not-allowed shadow-none'
+            ]"
+          >
+            Salvar Rateio
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-surface);
+  border-radius: 9999px;
+}
+</style>
