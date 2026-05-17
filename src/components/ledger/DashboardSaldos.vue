@@ -22,6 +22,8 @@ const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirF
 const {
   confirmarAcertosManual,
   registrarReembolsoParcialManual,
+  registrarPagamentoBancoManual,
+  removerPagamentoBancoManual,
   atualizarGastoDivisoesManual,
   gastos: globalGastos,
   acertos: globalAcertos
@@ -185,6 +187,10 @@ const enviarReembolsoPix = async (acertoId: string) => {
   await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
   acertoPixId.value = null
 }
+const todosOsAcertosQuitados = (faturaId: string) => {
+  const acertos = acertosDaFatura(faturaId)
+  return acertos.length > 0 && acertos.every(a => a.pago)
+}
 </script>
 
 <template>
@@ -333,6 +339,31 @@ const enviarReembolsoPix = async (acertoId: string) => {
 
       <!-- SUB-ESTADO B: ACERTOS ATIVOS (Com amortizações parciais de Pix) -->
       <div v-else class="space-y-4">
+        <!-- Banner de Status de Pagamento ao Banco (Abordagem A/B) -->
+        <div v-if="fatura.dataPagamentoBanco" class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex justify-between items-center mb-2">
+          <div class="text-xs text-emerald-200 leading-relaxed">
+            🏦 <strong>Fatura paga ao banco!</strong> O responsável já pagou a fatura do cartão. Envie seu Pix de reembolso a ele.
+          </div>
+          <button 
+            @click="removerPagamentoBancoManual(fatura.id)"
+            class="text-[9px] font-black text-rose-400 hover:text-rose-300 underline ml-2 whitespace-nowrap"
+          >
+            Estornar
+          </button>
+        </div>
+
+        <div v-else class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 space-y-3 mb-2">
+          <div class="text-xs text-amber-200 leading-relaxed">
+            ⏳ <strong>Aguardando Pagamento ao Banco:</strong> O responsável ainda não pagou a fatura ao banco.
+          </div>
+          <button 
+            @click="registrarPagamentoBancoManual(fatura.id)"
+            class="w-full bg-amber-600 hover:bg-amber-500 text-white font-black text-[10px] py-2 rounded-xl transition-all shadow-md shadow-amber-600/10"
+          >
+            🏦 Já paguei o banco! (Marcar como Paga ao Banco)
+          </button>
+        </div>
+
         <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider mb-2">💸 Saldos de Reembolso Pendentes</h4>
 
         <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="bg-slate-800/40 rounded-2xl border border-slate-800 p-4 space-y-3">
@@ -386,6 +417,18 @@ const enviarReembolsoPix = async (acertoId: string) => {
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- Botão especial de encerramento de arrecadação (Abordagem B) -->
+        <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 mt-4 border border-emerald-500/20 shadow-lg">
+          <span class="text-xs font-black uppercase tracking-wider">🎉 Reembolsos Coletados!</span>
+          <span class="text-[11px] text-emerald-100">Todos os moradores já enviaram os reembolsos por Pix.</span>
+          <button 
+            @click="registrarPagamentoBancoManual(fatura.id)"
+            class="bg-white text-emerald-800 font-extrabold text-xs px-4 py-2.5 rounded-xl hover:bg-emerald-50 shadow-md transition-colors w-full mt-1"
+          >
+            🏦 Registrar Pagamento ao Banco e Quitar Fatura
+          </button>
         </div>
       </div>
     </div>

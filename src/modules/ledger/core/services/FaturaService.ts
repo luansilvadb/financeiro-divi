@@ -13,7 +13,7 @@ export class FaturaService {
     private acertoRepo: IAcertoMembroRepository
   ) {}
 
-  async fecharFatura(faturaId: string, dataPagamentoBanco: Date): Promise<void> {
+  async fecharFatura(faturaId: string, dataPagamentoBanco?: Date): Promise<void> {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
 
@@ -71,5 +71,27 @@ export class FaturaService {
     fatura.reabrir()
     await this.faturaRepo.salvar(fatura)
     await this.acertoRepo.excluirPorFatura(faturaId)
+  }
+
+  async registrarPagamentoBanco(faturaId: string, data: Date): Promise<void> {
+    const fatura = await this.faturaRepo.buscarPorId(faturaId)
+    if (!fatura) throw new Error('Fatura não encontrada')
+    fatura.marcarComoPagaAoBanco(data)
+    await this.faturaRepo.salvar(fatura)
+
+    // Se todos os acertos já estiverem pagos, transiciona para ACERTADA
+    const acertos = await this.acertoRepo.buscarPorFatura(faturaId)
+    const todosQuitados = acertos.length > 0 && acertos.every(a => a.pago)
+    if (todosQuitados && fatura.status === 'FECHADA') {
+      fatura.marcarAcertada()
+      await this.faturaRepo.salvar(fatura)
+    }
+  }
+
+  async removerPagamentoBanco(faturaId: string): Promise<void> {
+    const fatura = await this.faturaRepo.buscarPorId(faturaId)
+    if (!fatura) throw new Error('Fatura não encontrada')
+    fatura.desmarcarComoPagaAoBanco()
+    await this.faturaRepo.salvar(fatura)
   }
 }

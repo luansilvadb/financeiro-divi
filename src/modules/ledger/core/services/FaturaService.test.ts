@@ -82,4 +82,27 @@ describe('FaturaService', () => {
     expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
     expect(acertoRepo.excluirPorFatura).toHaveBeenCalledWith('f1')
   })
+
+  it('deve registrar e remover o pagamento do banco e autotransicionar para ACERTADA se acertos estiverem pagos', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const acertos = [{ id: 'a1', faturaId: 'f1', membroId: 'm2', valorAcerto: Dinheiro.deCentavos(5000), valorPago: Dinheiro.deCentavos(5000), pago: true }]
+
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const gastoRepo = {}
+    const antRepo = {}
+    const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue(acertos) }
+
+    const service = new FaturaService(faturaRepo as any, gastoRepo as any, antRepo as any, acertoRepo as any)
+    
+    // Registra pagamento banco
+    await service.registrarPagamentoBanco('f1', new Date())
+
+    expect(fatura.dataPagamentoBanco).toBeDefined()
+    expect(fatura.status).toBe('ACERTADA')
+    expect(faturaRepo.salvar).toHaveBeenCalled()
+
+    // Remove pagamento banco
+    await service.removerPagamentoBanco('f1')
+    expect(fatura.dataPagamentoBanco).toBeUndefined()
+  })
 })

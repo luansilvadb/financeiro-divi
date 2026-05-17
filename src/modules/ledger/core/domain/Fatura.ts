@@ -64,10 +64,19 @@ export class Fatura {
     }
   }
 
-  fechar(dataPagamentoBanco: Date = new Date()) {
+  fechar(dataPagamentoBanco?: Date) {
     if (this._status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
     this._status = 'FECHADA'
     this._dataPagamentoBanco = dataPagamentoBanco
+  }
+
+  marcarComoPagaAoBanco(data: Date = new Date()) {
+    if (this._status === 'ABERTA') throw new Error('Faturas ABERTAS não podem ser pagas ao banco')
+    this._dataPagamentoBanco = data
+  }
+
+  desmarcarComoPagaAoBanco() {
+    this._dataPagamentoBanco = undefined
   }
 
   marcarAcertada() {

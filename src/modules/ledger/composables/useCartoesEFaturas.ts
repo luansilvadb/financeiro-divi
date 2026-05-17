@@ -134,6 +134,16 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
+  const registrarPagamentoBancoManual = async (faturaId: string) => {
+    await faturaService.registrarPagamentoBanco(faturaId, new Date())
+    await inicializar()
+  }
+
+  const removerPagamentoBancoManual = async (faturaId: string) => {
+    await faturaService.removerPagamentoBanco(faturaId)
+    await inicializar()
+  }
+
   const atualizarGastoDivisoesManual = async (gastoId: string, divisoes: DivisaoDeGasto[]) => {
     const listGastos = gastos.value
     const idx = listGastos.findIndex(g => g.id === gastoId)
@@ -199,6 +209,8 @@ export function useCartoesEFaturas() {
     registrarAdiantamentoManual,
     confirmarAcertosManual, // <- NOVO
     registrarReembolsoParcialManual, // <- NOVO
+    registrarPagamentoBancoManual, // <- NOVO
+    removerPagamentoBancoManual, // <- NOVO
     atualizarGastoDivisoesManual, // <- NOVO
     faturasAbertas,
     faturasFechadas,

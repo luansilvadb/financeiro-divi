@@ -20,7 +20,7 @@ export class AcertoService {
 
     if (todosQuitados) {
       const fatura = await this.faturaRepo.buscarPorId(acerto.faturaId)
-      if (fatura && fatura.status === 'FECHADA') {
+      if (fatura && fatura.status === 'FECHADA' && fatura.dataPagamentoBanco) {
         fatura.marcarAcertada()
         await this.faturaRepo.salvar(fatura)
       }
