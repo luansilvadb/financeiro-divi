@@ -5,6 +5,8 @@ import { Cartao } from '../core/domain/Cartao'
 describe('useCartoesEFaturas', () => {
   beforeEach(() => {
     localStorage.clear()
+    const { resetar } = useCartoesEFaturas()
+    resetar()
   })
 
   it('deve criar uma fatura aberta automaticamente para um cartao recem-salvo', async () => {

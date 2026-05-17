@@ -21,56 +21,75 @@ const acertoRepo = new LocalStorageAcertoMembroRepository()
 const faturaService = new FaturaService(faturaRepo, gastoRepo, antRepo, acertoRepo)
 const acertoService = new AcertoService(acertoRepo, faturaRepo)
 
+const cartoes = ref<Cartao[]>([])
+const faturas = ref<Fatura[]>([])
+const acertos = ref<AcertoMembro[]>([])
+const gastos = ref<Gasto[]>([])
+const antecipacoes = ref<Antecipacao[]>([])
+const inicializado = ref(false)
+let promiseInicializacao: Promise<void> | null = null
+
 export function useCartoesEFaturas() {
-  const cartoes = ref<Cartao[]>([])
-  const faturas = ref<Fatura[]>([])
-  const acertos = ref<AcertoMembro[]>([])
-  const gastos = ref<Gasto[]>([])
-  const antecipacoes = ref<Antecipacao[]>([])
-
   const inicializar = async () => {
-    const todosCartoes = await cartaoRepo.listarTodos()
-    cartoes.value = todosCartoes
+    if (promiseInicializacao) return promiseInicializacao
+    
+    const carregar = async () => {
+      const todosCartoes = await cartaoRepo.listarTodos()
+      cartoes.value = todosCartoes
 
-    // Inicializar faturas abertas padrão caso não existam para todos os cartões cadastrados
-    const hoje = new Date()
-    const mesAtual = hoje.getMonth() + 1
-    const anoAtual = hoje.getFullYear()
-    let todasFaturas = await faturaRepo.listarTodas()
+      // Inicializar faturas abertas padrão caso não existam para todos os cartões cadastrados
+      const hoje = new Date()
+      const mesAtual = hoje.getMonth() + 1
+      const anoAtual = hoje.getFullYear()
+      let todasFaturas = await faturaRepo.listarTodas()
 
-    for (const card of todosCartoes) {
-      const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
-      if (!temFatura) {
-        const novaFatura = new Fatura({
-          id: crypto.randomUUID(),
-          cartaoId: card.id,
-          periodo: { mes: mesAtual, ano: anoAtual },
-          responsavelId: card.responsavelPadraoId,
-          status: 'ABERTA'
-        })
-        await faturaRepo.salvar(novaFatura)
-        todasFaturas.push(novaFatura)
+      for (const card of todosCartoes) {
+        const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
+        if (!temFatura) {
+          const novaFatura = new Fatura({
+            id: crypto.randomUUID(),
+            cartaoId: card.id,
+            periodo: { mes: mesAtual, ano: anoAtual },
+            responsavelId: card.responsavelPadraoId,
+            status: 'ABERTA'
+          })
+          await faturaRepo.salvar(novaFatura)
+          todasFaturas.push(novaFatura)
+        }
       }
+      faturas.value = todasFaturas
+
+      // Carregar acertos, gastos e antecipações
+      const todosAcertos: AcertoMembro[] = []
+      const todosGastos: Gasto[] = []
+      const todasAnt: Antecipacao[] = []
+      for (const f of todasFaturas) {
+        const porFaturaAcertos = await acertoRepo.buscarPorFatura(f.id)
+        todosAcertos.push(...porFaturaAcertos)
+
+        const porFaturaGastos = await gastoRepo.buscarPorFatura(f.id)
+        todosGastos.push(...porFaturaGastos)
+
+        const porFaturaAnt = await antRepo.buscarPorFatura(f.id)
+        todasAnt.push(...porFaturaAnt)
+      }
+      acertos.value = todosAcertos
+      gastos.value = todosGastos
+      antecipacoes.value = todasAnt
+      inicializado.value = true
     }
-    faturas.value = todasFaturas
 
-    // Carregar acertos, gastos e antecipações
-    const todosAcertos: AcertoMembro[] = []
-    const todosGastos: Gasto[] = []
-    const todasAnt: Antecipacao[] = []
-    for (const f of todasFaturas) {
-      const porFaturaAcertos = await acertoRepo.buscarPorFatura(f.id)
-      todosAcertos.push(...porFaturaAcertos)
-
-      const porFaturaGastos = await gastoRepo.buscarPorFatura(f.id)
-      todosGastos.push(...porFaturaGastos)
-
-      const porFaturaAnt = await antRepo.buscarPorFatura(f.id)
-      todasAnt.push(...porFaturaAnt)
+    promiseInicializacao = carregar()
+    try {
+      await promiseInicializacao
+    } finally {
+      promiseInicializacao = null
     }
-    acertos.value = todosAcertos
-    gastos.value = todosGastos
-    antecipacoes.value = todasAnt
+  }
+
+  // Chamar inicializar() automaticamente de forma lazy
+  if (!inicializado.value) {
+    inicializar()
   }
 
   const salvarCartaoManual = async (cartao: Cartao) => {
@@ -125,6 +144,15 @@ export function useCartoesEFaturas() {
       .reduce((sum, a) => sum + a.valor.centavos, 0)
   }
 
+  const resetar = () => {
+    cartoes.value = []
+    faturas.value = []
+    acertos.value = []
+    gastos.value = []
+    antecipacoes.value = []
+    inicializado.value = false
+  }
+
   return {
     cartoes,
     faturas,
@@ -141,6 +169,7 @@ export function useCartoesEFaturas() {
     faturasAbertas,
     faturasFechadas,
     calcularConsumoMembro,
-    calcularAdiantamentoMembro
+    calcularAdiantamentoMembro,
+    resetar
   }
 }
