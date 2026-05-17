@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Clock, User } from 'lucide-vue-next'
+import { Clock } from 'lucide-vue-next'
 import type { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 
@@ -33,39 +33,45 @@ const formatarDinheiro = (valor: any) => {
 </script>
 
 <template>
-  <div class="glass-card rounded-3xl border border-divi-border overflow-hidden shadow-xl">
-    <div class="p-4.5 border-b border-divi-border flex items-center gap-2 bg-gradient-to-r from-divi-s1/30 to-transparent">
-      <Clock class="w-5 h-5 text-divi-primary text-glow-primary" />
-      <h3 class="font-black text-divi-t1 tracking-tight">Atividade Recente</h3>
+  <div class="glass-card border border-divi-border rounded-3xl p-3.5 shadow-lg text-divi-t1">
+    <!-- Header -->
+    <div class="flex justify-between items-center border-b border-divi-border/40 pb-2 mb-3">
+      <h3 class="text-xs font-black uppercase text-divi-t2 tracking-wider flex items-center gap-1.5">
+        <Clock class="w-3.5 h-3.5 text-divi-primary text-glow-primary" /> Atividade Recente
+      </h3>
+      <span class="text-[9px] bg-divi-s2 border border-divi-border text-divi-t2 font-bold px-2 py-0.5 rounded-full">
+        {{ sortedTransacoes.length }} lançamentos
+      </span>
     </div>
 
-    <div class="divide-y divide-divi-border max-h-[384px] overflow-y-auto">
-      <div v-if="sortedTransacoes.length === 0" class="p-8 text-center text-divi-t3 italic text-sm bg-divi-s1/10">
-        Nenhuma transação encontrada.
-      </div>
-      
+    <!-- Empty State -->
+    <div v-if="sortedTransacoes.length === 0" class="text-center py-6 text-xs text-divi-t3">
+      Nenhuma atividade recente encontrada neste período.
+    </div>
+
+    <!-- Feed List -->
+    <div v-else class="space-y-2 max-h-[384px] overflow-y-auto pr-1">
       <div 
         v-for="t in sortedTransacoes" 
         :key="t.id"
-        class="p-4 hover:bg-divi-s1/30 transition-colors duration-150"
+        class="flex justify-between items-center p-2.5 rounded-2xl bg-divi-s1/30 border border-divi-border/40 hover:border-divi-primary/30 transition-all hover:bg-divi-s1/50"
       >
-        <div class="flex justify-between items-start mb-1.5">
-          <span class="font-bold text-divi-t1 text-sm">{{ t.descricao }}</span>
-          <span class="font-bold text-divi-primary text-glow-primary text-sm">{{ formatarDinheiro(t.total) }}</span>
-        </div>
-        
-        <div class="flex justify-between items-center text-xs text-divi-t2">
-          <div class="flex items-center gap-1">
-            <User class="w-3 h-3 text-divi-t3" />
-            <span>
-              Pago por 
-              <strong class="text-divi-t1">{{ getMembroNome(t.pagamentos[0].membro_id) }}</strong>
-              <template v-if="t.pagamentos.length > 1">
-                e mais {{ t.pagamentos.length - 1 }}
-              </template>
+        <div class="flex items-center gap-2.5 min-w-0">
+          <!-- Compact Avatar -->
+          <div class="w-8 h-8 rounded-full bg-divi-s2 border border-divi-border font-black text-xs text-divi-t1 flex items-center justify-center shrink-0 shadow-sm uppercase">
+            {{ t.descricao[0] }}
+          </div>
+          
+          <div class="min-w-0">
+            <strong class="text-xs text-divi-t1 font-bold block truncate leading-tight">{{ t.descricao }}</strong>
+            <span class="text-[9px] text-divi-t3 block mt-0.5 uppercase tracking-wider font-medium">
+              {{ formatDate(t.data) }} • Pago por {{ getMembroNome(t.pagamentos[0].membro_id) }}
             </span>
           </div>
-          <span class="text-divi-t3 font-medium">{{ formatDate(t.data) }}</span>
+        </div>
+
+        <div class="text-right shrink-0">
+          <strong class="text-xs font-black text-divi-t1 block">{{ formatarDinheiro(t.total) }}</strong>
         </div>
       </div>
     </div>
