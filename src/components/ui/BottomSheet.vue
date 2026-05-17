@@ -173,7 +173,7 @@ const onMouseDown = (e: MouseEvent) => {
 /* Transição limpa padrão de slide-up e slide-down */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
