@@ -1,0 +1,103 @@
+<h2>Visualização do Novo Fluxo de Dados e Dashboard</h2>
+<p class="subtitle">Veja como as informações de Consumos, Adiantamentos e Acertos ficarão estruturadas de forma transparente e elegante</p>
+
+<div class="split">
+  <!-- Mockup 1: Novo Dashboard de Faturas Abertas -->
+  <div class="mockup">
+    <div class="mockup-header">📱 Prévia: Dashboard (Fatura Aberta)</div>
+    <div class="mockup-body" style="background: #0B0F19; color: #F3F4F6; padding: 20px; border-radius: 12px; font-family: sans-serif;">
+      <!-- Nubank -->
+      <div style="background: #1E293B; padding: 16px; border-radius: 16px; border: 1px solid #334155; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #475569; padding-bottom: 8px; margin-bottom: 12px;">
+          <span style="font-weight: bold; color: #A855F7;">💳 Nubank • Mai/2026</span>
+          <span style="font-size: 11px; background: rgba(168, 85, 247, 0.2); color: #C084FC; padding: 2px 8px; border-radius: 9999px;">Dono: Luan</span>
+        </div>
+        <div style="font-size: 12px; color: #94A3B8; margin-bottom: 12px;">
+          Valor total da fatura até agora: <strong style="color: #F3F4F6;">R$ 800,00</strong>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Luan -->
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>Luan (Dono):</span>
+            <strong>R$ 500,00</strong>
+          </div>
+          <!-- Maria -->
+          <div style="display: flex; justify-content: space-between; font-size: 13px; background: rgba(255,255,255,0.02); padding: 6px; border-radius: 8px;">
+            <div>
+              <span>Maria:</span>
+              <div style="font-size: 10px; color: #10B981;">Adiantou R$ 100,00 para Luan</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="text-decoration: line-through; color: #64748B; font-size: 11px; margin-right: 4px;">R$ 300,00</span>
+              <strong style="color: #EF4444;">R$ 200,00</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XP -->
+      <div style="background: #1E293B; padding: 16px; border-radius: 16px; border: 1px solid #334155;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #475569; padding-bottom: 8px; margin-bottom: 12px;">
+          <span style="font-weight: bold; color: #F59E0B;">💳 XP Visa • Mai/2026</span>
+          <span style="font-size: 11px; background: rgba(245, 158, 11, 0.2); color: #FBBF24; padding: 2px 8px; border-radius: 9999px;">Dono: Maria</span>
+        </div>
+        <div style="font-size: 12px; color: #94A3B8; margin-bottom: 12px;">
+          Valor total da fatura até agora: <strong style="color: #F3F4F6;">R$ 400,00</strong>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Maria -->
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span>Maria (Dono):</span>
+            <strong>R$ 300,00</strong>
+          </div>
+          <!-- Luan -->
+          <div style="display: flex; justify-content: space-between; font-size: 13px; background: rgba(255,255,255,0.02); padding: 6px; border-radius: 8px;">
+            <div>
+              <span>Luan:</span>
+              <div style="font-size: 10px; color: #94A3B8;">Nenhum adiantamento</div>
+            </div>
+            <strong style="color: #EF4444;">R$ 100,00</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mockup 2: Novo Wizard Integrado -->
+  <div class="mockup">
+    <div class="mockup-header">🪄 Prévia: Novo Wizard de Lançamentos</div>
+    <div class="mockup-body" style="background: #FFFFFF; color: #1E293B; padding: 20px; border-radius: 12px; font-family: sans-serif;">
+      <h4 style="margin-top: 0; font-size: 15px; color: #475569; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px;">Passo 1: O que você quer fazer?</h4>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px; margin: 15px 0;">
+        <div style="border: 2px solid #3B82F6; background: #EFF6FF; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">🛍️</span>
+          <div>
+            <strong style="font-size: 14px; color: #1D4ED8;">Novo Gasto no Cartão</strong>
+            <div style="font-size: 11px; color: #1E40AF;">Registrar uma compra e dividir entre quem consumiu</div>
+          </div>
+        </div>
+
+        <div style="border: 2px solid #E2E8F0; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; opacity: 0.7;">
+          <span style="font-size: 24px;">💸</span>
+          <div>
+            <strong style="font-size: 14px; color: #475569;">Registrar Adiantamento</strong>
+            <div style="font-size: 11px; color: #64748B;">Registrar transferência de dinheiro para o dono do cartão</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" data-multiselect style="margin-top: 25px;">
+  <div class="option" data-choice="design_ok" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>Design Aprovado!</h3>
+      <p>A apresentação dos cálculos (Consumo - Adiantamentos = Pendente) e o design do Wizard estão perfeitos. Pode prosseguir.</p>
+    </div>
+  </div>
+</div>
