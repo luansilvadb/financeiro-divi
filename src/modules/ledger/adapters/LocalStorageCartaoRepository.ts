@@ -1,4 +1,4 @@
-import { ICartaoRepository } from '../core/ports/ICartaoRepository'
+import type { ICartaoRepository } from '../core/ports/ICartaoRepository'
 import { Cartao } from '../core/domain/Cartao'
 import { StorageLock } from '../../../shared/utils/StorageLock'
 

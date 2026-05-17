@@ -1,4 +1,4 @@
-import { IAcertoMembroRepository } from '../core/ports/IAcertoMembroRepository'
+import type { IAcertoMembroRepository } from '../core/ports/IAcertoMembroRepository'
 import { AcertoMembro } from '../core/domain/AcertoMembro'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { StorageLock } from '../../../shared/utils/StorageLock'

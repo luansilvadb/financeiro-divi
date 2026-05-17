@@ -1,4 +1,4 @@
-import { IFaturaRepository } from '../core/ports/IFaturaRepository'
+import type { IFaturaRepository } from '../core/ports/IFaturaRepository'
 import { Fatura, FaturaPeriodo } from '../core/domain/Fatura'
 import { StorageLock } from '../../../shared/utils/StorageLock'
 

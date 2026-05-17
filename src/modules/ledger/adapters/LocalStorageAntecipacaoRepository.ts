@@ -1,4 +1,4 @@
-import { IAntecipacaoRepository } from '../core/ports/IAntecipacaoRepository'
+import type { IAntecipacaoRepository } from '../core/ports/IAntecipacaoRepository'
 import { Antecipacao } from '../core/domain/Antecipacao'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { StorageLock } from '../../../shared/utils/StorageLock'

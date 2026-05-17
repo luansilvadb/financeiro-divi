@@ -1,4 +1,4 @@
-import { IGastoRepository } from '../core/ports/IGastoRepository'
+import type { IGastoRepository } from '../core/ports/IGastoRepository'
 import { Gasto } from '../core/domain/Gasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
