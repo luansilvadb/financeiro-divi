@@ -34,4 +34,12 @@ export class LocalStorageCartaoRepository implements ICartaoRepository {
       return []
     }
   }
+
+  async excluir(id: string): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_cartoes', async () => {
+      const todos = await this.listarTodos()
+      const filtrados = todos.filter(c => c.id !== id)
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtrados))
+    })
+  }
 }
