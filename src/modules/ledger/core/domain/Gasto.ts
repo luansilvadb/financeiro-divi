@@ -22,6 +22,10 @@ export interface GastoProps {
     toMemberId: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
+
+  // --- ADIÇÃO SENIOR V19 ---
+  method?: 'pix' | 'card'
+  cardOwner?: string | null
 }
 
 export class Gasto {
@@ -45,6 +49,10 @@ export class Gasto {
     toMemberId: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
+
+  // --- ADIÇÃO SENIOR V19 ---
+  public readonly method: 'pix' | 'card'
+  public readonly cardOwner: string | null
 
   constructor(props: GastoProps) {
     if (props.divisoes.length === 0) {
@@ -72,5 +80,9 @@ export class Gasto {
     this.recurringBillId = props.recurringBillId || null
     this.isSettlement = props.isSettlement || false
     this.settlementDetails = props.settlementDetails || null
+
+    // --- ADIÇÃO SENIOR V19 ---
+    this.method = props.method || 'pix'
+    this.cardOwner = props.cardOwner || null
   }
 }
