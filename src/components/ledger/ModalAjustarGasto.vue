@@ -6,6 +6,7 @@ import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import SectionLabel from '../ui/SectionLabel.vue'
+import NonModalBottomSheet from '../ui/NonModalBottomSheet.vue'
 import { Check, CreditCard, Wallet, Users, Info } from 'lucide-vue-next'
 
 interface Props {
@@ -116,18 +117,8 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <div 
-    v-if="props.visible" 
-    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
-  >
-    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
-    <div 
-      class="w-full sm:max-w-md overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards shadow-lg flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
-    >
-      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
-      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
-
-      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+  <NonModalBottomSheet :visible="props.visible" width-class="md:w-[460px]">
+    <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Ajuste</SectionLabel>
           <h3 class="text-3xl font-display text-charcoal">Corrigir <span class="text-ember">Lançamento</span></h3>
@@ -243,9 +234,8 @@ const handleConfirm = () => {
           <Button variant="secondary" @click="emit('cancel')">Voltar</Button>
           <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
         </div>
-      </div>
     </div>
-  </div>
+  </NonModalBottomSheet>
 </template>
 
 <style scoped>

@@ -4,6 +4,7 @@ import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
 import { DivisaoDeGasto } from '../../../modules/ledger/core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import SeletorMembros from '../shared/SeletorMembros.vue'
+import NonModalBottomSheet from '../../ui/NonModalBottomSheet.vue'
 
 interface Props {
   show: boolean
@@ -104,18 +105,8 @@ const salvar = () => {
 </script>
 
 <template>
-  <div 
-    v-if="show && props.gasto" 
-    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm z-[9999] flex justify-center sm:items-center items-end sm:p-6 p-0 animate-in fade-in duration-200"
-  >
-    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
-    <div 
-      class="bg-card shadow-lg w-full sm:max-w-md border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
-    >
-      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
-      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
-
-      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col">
+  <NonModalBottomSheet :visible="show && props.gasto !== null" width-class="md:w-[460px]">
+    <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow flex flex-col">
         <!-- Header -->
         <div class="flex justify-between items-center border-b border-stone-surface pb-4 shrink-0">
           <div>
@@ -242,9 +233,8 @@ const salvar = () => {
             Salvar Rateio
           </button>
         </div>
-      </div>
     </div>
-  </div>
+  </NonModalBottomSheet>
 </template>
 
 <style scoped>
