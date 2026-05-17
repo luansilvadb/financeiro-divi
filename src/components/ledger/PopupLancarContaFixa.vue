@@ -1,32 +1,32 @@
 <template>
-  <div v-if="visible" class="fixed inset-0 bg-black-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-panel-dark border border-white-08 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative text-white">
-      <h3 class="text-xl font-black text-white flex items-center gap-2 mb-4">
+  <div v-if="visible" class="fixed inset-0 bg-[#040814]/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
+    <div class="glass-card w-full max-w-[420px] rounded-3xl p-6 relative text-divi-t1 space-y-5 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+      <h3 class="text-xl font-black text-divi-t1 flex items-center gap-2 mb-2">
         <span>{{ bill?.icon }}</span> Lançar {{ bill?.name }}
       </h3>
 
       <!-- Valor Input -->
-      <div class="mb-5">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Valor Total do Talão (R$)</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Valor Total do Talão (R$)</label>
         <input 
           type="number" 
           step="0.01"
           v-model.number="valorReal"
-          class="w-full bg-panel-light border border-white-05 p-3 rounded-xl text-white font-extrabold focus:border-primary outline-none"
+          class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1"
           placeholder="0,00"
         />
       </div>
 
       <!-- Payer Selection -->
-      <div class="mb-5">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Quem pagou?</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Quem pagou?</label>
         <div class="flex gap-2 flex-wrap">
           <button 
             v-for="m in membros" 
             :key="m.id"
             @click="compradorId = m.id"
             class="px-4 py-2.5 rounded-xl border font-bold text-xs transition-all duration-200"
-            :class="compradorId === m.id ? 'bg-primary border-primary text-white font-black' : 'bg-panel-light border-white-05 text-text-dim'"
+            :class="compradorId === m.id ? 'bg-divi-primary border-indigo-400 text-white font-black shadow-[0_0_12px_var(--primary-glow)]' : 'bg-divi-s1 border-divi-border text-divi-t2 hover:bg-divi-s2'"
           >
             {{ m.nome }}
           </button>
@@ -34,15 +34,15 @@
       </div>
 
       <!-- Split Selection -->
-      <div class="mb-5">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Dividido com quem?</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Dividido com quem?</label>
         <div class="flex gap-2 flex-wrap">
           <button 
             v-for="m in membros" 
             :key="m.id"
             @click="toggleSplit(m.id)"
             class="px-4 py-2.5 rounded-xl border font-bold text-xs transition-all duration-200 flex items-center gap-2"
-            :class="splitIds.includes(m.id) ? 'bg-emerald-20 border-accent-emerald text-white' : 'bg-panel-light border-white-05 text-text-dim'"
+            :class="splitIds.includes(m.id) ? 'bg-divi-emerald-dim/15 border-divi-emerald text-divi-t1 shadow-[0_0_12px_var(--emerald-glow)]' : 'bg-divi-s1 border-divi-border text-divi-t2 hover:bg-divi-s2'"
           >
             <span>{{ splitIds.includes(m.id) ? '✅' : '⬜' }}</span> {{ m.nome }}
           </button>
@@ -50,18 +50,18 @@
       </div>
 
       <!-- Cognitive Reassurance -->
-      <div class="bg-black-18 p-4 rounded-2xl border border-white-04 mb-6 text-sm text-text-muted">
-        A conta de <strong class="text-white">R$ {{ (valorReal || 0).toFixed(2) }}</strong> paga por <strong class="text-white">{{ obterNome(compradorId) }}</strong> será dividida igualmente entre <strong class="text-white">{{ splitIds.map(obterNome).join(', ') }}</strong>. Cada um assume <strong class="text-accent-emerald">R$ {{ obterDivisao() }}</strong>.
+      <div class="bg-divi-s1/50 p-4 rounded-2xl border border-divi-border text-sm text-divi-t2 shadow-inner leading-relaxed">
+        A conta de <strong class="text-divi-t1">R$ {{ (valorReal || 0).toFixed(2) }}</strong> paga por <strong class="text-divi-t1">{{ obterNome(compradorId) }}</strong> será dividida igualmente entre <strong class="text-divi-t1">{{ splitIds.map(obterNome).join(', ') }}</strong>. Cada um assume <strong class="text-divi-emerald text-glow-emerald font-black">R$ {{ obterDivisao() }}</strong>.
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-end gap-3">
-        <button @click="$emit('cancel')" class="px-5 py-3 text-xs font-black bg-white-06 hover:bg-white-12 text-white border border-white-08 rounded-xl transition-all">
+      <div class="flex justify-end gap-3 pt-2">
+        <button @click="$emit('cancel')" class="px-5 py-3 text-xs font-black bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border rounded-2xl transition-all">
           Cancelar
         </button>
         <button 
           @click="confirmar" 
-          class="px-5 py-3 text-xs font-black bg-accent-yellow hover:bg-yellow-400 text-green-950 rounded-xl transition-all" 
+          class="px-5 py-3 text-xs font-black bg-divi-amber border border-amber-500/25 hover:bg-amber-600 text-slate-950 font-black rounded-2xl shadow-[0_0_16px_var(--amber-dim)] transition-all" 
           :disabled="valorReal <= 0 || !compradorId || splitIds.length === 0"
         >
           Confirmar e Lançar

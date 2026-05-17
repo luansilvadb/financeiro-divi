@@ -1,30 +1,30 @@
 <template>
-  <div v-if="visible" class="fixed inset-0 bg-black-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-    <div class="bg-panel-dark border border-white-08 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative text-white">
-      <h3 class="text-xl font-black text-white flex items-center gap-2 mb-4">
+  <div v-if="visible" class="fixed inset-0 bg-[#040814]/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
+    <div class="glass-card w-full max-w-[420px] rounded-3xl p-6 relative text-divi-t1 space-y-5 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+      <h3 class="text-xl font-black text-divi-t1 flex items-center gap-2 mb-2">
         ⚙️ Configurar Conta Fixa
       </h3>
 
       <!-- Nome -->
-      <div class="mb-4">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Nome do Talão</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Nome do Talão</label>
         <input 
           v-model="name" 
           type="text" 
-          class="w-full bg-panel-light border border-white-05 p-3 rounded-xl text-white outline-none focus:border-primary font-bold" 
+          class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1" 
         />
       </div>
 
       <!-- Emoji Selector -->
-      <div class="mb-4">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Emoji / Ícone</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Emoji / Ícone</label>
         <div class="flex gap-2 flex-wrap justify-start">
           <button 
             v-for="e in ['🔑','💡','💧','🌐','🐶','🔥','🛒','🍔','🚗','💊']" 
             :key="e"
             @click="icon = e"
-            class="text-2xl p-2.5 rounded-xl border border-white-05 transition-all duration-150"
-            :class="icon === e ? 'bg-primary border-primary text-white scale-110 shadow-lg' : 'bg-panel-light hover:bg-white-08 text-text-dim'"
+            class="text-2xl p-2.5 rounded-xl border transition-all duration-150"
+            :class="icon === e ? 'bg-divi-primary border-indigo-500 text-white scale-110 shadow-[0_0_12px_var(--primary-glow)]' : 'bg-divi-s1 border-divi-border hover:bg-divi-s2 text-divi-t2'"
           >
             {{ e }}
           </button>
@@ -32,48 +32,48 @@
       </div>
 
       <!-- Valor Fixo Sugerido -->
-      <div class="mb-4">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Valor Sugerido Padrão (Opcional)</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Valor Sugerido Padrão (Opcional)</label>
         <input 
           v-model.number="fixedValue" 
           type="number" 
           step="0.01" 
-          class="w-full bg-panel-light border border-white-05 p-3 rounded-xl text-white outline-none focus:border-primary font-bold" 
-          placeholder="Deixe em branco ou 0 se for variável (Luz/Água)" 
+          class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1" 
+          placeholder="Ex: 150,00" 
         />
       </div>
 
       <!-- Divisão Padrão -->
-      <div class="mb-6">
-        <label class="block text-xs font-black uppercase tracking-wider text-text-muted mb-2">Quem divide por padrão?</label>
+      <div class="space-y-2">
+        <label class="block text-xs font-black uppercase tracking-wider text-divi-t2">Quem divide por padrão?</label>
         <div class="flex gap-2 flex-wrap">
           <button 
             v-for="m in membros" 
             :key="m.id"
             @click="toggleSplit(m.id)"
             class="px-4 py-2.5 rounded-xl border font-bold text-xs transition-all duration-200"
-            :class="defaultSplit.includes(m.id) ? 'bg-primary border-primary text-white font-black' : 'bg-panel-light border-white-05 text-text-dim'"
+            :class="defaultSplit.includes(m.id) ? 'bg-divi-primary border-indigo-400 text-white font-black shadow-[0_0_12px_var(--primary-glow)]' : 'bg-divi-s1 border-divi-border text-divi-t2 hover:bg-divi-s2'"
           >
             {{ m.nome }}
           </button>
         </div>
       </div>
 
-      <div class="flex justify-between items-center flex-wrap gap-3">
+      <div class="flex justify-between items-center flex-wrap gap-3 pt-2">
         <button 
           v-if="bill?.id" 
           @click="$emit('delete', bill.id)" 
-          class="px-4 py-3 text-xs font-black bg-rose-900/30 hover:bg-rose-900/50 text-rose-300 border border-rose-800 rounded-xl transition-all"
+          class="px-4 py-3 text-xs font-black bg-divi-rose-dim/15 hover:bg-divi-rose-dim/30 text-divi-rose border border-divi-rose/25 rounded-2xl transition-all"
         >
           🗑️ Excluir Conta
         </button>
         <div class="flex gap-2 ml-auto">
-          <button @click="$emit('cancel')" class="px-5 py-3 text-xs font-black bg-white-06 hover:bg-white-12 text-white border border-white-08 rounded-xl transition-all">
+          <button @click="$emit('cancel')" class="px-5 py-3 text-xs font-black bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border rounded-2xl transition-all">
             Cancelar
           </button>
           <button 
             @click="salvar" 
-            class="px-5 py-3 text-xs font-black bg-accent-emerald hover:bg-emerald-600 text-white rounded-xl transition-all" 
+            class="px-5 py-3 text-xs font-black bg-divi-emerald border border-emerald-500/25 hover:bg-emerald-600 text-white rounded-2xl shadow-[0_0_16px_var(--emerald-glow)] transition-all" 
             :disabled="!name"
           >
             Salvar
