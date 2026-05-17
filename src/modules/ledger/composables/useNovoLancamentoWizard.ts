@@ -23,7 +23,12 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
   const cartaoSelecionadoId = ref('')
   const valor = ref(0)
   const descricao = ref('')
-  const beneficiarios_selecionados = ref<string[]>([])
+  const compradorSelecionadoId = ref('') // <- NOVO
+
+  // Retrocompatibilidade para templates / testes
+  const beneficiarios_selecionados = computed(() => 
+    compradorSelecionadoId.value ? [compradorSelecionadoId.value] : []
+  )
 
   // Campos do Adiantamento
   const adiantamentoRemetenteId = ref('')
@@ -36,8 +41,8 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     if (step.value === 1) return true // Escolha de ação
     if (tipo.value === 'GASTO') {
       if (step.value === 2) return !!cartaoSelecionadoId.value
-      if (step.value === 3) return valor.value > 0 && descricao.value.length > 0
-      if (step.value === 4) return beneficiarios_selecionados.value.length > 0
+      if (step.value === 3) return !!compradorSelecionadoId.value
+      if (step.value === 4) return valor.value > 0 && descricao.value.length > 0
     } else {
       if (step.value === 2) return !!adiantamentoRemetenteId.value
       if (step.value === 3) return !!adiantamentoCartaoId.value
@@ -46,11 +51,12 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     return false
   })
 
+  // Retrocompatibilidade para testes
   const toggleBeneficiario = (id: string) => {
-    if (beneficiarios_selecionados.value.includes(id)) {
-      beneficiarios_selecionados.value = beneficiarios_selecionados.value.filter(b => b !== id)
+    if (compradorSelecionadoId.value === id) {
+      compradorSelecionadoId.value = ''
     } else {
-      beneficiarios_selecionados.value.push(id)
+      compradorSelecionadoId.value = id
     }
   }
 
@@ -58,7 +64,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     step.value = 1
     valor.value = 0
     descricao.value = ''
-    beneficiarios_selecionados.value = []
+    compradorSelecionadoId.value = ''
     adiantamentoRemetenteId.value = ''
     localStorage.removeItem(STORAGE_KEY)
   }
@@ -79,7 +85,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
         if (data.tipo !== undefined) tipo.value = data.tipo
         if (data.valor !== undefined) valor.value = data.valor
         if (data.descricao !== undefined) descricao.value = data.descricao
-        if (data.beneficiarios_selecionados !== undefined) beneficiarios_selecionados.value = data.beneficiarios_selecionados
+        if (data.compradorSelecionadoId !== undefined) compradorSelecionadoId.value = data.compradorSelecionadoId
         if (data.cartaoSelecionadoId !== undefined) cartaoSelecionadoId.value = data.cartaoSelecionadoId
         if (data.adiantamentoRemetenteId !== undefined) adiantamentoRemetenteId.value = data.adiantamentoRemetenteId
         if (data.adiantamentoCartaoId !== undefined) adiantamentoCartaoId.value = data.adiantamentoCartaoId
@@ -97,7 +103,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
       tipo: tipo.value,
       valor: valor.value,
       descricao: descricao.value,
-      beneficiarios_selecionados: [...beneficiarios_selecionados.value],
+      compradorSelecionadoId: compradorSelecionadoId.value,
       cartaoSelecionadoId: cartaoSelecionadoId.value,
       adiantamentoRemetenteId: adiantamentoRemetenteId.value,
       adiantamentoCartaoId: adiantamentoCartaoId.value
@@ -116,19 +122,25 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
   })
 
   const finalizarComoGastoCartao = async () => {
-    const total = Dinheiro.deReais(valor.value)
-    const partes = total.distribuir(beneficiarios_selecionados.value.length)
-    const divisoes = beneficiarios_selecionados.value.map((membroId, index) => new DivisaoDeGasto(membroId, partes[index]))
+    if (!cartaoSelecionadoId.value) throw new Error('Selecione um cartão')
+    if (!compradorSelecionadoId.value) throw new Error('Selecione quem usou')
+    if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
+
+    const total = Dinheiro.deReais(Number(valor.value))
+    const divisoes = [new DivisaoDeGasto(compradorSelecionadoId.value, total)] // 100% comprador temporariamente
 
     const todasFaturas = await faturaRepo.listarTodas()
     const fatura = todasFaturas.find(f => f.cartaoId === cartaoSelecionadoId.value && f.status === 'ABERTA') 
       || todasFaturas[0]
+
+    if (!fatura) throw new Error('Nenhuma fatura aberta encontrada para este cartão')
 
     const novoGasto = new Gasto({
       id: crypto.randomUUID(),
       faturaId: fatura.id,
       descricao: descricao.value,
       valorTotal: total,
+      compradorId: compradorSelecionadoId.value,
       divisoes
     })
 
@@ -160,6 +172,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     tipo,
     valor,
     descricao,
+    compradorSelecionadoId,
     beneficiarios_selecionados,
     cartaoSelecionadoId,
     adiantamentoRemetenteId,

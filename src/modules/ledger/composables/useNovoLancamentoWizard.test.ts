@@ -36,13 +36,11 @@ describe('useNovoLancamentoWizard - Fluxo de Cartão', () => {
     expect(step.value).toBe(1)
   })
 
-  it('deve alternar beneficiários', () => {
-    const [{ beneficiarios_selecionados, toggleBeneficiario }] = withSetup(() => useNovoLancamentoWizard([]))
-    expect(beneficiarios_selecionados.value).toHaveLength(0)
-    toggleBeneficiario('m1')
-    expect(beneficiarios_selecionados.value).toContain('m1')
-    toggleBeneficiario('m1')
-    expect(beneficiarios_selecionados.value).not.toContain('m1')
+  it('deve selecionar comprador', () => {
+    const [{ compradorSelecionadoId }] = withSetup(() => useNovoLancamentoWizard([]))
+    expect(compradorSelecionadoId.value).toBe('')
+    compradorSelecionadoId.value = 'm1'
+    expect(compradorSelecionadoId.value).toBe('m1')
   })
 
   it('deve alternar o fluxo entre Gasto e Adiantamento corretamente', () => {

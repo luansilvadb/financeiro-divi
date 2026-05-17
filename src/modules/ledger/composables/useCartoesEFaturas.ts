@@ -122,6 +122,35 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
+  const confirmarAcertosManual = async (faturaId: string) => {
+    await faturaService.confirmarAcertos(faturaId)
+    await inicializar()
+  }
+
+  const registrarReembolsoParcialManual = async (acertoId: string, valor: Dinheiro) => {
+    await acertoService.registrarReembolsoMembro(acertoId, valor, new Date())
+    await inicializar()
+  }
+
+  const atualizarGastoDivisoesManual = async (gastoId: string, divisoes: DivisaoDeGasto[]) => {
+    const listGastos = gastos.value
+    const idx = listGastos.findIndex(g => g.id === gastoId)
+    if (idx < 0) return
+
+    const original = listGastos[idx]
+    const novoGasto = new Gasto({
+      id: original.id,
+      faturaId: original.faturaId,
+      descricao: original.descricao,
+      valorTotal: original.valorTotal,
+      compradorId: original.compradorId,
+      divisoes
+    })
+
+    await gastoRepo.salvar(novoGasto)
+    await inicializar()
+  }
+
   const faturasAbertas = computed(() => faturas.value.filter(f => f.status === 'ABERTA'))
   const faturasFechadas = computed(() => faturas.value.filter(f => f.status === 'FECHADA'))
 
@@ -166,6 +195,9 @@ export function useCartoesEFaturas() {
     reabrirFaturaManual,
     quitarAcertoMembro,
     registrarAdiantamentoManual,
+    confirmarAcertosManual, // <- NOVO
+    registrarReembolsoParcialManual, // <- NOVO
+    atualizarGastoDivisoesManual, // <- NOVO
     faturasAbertas,
     faturasFechadas,
     calcularConsumoMembro,
