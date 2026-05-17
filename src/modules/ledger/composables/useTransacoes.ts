@@ -5,24 +5,21 @@ import { LocalStorageTransacaoRepository } from '../adapters/LocalStorageTransac
 // Estado global compartilhado por todas as instâncias (Singleton)
 const transacoes = ref<Transacao[]>([])
 const inicializado = ref(false)
-let carregandoPromise: Promise<void> | null = null
+let promiseInicializacao: Promise<void> | null = null
 const repository = new LocalStorageTransacaoRepository()
 
 export function useTransacoes() {
+  // ✅ Usado para sincronismo: sempre relê do disco
   const carregar = async () => {
-    // Se já estiver carregando, retorna a promessa existente
-    if (carregandoPromise) return carregandoPromise
+    transacoes.value = await repository.listarTodas()
+    inicializado.value = true
+  }
 
-    carregandoPromise = (async () => {
-      try {
-        transacoes.value = await repository.listarTodas()
-        inicializado.value = true
-      } finally {
-        carregandoPromise = null
-      }
-    })()
-
-    return carregandoPromise
+  // ✅ Usado no boot: garante apenas uma leitura simultânea no carregamento inicial
+  const inicializar = async () => {
+    if (promiseInicializacao) return promiseInicializacao
+    promiseInicializacao = carregar()
+    return promiseInicializacao
   }
 
   const salvar = async (t: Transacao) => {
@@ -30,13 +27,14 @@ export function useTransacoes() {
     await carregar()
   }
 
-  // Inicialização lazy garantida: se já não estiver inicializado, dispara o carregamento
+  // Inicialização lazy garantida
   if (!inicializado.value) {
-    carregar()
+    inicializar()
   }
 
   return { 
     transacoes, 
+    inicializar,
     carregar, 
     salvar 
   }

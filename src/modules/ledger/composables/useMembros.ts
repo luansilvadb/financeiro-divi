@@ -5,44 +5,40 @@ import { LocalStorageMembroRepository } from '../adapters/LocalStorageMembroRepo
 // Estado global compartilhado por todas as instâncias do composable (Singleton)
 const repository = new LocalStorageMembroRepository()
 const membros = ref<Membro[]>([])
-const carregado = ref(false)
-let carregandoPromise: Promise<void> | null = null
+const inicializado = ref(false)
+let promiseInicializacao: Promise<void> | null = null
 
 export function useMembros() {
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
+  // ✅ Usado para sincronismo: sempre relê do disco
   const carregar = async () => {
-    // Se já estiver carregando, retorna a promessa existente
-    if (carregandoPromise) return carregandoPromise
-
-    carregandoPromise = (async () => {
-      try {
-        let lista = await repository.listarTodos()
-        
-        // Migração inicial: Se vazio, popula com os hardcoded
-        if (lista.length === 0) {
-          const iniciais = [
-            { id: 'luan', nome: 'Luan' },
-            { id: 'maria', nome: 'Maria' },
-            { id: 'joao', nome: 'João' },
-            { id: 'paula', nome: 'Paula' }
-          ]
-          // Salva todos os iniciais
-          for (const m of iniciais) {
-            const novo = new Membro(m)
-            await repository.salvar(novo)
-          }
-          lista = await repository.listarTodos()
-        }
-        
-        membros.value = lista
-        carregado.value = true
-      } finally {
-        carregandoPromise = null
+    let lista = await repository.listarTodos()
+    
+    // Migração inicial: Se vazio, popula com os hardcoded
+    if (lista.length === 0) {
+      const iniciais = [
+        { id: 'luan', nome: 'Luan' },
+        { id: 'maria', nome: 'Maria' },
+        { id: 'joao', nome: 'João' },
+        { id: 'paula', nome: 'Paula' }
+      ]
+      for (const m of iniciais) {
+        const novo = new Membro(m)
+        await repository.salvar(novo)
       }
-    })()
+      lista = await repository.listarTodos()
+    }
+    
+    membros.value = lista
+    inicializado.value = true
+  }
 
-    return carregandoPromise
+  // ✅ Usado no boot: garante apenas uma leitura simultânea no carregamento inicial
+  const inicializar = async () => {
+    if (promiseInicializacao) return promiseInicializacao
+    promiseInicializacao = carregar()
+    return promiseInicializacao
   }
 
   const adicionarMembro = async (nome: string) => {
@@ -61,8 +57,8 @@ export function useMembros() {
   }
 
   // Garantir carregamento inicial lazy
-  if (!carregado.value) {
-    carregar()
+  if (!inicializado.value) {
+    inicializar()
   }
 
   return {
@@ -70,6 +66,7 @@ export function useMembros() {
     ativos,
     adicionarMembro,
     desativarMembro,
+    inicializar,
     carregar
   }
 }

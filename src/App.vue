@@ -12,8 +12,8 @@ import { useMembros } from './modules/ledger/composables/useMembros'
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
-const { transacoes, carregar: carregarTransacoes, salvar: salvarTransacao } = useTransacoes()
-const { ativos, membros: todosMembros, carregar: carregarMembros } = useMembros()
+const { transacoes, inicializar: inicializarTransacoes, salvar: salvarTransacao } = useTransacoes()
+const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
 
 // Ativa o listener global de sincronização multi-aba
 useStorageSync()
@@ -24,8 +24,8 @@ const saldos = computed(() => {
 
 onMounted(async () => {
   await Promise.all([
-    carregarTransacoes(),
-    carregarMembros()
+    inicializarTransacoes(),
+    inicializarMembros()
   ])
 })
 
