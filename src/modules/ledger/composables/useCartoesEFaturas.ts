@@ -10,6 +10,7 @@ import { Cartao } from '../core/domain/Cartao'
 import { Fatura } from '../core/domain/Fatura'
 import { AcertoMembro } from '../core/domain/AcertoMembro'
 import { Gasto } from '../core/domain/Gasto'
+import { Antecipacao } from '../core/domain/Antecipacao'
 
 const cartaoRepo = new LocalStorageCartaoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()
@@ -25,6 +26,7 @@ export function useCartoesEFaturas() {
   const faturas = ref<Fatura[]>([])
   const acertos = ref<AcertoMembro[]>([])
   const gastos = ref<Gasto[]>([])
+  const antecipacoes = ref<Antecipacao[]>([])
 
   const inicializar = async () => {
     // Migração inicial de cartões padrão se vazio
@@ -38,29 +40,55 @@ export function useCartoesEFaturas() {
     }
     cartoes.value = todosCartoes
 
-    // Inicializar faturas abertas padrão caso não existam
+    // Inicializar faturas abertas padrão caso não existam para todos os cartões cadastrados
+    const hoje = new Date()
+    const mesAtual = hoje.getMonth() + 1
+    const anoAtual = hoje.getFullYear()
     let todasFaturas = await faturaRepo.listarTodas()
-    if (todasFaturas.length === 0) {
-      const fatura1 = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
-      const fatura2 = new Fatura({ id: 'f2', cartaoId: 'c2', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm2', status: 'ABERTA' })
-      await faturaRepo.salvar(fatura1)
-      await faturaRepo.salvar(fatura2)
-      todasFaturas = [fatura1, fatura2]
+
+    for (const card of todosCartoes) {
+      const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
+      if (!temFatura) {
+        const novaFatura = new Fatura({
+          id: crypto.randomUUID(),
+          cartaoId: card.id,
+          periodo: { mes: mesAtual, ano: anoAtual },
+          responsavelId: card.responsavelPadraoId,
+          status: 'ABERTA'
+        })
+        await faturaRepo.salvar(novaFatura)
+        todasFaturas.push(novaFatura)
+      }
     }
     faturas.value = todasFaturas
 
-    // Carregar acertos e gastos
+    // Carregar acertos, gastos e antecipações
     const todosAcertos: AcertoMembro[] = []
     const todosGastos: Gasto[] = []
+    const todasAnt: Antecipacao[] = []
     for (const f of todasFaturas) {
       const porFaturaAcertos = await acertoRepo.buscarPorFatura(f.id)
       todosAcertos.push(...porFaturaAcertos)
 
       const porFaturaGastos = await gastoRepo.buscarPorFatura(f.id)
       todosGastos.push(...porFaturaGastos)
+
+      const porFaturaAnt = await antRepo.buscarPorFatura(f.id)
+      todasAnt.push(...porFaturaAnt)
     }
     acertos.value = todosAcertos
     gastos.value = todosGastos
+    antecipacoes.value = todasAnt
+  }
+
+  const salvarCartaoManual = async (cartao: Cartao) => {
+    await cartaoRepo.salvar(cartao)
+    await inicializar()
+  }
+
+  const excluirCartaoManual = async (id: string) => {
+    await cartaoRepo.excluir(id)
+    await inicializar()
   }
 
   const fecharFaturaManual = async (faturaId: string) => {
@@ -75,6 +103,11 @@ export function useCartoesEFaturas() {
 
   const quitarAcertoMembro = async (acertoId: string) => {
     await acertoService.marcarPago(acertoId, new Date())
+    await inicializar()
+  }
+
+  const registrarAdiantamentoManual = async (antecipacao: Antecipacao) => {
+    await antRepo.salvar(antecipacao)
     await inicializar()
   }
 
@@ -94,17 +127,28 @@ export function useCartoesEFaturas() {
     return total
   }
 
+  const calcularAdiantamentoMembro = (faturaId: string, membroId: string) => {
+    return antecipacoes.value
+      .filter(a => a.faturaId === faturaId && a.membroId === membroId)
+      .reduce((sum, a) => sum + a.valor.centavos, 0)
+  }
+
   return {
     cartoes,
     faturas,
     acertos,
     gastos,
+    antecipacoes,
     inicializar,
+    salvarCartaoManual,
+    excluirCartaoManual,
     fecharFaturaManual,
     reabrirFaturaManual,
     quitarAcertoMembro,
+    registrarAdiantamentoManual,
     faturasAbertas,
     faturasFechadas,
-    calcularConsumoMembro
+    calcularConsumoMembro,
+    calcularAdiantamentoMembro
   }
 }
