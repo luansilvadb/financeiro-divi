@@ -1,36 +1,39 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
-import ActivityFeed from './components/ledger/ActivityFeed.vue'
 import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
 import { Plus, X, Settings } from 'lucide-vue-next'
-import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
-import { Transacao } from './modules/ledger/core/domain/Transacao'
-import { useTransacoes } from './modules/ledger/composables/useTransacoes'
 import { useMembros } from './modules/ledger/composables/useMembros'
+import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
-const { transacoes, inicializar: inicializarTransacoes, salvar: salvarTransacao } = useTransacoes()
 const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
+const {
+  cartoes,
+  faturas,
+  acertos,
+  inicializar: inicializarCartoes,
+  fecharFaturaManual,
+  quitarAcertoMembro,
+  faturasAbertas,
+  faturasFechadas,
+  calcularConsumoMembro
+} = useCartoesEFaturas()
 
 // Ativa o listener global de sincronização multi-aba
 useStorageSync()
 
-const saldos = computed(() => {
-  return CalculadoraSaldos.calcular(transacoes.value)
-})
-
 onMounted(async () => {
   await Promise.all([
-    inicializarTransacoes(),
-    inicializarMembros()
+    inicializarMembros(),
+    inicializarCartoes()
   ])
 })
 
-const handleSalvarTransacao = async (t: Transacao) => {
-  await salvarTransacao(t)
+const handleSalvarTransacao = async () => {
+  await inicializarCartoes()
   currentView.value = 'dashboard'
 }
 </script>
@@ -65,15 +68,14 @@ const handleSalvarTransacao = async (t: Transacao) => {
     <main>
       <div v-if="currentView === 'dashboard'" class="space-y-6">
         <DashboardSaldos 
-          :saldos="saldos" 
           :membros="todosMembros"
-          :transacoes="transacoes"
-          @novo-lancamento="currentView = 'wizard'"
-        />
-
-        <ActivityFeed 
-          :transacoes="transacoes"
-          :membros="todosMembros"
+          :faturasAbertas="faturasAbertas"
+          :faturasFechadas="faturasFechadas"
+          :acertosPendentes="acertos"
+          :cartoes="cartoes"
+          :calcular-consumo="calcularConsumoMembro"
+          @quitarAcerto="quitarAcertoMembro"
+          @fecharFatura="fecharFaturaManual"
         />
       </div>
       

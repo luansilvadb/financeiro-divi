@@ -1,124 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DashboardSaldos from './DashboardSaldos.vue'
-import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 
-describe('DashboardSaldos', () => {
-  const membros = [
-    { id: '1', nome: 'Luan' },
-    { id: '2', nome: 'Maria' }
-  ]
-
-  const saldos = new Map([
-    ['1', Dinheiro.deCentavos(1000)], // R$ 10,00
-    ['2', Dinheiro.deCentavos(-1000)] // R$ -10,00
-  ])
-
-  const transacoes: Transacao[] = [
-    {
-      id: 't1',
-      descricao: 'Almoço',
-      total: Dinheiro.deCentavos(2000),
-      data: new Date('2024-05-15'),
-      status: 'pendente',
-      pagamentos: [{ membro_id: '1', valor: Dinheiro.deCentavos(2000) }],
-      divisoes: [
-        { beneficiario_id: '1', valor: Dinheiro.deCentavos(1000) },
-        { beneficiario_id: '2', valor: Dinheiro.deCentavos(1000) }
-      ]
-    }
-  ]
-
-  it('deve exibir a lista de saldos corretamente', () => {
+describe('DashboardSaldos - Cartões & Faturas', () => {
+  it('deve exibir as faturas fechadas aguardando acerto', () => {
     const wrapper = mount(DashboardSaldos, {
-      props: { membros, saldos, transacoes }
-    })
-
-    expect(wrapper.text()).toContain('Luan')
-    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('+R$ 10,00')
-    expect(wrapper.text()).toContain('Maria')
-    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('-R$ 10,00')
-  })
-
-  it('deve expandir os detalhes do membro ao clicar', async () => {
-    const wrapper = mount(DashboardSaldos, {
-      props: { membros, saldos, transacoes }
-    })
-
-    const luanRow = wrapper.findAll('.cursor-pointer').find(el => el.text().includes('Luan'))
-    await luanRow?.trigger('click')
-
-    expect(wrapper.text()).toContain('Almoço')
-    expect(wrapper.text()).toContain('CRÉDITO')
-    expect(wrapper.text()).toContain('+10,00')
-  })
-
-  it('deve calcular o saldo acumulado corretamente nos detalhes', async () => {
-    const wrapper = mount(DashboardSaldos, {
-      props: { membros, saldos, transacoes }
-    })
-
-    // No momento, o saldo acumulado não é exibido no template mas é calculado no script
-    // Como o template foi simplificado no Task 2 e removeu o saldo acumulado, 
-    // vamos apenas verificar se os detalhes básicos estão lá.
-    const luanRow = wrapper.findAll('.cursor-pointer').find(el => el.text().includes('Luan'))
-    await luanRow?.trigger('click')
-    
-    expect(wrapper.text()).toContain('Almoço')
-  })
-
-  it('deve exibir o saldo acumulado e permitir expandir auditoria', async () => {
-    const wrapper = mount(DashboardSaldos, {
-      props: { membros, saldos, transacoes }
-    })
-
-    const luanRow = wrapper.findAll('.cursor-pointer').find(el => el.text().includes('Luan'))
-    await luanRow?.trigger('click')
-    
-    expect(wrapper.text()).toContain('Saldo após lançamento')
-    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('+R$ 10,00')
-
-    const detailsButton = wrapper.find('button')
-    expect(detailsButton.text()).toBe('DETALHES')
-    await detailsButton.trigger('click')
-
-    expect(detailsButton.text()).toBe('OCULTAR')
-    expect(wrapper.text()).toContain('Total Bruto da Nota')
-    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('R$ 20,00')
-    expect(wrapper.text()).toContain('Contribuiu no pagamento')
-  })
-
-  it('deve exibir membros inativos se eles tiverem transações', () => {
-    const membrosComInativo = [
-      ...membros,
-      { id: '3', nome: 'Inativo Com Historico', ativo: false },
-      { id: '4', nome: 'Inativo Sem Historico', ativo: false }
-    ]
-
-    const saldosComInativo = new Map(saldos)
-    saldosComInativo.set('3', Dinheiro.deCentavos(0)) // Tem histórico mas saldo zero
-
-    const wrapper = mount(DashboardSaldos, {
-      props: { 
-        membros: membrosComInativo, 
-        saldos: saldosComInativo, 
-        transacoes 
+      props: {
+        membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'FECHADA', periodo: { mes: 5, ano: 2026 } }] as any,
+        acertosPendentes: [{ id: 'a1', faturaId: 'f1', membroId: 'm2', valorAcerto: { centavos: 8000 }, tipo: 'MEMBRO_PAGA', pago: false }] as any,
+        faturasAbertas: [] as any,
+        cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
+        calcularConsumo: () => 0
       }
     })
 
-    expect(wrapper.text()).toContain('Inativo Com Historico')
-    expect(wrapper.text()).not.toContain('Inativo Sem Historico')
-  })
-
-  it('deve exibir a seção de acertos de contas quando houver saldos pendentes', () => {
-    const wrapper = mount(DashboardSaldos, {
-      props: { membros, saldos, transacoes }
-    })
-
-    expect(wrapper.text()).toContain('Como acertar as contas')
-    expect(wrapper.text()).toContain('Maria')
-    expect(wrapper.text()).toContain('Luan')
-    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('R$ 10,00')
+    expect(wrapper.text()).toContain('Faturas Fechadas')
+    expect(wrapper.text()).toContain('Maria deve para João')
+    expect(wrapper.text()).toContain('R$ 80,00')
   })
 })

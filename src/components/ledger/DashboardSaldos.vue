@@ -1,78 +1,80 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import { CalculadoraSaldos } from '../../modules/ledger/core/services/CalculadoraSaldos'
-import { Transacao } from '../../modules/ledger/core/domain/Transacao'
-import CardSaldoMembro from './dashboard/CardSaldoMembro.vue'
-import ItemExtratoCard from './dashboard/ItemExtratoCard.vue'
-import SugestaoAcertos from './dashboard/SugestaoAcertos.vue'
+import { Fatura } from '../../modules/ledger/core/domain/Fatura'
+import { AcertoMembro } from '../../modules/ledger/core/domain/AcertoMembro'
+import { Cartao } from '../../modules/ledger/core/domain/Cartao'
 
 interface Props {
-  saldos: Map<string, Dinheiro>
-  membros: { id: string; nome: string; ativo?: boolean }[]
-  transacoes: Transacao[]
+  membros: { id: string; nome: string }[]
+  faturasAbertas: Fatura[]
+  faturasFechadas: Fatura[]
+  acertosPendentes: AcertoMembro[]
+  cartoes: Cartao[]
+  calcularConsumo: (faturaId: string, membroId: string) => number
 }
 
 const props = defineProps<Props>()
-const selectedMemberId = ref<string | null>(null)
+const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto'])
 
 const getMembroNome = (id: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
 
-const acertos = computed(() => {
-  return CalculadoraSaldos.calcularAcertos(props.saldos)
-})
-
-const saldosList = computed(() => {
-  return props.membros
-    .map(m => ({
-      id: m.id,
-      nome: m.nome,
-      ativo: m.ativo ?? true,
-      saldo: props.saldos.get(m.id) || Dinheiro.deCentavos(0),
-      temTransacoes: props.saldos.has(m.id)
-    }))
-    .filter(item => item.ativo || item.temTransacoes)
-    .sort((a, b) => b.saldo.centavos - a.saldo.centavos)
-})
-
-const getExtrato = (id: string) => {
-  return CalculadoraSaldos.obterExtratoMembro(id, props.transacoes).reverse() // Mostrar mais recentes primeiro
+const getCartaoNome = (cartaoId: string) => {
+  return props.cartoes.find(c => c.id === cartaoId)?.nome || 'Cartão'
 }
 
-const toggleDrilldown = (id: string) => {
-  selectedMemberId.value = selectedMemberId.value === id ? null : id
+const acertosDaFatura = (faturaId: string) => {
+  return props.acertosPendentes.filter(a => a.faturaId === faturaId && !a.pago)
+}
+
+const formatarDinheiro = (centavos: number) => {
+  return Dinheiro.deCentavos(centavos).centavos / 100
 }
 </script>
 
 <template>
   <div class="max-w-md mx-auto space-y-6">
-    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6">Saldos</h2>
+    <!-- Seção 1: Faturas Fechadas (Acertos Ativos) -->
+    <div v-if="faturasFechadas.length > 0" class="bg-amber-50 rounded-2xl p-6 border border-amber-200 shadow-sm">
+      <h3 class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-4">⚠️ Faturas Fechadas (Acertos Pendentes)</h3>
+      
+      <div v-for="fatura in faturasFechadas" :key="fatura.id" class="space-y-4 mb-4 last:mb-0">
+        <div class="flex justify-between items-center border-b border-amber-200/50 pb-2">
+          <span class="font-bold text-slate-800 text-sm">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+          <span class="text-xs text-amber-700 font-medium">Responsável: {{ getMembroNome(fatura.responsavelId) }}</span>
+        </div>
 
-      <CardSaldoMembro 
-        v-for="item in saldosList" 
-        :key="item.id"
-        :nome="item.nome"
-        :saldo="item.saldo"
-        :is-expanded="selectedMemberId === item.id"
-        @toggle="toggleDrilldown(item.id)"
-      >
-        <template #details>
-          <ItemExtratoCard 
-            v-for="extratoItem in getExtrato(item.id)" 
-            :key="extratoItem.id"
-            :item="extratoItem"
-            :membros="membros"
-          />
-        </template>
-      </CardSaldoMembro>
+        <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="flex justify-between items-center bg-white p-3 rounded-xl border border-amber-100 shadow-sm">
+          <div>
+            <span class="font-bold text-slate-800 text-sm">{{ getMembroNome(acerto.membroId) }} deve para {{ getMembroNome(fatura.responsavelId) }}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-red-600 font-extrabold">R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}</span>
+            <button @click="emit('quitarAcerto', acerto.id)" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-500 transition-colors shadow-sm">Quitar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <SugestaoAcertos 
-      :acertos="acertos"
-      :get-membro-nome="getMembroNome"
-    />
+    <!-- Seção 2: Faturas Abertas (Previsão de Gastos) -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">🔍 Faturas Abertas (Previsão de Gastos)</h3>
+      
+      <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-slate-100 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
+        <div class="flex justify-between items-center mb-3">
+          <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
+        </div>
+
+        <div class="space-y-2">
+          <div v-for="membro in membros" :key="membro.id" class="flex justify-between items-center text-sm">
+            <span class="text-slate-600">{{ membro.nome }} <span v-if="membro.id === fatura.responsavelId" class="text-xs text-indigo-500 font-semibold">(Responsável)</span>:</span>
+            <span class="font-semibold text-slate-800">R$ {{ formatarDinheiro(calcularConsumo(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
