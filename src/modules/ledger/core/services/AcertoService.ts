@@ -1,5 +1,5 @@
-import { IAcertoMembroRepository } from '../ports/IAcertoMembroRepository'
-import { IFaturaRepository } from '../ports/IFaturaRepository'
+import type { IAcertoMembroRepository } from '../ports/IAcertoMembroRepository'
+import type { IFaturaRepository } from '../ports/IFaturaRepository'
 
 export class AcertoService {
   constructor(

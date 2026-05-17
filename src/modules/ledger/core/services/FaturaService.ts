@@ -1,7 +1,7 @@
-import { IFaturaRepository } from '../ports/IFaturaRepository'
-import { IGastoRepository } from '../ports/IGastoRepository'
-import { IAntecipacaoRepository } from '../ports/IAntecipacaoRepository'
-import { IAcertoMembroRepository } from '../ports/IAcertoMembroRepository'
+import type { IFaturaRepository } from '../ports/IFaturaRepository'
+import type { IGastoRepository } from '../ports/IGastoRepository'
+import type { IAntecipacaoRepository } from '../ports/IAntecipacaoRepository'
+import type { IAcertoMembroRepository } from '../ports/IAcertoMembroRepository'
 import { AcertoMembro } from '../domain/AcertoMembro'
 import { Dinheiro } from '../../../../shared/primitives/Dinheiro'
 
