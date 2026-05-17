@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
 interface Props {
   membros: { id: string; nome: string }[]

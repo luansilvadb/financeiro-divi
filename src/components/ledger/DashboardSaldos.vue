@@ -19,22 +19,13 @@ import ActivityFeed from './ActivityFeed.vue'
 import ModalAjustarGasto from './ModalAjustarGasto.vue'
 import DetalhamentoSaldosCard from './dashboard/DetalhamentoSaldosCard.vue'
 import { 
-  Plus, 
-  Settings, 
-  Clock, 
   ArrowUpRight, 
-  ArrowDownLeft, 
-  CheckCircle2, 
   TrendingUp, 
-  Wallet, 
   ChevronDown, 
   ChevronUp, 
   Sparkles, 
-  Info,
-  Calendar,
-  Lock,
-  Unlock,
-  AlertCircle
+  Lock, 
+  Unlock
 } from 'lucide-vue-next'
 
 interface Props {

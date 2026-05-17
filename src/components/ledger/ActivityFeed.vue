@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Clock } from 'lucide-vue-next'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
-import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { computed } from 'vue'
 
 interface Props {
@@ -19,10 +18,6 @@ const sortedGastos = computed(() => {
 
 const getMembroNome = (id: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
-}
-
-const formatarDinheiro = (centavos: number) => {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 const handleDelete = (id: string) => {
