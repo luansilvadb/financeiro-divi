@@ -4,75 +4,117 @@
 
 @layer base {
   :root {
-    --bg: #07090F;
-    --s1: rgba(255, 255, 255, 0.04);
-    --s2: rgba(255, 255, 255, 0.07);
-    --s3: rgba(255, 255, 255, 0.11);
-    --border: rgba(255, 255, 255, 0.07);
-    --border-hi: rgba(255, 255, 255, 0.14);
+    /* Fundo matizado do Windows 11 (Mica-like tint) */
+    --fluent-bg: linear-gradient(135deg, #F3F6FA 0%, #E8F0F8 100%);
     
-    --primary: #6366F1;
-    --primary-dim: rgba(99, 102, 241, 0.15);
-    --primary-glow: rgba(99, 102, 241, 0.30);
+    /* Superfícies Acrílicas (Translucidez e Saturação Suaves) */
+    --fluent-card-bg: rgba(255, 255, 255, 0.65);
+    --fluent-card-hover: rgba(255, 255, 255, 0.80);
     
-    --emerald: #10B981;
-    --emerald-dim: rgba(16, 185, 129, 0.12);
-    --emerald-glow: rgba(16, 185, 129, 0.25);
+    /* Outlines e Bordas de Destaque */
+    --fluent-border: rgba(0, 0, 0, 0.08);
+    --fluent-border-hi: rgba(255, 255, 255, 0.55); /* Highlight superior para efeito plástico */
     
-    --rose: #F43F5E;
-    --rose-dim: rgba(244, 63, 94, 0.12);
+    /* Cores de Marca / Fluent Blue */
+    --fluent-accent: #0078D4;
+    --fluent-accent-hover: #106EBE;
+    --fluent-accent-active: #005A9E;
+    --fluent-tint-blue: rgba(0, 120, 212, 0.06);
     
-    --amber: #F59E0B;
-    --amber-dim: rgba(245, 158, 11, 0.12);
+    /* Status Semânticos */
+    --fluent-emerald: #107C41; /* Verde clássico Office/Excel */
+    --fluent-emerald-dim: rgba(16, 124, 65, 0.08);
+    --fluent-rose: #A80000;
+    --fluent-rose-dim: rgba(168, 0, 0, 0.06);
     
-    --blue: #3B82F6;
-    --blue-dim: rgba(59, 130, 246, 0.12);
+    /* Hierarquia Tipográfica (Baseada em Segoe UI / Selawik) */
+    --fluent-text-p1: #201F1E;
+    --fluent-text-p2: #605E5C;
+    --fluent-text-p3: #A19F9D;
+
+    /* COMPATIBILIDADE COM O TEMA EXISTENTE (Mapeamento dos tokens antigos para os novos) */
+    --bg: #F3F6FA; /* Usará fundo leve como cor sólida de fallback */
+    --s1: rgba(0, 0, 0, 0.02);
+    --s2: rgba(0, 0, 0, 0.04);
+    --s3: rgba(0, 0, 0, 0.06);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hi: rgba(255, 255, 255, 0.55);
     
-    --violet: #8B5CF6;
+    --primary: #0078D4;
+    --primary-dim: rgba(0, 120, 212, 0.08);
+    --primary-glow: rgba(0, 120, 212, 0.25);
     
-    --t1: #F8FAFC;
-    --t2: rgba(248, 250, 252, 0.60);
-    --t3: rgba(248, 250, 252, 0.35);
-    --t4: rgba(248, 250, 252, 0.20);
+    --emerald: #107C41;
+    --emerald-dim: rgba(16, 124, 65, 0.08);
+    --emerald-glow: rgba(16, 124, 65, 0.20);
+    
+    --rose: #A80000;
+    --rose-dim: rgba(168, 0, 0, 0.06);
+    
+    --amber: #C83C00; /* Laranja/Amber clássico do Windows */
+    --amber-dim: rgba(200, 60, 0, 0.06);
+    
+    --blue: #0078D4;
+    --blue-dim: rgba(0, 120, 212, 0.08);
+    
+    --violet: #5C2D91; /* Roxo clássico do MS Teams */
+    
+    --t1: #201F1E;
+    --t2: #605E5C;
+    --t3: #A19F9D;
+    --t4: #C8C6C4;
   }
 
   body {
-    background-color: var(--bg);
-    color: var(--t1);
-    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--fluent-bg);
+    color: var(--fluent-text-p1);
+    font-family: 'Segoe UI', 'Inter', -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    min-height: 100vh;
   }
 }
 
 @layer utilities {
-  .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-  }
-  
-  .glass-input {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border);
-    color: var(--t1);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .glass-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 16px var(--primary-glow);
+  /* Cartão Acrílico Oficial (Fluent Acrylic Material) */
+  .acrylic-card {
+    background: var(--fluent-card-bg);
+    border: 1px solid var(--fluent-border);
+    backdrop-filter: blur(30px) saturate(135%);
+    -webkit-backdrop-filter: blur(30px) saturate(135%);
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.04), 
+      inset 0 1px 0 var(--fluent-border-hi);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .glow-primary {
-    box-shadow: 0 0 20px var(--primary-glow);
-  }
-  
-  .glow-emerald {
-    box-shadow: 0 0 20px var(--emerald-glow);
+  .acrylic-card:hover {
+    background: var(--fluent-card-hover);
+    box-shadow: 
+      0 8px 16px rgba(0, 0, 0, 0.08), 
+      inset 0 1px 0 var(--fluent-border-hi);
   }
 
-  .text-glow-emerald {
-    text-shadow: 0 0 8px var(--emerald-glow);
+  /* Input Acrílico com Sublinhado Ativo */
+  .fluent-input {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--fluent-border);
+    border-bottom: 2px solid var(--fluent-border);
+    color: var(--fluent-text-p1);
+    font-size: 14px;
+    border-radius: 4px;
+    transition: all 0.15s ease-out;
+  }
+
+  .fluent-input:focus {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom-color: var(--fluent-accent);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    outline: none;
+  }
+
+  /* Efeito de Gradiente de Destaque */
+  .fluent-accent-glow {
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25);
   }
 }
