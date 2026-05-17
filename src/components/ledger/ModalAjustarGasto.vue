@@ -116,9 +116,18 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <div v-if="props.visible" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-6">
-    <Card class="w-full max-w-md p-0 overflow-hidden bg-card shadow-lg border border-stone-surface rounded-cards">
-      <div class="p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+  <div 
+    v-if="props.visible" 
+    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
+  >
+    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
+    <div 
+      class="w-full sm:max-w-md overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards shadow-lg flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
+    >
+      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
+      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
+
+      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Ajuste</SectionLabel>
           <h3 class="text-3xl font-display text-charcoal">Corrigir <span class="text-ember">Lançamento</span></h3>
@@ -136,7 +145,7 @@ const handleConfirm = () => {
             />
           </div>
 
-          <!-- Valor Real -->
+          <!-- Valor Total -->
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Valor Total</label>
             <div class="relative">
@@ -157,24 +166,24 @@ const handleConfirm = () => {
             <div class="grid grid-cols-3 gap-2">
               <button 
                 @click="selectMethod('pix', null)"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
-                :class="activeMethod === 'pix' ? 'bg-ember border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
+                :class="activeMethod === 'pix' ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
               >
                 <Wallet class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">Pix</span>
               </button>
               <button 
                 @click="selectMethod('card', 'luan')"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-sky border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
+                :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
               >
                 <CreditCard class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">Nubank</span>
               </button>
               <button 
                 @click="selectMethod('card', 'joao')"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-sky border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
+                :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
               >
                 <CreditCard class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">C6</span>
@@ -192,8 +201,8 @@ const handleConfirm = () => {
                 v-for="m in props.membros"
                 :key="m.id"
                 @click="quemPaga = m.id"
-                class="py-3 rounded-xl border border-stone-surface font-bold text-xs transition-all duration-200"
-                :class="quemPaga === m.id ? 'bg-ember border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+                class="py-3 rounded-xl border font-bold text-xs transition-all duration-200"
+                :class="quemPaga === m.id ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
               >
                 {{ m.nome }}
               </button>
@@ -209,19 +218,19 @@ const handleConfirm = () => {
                 :key="m.id"
                 @click="toggleSplit(m.id)"
                 class="relative py-4 rounded-xl border font-bold text-xs transition-all duration-200 flex flex-col items-center gap-2"
-                :class="selectedSplit.includes(m.id) ? 'bg-ember/5 border-ember text-ember font-bold' : 'bg-stone border-stone-surface text-ash hover:bg-[#eae7e2]'"
+                :class="selectedSplit.includes(m.id) ? 'bg-[#ff3e00]/5 border-[#ff3e00] text-[#ff3e00] font-bold' : 'bg-[#f6f4ef] border-stone-surface text-ash hover:bg-stone-surface'"
               >
                 <Users class="w-4 h-4" />
                 <span>{{ m.nome }}</span>
-                <div v-if="selectedSplit.includes(m.id)" class="absolute top-1 right-1">
-                  <Check class="w-3 h-3 text-ember" />
+                <div v-if="selectedSplit.includes(m.id)" class="absolute top-1.5 right-1.5">
+                  <Check class="w-3 h-3 text-[#ff3e00]" />
                 </div>
               </button>
             </div>
           </div>
 
           <!-- Quadro Final / Prévia do Rateio -->
-          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
+          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow-green/5 border border-meadow-green/20 text-meadow-green">
             <Info class="w-5 h-5 shrink-0 mt-0.5" />
             <div class="space-y-1">
               <p class="text-[10px] font-bold uppercase tracking-widest">Resumo do Rateio</p>
@@ -235,7 +244,7 @@ const handleConfirm = () => {
           <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
         </div>
       </div>
-    </Card>
+    </div>
   </div>
 </template>
 
