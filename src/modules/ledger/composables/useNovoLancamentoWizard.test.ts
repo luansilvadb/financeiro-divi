@@ -123,7 +123,6 @@ describe('useNovoLancamentoWizard', () => {
     wizard.beneficiarios_selecionados.value = ['1']
     wizard.pagamentos.value = { '1': 100 }
 
-    // @ts-ignore - finalizar ainda não existe
     const transacao = wizard.finalizar()
     expect(transacao.descricao).toBe('Teste')
     expect(transacao.total.centavos).toBe(10000)
