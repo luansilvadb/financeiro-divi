@@ -17,6 +17,17 @@ export class FaturaService {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
 
+    fatura.fechar(dataPagamentoBanco)
+    await this.faturaRepo.salvar(fatura)
+  }
+
+  async confirmarAcertos(faturaId: string): Promise<void> {
+    const fatura = await this.faturaRepo.buscarPorId(faturaId)
+    if (!fatura) throw new Error('Fatura não encontrada')
+    if (fatura.status !== 'FECHADA') {
+      throw new Error('Apenas faturas FECHADAS podem ter acertos confirmados')
+    }
+
     const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
     const antecipacoes = await this.antecipacaoRepo.buscarPorFatura(faturaId)
 
@@ -33,12 +44,14 @@ export class FaturaService {
     })
 
     const membrosIds = new Set([...consumoMap.keys(), ...antMap.keys()])
-    membrosIds.delete(fatura.responsavelId) // Regra 1: Excluir responsavel
+    membrosIds.delete(fatura.responsavelId) // Dono não gera acertos para si
+
+    await this.acertoRepo.excluirPorFatura(faturaId)
 
     for (const membroId of membrosIds) {
       const consumo = Dinheiro.deCentavos(consumoMap.get(membroId) || 0)
       const antecipado = Dinheiro.deCentavos(antMap.get(membroId) || 0)
-      
+
       const acerto = new AcertoMembro({
         id: crypto.randomUUID(),
         faturaId: fatura.id,
@@ -46,11 +59,9 @@ export class FaturaService {
         totalConsumido: consumo,
         totalAntecipado: antecipado
       })
+
       await this.acertoRepo.salvar(acerto)
     }
-
-    fatura.fechar(dataPagamentoBanco)
-    await this.faturaRepo.salvar(fatura)
   }
 
   async reabrirFatura(faturaId: string): Promise<void> {
@@ -59,7 +70,6 @@ export class FaturaService {
 
     fatura.reabrir()
     await this.faturaRepo.salvar(fatura)
-
     await this.acertoRepo.excluirPorFatura(faturaId)
   }
 }
