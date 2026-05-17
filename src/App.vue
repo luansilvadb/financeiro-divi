@@ -118,7 +118,7 @@ const handleSalvarTransacao = async () => {
       <!-- Main Content -->
       <main class="relative z-10">
         <DashboardSaldos 
-          v-if="currentView === 'dashboard'"
+          v-if="currentView === 'dashboard' || currentView === 'wizard'"
           :membros="todosMembros"
           :faturasAbertas="faturasAbertas"
           :faturasFechadas="faturasFechadas"
@@ -130,13 +130,6 @@ const handleSalvarTransacao = async () => {
           @fecharFatura="fecharFaturaManual"
           @reabrirFatura="reabrirFaturaManual"
         />
-        
-        <NovoLancamentoWizard 
-          v-else-if="currentView === 'wizard'"
-          :membros="ativos"
-          @salvar="handleSalvarTransacao"
-          @cancelar="currentView = 'dashboard'"
-        />
 
         <ConfiguracoesMembros
           v-else-if="currentView === 'settings'"
@@ -147,7 +140,7 @@ const handleSalvarTransacao = async () => {
 
     <!-- Footer Inverted Section -->
     <div class="max-w-[1200px] mx-auto px-6">
-      <InvertedSection v-if="currentView === 'dashboard'">
+      <InvertedSection v-if="currentView === 'dashboard' || currentView === 'wizard'">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div class="space-y-4">
             <div class="flex items-center gap-2 text-ember">
@@ -185,6 +178,27 @@ const handleSalvarTransacao = async () => {
         <Plus class="w-6 h-6 stroke-[3px]" />
       </Button>
     </transition>
+
+    <!-- Overlay do Wizard de Novo Lançamento: Bottom-sheet no Mobile, Modal no Desktop -->
+    <div 
+      v-if="currentView === 'wizard'"
+      class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
+    >
+      <div 
+        class="w-full sm:max-w-xl overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cardsLarge shadow-lg flex flex-col max-h-[95vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
+      >
+        <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
+        <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
+        
+        <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+          <NovoLancamentoWizard 
+            :membros="ativos"
+            @salvar="handleSalvarTransacao"
+            @cancelar="currentView = 'dashboard'"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
