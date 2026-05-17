@@ -213,9 +213,14 @@ const iniciarPix = (acerto: any) => {
 }
 
 // Envia reembolso Pix parcial/total
+const metodoAcerto = ref<'pix' | 'cash' | 'mutual'>('pix')
 const enviarReembolsoPix = async (acertoId: string) => {
   if (valorPixInput.value <= 0) return
   await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
+  acertoPixId.value = null
+}
+const quitarComAjuste = async (acertoId: string) => {
+  await quitarAcertoMembro(acertoId)
   acertoPixId.value = null
 }
 const todosOsAcertosQuitados = (faturaId: string) => {
@@ -534,23 +539,57 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
             ></div>
           </div>
 
-          <!-- Amortização Pix Parcial expandido -->
-          <div v-if="acertoPixId === acerto.id" class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 mt-2 space-y-3">
-            <span class="text-xs font-black uppercase text-indigo-400 block mb-2">Registrar Pagamento Pix</span>
-            <div class="flex items-center gap-2">
-              <span class="text-slate-400 text-xs font-bold">R$</span>
-              <input 
-                v-model.number="valorPixInput"
-                type="number"
-                step="0.01"
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 font-black text-white focus:outline-none focus:border-indigo-500 text-xs"
-              />
+          <!-- Amortização Pix Parcial / Customizado expandido -->
+          <div v-if="acertoPixId === acerto.id" class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 mt-2 space-y-4">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-black uppercase text-indigo-400">Registrar Baixa de Acerto</span>
+              <span class="text-[10px] text-text-muted">Ajuste de valor real</span>
+            </div>
+
+            <!-- Seleção de Método -->
+            <div class="flex gap-2">
               <button 
-                @click="enviarReembolsoPix(acerto.id)"
-                class="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs px-4 py-2 rounded-lg"
+                v-for="m in [{id:'pix', nome:'⚡ Pix'}, {id:'cash', nome:'💵 Dinheiro'}, {id:'mutual', nome:'🤝 Abatimento'}]" 
+                :key="m.id"
+                @click="metodoAcerto = m.id"
+                class="flex-1 py-2 px-1 text-[10px] font-extrabold rounded-xl border text-center transition-all"
+                :class="metodoAcerto === m.id ? 'bg-primary border-primary text-white' : 'bg-slate-800 border-slate-700 text-slate-400'"
               >
-                Confirmar
+                {{ m.nome }}
               </button>
+            </div>
+
+            <!-- Input de Valor -->
+            <div class="space-y-2">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-400 text-xs font-bold">R$</span>
+                <input 
+                  v-model.number="valorPixInput"
+                  type="number"
+                  step="0.01"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 font-black text-white focus:outline-none focus:border-indigo-500 text-xs"
+                />
+                <button 
+                  @click="enviarReembolsoPix(acerto.id)"
+                  class="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs px-4 py-2 rounded-lg"
+                >
+                  Registrar
+                </button>
+              </div>
+
+              <!-- Reassurance e Atalho de Quitação com Ajuste -->
+              <div class="text-[10px] text-text-muted leading-relaxed">
+                <span v-if="metodoAcerto === 'mutual'" class="text-amber-400 font-bold block mb-1">
+                  💡 Abatimento/Ajuste: Ideal para perdoar centavos ou fazer descontos mútuos.
+                </span>
+                Deseja quitar a dívida inteira com ajuste redondo (ex: ignorando centavos)? 
+                <button 
+                  @click="quitarComAjuste(acerto.id)" 
+                  class="text-accent-emerald hover:text-emerald-300 font-black underline ml-1 cursor-pointer"
+                >
+                  Quitar Total
+                </button>
+              </div>
             </div>
           </div>
         </div>
