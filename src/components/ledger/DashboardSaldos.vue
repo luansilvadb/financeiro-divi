@@ -6,6 +6,7 @@ import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
 import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
 import { useSaldosUnificados } from '../../modules/ledger/composables/useSaldosUnificados'
+import { useDashboardCalculations } from '../../modules/ledger/composables/useDashboardCalculations'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { LocalStorageGastoRepository } from '../../modules/ledger/adapters/LocalStorageGastoRepository'
 import ContasFixasPanel from './ContasFixasPanel.vue'
@@ -61,6 +62,38 @@ const {
   acertos: globalAcertos
 } = useCartoesEFaturas()
 
+// Extract calculation logic to dedicated composable
+const calculations = useDashboardCalculations(
+  props.membros,
+  props.faturasAbertas,
+  props.faturasFechadas,
+  props.acertosPendentes,
+  globalGastos.value,
+  globalAcertos.value,
+  props.calcularConsumo,
+  props.calcularAdiantamento
+)
+
+// Destructure for template access
+const {
+  getMembroNome,
+  getCartaoNome: getCartaoNomeBase,
+  getConsumo,
+  getAdiantamento,
+  formatarDinheiro,
+  calcularTotalFatura,
+  acertosDaFatura,
+  faturaTemAcertosAtivos,
+  todosOsAcertosQuitados,
+  currentMonthName,
+  sugerirProximoPeriodo,
+  parcelasFuturasDetalhadas,
+  gastosDaFatura
+} = calculations
+
+// Wrapper for getCartaoNome to inject props.cartoes
+const getCartaoNome = (cartaoId: string) => getCartaoNomeBase(props.cartoes, cartaoId)
+
 // Estado de revisão imersiva (Gap 2)
 const faturaSobRevisao = ref<any | null>(null)
 
@@ -115,51 +148,6 @@ const confirmarAjusteGasto = async (dados: {
 const acertoPixId = ref<string | null>(null)
 const valorPixInput = ref<number>(0)
 
-const getMembroNome = (id: string) => {
-  return props.membros.find(m => m.id === id)?.nome || id
-}
-
-const getCartaoNome = (cartaoId: string) => {
-  return props.cartoes.find(c => c.id === cartaoId)?.nome || 'Cartão'
-}
-
-const formatarDinheiro = (centavos: number) => {
-  return Dinheiro.deCentavos(centavos).centavos / 100
-}
-
-const getConsumo = (faturaId: string, membroId: string) => {
-  return props.calcularConsumo(faturaId, membroId)
-}
-
-const getAdiantamento = (faturaId: string, membroId: string) => {
-  return props.calcularAdiantamento ? props.calcularAdiantamento(faturaId, membroId) : 0
-}
-
-const calcularTotalFatura = (faturaId: string) => {
-  return props.membros.reduce((sum, m) => sum + getConsumo(faturaId, m.id), 0)
-}
-
-// Filtra acertos pertencentes a uma fatura fechada específica
-const acertosDaFatura = (faturaId: string) => {
-  const list = props.acertosPendentes && props.acertosPendentes.length > 0
-    ? props.acertosPendentes
-    : globalAcertos.value
-  return list.filter(a => a.faturaId === faturaId)
-}
-
-// Verifica se a fatura fechada já possui acertos gerados (está no estado de acerto ativo)
-const faturaTemAcertosAtivos = (faturaId: string) => {
-  return acertosDaFatura(faturaId).length > 0
-}
-
-// Gastos associados à fatura
-const gastosDaFatura = (faturaId: string) => {
-  const list = props.gastos && props.gastos.length > 0
-    ? props.gastos
-    : globalGastos.value
-  return list.filter((g: Gasto) => g.faturaId === faturaId)
-}
-
 // Inicia Pix
 const iniciarPix = (acerto: any) => {
   acertoPixId.value = acerto.id
@@ -178,11 +166,6 @@ const quitarComAjuste = async (acertoId: string) => {
   await quitarAcertoMembro(acertoId)
   acertoPixId.value = null
   await useCartoesEFaturas().inicializar()
-}
-
-const todosOsAcertosQuitados = (faturaId: string) => {
-  const acertos = acertosDaFatura(faturaId)
-  return acertos.length > 0 && acertos.every(a => a.pago)
 }
 
 // --- INTEGRAÇÃO SENIOR V18 (FASES 2-5) ---
@@ -231,16 +214,6 @@ const confirmarDeletarTemplate = (id: string) => {
 const showModalNovoPeriodo = ref(false)
 const nomeNovoPeriodo = ref('')
 
-const sugerirProximoPeriodo = () => {
-  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  const fat = props.faturasAbertas[0]
-  if (!fat) return ''
-  const mIdx = fat.periodo.mes - 1 // 0-indexed
-  const proximoMIdx = (mIdx + 1) % 12
-  const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
-  return `${meses[proximoMIdx]} ${proximoAno}`
-}
-
 const abrirNovoPeriodoModal = () => {
   nomeNovoPeriodo.value = sugerirProximoPeriodo()
   showModalNovoPeriodo.value = true
@@ -255,13 +228,6 @@ const confirmarNovoPeriodo = async () => {
 
 // --- INTEGRAÇÃO SENIOR V19: LIVE BALANCES & NETTING ---
 const { calcularSaldosUnificados, calcularTransacoesNetting } = useSaldosUnificados()
-
-const currentMonthName = computed(() => {
-  const fat = props.faturasAbertas[0]
-  if (!fat) return 'Período Atual'
-  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  return `${meses[fat.periodo.mes - 1]} ${fat.periodo.ano}`
-})
 
 const saldosUnificadosAtivos = computed(() => {
   const activeFaturaId = props.faturasAbertas[0]?.id
@@ -316,26 +282,6 @@ const faturasExpandidas = ref<Record<string, boolean>>({})
 const toggleFaturaExpandida = (faturaId: string) => {
   faturasExpandidas.value[faturaId] = !faturasExpandidas.value[faturaId]
 }
-
-const parcelasFuturasDetalhadas = computed(() => {
-  const list: any[] = []
-  globalGastos.value.forEach((g: Gasto) => {
-    if (g.installments > 1) {
-      const valorParcela = g.valorTotal.centavos / g.installments
-      const parcelasRestantes = g.installments - 1
-      const totalRestante = valorParcela * parcelasRestantes
-      list.push({
-        id: g.id,
-        descricao: g.descricao,
-        responsavel: g.cardOwner ? getCartaoNome(g.faturaId) : 'Pix',
-        restantes: parcelasRestantes,
-        valorParcela: valorParcela / 100,
-        totalFuturo: totalRestante / 100
-      })
-    }
-  })
-  return list
-})
 
 const totalFuturasVencer = computed(() => {
   return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)

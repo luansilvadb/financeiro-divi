@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   <div 
     v-else-if="props.variant === 'recessed'"
     :class="cn(
-      'rounded-[12px] bg-recessed p-[22.8px] transition-all duration-300',
+      'rounded-cardslarge bg-recessed p-[22.8px] transition-all duration-300',
       props.class
     )"
   >
@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
   <div 
     v-else-if="props.variant === 'dark'"
     :class="cn(
-      'rounded-t-[24px] rounded-b-[24px] bg-obsidian shadow-lg text-white p-6',
+      'rounded-cardslarge bg-obsidian shadow-lg text-white p-6',
       props.class
     )"
   >

@@ -11,6 +11,90 @@ const gastoRepo = new LocalStorageGastoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()
 const cartaoRepo = new LocalStorageCartaoRepository()
 
+// Helper: Validate loan flow advancement
+function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
+  if (step === 2) return !!compradorId
+  if (step === 3) return !!borrowerId
+  if (step === 4) return valor > 0
+  if (step === 5) return descricao.trim().length > 0
+  return false
+}
+
+// Helper: Validate expense flow advancement
+function canAdvanceExpense(
+  step: number,
+  compradorId: string,
+  valor: number,
+  descricao: string,
+  modoDivisao: 'IGUAL' | 'MANUAL',
+  participantes: string[],
+  valoresDivisao: Record<string, number>
+): boolean {
+  if (step === 2) return !!compradorId
+  if (step === 3) return valor > 0
+  if (step === 4) return descricao.trim().length > 0
+  if (step === 5) {
+    if (modoDivisao === 'IGUAL') {
+      return participantes.length > 0
+    } else {
+      const soma = participantes.reduce((acc, id) => acc + (valoresDivisao[id] || 0), 0)
+      return Math.abs(soma - valor) < 0.01
+    }
+  }
+  return false
+}
+
+// Helper: Build divisoes based on flow type
+function buildDivisoes(
+  flow: 'expense' | 'loan',
+  total: any,
+  borrowerId: string | null,
+  participantes: string[],
+  modoDivisao: 'IGUAL' | 'MANUAL',
+  valoresDivisao: Record<string, number>
+): any[] {
+  if (flow === 'loan') {
+    if (!borrowerId) throw new Error('Selecione quem pegou emprestado')
+    return [new DivisaoDeGasto(borrowerId, total)]
+  }
+
+  if (participantes.length === 0) throw new Error('Selecione pelo menos uma pessoa para dividir')
+
+  if (modoDivisao === 'IGUAL') {
+    const partes = total.distribuir(participantes.length)
+    return participantes.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
+  } else {
+    return participantes.map(id => new DivisaoDeGasto(id, Dinheiro.deReais(valoresDivisao[id] || 0)))
+  }
+}
+
+// Helper: Find active invoice for transaction
+async function findActiveFatura(
+  paymentMethod: 'pix' | 'card',
+  cardOwnerId: string | null,
+  compradorId: string
+): Promise<any> {
+  const todasFaturas = await faturaRepo.listarTodas()
+  let faturaAtiva = todasFaturas.find(f => f.status === 'ABERTA')
+
+  // If card payment, try to find the card's invoice
+  if (paymentMethod === 'card' && cardOwnerId) {
+    const todosCartoes = await cartaoRepo.listarTodos()
+    const cartao = todosCartoes.find(c => c.responsavelPadraoId === compradorId || c.id === cardOwnerId)
+    if (cartao) {
+      faturaAtiva = todasFaturas.find(f => f.cartaoId === cartao.id && f.status === 'ABERTA') || faturaAtiva
+    }
+  }
+
+  // Fallback if no open invoice found
+  if (!faturaAtiva) {
+    faturaAtiva = todasFaturas[0]
+  }
+
+  if (!faturaAtiva) throw new Error('Nenhuma fatura encontrada para registrar o lançamento')
+  return faturaAtiva
+}
+
 export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] = []) {
   const step = ref(1)
 
@@ -51,24 +135,18 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
     if (step.value === 1) return true
     
     if (wizFlow.value === 'loan') {
-      if (step.value === 2) return !!compradorSelecionadoId.value
-      if (step.value === 3) return !!borrowerId.value
-      if (step.value === 4) return valor.value > 0
-      if (step.value === 5) return descricao.value.trim().length > 0
+      return canAdvanceLoan(step.value, compradorSelecionadoId.value, borrowerId.value, valor.value, descricao.value)
     } else {
-      if (step.value === 2) return !!compradorSelecionadoId.value
-      if (step.value === 3) return valor.value > 0
-      if (step.value === 4) return descricao.value.trim().length > 0
-      if (step.value === 5) {
-        if (modoDivisaoWizard.value === 'IGUAL') {
-          return participantesDivisao.value.length > 0
-        } else {
-          const soma = participantesDivisao.value.reduce((acc, id) => acc + (valoresDivisaoWizard.value[id] || 0), 0)
-          return Math.abs(soma - valor.value) < 0.01
-        }
-      }
+      return canAdvanceExpense(
+        step.value,
+        compradorSelecionadoId.value,
+        valor.value,
+        descricao.value,
+        modoDivisaoWizard.value,
+        participantesDivisao.value,
+        valoresDivisaoWizard.value
+      )
     }
-    return false
   })
 
   const finalizarGastoOuEmprestimo = async () => {
@@ -76,40 +154,16 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
     if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
 
     const total = Dinheiro.deReais(Number(valor.value))
-    let divisoes: DivisaoDeGasto[] = []
+    const divisoes = buildDivisoes(
+      wizFlow.value,
+      total,
+      borrowerId.value,
+      participantesDivisao.value,
+      modoDivisaoWizard.value,
+      valoresDivisaoWizard.value
+    )
 
-    if (wizFlow.value === 'loan') {
-      if (!borrowerId.value) throw new Error('Selecione quem pegou emprestado')
-      divisoes = [new DivisaoDeGasto(borrowerId.value, total)]
-    } else {
-      if (participantesDivisao.value.length === 0) throw new Error('Selecione pelo menos uma pessoa para dividir')
-      
-      if (modoDivisaoWizard.value === 'IGUAL') {
-        const partes = total.distribuir(participantesDivisao.value.length)
-        divisoes = participantesDivisao.value.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
-      } else {
-        divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deReais(valoresDivisaoWizard.value[id] || 0)))
-      }
-    }
-
-    const todasFaturas = await faturaRepo.listarTodas()
-    let faturaAtiva = todasFaturas.find(f => f.status === 'ABERTA')
-    
-    // Se o pagamento for em cartão, tenta achar a fatura do cartão
-    if (wizPayment.value === 'card' && wizCardOwner.value) {
-      const todosCartoes = await cartaoRepo.listarTodos()
-      const cartao = todosCartoes.find(c => c.responsavelPadraoId === compradorSelecionadoId.value || c.id === wizCardOwner.value)
-      if (cartao) {
-        faturaAtiva = todasFaturas.find(f => f.cartaoId === cartao.id && f.status === 'ABERTA') || faturaAtiva
-      }
-    }
-
-    // Fallback se não encontrar nenhuma aberta
-    if (!faturaAtiva) {
-      faturaAtiva = todasFaturas[0]
-    }
-    
-    if (!faturaAtiva) throw new Error('Nenhuma fatura encontrada para registrar o lançamento')
+    const faturaAtiva = await findActiveFatura(wizPayment.value, wizCardOwner.value, compradorSelecionadoId.value)
 
     const novoGasto = new Gasto({
       id: crypto.randomUUID(),

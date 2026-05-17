@@ -26,7 +26,7 @@ const classes = computed(() => {
     props.variant === 'secondary' && 'bg-[#f6f4ef] text-midnight hover:bg-stone-surface rounded-buttonspill font-medium',
     props.variant === 'outline' && 'bg-transparent text-graphite border border-graphite hover:bg-stone-surface rounded-xl font-medium px-8 py-3',
     props.variant === 'ghost' && 'text-ember-orange hover:text-ember-orange/80 font-medium p-0 border-none bg-transparent',
-    props.variant === 'inverted' && 'bg-white text-midnight hover:bg-[#f6f4ef] rounded-buttonspill font-medium shadow-sm',
+    props.variant === 'inverted' && 'bg-white text-midnight hover:bg-recessed rounded-buttonspill font-medium shadow-sm',
     props.class
   )
 })
