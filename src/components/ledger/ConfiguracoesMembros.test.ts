@@ -66,7 +66,7 @@ describe('ConfiguracoesMembros', () => {
 
   it('deve emitir evento voltar ao clicar no botão de volta', async () => {
     const wrapper = mount(ConfiguracoesMembros)
-    const btnVoltar = wrapper.find('button') // O primeiro botão é o de voltar
+    const btnVoltar = wrapper.find('button.p-2') // O botão com seta de voltar
 
     await btnVoltar.trigger('click')
 
