@@ -53,11 +53,12 @@ Snapshot imutável gerado no momento do fechamento da fatura.
 - `id: string`
 - `faturaId: string`
 - `membroId: string` (Nunca é o `responsavelId` da fatura)
-- `totalConsumido: Dinheiro` (Soma das divisões do membro na fatura)
-- `totalAntecipado: Dinheiro` (Soma das antecipações do membro na fatura)
-- `saldoDevido: Dinheiro` (`totalConsumido - totalAntecipado`)
+- `totalConsumido: Dinheiro`
+- `totalAntecipado: Dinheiro`
+- `valorAcerto: Dinheiro` (Valor absoluto da diferença)
+- `tipo: 'MEMBRO_PAGA' | 'RESPONSAVEL_PAGA'` (Define a direção do fluxo financeiro)
 - `pago: boolean`
-- `dataPagamento?: Date` (Quando o responsável marcou como recebido)
+- `dataPagamento?: Date`
 
 ## 4. Máquina de Estados da Fatura
 
@@ -65,23 +66,27 @@ Snapshot imutável gerado no momento do fechamento da fatura.
 | :--- | :--- | :--- |
 | **ABERTA** | Período de acúmulo de gastos. | Permite novos `Gastos` e `Antecipações`. |
 | **FECHADA** | O responsável pagou ao banco. | **Gatilho Manual**. Gera registros de `AcertoMembro`. Bloqueia novos `Gastos`. |
-| **ACERTADA** | Todos os membros pagaram o responsável. | Transição automática quando todos os `AcertoMembro` da fatura estão `pago: true`. |
+| **ACERTADA** | Todos os membros e o responsável se quitaram. | **Transição Automática** disparada pelo Serviço de Acerto quando o último `AcertoMembro` da fatura for marcado como `pago: true`. |
 
 ## 5. Regras de Integridade e Auditoria
 
 1. **Exclusão do Responsável:** O responsável da fatura não aparece na lista de `AcertoMembro`. O valor que ele consumiu é considerado "pago" pelo ato de quitar a fatura junto ao banco.
-2. **Imutabilidade do Acerto:** Uma vez gerado o `AcertoMembro` no fechamento, ele não muda se um `Gasto` for editado (embora a edição de gastos em faturas fechadas deva ser bloqueada pela UI).
+2. **Imutabilidade do Acerto:** Uma vez gerado o `AcertoMembro` no fechamento, ele não muda se um `Gasto` for editado.
 3. **Soberania do Responsável:** Apenas o responsável da fatura (ou um administrador) pode marcar um `AcertoMembro` como pago.
 4. **Fronteira Clara:** `Transacao` (imediata) e `Gasto` (cartão) são entidades distintas para evitar colapso de conceitos e facilitar o cálculo de saldos no Dashboard.
+5. **Validação de Domínio:** A tentativa de lançar ou editar `Gastos` em faturas com status `FECHADA` ou `ACERTADA` deve ser rejeitada pela camada de domínio (Service/Entity), garantindo a integridade dos acertos persistidos.
+6. **Direção do Acerto:** O sistema deve suportar casos onde a antecipação supera o consumo (`tipo: RESPONSAVEL_PAGA`), garantindo que o acerto reflita quem deve para quem.
 
 ## 6. Interface do Usuário (Mudanças)
 
 1. **Novo Lancamento:** No passo de pagamento, se selecionado "Cartão", o sistema solicita a Fatura (ou assume a aberta atual) e remove a seleção de pagadores.
 2. **Gestão de Faturas:** Nova tela para visualizar faturas ABERTAS, realizar o fechamento manual e gerenciar o checkout de acertos das faturas FECHADAS.
-3. **Checkout de Acerto:** Lista simples de membros devedores com botão "Marcar como Pago".
+3. **Checkout de Acerto:** Lista de membros devedores/credores com indicação clara da direção do pagamento e botão "Marcar como Pago".
 
 ## 7. Definição de Pronto (DoR)
-- [ ] Entidades implementadas no domínio com testes unitários.
-- [ ] Serviço de Fechamento de Fatura implementado com persistência de `AcertoMembro`.
-- [ ] Regras de validação impedindo gastos em faturas fechadas.
+- [ ] Entidades `Cartao`, `Fatura`, `Gasto`, `Antecipacao` e `AcertoMembro` implementadas com testes unitários.
+- [ ] Repositórios e testes de integração para todas as novas entidades.
+- [ ] Serviço de Fechamento de Fatura implementado com persistência de `AcertoMembro` e cálculo de `tipo` (direção).
+- [ ] Validação de domínio impedindo gastos em faturas fechadas.
+- [ ] Lógica de transição automática `FECHADA` -> `ACERTADA` implementada e testada.
 - [ ] Dashboard adaptado para distinguir saldo imediato de saldo de faturas.
