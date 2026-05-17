@@ -125,18 +125,12 @@ const onTouchEnd = (e: TouchEvent) => {
   const delta = e.changedTouches[0].clientY - touchStartY.value
   const currentTarget = e.currentTarget as HTMLElement
   
+  // Limpa estilos de arrasto inline para permitir que a transição padrão do CSS atue
+  currentTarget.style.transition = ''
+  currentTarget.style.transform = ''
+  
   if (delta > 100) {
-    // Aplica a transição e altera para 100% fechando imediatamente, deixando o Vue desmontar o elemento no tempo certo
-    currentTarget.style.transition = 'transform 0.35s cubic-bezier(0.7, 0, 0.84, 0)'
-    currentTarget.style.transform = 'translateY(100%)'
     close()
-  } else {
-    // Retorno suave e sutil sem elasticidade
-    currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-    currentTarget.style.transform = 'translateY(0)'
-    setTimeout(() => {
-      currentTarget.style.transition = ''
-    }, 400)
   }
 }
 
@@ -159,18 +153,12 @@ const onMouseDown = (e: MouseEvent) => {
 
   const onUp = (ev: MouseEvent) => {
     const delta = ev.clientY - startY
+    // Limpa estilos de arrasto inline para permitir que a transição padrão do CSS atue
+    currentTarget.style.transition = ''
+    currentTarget.style.transform = ''
+    
     if (delta > 100) {
-      // Aplica a transição e altera para 100% fechando imediatamente, deixando o Vue desmontar o elemento no tempo certo
-      currentTarget.style.transition = 'transform 0.35s cubic-bezier(0.7, 0, 0.84, 0)'
-      currentTarget.style.transform = 'translateY(100%)'
       close()
-    } else {
-      // Retorno suave e sutil sem elasticidade
-      currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-      currentTarget.style.transform = 'translateY(0)'
-      setTimeout(() => {
-        currentTarget.style.transition = ''
-      }, 400)
     }
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
@@ -182,12 +170,10 @@ const onMouseDown = (e: MouseEvent) => {
 </script>
 
 <style scoped>
-/* Transição do Sheet sutil sem elasticidade (slide up & slide down espelhados) */
-.slide-up-enter-active {
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
+/* Transição limpa padrão de slide-up e slide-down */
+.slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.35s cubic-bezier(0.7, 0, 0.84, 0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
