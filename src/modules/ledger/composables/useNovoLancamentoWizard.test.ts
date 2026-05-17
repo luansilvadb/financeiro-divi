@@ -25,7 +25,7 @@ describe('useNovoLancamentoWizard - Fluxo de Cartão', () => {
     expect(step.value).toBe(1)
     expect(valor.value).toBe(0)
     expect(descricao.value).toBe('')
-    expect(cartaoSelecionadoId.value).toBe('c1')
+    expect(cartaoSelecionadoId.value).toBe('')
   })
 
   it('deve avançar e retroceder passos', () => {

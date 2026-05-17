@@ -29,15 +29,7 @@ export function useCartoesEFaturas() {
   const antecipacoes = ref<Antecipacao[]>([])
 
   const inicializar = async () => {
-    // Migração inicial de cartões padrão se vazio
-    let todosCartoes = await cartaoRepo.listarTodos()
-    if (todosCartoes.length === 0) {
-      const nubank = new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' })
-      const xp = new Cartao({ id: 'c2', nome: 'XP Visa', diaFechamento: 25, responsavelPadraoId: 'm2' })
-      await cartaoRepo.salvar(nubank)
-      await cartaoRepo.salvar(xp)
-      todosCartoes = [nubank, xp]
-    }
+    const todosCartoes = await cartaoRepo.listarTodos()
     cartoes.value = todosCartoes
 
     // Inicializar faturas abertas padrão caso não existam para todos os cartões cadastrados

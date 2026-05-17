@@ -6,11 +6,13 @@ import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
 import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
 import { LocalStorageAntecipacaoRepository } from '../adapters/LocalStorageAntecipacaoRepository'
+import { LocalStorageCartaoRepository } from '../adapters/LocalStorageCartaoRepository'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 const gastoRepo = new LocalStorageGastoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()
 const antRepo = new LocalStorageAntecipacaoRepository()
+const cartaoRepo = new LocalStorageCartaoRepository()
 
 export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[] = []) {
   const step = ref(1)
@@ -18,14 +20,14 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
   const tipo = ref<'GASTO' | 'ADIANTAMENTO'>('GASTO')
 
   // Campos do Gasto
-  const cartaoSelecionadoId = ref('c1')
+  const cartaoSelecionadoId = ref('')
   const valor = ref(0)
   const descricao = ref('')
   const beneficiarios_selecionados = ref<string[]>([])
 
   // Campos do Adiantamento
   const adiantamentoRemetenteId = ref('')
-  const adiantamentoCartaoId = ref('c1')
+  const adiantamentoCartaoId = ref('')
 
   const next = () => step.value++
   const prev = () => step.value--
@@ -62,7 +64,13 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
   }
 
   // Carregar do localStorage
-  onMounted(() => {
+  onMounted(async () => {
+    const todosCartoes = await cartaoRepo.listarTodos()
+    if (todosCartoes.length > 0) {
+      cartaoSelecionadoId.value = todosCartoes[0].id
+      adiantamentoCartaoId.value = todosCartoes[0].id
+    }
+
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       try {
