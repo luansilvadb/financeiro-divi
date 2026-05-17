@@ -1,20 +1,75 @@
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { Transacao } from '../core/domain/Transacao'
 import { Divisao } from '../core/domain/Divisao'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
-export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]) {
+export function useNovoLancamentoWizard(membros: { id: string; nome: string }[]) {
   const step = ref(1)
+  const totalSteps = 3
   const tipo = ref<'gasto' | 'ganho' | null>(null)
   const valor = ref(0)
   const descricao = ref('')
   const beneficiarios_selecionados = ref<string[]>([])
   const pagamentos = ref<Record<string, number>>({})
+  const intencao = ref<'solo' | 'split'>('solo')
+
+  // Inicializar pagamentos
+  watch(() => membros, (novos) => {
+    novos.forEach(m => {
+      if (pagamentos.value[m.id] === undefined) {
+        pagamentos.value[m.id] = 0
+      }
+    })
+  }, { immediate: true })
+
+  const somaPagamentos = computed(() => {
+    return Object.values(pagamentos.value).reduce((acc, val) => acc + (val || 0), 0)
+  })
+
+  const restantePagamento = computed(() => {
+    return valor.value - somaPagamentos.value
+  })
+
+  const pagamentosEquilibrados = computed(() => {
+    return Math.abs(restantePagamento.value) < 0.001
+  })
+
+  watch(beneficiarios_selecionados, (newList) => {
+    intencao.value = newList.length > 1 ? 'split' : 'solo'
+  }, { deep: true })
 
   const next = () => step.value++
   const prev = () => step.value--
+
+  const canAdvance = computed(() => {
+    if (step.value === 1) return tipo.value !== null
+    if (step.value === 2) return valor.value > 0 && descricao.value.length > 0
+    if (step.value === 3) return beneficiarios_selecionados.value.length > 0 && pagamentosEquilibrados.value
+    return false
+  })
+
+  const toggleBeneficiario = (id: string) => {
+    if (beneficiarios_selecionados.value.includes(id)) {
+      beneficiarios_selecionados.value = beneficiarios_selecionados.value.filter(b => b !== id)
+    } else {
+      beneficiarios_selecionados.value.push(id)
+    }
+  }
+
+  const reset = () => {
+    step.value = 1
+    valor.value = 0
+    descricao.value = ''
+    tipo.value = null
+    intencao.value = 'solo'
+    beneficiarios_selecionados.value = []
+    Object.keys(pagamentos.value).forEach(id => {
+      pagamentos.value[id] = 0
+    })
+    localStorage.removeItem(STORAGE_KEY)
+  }
 
   let transitionTimeout: ReturnType<typeof setTimeout>
   const selecionarTipo = (t: 'gasto' | 'ganho') => {
@@ -33,6 +88,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
         if (data.step !== undefined) step.value = data.step
         if (data.valor !== undefined) valor.value = data.valor
         if (data.descricao !== undefined) descricao.value = data.descricao
+        if (data.intencao !== undefined) intencao.value = data.intencao
         if (data.beneficiarios_selecionados !== undefined) beneficiarios_selecionados.value = data.beneficiarios_selecionados
         if (data.pagamentos !== undefined) pagamentos.value = data.pagamentos
       } catch (e) {
@@ -49,8 +105,9 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
       step: step.value,
       valor: valor.value,
       descricao: descricao.value,
-      beneficiarios_selecionados: beneficiarios_selecionados.value,
-      pagamentos: pagamentos.value
+      intencao: intencao.value,
+      beneficiarios_selecionados: [...beneficiarios_selecionados.value],
+      pagamentos: { ...pagamentos.value }
     }),
     (state) => {
       clearTimeout(saveTimeout)
@@ -93,20 +150,27 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
       data: new Date()
     })
 
-    localStorage.removeItem(STORAGE_KEY)
+    reset()
     return transacao
   }
 
   return {
     step,
+    totalSteps,
     tipo,
     valor,
     descricao,
     beneficiarios_selecionados,
     pagamentos,
+    intencao,
+    restantePagamento,
+    pagamentosEquilibrados,
+    canAdvance,
     next,
     prev,
     selecionarTipo,
+    toggleBeneficiario,
+    reset,
     finalizar
   }
 }
