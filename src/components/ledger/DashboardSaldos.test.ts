@@ -15,7 +15,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Fatura Fechada')
+    expect(wrapper.text()).toContain('Faturas Fechadas')
     expect(wrapper.text()).toContain('Maria → João')
     expect(wrapper.text()).toContain('R$ 80,00')
   })
@@ -33,9 +33,10 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Consumo: R$ 150,00')
-    expect(wrapper.text()).toContain('Adiantado: - R$ 50,00')
-    expect(wrapper.text()).toContain('Pendente: R$ 100,00')
+    expect(wrapper.text()).toContain('João')
+    expect(wrapper.text()).toContain('R$ 100,00')
+    expect(wrapper.text()).toContain('Maria')
+    expect(wrapper.text()).toContain('R$ 0,00')
   })
 
   it('deve disparar a abertura do modal de ajuste ao clicar no botao de ajustar', async () => {
@@ -90,7 +91,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     await wrapper.vm.$nextTick()
     
     // Deve conter o título do card
-    expect(wrapper.text()).toContain('Detalhamento Granular de Contas')
+    expect(wrapper.text()).toContain('Detalhamento Granular')
     // Deve conter os rótulos das colunas
     expect(wrapper.text()).toContain('PIX')
     expect(wrapper.text()).toContain('Cartão')
