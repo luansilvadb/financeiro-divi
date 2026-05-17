@@ -108,9 +108,9 @@ const transferenciasPix = computed(() => {
 
 <template>
   <div class="space-y-5">
-    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-      <span class="text-xs font-black uppercase text-gray-400 tracking-wider">Prévia de Acertos (Saldos Coletivos)</span>
-      <span class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded">Reativo</span>
+    <div class="flex justify-between items-center border-b border-divi-border pb-2">
+      <span class="text-xs font-black uppercase text-divi-t2 tracking-wider">Prévia de Acertos (Saldos Coletivos)</span>
+      <span class="text-[10px] text-divi-primary font-black bg-divi-primary-dim border border-indigo-500/20 px-2 py-0.5 rounded">Reativo</span>
     </div>
 
     <!-- Tabela de Consumos e Adiantamentos Individuais -->
@@ -119,20 +119,20 @@ const transferenciasPix = computed(() => {
         v-for="s in saldosLiquidos" 
         :key="s.id"
         :class="[
-          'p-4 rounded-2xl border-2 transition-all flex flex-col justify-between space-y-3 bg-white',
-          s.id === props.responsavelId ? 'border-indigo-100 bg-indigo-50/10' : 'border-slate-100'
+          'p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 glass-card',
+          s.id === props.responsavelId ? 'border-divi-primary/40 bg-divi-primary-dim/15' : 'border-divi-border'
         ]"
       >
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-slate-100 font-black text-[10px] flex items-center justify-center text-slate-600">
+            <div class="w-6 h-6 rounded-full bg-divi-s2 border border-divi-border font-black text-[10px] flex items-center justify-center text-divi-t1 shadow-[0_0_8px_rgba(255,255,255,0.05)]">
               {{ s.nome[0].toUpperCase() }}
             </div>
-            <strong class="text-xs text-gray-700 font-black">{{ s.nome }}</strong>
+            <strong class="text-xs text-divi-t1 font-black">{{ s.nome }}</strong>
           </div>
           <span 
             v-if="s.id === props.responsavelId" 
-            class="text-[8px] bg-indigo-100 text-indigo-700 font-black px-1.5 py-0.5 rounded uppercase"
+            class="text-[8px] bg-divi-primary-dim text-divi-primary font-black border border-indigo-500/20 px-1.5 py-0.5 rounded uppercase"
           >
             Quitou Fatura
           </span>
@@ -140,21 +140,21 @@ const transferenciasPix = computed(() => {
 
         <div class="grid grid-cols-2 gap-2 text-[10px]">
           <div>
-            <span class="text-gray-400 font-medium block">Consumido:</span>
-            <strong class="text-gray-700 font-bold">R$ {{ s.consumo.toFixed(2).replace('.', ',') }}</strong>
+            <span class="text-divi-t2 font-medium block">Consumido:</span>
+            <strong class="text-divi-t1 font-bold">R$ {{ s.consumo.toFixed(2).replace('.', ',') }}</strong>
           </div>
           <div>
-            <span class="text-gray-400 font-medium block">Adiantado:</span>
-            <strong class="text-gray-700 font-bold">R$ {{ s.antecipado.toFixed(2).replace('.', ',') }}</strong>
+            <span class="text-divi-t2 font-medium block">Adiantado:</span>
+            <strong class="text-divi-t1 font-bold">R$ {{ s.antecipado.toFixed(2).replace('.', ',') }}</strong>
           </div>
         </div>
 
-        <div class="pt-2 border-t border-slate-50 flex justify-between items-center text-xs">
-          <span class="text-gray-400 font-bold">Líquido:</span>
+        <div class="pt-2 border-t border-divi-border/40 flex justify-between items-center text-xs">
+          <span class="text-divi-t2 font-bold">Líquido:</span>
           <strong 
             :class="[
               'font-black',
-              s.balanco > 0 ? 'text-rose-500' : s.balanco < 0 ? 'text-emerald-500' : 'text-gray-500'
+              s.balanco > 0 ? 'text-divi-rose' : s.balanco < 0 ? 'text-divi-emerald text-glow-emerald' : 'text-divi-t3'
             ]"
           >
             {{ s.balanco > 0 ? `Deve R$ ${s.balanco.toFixed(2).replace('.', ',')}` : s.balanco < 0 ? `Crédito R$ ${Math.abs(s.balanco).toFixed(2).replace('.', ',')}` : 'Zerado' }}
@@ -164,16 +164,16 @@ const transferenciasPix = computed(() => {
     </div>
 
     <!-- Fluxo Pix Recomendado (Quem Paga Quem) -->
-    <div class="bg-indigo-900 text-white rounded-3xl p-5 shadow-lg border border-indigo-950 space-y-4">
+    <div class="glass-card border border-divi-border text-divi-t1 rounded-3xl p-5 shadow-lg space-y-4">
       <div class="flex items-center gap-2">
         <span class="text-lg">💸</span>
         <div>
-          <h4 class="text-xs font-black uppercase tracking-wider">Fluxo do Acerto (Pix)</h4>
-          <span class="text-[9px] text-indigo-300 font-bold block mt-0.5">Transferências calculadas para acerto de contas</span>
+          <h4 class="text-xs font-black uppercase tracking-wider text-divi-t1">Fluxo do Acerto (Pix)</h4>
+          <span class="text-[9px] text-divi-t2 font-bold block mt-0.5">Transferências calculadas para acerto de contas</span>
         </div>
       </div>
 
-      <div v-if="transferenciasPix.length === 0" class="text-center py-4 text-xs text-indigo-200">
+      <div v-if="transferenciasPix.length === 0" class="text-center py-4 text-xs text-divi-t2">
         ⚖️ Contas zeradas! Não há necessidade de transferências Pix.
       </div>
 
@@ -181,32 +181,32 @@ const transferenciasPix = computed(() => {
         <div 
           v-for="(t, idx) in transferenciasPix" 
           :key="idx"
-          class="flex items-center justify-between bg-indigo-950/40 border border-indigo-800/40 p-4 rounded-2xl"
+          class="flex items-center justify-between bg-divi-s1/40 border border-divi-border p-4 rounded-2xl"
         >
           <!-- Remetente -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
-            <div class="w-8 h-8 rounded-full bg-indigo-800 font-black text-xs flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-full bg-divi-s2 border border-divi-border font-black text-xs text-divi-t1 flex items-center justify-center shrink-0">
               {{ t.deNome[0].toUpperCase() }}
             </div>
             <div class="min-w-0">
               <strong class="text-xs font-bold block truncate">{{ t.deNome }}</strong>
-              <span class="text-[8px] text-indigo-300 font-medium">envia Pix</span>
+              <span class="text-[8px] text-divi-t3 font-medium">envia Pix</span>
             </div>
           </div>
 
           <!-- Seta com Direção e Valor -->
           <div class="flex flex-col items-center justify-center px-4 shrink-0">
-            <span class="text-xs font-black text-amber-300">R$ {{ t.valor.toFixed(2).replace('.', ',') }}</span>
-            <span class="text-sm tracking-widest text-indigo-300/60 mt-0.5">➔➔➔</span>
+            <span class="text-xs font-black text-divi-amber text-glow-amber">R$ {{ t.valor.toFixed(2).replace('.', ',') }}</span>
+            <span class="text-sm tracking-widest text-divi-t3/40 mt-0.5">➔➔➔</span>
           </div>
 
           <!-- Destinatário -->
           <div class="flex items-center gap-2 flex-1 justify-end min-w-0 text-right">
             <div class="min-w-0">
               <strong class="text-xs font-bold block truncate">{{ t.paraNome }}</strong>
-              <span class="text-[8px] text-indigo-300 font-medium">recebe Pix</span>
+              <span class="text-[8px] text-divi-t3 font-medium">recebe Pix</span>
             </div>
-            <div class="w-8 h-8 rounded-full bg-indigo-800 font-black text-xs flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-full bg-divi-s2 border border-divi-border font-black text-xs text-divi-t1 flex items-center justify-center shrink-0">
               {{ t.paraNome[0].toUpperCase() }}
             </div>
           </div>

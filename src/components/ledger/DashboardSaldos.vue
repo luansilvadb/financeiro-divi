@@ -693,26 +693,26 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
     />
 
     <!-- Modal Novo Período (Fase 3) -->
-    <div v-if="showModalNovoPeriodo" class="fixed inset-0 bg-black-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div class="bg-panel-dark border border-white-08 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative text-white">
-        <h3 class="text-xl font-black mb-4">🚀 Iniciar Novo Período</h3>
-        <p class="text-xs text-text-muted mb-4">
+    <div v-if="showModalNovoPeriodo" class="fixed inset-0 bg-[#040814]/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
+      <div class="glass-card w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-divi-border relative text-divi-t1 space-y-4 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <h3 class="text-xl font-black text-divi-t1 flex items-center gap-2 mb-1">🚀 Iniciar Novo Período</h3>
+        <p class="text-xs text-divi-t2 leading-relaxed mb-1">
           Isso trancará o mês anterior permanentemente, calculará o netting dos saldos e os transportará como saldo inicial para o novo período.
         </p>
         
-        <div class="mb-6">
-          <label class="block text-xs font-black uppercase text-text-muted mb-2">Nome do Novo Período</label>
+        <div class="space-y-2">
+          <label class="block text-xs font-black uppercase text-divi-t2 tracking-wider">Nome do Novo Período</label>
           <input 
             type="text" 
             v-model="nomeNovoPeriodo" 
-            class="w-full bg-panel-light border border-white-05 p-3 rounded-xl text-white outline-none focus:border-primary font-bold" 
+            class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm" 
             placeholder="Ex: Junho 2026"
           />
         </div>
 
-        <div class="flex justify-end gap-2">
-          <button @click="showModalNovoPeriodo = false" class="px-4 py-2 text-xs font-bold bg-white-06 hover:bg-white-12 rounded-xl transition-all">Cancelar</button>
-          <button @click="confirmarNovoPeriodo" class="px-4 py-2 text-xs font-black bg-accent-yellow hover:bg-yellow-400 text-green-950 rounded-xl transition-all" :disabled="!nomeNovoPeriodo.trim()">Confirmar e Girar</button>
+        <div class="flex justify-end gap-3 pt-2">
+          <button @click="showModalNovoPeriodo = false" class="px-5 py-3 text-xs font-black bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border rounded-2xl transition-all">Cancelar</button>
+          <button @click="confirmarNovoPeriodo" class="px-5 py-3 text-xs font-black bg-divi-amber border border-amber-500/25 hover:bg-amber-600 text-slate-950 font-black rounded-2xl shadow-[0_0_16px_var(--amber-dim)] transition-all" :disabled="!nomeNovoPeriodo.trim()">Confirmar e Girar</button>
         </div>
       </div>
     </div>
