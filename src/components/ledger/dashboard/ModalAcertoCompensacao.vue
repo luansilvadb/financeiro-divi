@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import Card from '../../ui/Card.vue'
+import Button from '../../ui/Button.vue'
+import SectionLabel from '../../ui/SectionLabel.vue'
+import { Wallet, Banknote, RefreshCcw } from 'lucide-vue-next'
 
 interface Props {
   visible: boolean
@@ -38,72 +42,72 @@ const handleConfirmar = () => {
 </script>
 
 <template>
-  <div v-if="visible" class="fixed inset-0 bg-[#040814]/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
-    <div class="glass-card w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-divi-border relative text-divi-t1 space-y-4 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-      <h3 class="text-xl font-black text-divi-t1 flex items-center gap-2 mb-1">🤝 Registrar Acerto Pix</h3>
-      <p class="text-xs text-divi-t2 leading-relaxed">
-        Você está registrando a baixa da transferência PIX entre moradores para equilibrar os saldos da casa.
-      </p>
+  <div v-if="visible" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-6">
+    <Card class="w-full max-w-md p-0 overflow-hidden bg-card shadow-lg border border-stone-surface rounded-cards">
+      <div class="p-8 space-y-6">
+        <div class="space-y-2 text-center">
+          <SectionLabel class="mx-auto">Liquidação</SectionLabel>
+          <h3 class="text-3xl font-display text-charcoal">Registrar <span class="text-ember">Acerto</span></h3>
+          <p class="text-xs text-ash leading-relaxed">
+            Confirmar a transferência entre moradores para equilibrar os saldos da casa.
+          </p>
+        </div>
 
-      <!-- Valor Input -->
-      <div class="space-y-1.5">
-        <label class="block text-[10px] font-black uppercase text-divi-t2 tracking-wider">Valor do Pix (R$)</label>
-        <div class="flex items-center gap-2 glass-input rounded-2xl p-3">
-          <span class="text-divi-t3 text-sm font-bold">R$</span>
-          <input 
-            v-model.number="valorReal"
-            type="number"
-            step="0.01"
-            class="w-full bg-transparent font-black text-sm text-divi-t1 outline-none"
-            placeholder="0,00"
-          />
+        <div class="space-y-5">
+          <!-- Valor Input -->
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Valor do Repasse</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ash text-sm font-bold">R$</span>
+              <input 
+                v-model.number="valorReal"
+                type="number"
+                step="0.01"
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+
+          <!-- Descrição -->
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Descrição</label>
+            <input 
+              v-model="descricao"
+              type="text"
+              class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
+            />
+          </div>
+
+          <!-- Método de Acerto -->
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Método de Baixa</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button 
+                v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}, {id:'mutual', n:'Ajuste', icon: RefreshCcw}]"
+                :key="m.id"
+                type="button"
+                @click="method = m.id as any"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
+                :class="[
+                  method === m.id 
+                    ? 'bg-ember border-stone-surface text-white font-bold shadow-sm' 
+                    : 'bg-stone text-charcoal hover:bg-[#eae7e2]'
+                ]"
+              >
+                <component :is="m.icon" class="w-4 h-4" />
+                <span class="text-[10px] font-bold uppercase tracking-wider">{{ m.n }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rodapé Ações -->
+        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone-surface">
+          <Button variant="secondary" @click="emit('cancel')">Cancelar</Button>
+          <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0">Confirmar</Button>
         </div>
       </div>
-
-      <!-- Descrição -->
-      <div class="space-y-1.5">
-        <label class="block text-[10px] font-black uppercase text-divi-t2 tracking-wider">Descrição / Lembrete</label>
-        <input 
-          v-model="descricao"
-          type="text"
-          class="w-full glass-input rounded-2xl p-3 font-bold text-sm text-divi-t1 outline-none"
-        />
-      </div>
-
-      <!-- Método de Acerto -->
-      <div class="space-y-1.5">
-        <label class="block text-[10px] font-black uppercase text-divi-t2 tracking-wider">Método de Baixa</label>
-        <div class="flex gap-2">
-          <button 
-            v-for="m in [{id:'pix', n:'⚡ Pix'}, {id:'cash', n:'💵 Dinheiro'}, {id:'mutual', n:'🤝 Ajuste'}]"
-            :key="m.id"
-            type="button"
-            @click="method = m.id as any"
-            :class="['flex-1 py-2 text-center text-xs font-black rounded-xl border transition-all', method === m.id ? 'bg-divi-primary border-divi-primary text-white shadow-lg shadow-indigo-600/20' : 'bg-divi-s2 border-divi-border text-divi-t2']"
-          >
-            {{ m.n }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Rodapé Ações -->
-      <div class="flex justify-end gap-3 pt-3 border-t border-divi-border">
-        <button 
-          type="button" 
-          @click="emit('cancel')"
-          class="px-4 py-2.5 text-xs font-black bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border rounded-xl transition-all"
-        >
-          Cancelar
-        </button>
-        <button 
-          type="button" 
-          @click="handleConfirmar"
-          :disabled="valorReal <= 0"
-          class="px-5 py-2.5 text-xs font-black bg-[#10B981] hover:bg-emerald-600 text-white rounded-xl shadow-[0_0_16px_rgba(16,185,129,0.3)] transition-all disabled:opacity-40"
-        >
-          Confirmar Baixa
-        </button>
-      </div>
-    </div>
+    </Card>
   </div>
 </template>

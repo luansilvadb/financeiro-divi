@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMembros } from '../../modules/ledger/composables/useMembros'
-import { UserPlus, UserMinus, ArrowLeft } from 'lucide-vue-next'
+import { UserPlus, UserMinus, ArrowLeft, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from './ConfiguracoesCartoes.vue'
+import Card from '../ui/Card.vue'
+import Button from '../ui/Button.vue'
+import SectionLabel from '../ui/SectionLabel.vue'
 
 const { membros, adicionarMembro, desativarMembro } = useMembros()
 const novoNome = ref('')
@@ -19,82 +22,103 @@ const handleAdicionar = async () => {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto space-y-6">
-    <div class="flex items-center gap-4 mb-2">
-      <button @click="emit('voltar')" class="p-2 bg-divi-s2 border border-divi-border hover:bg-divi-s3 rounded-full text-divi-t1 transition-colors">
-        <ArrowLeft class="w-6 h-6 text-divi-t1" />
-      </button>
-      <h2 class="text-2xl font-black text-divi-t1">Configurações</h2>
+  <div class="space-y-12">
+    <div class="flex items-center justify-between">
+      <div class="space-y-2">
+        <SectionLabel>Gerenciamento</SectionLabel>
+        <h2 class="text-3xl font-display text-charcoal">Ajustes <span class="text-ember">Gerais</span></h2>
+      </div>
+      <Button variant="secondary" size="icon" @click="emit('voltar')" class="rounded-full border border-stone-surface">
+        <ArrowLeft class="w-4 h-4 text-graphite" />
+      </Button>
     </div>
 
-    <!-- Abas (Tabs) -->
-    <div class="flex bg-white/5 p-1 rounded-2xl gap-1 shadow-inner border border-white/5">
+    <!-- Abas (Tabs switcher no padrão Family) -->
+    <div class="flex bg-stone p-1.5 rounded-xl gap-1.5 border border-stone-surface">
       <button 
         @click="activeTab = 'membros'"
-        :class="['flex-1 py-3 text-sm font-black text-center rounded-xl transition-all', activeTab === 'membros' ? 'bg-divi-primary text-white shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1']"
+        :class="[
+          'flex-1 py-3 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 flex items-center justify-center gap-2',
+          activeTab === 'membros' 
+            ? 'bg-card text-ember shadow-subtle border border-stone-surface' 
+            : 'text-ash hover:text-charcoal'
+        ]"
       >
+        <Users class="w-4 h-4" />
         Moradores
       </button>
       <button 
         @click="activeTab = 'cartoes'"
-        :class="['flex-1 py-3 text-sm font-black text-center rounded-xl transition-all', activeTab === 'cartoes' ? 'bg-divi-primary text-white shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1']"
+        :class="[
+          'flex-1 py-3 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 flex items-center justify-center gap-2',
+          activeTab === 'cartoes' 
+            ? 'bg-card text-ember shadow-subtle border border-stone-surface' 
+            : 'text-ash hover:text-charcoal'
+        ]"
       >
+        <CreditCard class="w-4 h-4" />
         Cartões
       </button>
     </div>
 
     <!-- Conteúdo Aba 1: Moradores -->
-    <div v-if="activeTab === 'membros'" class="space-y-6">
+    <div v-if="activeTab === 'membros'" class="space-y-8 animate-in fade-in slide-in-from-bottom-4">
       <!-- Adicionar Novo -->
-      <div class="glass-card rounded-3xl p-6 border border-divi-border shadow-lg space-y-4">
-        <h3 class="text-xs font-bold text-divi-t2 uppercase tracking-wider mb-2">Adicionar Novo Morador</h3>
+      <Card class="p-8 shadow-subtle bg-card rounded-cards space-y-4">
+        <h3 class="text-[10px] font-bold text-ash uppercase tracking-widest ml-1">Novo Morador</h3>
         <div class="flex gap-2">
           <input 
             v-model="novoNome"
             type="text" 
-            placeholder="Nome do morador"
-            class="flex-1 px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1"
+            placeholder="Nome do morador..."
+            class="flex-1 px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
             @keyup.enter="handleAdicionar"
           />
-          <button 
+          <Button 
             @click="handleAdicionar"
-            class="bg-blue-900 bg-divi-primary hover:bg-indigo-500 border border-indigo-400/25 text-white p-3 rounded-2xl shadow-[0_0_16px_var(--primary-glow)] disabled:shadow-none transition-all disabled:opacity-50 disabled:bg-divi-s1 disabled:border-divi-border"
             :disabled="!novoNome.trim()"
+            variant="primary"
+            class="h-12 w-12 rounded-xl"
           >
-            <UserPlus class="w-6 h-6" />
-          </button>
+            <UserPlus class="w-5 h-5" />
+          </Button>
         </div>
-      </div>
+      </Card>
 
       <!-- Lista de Membros -->
-      <div class="glass-card rounded-3xl border border-divi-border overflow-hidden shadow-md">
-        <div class="flex flex-col">
-          <div 
-            v-for="membro in membros" 
-            :key="membro.id"
-            class="p-4 flex justify-between items-center hover:bg-divi-s1/20 transition-colors duration-150 border-b border-divi-border last:border-0"
-            :class="{ 'opacity-50 grayscale': !membro.ativo }"
-          >
-            <div>
-              <span class="font-bold text-divi-t1">{{ membro.nome }}</span>
-              <span v-if="!membro.ativo" class="ml-2 text-xs text-divi-t3 italic">(Desativado)</span>
+      <div class="grid gap-3">
+        <Card 
+          v-for="membro in membros" 
+          :key="membro.id"
+          class="p-4 flex justify-between items-center transition-all bg-card border border-stone-surface shadow-subtle rounded-cards"
+          :class="{ 'opacity-50 grayscale border-dashed': !membro.ativo }"
+        >
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-stone flex items-center justify-center font-display text-sm text-charcoal">
+              {{ membro.nome[0] }}
             </div>
-            
-            <button 
-              v-if="membro.ativo"
-              @click="desativarMembro(membro.id)"
-              class="text-red-400 p-2.5 text-divi-rose bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all shadow-sm"
-              title="Desativar morador"
-            >
-              <UserMinus class="w-5 h-5" />
-            </button>
+            <div>
+              <span class="font-bold text-charcoal">{{ membro.nome }}</span>
+              <span v-if="!membro.ativo" class="block text-[10px] text-ash font-medium uppercase tracking-widest mt-0.5">Desativado</span>
+            </div>
           </div>
-        </div>
+          
+          <Button 
+            v-if="membro.ativo"
+            variant="secondary"
+            size="icon"
+            @click="desativarMembro(membro.id)"
+            class="text-ash hover:text-coral-red hover:bg-[#fff0f0] border border-transparent rounded-full"
+            title="Desativar morador"
+          >
+            <UserMinus class="w-4 h-4" />
+          </Button>
+        </Card>
       </div>
     </div>
 
     <!-- Conteúdo Aba 2: Cartões -->
-    <div v-else-if="activeTab === 'cartoes'">
+    <div v-else-if="activeTab === 'cartoes'" class="animate-in fade-in slide-in-from-bottom-4">
       <ConfiguracoesCartoes />
     </div>
   </div>

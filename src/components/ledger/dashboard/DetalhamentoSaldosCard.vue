@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
+import Card from '../../ui/Card.vue'
+import SectionLabel from '../../ui/SectionLabel.vue'
+import { Wallet, CreditCard, Handshake } from 'lucide-vue-next'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -70,73 +73,90 @@ const detailedBreakdown = computed(() => {
 </script>
 
 <template>
-  <div class="acrylic-card rounded-f-md p-5 space-y-4">
-    <div>
-      <h3 class="text-[11px] font-bold text-fluent-text-p2 uppercase tracking-widest block mb-0.5">
-        🔍 Detalhamento Granular de Contas
-      </h3>
-      <p class="text-[10px] text-fluent-text-p3">Auditoria de fluxos de caixa de PIX, Cartão e Empréstimos por morador</p>
+  <Card class="p-8 shadow-subtle bg-card rounded-cards space-y-8">
+    <div class="space-y-2">
+      <SectionLabel>Auditoria</SectionLabel>
+      <h3 class="text-2xl font-display text-charcoal">Detalhamento <span class="text-ember">Granular</span></h3>
+      <p class="text-xs text-ash">Fluxos de caixa de PIX, Cartão e Empréstimos por morador.</p>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-10">
       <div 
         v-for="m in props.membros" 
         :key="m.id" 
-        class="border-b border-black/5 pb-4 last:border-b-0 last:pb-0"
+        class="space-y-4"
       >
-        <div class="flex justify-between items-center mb-2.5">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-fluent-accent text-white flex items-center justify-center font-bold text-[10px] uppercase">
+        <div class="flex justify-between items-center pb-2 border-b border-stone-surface">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-stone text-charcoal flex items-center justify-center font-display text-sm">
               {{ m.nome[0] }}
             </div>
-            <span class="font-bold text-xs text-fluent-text-p1">{{ m.nome }}</span>
+            <span class="font-bold text-base text-charcoal">{{ m.nome }}</span>
           </div>
           <span 
-            class="text-[9px] font-bold px-2 py-0.5 rounded-f-sm uppercase"
-            :class="props.saldosUnificados[m.id] > 0.005 ? 'bg-fluent-emerald-dim text-fluent-emerald' : props.saldosUnificados[m.id] < -0.005 ? 'bg-fluent-rose-dim text-fluent-rose' : 'bg-black/5 text-fluent-text-p2'"
+            class="text-[10px] font-mono font-bold px-3 py-1 rounded-full uppercase tracking-widest border"
+            :class="props.saldosUnificados[m.id] > 0.005 ? 'bg-meadow/5 border-meadow/20 text-meadow' : props.saldosUnificados[m.id] < -0.005 ? 'bg-coral-red/5 border-coral-red/20 text-coral-red' : 'bg-stone border-stone-surface text-ash'"
           >
             Saldo: {{ props.saldosUnificados[m.id] > 0.005 ? '+' : '' }}R$ {{ props.saldosUnificados[m.id]?.toFixed(2).replace('.', ',') }}
           </span>
         </div>
 
-        <div class="grid grid-cols-3 gap-2 text-[10px] leading-relaxed">
-          <div class="bg-white/30 border border-black/5 rounded-f-sm p-2 space-y-1">
-            <span class="block text-[8px] font-bold uppercase text-fluent-accent mb-0.5">⚡ PIX</span>
-            <div class="flex justify-between">
-              <span class="text-fluent-text-p2">Fez:</span>
-              <span class="text-fluent-emerald font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.pixFez || 0) }}</span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- PIX -->
+          <Card class="p-4 bg-[#f8f7f4] border border-stone-surface shadow-none rounded-cards space-y-3">
+            <div class="flex items-center gap-2">
+              <Wallet class="w-3 h-3 text-ember" />
+              <span class="text-[9px] font-bold uppercase tracking-widest text-ash">PIX / Cash</span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-fluent-text-p2">Usou:</span>
-              <span class="text-fluent-rose font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.pixConsumo || 0) }}</span>
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-ash font-semibold">Fez:</span>
+                <span class="text-meadow font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.pixFez || 0) }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-ash font-semibold">Usou:</span>
+                <span class="text-coral-red font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.pixConsumo || 0) }}</span>
+              </div>
             </div>
-          </div>
+          </Card>
 
-          <div class="bg-white/30 border border-black/5 rounded-f-sm p-2 space-y-1">
-            <span class="block text-[8px] font-bold uppercase text-fluent-accent mb-0.5">💳 Cartão</span>
-            <div class="flex justify-between">
-              <span class="text-fluent-text-p2">Fez:</span>
-              <span class="text-fluent-emerald font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.cardFez || 0) }}</span>
+          <!-- Cartão -->
+          <Card class="p-4 bg-[#f8f7f4] border border-stone-surface shadow-none rounded-cards space-y-3">
+            <div class="flex items-center gap-2">
+              <CreditCard class="w-3 h-3 text-ember" />
+              <span class="text-[9px] font-bold uppercase tracking-widest text-ash">Cartão</span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-fluent-text-p2">Usou:</span>
-              <span class="text-fluent-rose font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.cardConsumo || 0) }}</span>
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-ash font-semibold">Fez:</span>
+                <span class="text-meadow font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.cardFez || 0) }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-ash font-semibold">Usou:</span>
+                <span class="text-coral-red font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.cardConsumo || 0) }}</span>
+              </div>
             </div>
-          </div>
+          </Card>
 
-          <div class="bg-white/30 border border-black/5 rounded-f-sm p-2 space-y-1">
-            <span class="block text-[8px] font-bold uppercase text-fluent-accent mb-0.5">🤝 Empréstimo</span>
-            <div class="flex justify-between">
-              <span class="text-fluent-text-p2">Fez:</span>
-              <span class="text-fluent-emerald font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.loanFez || 0) }}</span>
+          <!-- Empréstimo -->
+          <Card class="p-4 bg-[#f8f7f4] border border-stone-surface shadow-none rounded-cards space-y-3">
+            <div class="flex items-center gap-2">
+              <Handshake class="w-3 h-3 text-ember" />
+              <span class="text-[9px] font-bold uppercase tracking-widest text-ash">Empréstimos</span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-fluent-text-p2">Tomou:</span>
-              <span class="text-fluent-rose font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-ash font-semibold">Fez:</span>
+                <span class="text-meadow font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.loanFez || 0) }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-ash font-semibold">Tomou:</span>
+                <span class="text-coral-red font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
+              </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
-  </div>
+  </Card>
 </template>

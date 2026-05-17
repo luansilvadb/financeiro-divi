@@ -547,14 +547,14 @@ const excluirGasto = async (id: string) => {
               </div>
               <div>
                 <h3 class="font-bold text-lg leading-tight">{{ getCartaoNome(fatura.cartaoId) }}</h3>
-                <p class="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
                   Período: {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <span v-if="todosOsAcertosQuitados(fatura.id) && fatura.dataPagamentoBanco" class="text-[9px] font-bold text-accent bg-accent/10 px-3 py-1 rounded-full border border-accent/20">QUITADA</span>
-              <Button variant="ghost" size="sm" @click="emit('reabrirFatura', fatura.id)" class="text-[10px] h-8">
+              <span v-if="todosOsAcertosQuitados(fatura.id) && fatura.dataPagamentoBanco" class="text-[9px] font-bold text-meadow bg-meadow/10 px-3 py-1 rounded-full border border-meadow/20">QUITADA</span>
+              <Button variant="secondary" size="sm" @click="emit('reabrirFatura', fatura.id)" class="text-[10px] h-8 border border-stone-surface">
                 Reabrir
               </Button>
             </div>
@@ -563,12 +563,12 @@ const excluirGasto = async (id: string) => {
           <div class="p-6 space-y-6">
             <!-- SUB-ESTADO A: EM REVISÃO -->
             <div v-if="!faturaTemAcertosAtivos(fatura.id)" class="text-center space-y-4 py-4">
-              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/5 text-accent mb-2">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-ember/5 text-ember mb-2">
                 <Sparkles class="w-6 h-6" />
               </div>
               <div class="space-y-1">
-                <p class="font-bold text-foreground">Fatura em Revisão Coletiva</p>
-                <p class="text-xs text-muted-foreground">Total: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</p>
+                <p class="font-bold text-charcoal">Fatura em Revisão Coletiva</p>
+                <p class="text-xs text-ash">Total: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</p>
               </div>
               <Button variant="primary" class="w-full" @click="faturaSobRevisao = fatura">
                 Revisar e Ratear
@@ -578,26 +578,26 @@ const excluirGasto = async (id: string) => {
             <!-- SUB-ESTADO B: ACERTOS ATIVOS -->
             <div v-else class="space-y-8">
               <!-- Banner de Status de Pagamento ao Banco -->
-              <div v-if="fatura.dataPagamentoBanco" class="flex items-center justify-between p-4 rounded-xl bg-accent/5 border border-accent/20">
+              <div v-if="fatura.dataPagamentoBanco" class="flex items-center justify-between p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
                 <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center">
+                  <div class="w-8 h-8 rounded-full bg-meadow text-white flex items-center justify-center">
                     <Check class="w-4 h-4" />
                   </div>
-                  <p class="text-xs text-accent font-medium leading-tight">
+                  <p class="text-xs font-semibold leading-tight">
                     Fatura paga ao banco!<br>
                     <span class="text-[10px] opacity-80">Reembolse o responsável via Pix.</span>
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" @click="removerPagamentoBancoManual(fatura.id)" class="text-red-500 hover:text-red-600 hover:bg-red-50">
+                <Button variant="secondary" size="sm" @click="removerPagamentoBancoManual(fatura.id)" class="text-coral-red hover:text-red-600 hover:bg-[#fff0f0] border border-transparent">
                   Estornar
                 </Button>
               </div>
 
-              <div v-else class="flex flex-col items-center gap-4 p-6 rounded-xl bg-muted/50 border border-border text-center">
-                <p class="text-xs text-muted-foreground font-medium">
+              <div v-else class="flex flex-col items-center gap-4 p-6 rounded-xl bg-stone-surface/30 border border-stone-surface text-center">
+                <p class="text-xs text-ash font-medium">
                   Aguardando pagamento ao banco pelo responsável.
                 </p>
-                <Button variant="secondary" size="sm" @click="registrarPagamentoBancoManual(fatura.id)">
+                <Button variant="secondary" size="sm" @click="registrarPagamentoBancoManual(fatura.id)" class="border border-stone-surface">
                   Já paguei o banco
                 </Button>
               </div>
@@ -608,67 +608,67 @@ const excluirGasto = async (id: string) => {
                   <SectionLabel :pulse="false" class="px-3 py-1">Reembolsos</SectionLabel>
                 </div>
 
-                <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="p-4 rounded-xl border border-border bg-background space-y-4">
+                <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="p-4 rounded-xl border border-stone-surface bg-[#fbfaf9] space-y-4">
                   <div class="flex justify-between items-start">
                     <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-display text-xs">
+                      <div class="w-8 h-8 rounded-full bg-stone flex items-center justify-center font-display text-xs text-charcoal">
                         {{ getMembroNome(acerto.membroId)[0] }}
                       </div>
                       <div>
-                        <p class="text-sm font-bold text-foreground">
+                        <p class="text-sm font-bold text-charcoal">
                           {{ getMembroNome(acerto.membroId) }} → {{ getMembroNome(fatura.responsavelId) }}
                         </p>
-                        <p class="text-[10px] text-muted-foreground">
+                        <p class="text-[10px] text-ash">
                           Total: R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}
                         </p>
                       </div>
                     </div>
                     <div class="text-right">
-                      <p :class="['text-sm font-bold', acerto.pago ? 'text-accent' : 'text-red-500']">
+                      <p :class="['text-sm font-bold', acerto.pago ? 'text-meadow' : 'text-coral-red']">
                         {{ acerto.pago ? '✓ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') }}
                       </p>
-                      <button v-if="!acerto.pago" @click="iniciarPix(acerto)" class="text-[10px] font-bold text-accent hover:underline mt-1">
+                      <button v-if="!acerto.pago" @click="iniciarPix(acerto)" class="text-[10px] font-bold text-ember hover:underline mt-1">
                         Registrar Pix
                       </button>
                     </div>
                   </div>
 
                   <!-- Barra de Progresso Minimalist -->
-                  <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div class="h-1.5 w-full bg-stone rounded-full overflow-hidden">
                     <div 
-                      class="h-full bg-accent transition-all duration-500"
+                      class="h-full bg-ember transition-all duration-500"
                       :style="{ width: `${((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100}%` }"
                     />
                   </div>
 
                   <!-- Input de Pix Parcial -->
-                  <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-border space-y-4 animate-in fade-in slide-in-from-top-2">
+                  <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-stone-surface space-y-4 animate-in fade-in slide-in-from-top-2">
                     <div class="flex items-center gap-3">
                       <div class="relative flex-1">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">R$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xs font-bold">R$</span>
                         <input 
                           v-model.number="valorPixInput"
                           type="number"
                           step="0.01"
-                          class="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-muted/30 focus:border-accent outline-none text-sm font-bold"
+                          class="w-full pl-9 pr-4 py-2 rounded-lg border border-stone bg-[#fbfaf9] focus:border-ember outline-none text-sm font-bold text-charcoal"
                         />
                       </div>
                       <Button size="sm" @click="enviarReembolsoPix(acerto.id)">Registrar</Button>
                     </div>
-                    <p class="text-[10px] text-muted-foreground">
-                      Ou <button @click="quitarComAjuste(acerto.id)" class="text-accent font-bold underline">Quitar Valor Total</button>
+                    <p class="text-[10px] text-ash">
+                      Ou <button @click="quitarComAjuste(acerto.id)" class="text-ember font-bold underline">Quitar Valor Total</button>
                     </p>
                   </div>
                 </div>
               </div>
 
               <!-- CTA Final: Todos quitados mas banco não pago -->
-              <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="p-6 rounded-2xl bg-accent text-white text-center space-y-4 shadow-accent-lg">
+              <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="p-6 rounded-2xl bg-meadow text-white text-center space-y-4 shadow-sm">
                 <div class="space-y-1">
-                  <p class="font-display text-xl">Tudo Coletado!</p>
+                  <p class="font-display text-xl font-bold">Tudo Coletado!</p>
                   <p class="text-xs opacity-90">Todos os moradores já reembolsaram. Hora de pagar o banco.</p>
                 </div>
-                <Button variant="inverted" class="w-full" @click="registrarPagamentoBancoManual(fatura.id)">
+                <Button variant="secondary" class="w-full bg-[#fbfaf9] text-charcoal hover:bg-white border border-stone-surface" @click="registrarPagamentoBancoManual(fatura.id)">
                   Registrar Pagamento ao Banco
                 </Button>
               </div>
@@ -764,8 +764,8 @@ const excluirGasto = async (id: string) => {
                 class="flex justify-between items-center"
               >
                 <div class="flex items-center gap-3">
-                  <div class="w-2 h-2 rounded-full" :class="membro.id === fatura.responsavelId ? 'bg-accent' : 'bg-muted-foreground/30'" />
-                  <span class="text-sm font-medium" :class="membro.id === fatura.responsavelId ? 'text-foreground' : 'text-muted-foreground'">
+                  <div class="w-2 h-2 rounded-full" :class="membro.id === fatura.responsavelId ? 'bg-ember' : 'bg-muted-foreground/30'" />
+                  <span class="text-sm font-medium" :class="membro.id === fatura.responsavelId ? 'text-charcoal' : 'text-ash'">
                     {{ membro.nome }}
                   </span>
                 </div>
@@ -780,7 +780,7 @@ const excluirGasto = async (id: string) => {
             <!-- Toggle Detalhes -->
             <button 
               @click="toggleFaturaExpandida(fatura.id)"
-              class="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-accent transition-colors border-t border-border pt-4"
+              class="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-widest text-ash hover:text-ember transition-colors border-t border-stone-surface pt-4"
             >
               <Activity class="w-3.5 h-3.5" />
               {{ faturasExpandidas[fatura.id] ? 'Ocultar Itens' : 'Ver Detalhes da Fatura' }}

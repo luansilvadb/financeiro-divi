@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
@@ -12,6 +12,11 @@ import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFatu
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
+const previousView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
+
+watch(currentView, (_, oldVal) => {
+  previousView.value = oldVal
+})
 const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
 const {
   cartoes,
@@ -118,6 +123,7 @@ const handleSalvarTransacao = async () => {
       <!-- Main Content -->
       <main class="relative z-10">
         <transition 
+          v-if="currentView !== 'settings' && previousView !== 'settings'"
           enter-active-class="transition duration-500 ease-out"
           enter-from-class="opacity-0 translate-y-4"
           enter-to-class="opacity-100 translate-y-0"
@@ -147,13 +153,28 @@ const handleSalvarTransacao = async () => {
               @salvar="handleSalvarTransacao"
               @cancelar="currentView = 'dashboard'"
             />
-
-            <ConfiguracoesMembros
-              v-else-if="currentView === 'settings'"
-              @voltar="currentView = 'dashboard'"
-            />
           </div>
         </transition>
+
+        <div v-else>
+          <DashboardSaldos 
+            v-if="currentView === 'dashboard'"
+            :membros="todosMembros"
+            :faturasAbertas="faturasAbertas"
+            :faturasFechadas="faturasFechadas"
+            :acertosPendentes="acertos"
+            :cartoes="cartoes"
+            :calcular-consumo="calcularConsumoMembro"
+            :calcular-adiantamento="calcularAdiantamentoMembro"
+            @quitarAcerto="quitarAcertoMembro"
+            @fecharFatura="fecharFaturaManual"
+            @reabrirFatura="reabrirFaturaManual"
+          />
+          <ConfiguracoesMembros
+            v-else-if="currentView === 'settings'"
+            @voltar="currentView = 'dashboard'"
+          />
+        </div>
       </main>
     </div>
 

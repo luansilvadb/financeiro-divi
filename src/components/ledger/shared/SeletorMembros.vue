@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Check } from 'lucide-vue-next'
+
 interface Props {
   membros: { id: string; nome: string }[]
   modelValue: string | string[]
@@ -41,22 +43,27 @@ const toggle = (id: string) => {
       :key="m.id"
       type="button"
       @click="toggle(m.id)"
+      class="p-4 border rounded-xl flex flex-col items-center gap-3 transition-all relative overflow-hidden"
       :class="[
-        'p-3 border-2 rounded-2xl flex flex-col items-center gap-2 transition-all relative overflow-hidden',
         isSelected(m.id) 
-          ? 'border-blue-600 bg-blue-50/20 text-blue-800 shadow-sm' 
-          : 'border-slate-100 hover:border-blue-600/30 text-gray-600'
+          ? 'border-ember bg-ember/5 text-ember shadow-sm' 
+          : 'border-stone-surface bg-[#fbfaf9] text-ash hover:border-ember/30'
       ]"
     >
       <div 
+        class="w-10 h-10 rounded-full flex items-center justify-center font-display text-sm transition-colors"
         :class="[
-          'w-10 h-10 rounded-full flex items-center justify-center font-black text-sm',
-          isSelected(m.id) ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+          isSelected(m.id) ? 'bg-ember text-white' : 'bg-stone text-charcoal'
         ]"
       >
         {{ m.nome[0].toUpperCase() }}
       </div>
-      <span class="font-bold text-[11px] truncate w-full text-center">{{ m.nome }}</span>
+      <span class="font-bold text-[10px] uppercase tracking-wider truncate w-full text-center">{{ m.nome }}</span>
+      
+      <div v-if="isSelected(m.id)" class="absolute top-1 right-1">
+        <Check class="w-3 h-3 text-ember" />
+      </div>
+      
       <slot name="badge" :membro="m" :selected="isSelected(m.id)"></slot>
     </button>
   </div>

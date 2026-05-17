@@ -3,6 +3,10 @@ import { ref, computed, watch } from 'vue'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
+import Card from '../ui/Card.vue'
+import Button from '../ui/Button.vue'
+import SectionLabel from '../ui/SectionLabel.vue'
+import { Check, CreditCard, Wallet, Users, Info } from 'lucide-vue-next'
 
 interface Props {
   visible: boolean
@@ -66,15 +70,10 @@ const calculatedSharesDesc = computed(() => {
   }
 })
 
-const getCardLabel = (co: string) => {
-  return co === 'luan' ? 'Nubank' : 'C6'
-}
-
 const handleConfirm = () => {
   if (!descInput.value.trim()) return
   if (valorInput.value <= 0) return
 
-  // Criar divisões corretas distribuindo centavos
   const totalCents = Math.round(valorInput.value * 100)
   const floorShare = Math.floor(totalCents / selectedSplit.value.length)
   const divisoes: DivisaoDeGasto[] = []
@@ -83,7 +82,6 @@ const handleConfirm = () => {
     divisoes.push(new DivisaoDeGasto(mId, Dinheiro.deCentavos(floorShare)))
   })
 
-  // Distribuir resto de centavos ao comprador/pagador prioritariamente se ele estiver no split
   let remainder = totalCents - (floorShare * selectedSplit.value.length)
   let idx = 0
   const order = [...selectedSplit.value]
@@ -118,122 +116,138 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <div v-if="props.visible" class="fixed inset-0 bg-[#040814]/85 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
-    <div class="glass-card w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-divi-border relative text-divi-t1 space-y-4 max-h-[90vh] overflow-y-auto">
-      <h3 class="text-xl font-black text-divi-t1 flex items-center gap-2 mb-1">✏️ Ajustar Lançamento</h3>
-      
-      <!-- Descrição -->
-      <div class="space-y-1.5">
-        <label class="block text-xs font-black uppercase text-divi-t3 tracking-wider">Descrição</label>
-        <input 
-          type="text" 
-          v-model="descInput" 
-          class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm focus:border-divi-primary" 
-          placeholder="Ex: Supermercado"
-        />
-      </div>
+  <div v-if="props.visible" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-6">
+    <Card class="w-full max-w-md p-0 overflow-hidden bg-card shadow-lg border border-stone-surface rounded-cards">
+      <div class="p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="space-y-2 text-center">
+          <SectionLabel class="mx-auto">Ajuste</SectionLabel>
+          <h3 class="text-3xl font-display text-charcoal">Corrigir <span class="text-ember">Lançamento</span></h3>
+        </div>
 
-      <!-- Valor Real -->
-      <div class="space-y-1.5">
-        <label class="block text-xs font-black uppercase text-divi-t3 tracking-wider">Valor do Lançamento</label>
-        <div class="flex items-center gap-2 bg-slate-950/30 border border-divi-border rounded-2xl px-4 py-2.5">
-          <span class="text-divi-violet text-sm font-black">R$</span>
-          <input 
-            type="number" 
-            step="0.01"
-            v-model.number="valorInput" 
-            class="w-full bg-transparent outline-none font-black text-divi-t1 text-base focus:border-0" 
-            placeholder="0,00"
-          />
+        <div class="space-y-6">
+          <!-- Descrição -->
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Descrição</label>
+            <input 
+              type="text" 
+              v-model="descInput" 
+              class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-sm text-charcoal focus:border-ember transition-all" 
+              placeholder="Ex: Supermercado"
+            />
+          </div>
+
+          <!-- Valor Real -->
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Valor Total</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ash text-sm font-bold">R$</span>
+              <input 
+                v-model.number="valorInput"
+                type="number"
+                step="0.01"
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+
+          <!-- Canal de Pagamento -->
+          <div v-if="!props.gasto?.isLoan" class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Método / Cartão</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button 
+                @click="selectMethod('pix', null)"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
+                :class="activeMethod === 'pix' ? 'bg-ember border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+              >
+                <Wallet class="w-4 h-4" />
+                <span class="text-[9px] font-bold uppercase tracking-wider">Pix</span>
+              </button>
+              <button 
+                @click="selectMethod('card', 'luan')"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
+                :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-sky border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+              >
+                <CreditCard class="w-4 h-4" />
+                <span class="text-[9px] font-bold uppercase tracking-wider">Nubank</span>
+              </button>
+              <button 
+                @click="selectMethod('card', 'joao')"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
+                :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-sky border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+              >
+                <CreditCard class="w-4 h-4" />
+                <span class="text-[9px] font-bold uppercase tracking-wider">C6</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quem pagou -->
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">
+              {{ props.gasto?.isLoan ? 'Quem emprestou?' : activeMethod === 'pix' ? 'Quem fez o Pix?' : `Quem passou no cartão?` }}
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <button 
+                v-for="m in props.membros"
+                :key="m.id"
+                @click="quemPaga = m.id"
+                class="py-3 rounded-xl border border-stone-surface font-bold text-xs transition-all duration-200"
+                :class="quemPaga === m.id ? 'bg-ember border-stone-surface text-white font-bold shadow-sm' : 'bg-stone text-charcoal hover:bg-[#eae7e2]'"
+              >
+                {{ m.nome }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Participantes (Split) -->
+          <div v-if="!props.gasto?.isLoan" class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Dividir com</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button 
+                v-for="m in props.membros"
+                :key="m.id"
+                @click="toggleSplit(m.id)"
+                class="relative py-4 rounded-xl border font-bold text-xs transition-all duration-200 flex flex-col items-center gap-2"
+                :class="selectedSplit.includes(m.id) ? 'bg-ember/5 border-ember text-ember font-bold' : 'bg-stone border-stone-surface text-ash hover:bg-[#eae7e2]'"
+              >
+                <Users class="w-4 h-4" />
+                <span>{{ m.nome }}</span>
+                <div v-if="selectedSplit.includes(m.id)" class="absolute top-1 right-1">
+                  <Check class="w-3 h-3 text-ember" />
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quadro Final / Prévia do Rateio -->
+          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
+            <Info class="w-5 h-5 shrink-0 mt-0.5" />
+            <div class="space-y-1">
+              <p class="text-[10px] font-bold uppercase tracking-widest">Resumo do Rateio</p>
+              <p class="text-xs font-semibold leading-relaxed">{{ calculatedSharesDesc }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone-surface">
+          <Button variant="secondary" @click="emit('cancel')">Voltar</Button>
+          <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
         </div>
       </div>
-
-      <!-- Canal de Pagamento -->
-      <div v-if="!props.gasto?.isLoan" class="space-y-2">
-        <label class="block text-xs font-black uppercase text-divi-t3 tracking-wider">Método / Cartão</label>
-        <div class="flex gap-2">
-          <button 
-            @click="selectMethod('pix', null)"
-            class="flex-1 py-2 px-1 text-[10px] font-black rounded-xl border text-center transition-all"
-            :class="activeMethod === 'pix' ? 'bg-divi-primary border-divi-primary text-white shadow-sm' : 'bg-divi-s2 border-divi-border text-divi-t3'"
-          >
-            ⚡ Pix / Cash
-          </button>
-          <button 
-            @click="selectMethod('card', 'luan')"
-            class="flex-1 py-2 px-1 text-[10px] font-black rounded-xl border text-center transition-all"
-            :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-divi-primary border-divi-primary text-white shadow-sm' : 'bg-divi-s2 border-divi-border text-divi-t3'"
-          >
-            💳 Nubank (Luan)
-          </button>
-          <button 
-            @click="selectMethod('card', 'joao')"
-            class="flex-1 py-2 px-1 text-[10px] font-black rounded-xl border text-center transition-all"
-            :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-divi-primary border-divi-primary text-white shadow-sm' : 'bg-divi-s2 border-divi-border text-divi-t3'"
-          >
-            💳 C6 (João)
-          </button>
-        </div>
-      </div>
-
-      <!-- Quem pagou -->
-      <div class="space-y-2">
-        <label class="block text-xs font-black uppercase text-divi-t3 tracking-wider">
-          {{ props.gasto?.isLoan ? 'Quem emprestou?' : activeMethod === 'pix' ? 'Quem fez o Pix?' : `Quem passou no ${getCardLabel(activeCardOwner || '')}?` }}
-        </label>
-        <div class="grid grid-cols-3 gap-2">
-          <button 
-            v-for="m in props.membros"
-            :key="m.id"
-            @click="quemPaga = m.id"
-            class="py-2.5 px-1.5 text-xs font-black rounded-xl border text-center transition-all"
-            :class="quemPaga === m.id ? 'bg-divi-primary border-divi-primary text-white shadow-sm' : 'bg-divi-s2 border-divi-border text-divi-t2'"
-          >
-            {{ m.nome }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Participantes (Split) -->
-      <div v-if="!props.gasto?.isLoan" class="space-y-2">
-        <label class="block text-xs font-black uppercase text-divi-t3 tracking-wider">Dividir com</label>
-        <div class="grid grid-cols-3 gap-2">
-          <button 
-            v-for="m in props.membros"
-            :key="m.id"
-            @click="toggleSplit(m.id)"
-            class="relative py-3.5 px-1.5 text-xs font-black rounded-xl border text-center transition-all flex flex-col items-center gap-1.5"
-            :class="selectedSplit.includes(m.id) ? 'bg-divi-primary-dim border-divi-primary text-divi-t1' : 'bg-divi-s2 border-divi-border text-divi-t3'"
-          >
-            <span class="text-xs">{{ m.nome }}</span>
-            <span v-if="selectedSplit.includes(m.id)" class="absolute top-1 right-1 text-[8px] bg-divi-emerald-dim border border-emerald-500/30 text-divi-emerald font-black py-0.5 px-1.5 rounded-full">
-              ✓
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Quadro Final / Prévia do Rateio -->
-      <div v-if="!props.gasto?.isLoan" class="bg-divi-emerald-dim border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3 shadow-md">
-        <span class="text-2xl">📊</span>
-        <div class="text-left leading-normal">
-          <strong class="block text-divi-emerald text-[11px] font-black">Visualização do Rateio</strong>
-          <span class="text-[10px] text-emerald-400 font-extrabold">{{ calculatedSharesDesc }}</span>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-3 pt-2">
-        <button @click="emit('cancel')" class="px-5 py-3.5 text-xs font-black bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border rounded-2xl transition-all flex-1">
-          Voltar
-        </button>
-        <button 
-          @click="handleConfirm" 
-          class="px-5 py-3.5 text-xs font-black bg-divi-primary border border-indigo-500/25 hover:bg-indigo-500 text-white font-black rounded-2xl shadow-lg transition-all flex-1" 
-          :disabled="!descInput.trim() || valorInput <= 0"
-        >
-          Confirmar Ajuste
-        </button>
-      </div>
-    </div>
+    </Card>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-surface);
+  border-radius: 9999px;
+}
+</style>
