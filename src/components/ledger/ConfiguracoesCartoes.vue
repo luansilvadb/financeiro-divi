@@ -79,7 +79,7 @@ const adicionarCard = async () => {
         </div>
         <button 
           @click="excluirCartaoManual(c.id)" 
-          class="text-divi-rose bg-divi-rose-dim/12 hover:bg-divi-rose-dim/20 border border-divi-rose/20 text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
+          class="text-divi-rose bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
         >
           Excluir
         </button>

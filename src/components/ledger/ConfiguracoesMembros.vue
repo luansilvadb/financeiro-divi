@@ -24,22 +24,22 @@ const handleAdicionar = async () => {
       <button @click="emit('voltar')" class="p-2 bg-divi-s2 border border-divi-border hover:bg-divi-s3 rounded-full text-divi-t1 transition-colors">
         <ArrowLeft class="w-6 h-6 text-divi-t1" />
       </button>
-      <h2 class="text-2xl font-black text-divi-t1">⚙️ Configurações</h2>
+      <h2 class="text-2xl font-black text-divi-t1">Configurações</h2>
     </div>
 
     <!-- Abas (Tabs) -->
-    <div class="flex border-b border-divi-border bg-divi-s1/20 p-1 rounded-2xl gap-1">
+    <div class="flex bg-white/5 p-1 rounded-2xl gap-1 shadow-inner border border-white/5">
       <button 
         @click="activeTab = 'membros'"
         :class="['flex-1 py-3 text-sm font-black text-center rounded-xl transition-all', activeTab === 'membros' ? 'bg-divi-primary text-white shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1']"
       >
-        👥 Moradores
+        Moradores
       </button>
       <button 
         @click="activeTab = 'cartoes'"
         :class="['flex-1 py-3 text-sm font-black text-center rounded-xl transition-all', activeTab === 'cartoes' ? 'bg-divi-primary text-white shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1']"
       >
-        💳 Cartões
+        Cartões
       </button>
     </div>
 
@@ -68,11 +68,11 @@ const handleAdicionar = async () => {
 
       <!-- Lista de Membros -->
       <div class="glass-card rounded-3xl border border-divi-border overflow-hidden shadow-md">
-        <div class="divide-y divide-divi-border">
+        <div class="flex flex-col">
           <div 
             v-for="membro in membros" 
             :key="membro.id"
-            class="p-4 flex justify-between items-center hover:bg-divi-s1/20 transition-colors duration-150"
+            class="p-4 flex justify-between items-center hover:bg-divi-s1/20 transition-colors duration-150 border-b border-divi-border last:border-0"
             :class="{ 'opacity-50 grayscale': !membro.ativo }"
           >
             <div>
@@ -83,7 +83,7 @@ const handleAdicionar = async () => {
             <button 
               v-if="membro.ativo"
               @click="desativarMembro(membro.id)"
-              class="text-red-400 p-2.5 text-divi-rose bg-divi-rose-dim/12 hover:bg-divi-rose-dim/20 border border-divi-rose/20 rounded-xl transition-all shadow-sm"
+              class="text-red-400 p-2.5 text-divi-rose bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all shadow-sm"
               title="Desativar morador"
             >
               <UserMinus class="w-5 h-5" />

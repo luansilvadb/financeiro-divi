@@ -55,8 +55,8 @@ const pagamentosDetalhados = computed(() => {
       <div class="flex-1 min-w-0 pr-3">
         <h2 class="text-sm font-bold text-divi-t1 leading-tight truncate">{{ item.descricao }}</h2>
         <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black mt-1.5 uppercase tracking-wider border',
-                        item.valorLiquido.centavos > 0 ? 'bg-divi-emerald-dim/15 text-divi-emerald border-divi-emerald/20' : 
-                        (item.valorLiquido.centavos === 0 ? 'bg-divi-s2 text-divi-t2 border-divi-border' : 'bg-divi-rose-dim/15 text-divi-rose border-divi-rose/20')]">
+                        item.valorLiquido.centavos > 0 ? 'bg-emerald-500/10 text-divi-emerald border-emerald-500/20' : 
+                        (item.valorLiquido.centavos === 0 ? 'bg-divi-s2 text-divi-t2 border-divi-border' : 'bg-rose-500/10 text-divi-rose border-rose-500/20')]">
           {{ item.valorLiquido.centavos > 0 ? 'CRÉDITO' : (item.valorLiquido.centavos === 0 ? 'NEUTRO' : 'DÉBITO') }}
         </span>
       </div>

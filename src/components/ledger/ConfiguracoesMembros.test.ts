@@ -60,7 +60,7 @@ describe('ConfiguracoesMembros', () => {
 
   it('não deve mostrar botão de desativar para membros já desativados', () => {
     const wrapper = mount(ConfiguracoesMembros)
-    const items = wrapper.findAll('.divide-y > div')
+    const items = wrapper.findAll('.glass-card .flex-col > div')
     
     const itemDesativado = items.find(i => i.text().includes('Joao'))
     expect(itemDesativado?.find('button.text-red-400').exists()).toBe(false)

@@ -6,13 +6,13 @@
     <div class="flex justify-between items-center gap-3 mb-4 relative z-10">
       <div class="min-w-0 flex-1">
         <h3 class="text-sm font-black text-divi-t1 flex items-center gap-1.5">
-          🏠 Checklist de Contas Fixas
+          Checklist de Contas Fixas
         </h3>
         <p class="text-[10px] text-divi-t3 mt-0.5 leading-normal">
           Gerencie e lance de forma simples os talões do mês sem precisar de formulários longos
         </p>
       </div>
-      <span class="text-[9px] font-black text-divi-amber bg-divi-amber-dim/15 px-2.5 py-1.5 rounded-xl border border-divi-amber/20 uppercase tracking-widest shrink-0 whitespace-nowrap shadow-[0_0_8px_rgba(245,158,11,0.05)]">
+      <span class="text-[9px] font-black text-divi-amber bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20 uppercase tracking-widest shrink-0 whitespace-nowrap shadow-[0_0_8px_rgba(245,158,11,0.05)]">
         {{ pagasCount }}/{{ contasFixas.length }} pagas
       </span>
     </div>

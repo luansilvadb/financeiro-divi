@@ -463,7 +463,7 @@ Substitua o template do checklist de contas fixas para remover as referências a
     <div class="flex justify-between items-center mb-6">
       <div>
         <h3 class="text-xl font-black text-divi-t1 flex items-center gap-2">
-          🏠 Checklist de Contas Fixas
+          Checklist de Contas Fixas
         </h3>
         <p class="text-xs text-divi-t3 mt-1">
           Gerencie e lance de forma simples os talões do mês sem precisar de formulários longos

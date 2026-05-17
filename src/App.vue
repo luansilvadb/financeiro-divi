@@ -115,7 +115,7 @@ const handleSalvarTransacao = async () => {
       <button 
         v-if="currentView === 'dashboard'"
         @click="currentView = 'wizard'"
-        class="fixed bottom-8 right-1/2 translate-x-1/2 w-14 h-14 bg-divi-primary text-white rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(99,102,241,0.55)] border border-indigo-400/30 hover:scale-105 active:scale-95 transition-all duration-300 z-[9999]"
+        class="fixed bottom-8 right-1/2 translate-x-1/2 w-14 h-14 bg-divi-primary text-white rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(99,102,241,0.55)] border border-white/5 hover:scale-105 active:scale-95 transition-all duration-300 z-[9999]"
         aria-label="Novo lançamento"
       >
         <Plus class="w-7 h-7 stroke-[3px] filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" />
