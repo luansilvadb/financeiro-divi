@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMembros } from '../../modules/ledger/composables/useMembros'
-import { UserPlus, UserMinus, ArrowLeft, Users, CreditCard } from 'lucide-vue-next'
+import { UserPlus, UserMinus, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from './ConfiguracoesCartoes.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
@@ -28,9 +28,6 @@ const handleAdicionar = async () => {
         <SectionLabel>Gerenciamento</SectionLabel>
         <h2 class="text-3xl font-display text-charcoal">Ajustes <span class="text-ember">Gerais</span></h2>
       </div>
-      <Button variant="secondary" size="icon" @click="emit('voltar')" class="rounded-full border border-stone-surface">
-        <ArrowLeft class="w-4 h-4 text-graphite" />
-      </Button>
     </div>
 
     <!-- Abas (Tabs switcher no padrão Family) -->

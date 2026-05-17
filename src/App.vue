@@ -112,7 +112,6 @@ const handleSalvarTransacao = async () => {
       <!-- Main Content -->
       <main class="relative z-10">
         <DashboardSaldos 
-          v-if="currentView === 'dashboard' || currentView === 'wizard'"
           :membros="todosMembros"
           :faturasAbertas="faturasAbertas"
           :faturasFechadas="faturasFechadas"
@@ -124,17 +123,12 @@ const handleSalvarTransacao = async () => {
           @fecharFatura="fecharFaturaManual"
           @reabrirFatura="reabrirFaturaManual"
         />
-
-        <ConfiguracoesMembros
-          v-else-if="currentView === 'settings'"
-          @voltar="currentView = 'dashboard'"
-        />
       </main>
     </div>
 
     <!-- Footer Inverted Section -->
     <div class="max-w-[1200px] mx-auto px-6">
-      <InvertedSection v-if="currentView === 'dashboard' || currentView === 'wizard'">
+      <InvertedSection>
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div class="space-y-4">
             <div class="flex items-center gap-2 text-ember">
@@ -188,6 +182,17 @@ const handleSalvarTransacao = async () => {
           @salvar="handleSalvarTransacao"
           @cancelar="currentView = 'dashboard'"
         />
+      </div>
+    </BottomSheet>
+
+    <!-- Bottomsheet Não Modal de Configurações -->
+    <BottomSheet 
+      :model-value="currentView === 'settings'"
+      @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
+      width-class="md:w-[560px]"
+    >
+      <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col p-6">
+        <ConfiguracoesMembros />
       </div>
     </BottomSheet>
   </div>

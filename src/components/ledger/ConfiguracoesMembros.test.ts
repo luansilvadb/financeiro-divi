@@ -66,12 +66,4 @@ describe('ConfiguracoesMembros', () => {
     expect(itemDesativado?.find('button[title="Desativar morador"]').exists()).toBe(false)
   })
 
-  it('deve emitir evento voltar ao clicar no botão de volta', async () => {
-    const wrapper = mount(ConfiguracoesMembros)
-    const btnVoltar = wrapper.find('button.rounded-full.border') // O botão com seta de voltar
-
-    await btnVoltar.trigger('click')
-
-    expect(wrapper.emitted('voltar')).toBeTruthy()
-  })
 })
