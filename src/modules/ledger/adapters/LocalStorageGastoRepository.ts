@@ -39,6 +39,28 @@ export class LocalStorageGastoRepository implements IGastoRepository {
     return todos.filter(g => g.faturaId === faturaId)
   }
 
+  async excluir(id: string): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
+      const todos = await this.listarTodos()
+      const filtrados = todos.filter(g => g.id !== id)
+      const dtos = filtrados.map(g => ({
+        id: g.id,
+        faturaId: g.faturaId,
+        descricao: g.descricao,
+        valorTotalCentavos: g.valorTotal.centavos,
+        compradorId: g.compradorId,
+        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
+        installments: g.installments,
+        isLoan: g.isLoan,
+        borrowerId: g.borrowerId,
+        recurringBillId: g.recurringBillId,
+        isSettlement: g.isSettlement,
+        settlementDetails: g.settlementDetails
+      }))
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+    })
+  }
+
   private async listarTodos(): Promise<Gasto[]> {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []

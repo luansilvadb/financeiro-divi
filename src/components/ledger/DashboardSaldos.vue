@@ -1,17 +1,39 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { Fatura } from '../../modules/ledger/core/domain/Fatura'
 import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
 import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
+import { useSaldosUnificados } from '../../modules/ledger/composables/useSaldosUnificados'
+import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import ModalConfigurarContaFixa from './ModalConfigurarContaFixa.vue'
 import RevisaoFatura from './dashboard/RevisaoFatura.vue'
 import HistoricoFaturas from './dashboard/HistoricoFaturas.vue'
 import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
+import ModalAcertoCompensacao from './dashboard/ModalAcertoCompensacao.vue'
+import ActivityFeed from './ActivityFeed.vue'
+import { 
+  Plus, 
+  Settings, 
+  Clock, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  CheckCircle2, 
+  TrendingUp, 
+  Wallet, 
+  ChevronDown, 
+  ChevronUp, 
+  Sparkles, 
+  Info,
+  Calendar,
+  Lock,
+  Unlock,
+  AlertCircle
+} from 'lucide-vue-next'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -56,12 +78,8 @@ const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string
   await fecharFaturaManual(faturaId, responsavelId)
   showModalFechar.value = false
   faturaParaFechar.value = null
+  await useCartoesEFaturas().inicializar()
 }
-
-// Estado interativo do editor de divisão por gasto (desativado)
-// const gastoExpandidoId = ref<string | null>(null)
-// const modoDivisao = ref<'IGUAL' | 'CUSTOMIZADO' | 'PORCENTAGEM'>('IGUAL')
-// const valoresDivisao = ref<Record<string, number>>({}) // membroId -> valor (R$ ou %)
 
 // Estado de Pix Parcial por acerto
 const acertoPixId = ref<string | null>(null)
@@ -112,99 +130,6 @@ const gastosDaFatura = (faturaId: string) => {
   return list.filter((g: Gasto) => g.faturaId === faturaId)
 }
 
-/*
-// Inicia o painel de divisão interativo
-const iniciarEdicaoDivisao = (gasto: any) => {
-  gastoExpandidoId.value = gasto.id
-  modoDivisao.value = 'IGUAL'
-  
-  // Preenche valores padrão iniciais com base nas divisões atuais do gasto
-  const record: Record<string, number> = {}
-  props.membros.forEach(m => {
-    const div = gasto.divisoes.find((d: any) => d.membroId === m.id)
-    record[m.id] = div ? formatarDinheiro(div.valor.centavos) : 0
-  })
-  valoresDivisao.value = record
-}
-
-// Muda o comprador de um gasto na revisão
-const alterarCompradorGasto = async (gasto: any, novoCompradorId: string) => {
-  // Mantém as divisões mas atualiza comprador
-  const divisoesAtuais = gasto.divisoes.map((d: any) => new DivisaoDeGasto(d.membroId, d.valor))
-  
-  // Como mudamos o comprador, atualizamos no banco
-  const idx = globalGastos.value.findIndex(g => g.id === gasto.id)
-  if (idx >= 0) {
-    const original = globalGastos.value[idx]
-    const novoGasto = new (gasto.constructor || Gasto)({
-      id: original.id,
-      faturaId: original.faturaId,
-      descricao: original.descricao,
-      valorTotal: original.valorTotal,
-      compradorId: novoCompradorId,
-      divisoes: divisoesAtuais
-    })
-    await gastoRepoSalvar(novoGasto)
-  }
-}
-
-// Salva o gasto no repositório auxiliar
-const gastoRepoSalvar = async (novoGasto: any) => {
-  const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
-  await new LocalStorageGastoRepository().salvar(novoGasto)
-  // Força atualização reativa
-  await useCartoesEFaturas().inicializar()
-}
-
-// Salva a divisão interativa configurada
-const salvarDivisaoCustomizada = async (gasto: any) => {
-  const totalGastoCentavos = gasto.valorTotal.centavos
-  let divisoesNovas: DivisaoDeGasto[] = []
-
-  if (modoDivisao.value === 'IGUAL') {
-    const partes = gasto.valorTotal.distribuir(props.membros.length)
-    divisoesNovas = props.membros.map((m, idx) => new DivisaoDeGasto(m.id, partes[idx]))
-  } else if (modoDivisao.value === 'CUSTOMIZADO') {
-    divisoesNovas = props.membros.map(m => new DivisaoDeGasto(m.id, Dinheiro.deReais(valoresDivisao.value[m.id] || 0)))
-  } else if (modoDivisao.value === 'PORCENTAGEM') {
-    // Calcula os valores em centavos proporcionalmente
-    let somaCentavosDistribuida = 0
-    const divisoesPre: { membroId: string; centavos: number }[] = []
-    
-    props.membros.forEach(m => {
-      const pct = valoresDivisao.value[m.id] || 0
-      const centavos = Math.round((pct / 100) * totalGastoCentavos)
-      somaCentavosDistribuida += centavos
-      divisoesPre.push({ membroId: m.id, centavos })
-    })
-
-    // Corrige eventual arredondamento no último membro com saldo ativo
-    const diff = totalGastoCentavos - somaCentavosDistribuida
-    if (diff !== 0 && divisoesPre.length > 0) {
-      divisoesPre[divisoesPre.length - 1].centavos += diff
-    }
-
-    divisoesNovas = divisoesPre.map(d => new DivisaoDeGasto(d.membroId, Dinheiro.deCentavos(d.centavos)))
-  }
-
-  await atualizarGastoDivisoesManual(gasto.id, divisoesNovas)
-  gastoExpandidoId.value = null
-}
-
-// Validação em tempo real do editor de divisão
-const somaDivisaoIncorreta = (gasto: any) => {
-  if (modoDivisao.value === 'IGUAL') return false
-  if (modoDivisao.value === 'CUSTOMIZADO') {
-    const soma = props.membros.reduce((acc, m) => acc + (valoresDivisao.value[m.id] || 0), 0)
-    return Math.abs(soma - formatarDinheiro(gasto.valorTotal.centavos)) > 0.01
-  }
-  if (modoDivisao.value === 'PORCENTAGEM') {
-    const soma = props.membros.reduce((acc, m) => acc + (valoresDivisao.value[m.id] || 0), 0)
-    return Math.abs(soma - 100) > 0.01
-  }
-  return false
-*/
-
 // Inicia Pix
 const iniciarPix = (acerto: any) => {
   acertoPixId.value = acerto.id
@@ -217,11 +142,15 @@ const enviarReembolsoPix = async (acertoId: string) => {
   if (valorPixInput.value <= 0) return
   await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
   acertoPixId.value = null
+  await useCartoesEFaturas().inicializar()
 }
+
 const quitarComAjuste = async (acertoId: string) => {
   await quitarAcertoMembro(acertoId)
   acertoPixId.value = null
+  await useCartoesEFaturas().inicializar()
 }
+
 const todosOsAcertosQuitados = (faturaId: string) => {
   const acertos = acertosDaFatura(faturaId)
   return acertos.length > 0 && acertos.every(a => a.pago)
@@ -288,28 +217,6 @@ const abrirNovoPeriodoModal = () => {
   showModalNovoPeriodo.value = true
 }
 
-const obterSaldosFatura = (faturaId: string) => {
-  const fGastos = gastosDaFatura(faturaId)
-  const saldos: Record<string, number> = {}
-  
-  props.membros.forEach(m => {
-    // Total pago pelo membro (Payments)
-    const totalPago = fGastos
-      .filter(g => g.compradorId === m.id)
-      .reduce((sum, g) => sum + g.valorTotal.centavos, 0)
-      
-    // Total consumido pelo membro (Consumption)
-    const totalConsumido = fGastos.reduce((sum, g) => {
-      const div = g.divisoes.find((d: any) => d.membroId === m.id)
-      return sum + (div ? div.valor.centavos : 0)
-    }, 0)
-    
-    saldos[m.id] = (totalPago - totalConsumido) / 100
-  })
-  
-  return saldos
-}
-
 const confirmarNovoPeriodo = async () => {
   if (!nomeNovoPeriodo.value.trim()) return
   
@@ -317,27 +224,111 @@ const confirmarNovoPeriodo = async () => {
   showModalNovoPeriodo.value = false
 }
 
+// --- INTEGRAÇÃO SENIOR V19: LIVE BALANCES & NETTING ---
+const { calcularSaldosUnificados, calcularTransacoesNetting } = useSaldosUnificados()
+
+const currentMonthName = computed(() => {
+  const fat = props.faturasAbertas[0]
+  if (!fat) return 'Período Atual'
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  return `${meses[fat.periodo.mes - 1]} ${fat.periodo.ano}`
+})
+
+const saldosUnificadosAtivos = computed(() => {
+  const activeFaturaId = props.faturasAbertas[0]?.id
+  if (!activeFaturaId) return {}
+  const gastosPeriodo = globalGastos.value.filter(g => g.faturaId === activeFaturaId)
+  return calcularSaldosUnificados(props.membros, gastosPeriodo)
+})
+
+const nettingTransferencias = computed(() => {
+  return calcularTransacoesNetting(saldosUnificadosAtivos.value)
+})
+
+const showModalNetting = ref(false)
+const nettingTarget = ref<any | null>(null)
+
+const abrirModalNetting = (transferencia: any) => {
+  nettingTarget.value = transferencia
+  showModalNetting.value = true
+}
+
+const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
+  const activeFaturaId = props.faturasAbertas[0]?.id
+  if (!activeFaturaId) return
+
+  const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
+  const gRepo = new LocalStorageGastoRepository()
+
+  const acertoGasto = new Gasto({
+    id: crypto.randomUUID(),
+    faturaId: activeFaturaId,
+    descricao: dados.descricao,
+    valorTotal: Dinheiro.deReais(dados.valor),
+    compradorId: dados.to, // Credor recebe
+    divisoes: [new DivisaoDeGasto(dados.from, Dinheiro.deReais(dados.valor))], // Devedor assume 100%
+    isSettlement: true,
+    settlementDetails: {
+      fromMemberId: dados.from,
+      toMemberId: dados.to,
+      method: dados.method as any
+    },
+    installments: 1,
+    isLoan: false
+  })
+
+  await gRepo.salvar(acertoGasto)
+  showModalNetting.value = false
+  nettingTarget.value = null
+  await useCartoesEFaturas().inicializar()
+}
+
+// --- INTEGRAÇÃO SENIOR V19: ACCORDIONS DE FATURAS E PARCELAS FUTURAS ---
+const faturasExpandidas = ref<Record<string, boolean>>({})
+const toggleFaturaExpandida = (faturaId: string) => {
+  faturasExpandidas.value[faturaId] = !faturasExpandidas.value[faturaId]
+}
+
+const parcelasFuturasDetalhadas = computed(() => {
+  const list: any[] = []
+  globalGastos.value.forEach((g: Gasto) => {
+    if (g.installments > 1) {
+      const valorParcela = g.valorTotal.centavos / g.installments
+      const parcelasRestantes = g.installments - 1
+      const totalRestante = valorParcela * parcelasRestantes
+      list.push({
+        id: g.id,
+        descricao: g.descricao,
+        responsavel: g.cardOwner ? getCartaoNome(g.faturaId) : 'Pix',
+        restantes: parcelasRestantes,
+        valorParcela: valorParcela / 100,
+        totalFuturo: totalRestante / 100
+      })
+    }
+  })
+  return list
+})
+
+const totalFuturasVencer = computed(() => {
+  return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)
+})
+
+const showParcelasFuturas = ref(false)
+
+// --- EXECUÇÃO DE ROLLOVER SEGURO ---
 const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   const fAbertas = props.faturasAbertas
   if (fAbertas.length === 0) return
 
-  // 1. Calcula saldos do período anterior antes de fechar faturas
-  const saldosAcumulados: Record<string, number> = {}
-  props.membros.forEach(m => { saldosAcumulados[m.id] = 0 })
+  // 1. Coleta os saldos unificados acumulados live do período que está sendo fechado
+  const saldosAcumulados = { ...saldosUnificadosAtivos.value }
 
-  fAbertas.forEach(f => {
-    const saldosFatura = obterSaldosFatura(f.id)
-    for (const mId in saldosFatura) {
-      saldosAcumulados[mId] += saldosFatura[mId]
-    }
-  })
-
-  // 2. Fecha as faturas atuais
+  // 2. Fechar as faturas abertas do período
   for (const f of fAbertas) {
     await fecharFaturaManual(f.id)
   }
 
-  // 3. Cria faturas no novo período
+  // 3. Criar faturas e período no novo mês
   const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')
   const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
   const mesNum = meses.indexOf(mesStr) + 1 || new Date().getMonth() + 1
@@ -362,24 +353,25 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   const novaFaturaIdPrincipal = novasFaturas[0]?.id
 
   if (novaFaturaIdPrincipal) {
-    // 4. Decrementa parcelas
-    const todosGastosAnteriores: Gasto[] = []
-    for (const f of fAbertas) {
-      todosGastosAnteriores.push(...gastosDaFatura(f.id))
-    }
-
-    const gastosParceladosNovos = processarRolloverParcelas(novaFaturaIdPrincipal, todosGastosAnteriores)
     const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
     const gRepo = new LocalStorageGastoRepository()
 
+    // 4. Decrementar parcelas ativas
+    const todosGastosAnteriores: Gasto[] = []
+    for (const f of fAbertas) {
+      const porFatura = await gRepo.buscarPorFatura(f.id)
+      todosGastosAnteriores.push(...porFatura)
+    }
+
+    const gastosParceladosNovos = processarRolloverParcelas(novaFaturaIdPrincipal, todosGastosAnteriores)
     for (const g of gastosParceladosNovos) {
       await gRepo.salvar(g)
     }
 
-    // 5. Netting de saldos e transporte
+    // 5. Aplicar Netting final e carregar saldos devedores/credores como "Saldo Inicial Pendente"
     const transacoesCarryover = gerarTransacoesNettingSaldoInicial(
       novaFaturaIdPrincipal, 
-      `${fAbertas[0]?.periodo.mes}/${fAbertas[0]?.periodo.ano}`, 
+      currentMonthName.value, 
       saldosAcumulados
     )
     for (const g of transacoesCarryover) {
@@ -391,6 +383,14 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   setMonthLocked(false)
 
   // 7. Recarrega dados reativos
+  await useCartoesEFaturas().inicializar()
+}
+
+// --- DESFAZER LANÇAMENTOS DO FEED ---
+const excluirGasto = async (id: string) => {
+  const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
+  const gRepo = new LocalStorageGastoRepository()
+  await gRepo.excluir(id)
   await useCartoesEFaturas().inicializar()
 }
 </script>
@@ -408,13 +408,16 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   <div v-else class="max-w-md mx-auto space-y-6">
     <!-- BARRA DE TRANCAMENTO SENIOR V18 -->
     <div 
-      class="border rounded-2xl p-4 flex justify-between items-center transition-all duration-300"
+      class="border rounded-3xl p-4 flex justify-between items-center transition-all duration-300"
       :class="isMonthLocked 
         ? 'bg-divi-amber-dim/10 border-divi-amber/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.06)]' 
         : 'bg-divi-s1 border-divi-border text-divi-t2'"
     >
       <div class="flex items-center gap-3">
-        <span class="text-lg">{{ isMonthLocked ? '🔒' : '🔓' }}</span>
+        <div class="p-2 bg-divi-s2 rounded-2xl">
+          <Lock v-if="isMonthLocked" class="w-5 h-5 text-amber-400" />
+          <Unlock v-else class="w-5 h-5 text-divi-primary" />
+        </div>
         <div>
           <span class="font-extrabold block text-divi-t1">{{ isMonthLocked ? 'Período Trancado' : 'Período Aberto' }}</span>
           <span class="text-[10px] text-divi-t3 mt-0.5 block leading-normal">
@@ -426,21 +429,96 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
         <button 
           v-if="isMonthLocked"
           @click="abrirNovoPeriodoModal"
-          class="bg-divi-amber hover:bg-yellow-500 text-slate-950 px-3 py-2 rounded-xl text-xs font-black transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+          class="bg-divi-amber hover:bg-yellow-500 text-slate-950 px-3.5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] flex items-center gap-1.5"
         >
           🚀 Novo Período
         </button>
         <button 
           @click="setMonthLocked(!isMonthLocked)"
-          class="bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border px-3 py-2 rounded-xl text-xs font-bold transition-all"
+          class="bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all"
         >
           {{ isMonthLocked ? 'Destrancar' : 'Trancar Mês' }}
         </button>
       </div>
     </div>
+
+    <!-- Painel de Saldo Real Unificado (Senior v19) -->
+    <div class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 relative overflow-hidden">
+      <div class="absolute -top-10 -left-10 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <span class="text-xs font-black text-divi-emerald uppercase tracking-widest block mb-0.5">
+            📊 Saldo Real
+          </span>
+          <span class="text-[10px] text-divi-t3">Consolidação de Pix, Cartões e Empréstimos</span>
+        </div>
+        <span class="text-[10px] bg-divi-emerald-dim text-divi-emerald border border-emerald-500/20 font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+          {{ currentMonthName }}
+        </span>
+      </div>
+      
+      <div class="space-y-3.5">
+        <div 
+          v-for="m in props.membros" 
+          :key="m.id" 
+          class="flex justify-between items-center bg-slate-950/20 border border-divi-border/40 rounded-2xl p-3.5 hover:border-divi-primary/20 transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-divi-s2 border border-divi-border/60 text-white flex items-center justify-center font-black text-sm uppercase">
+              {{ m.nome[0] }}
+            </div>
+            <div>
+              <span class="font-extrabold text-sm block text-divi-t1">{{ m.nome }}</span>
+              <span class="text-[10px] text-divi-t3 block mt-0.5">
+                {{ saldosUnificadosAtivos[m.id] > 0.005 ? 'Tem crédito na casa' : saldosUnificadosAtivos[m.id] < -0.005 ? 'Tem débito na casa' : 'Tudo equilibrado' }}
+              </span>
+            </div>
+          </div>
+          <span :class="['font-black text-sm', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-divi-emerald text-glow-emerald' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-divi-rose' : 'text-divi-t3']">
+            {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id]?.toFixed(2).replace('.', ',') }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel de Compensação Otimizada (Netting Live) (Senior v19) -->
+    <div v-if="nettingTransferencias.length > 0" class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 border border-indigo-500/25 relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
+      <div class="flex items-center gap-1.5 mb-4">
+        <Sparkles class="w-4 h-4 text-divi-primary" />
+        <div>
+          <span class="text-xs font-black text-divi-primary uppercase tracking-widest block mb-0.5">
+            💡 Compensação Otimizada
+          </span>
+          <span class="text-[10px] text-divi-t3">Netting Live: Menos Pix entre moradores</span>
+        </div>
+      </div>
+      
+      <div class="space-y-3.5">
+        <div 
+          v-for="t in nettingTransferencias" 
+          :key="t.from + '-' + t.to" 
+          class="flex flex-col bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 gap-3"
+        >
+          <div class="flex items-center gap-2">
+            <ArrowUpRight class="w-4 h-4 text-divi-emerald shrink-0" />
+            <span class="text-xs text-divi-t2 leading-relaxed">
+              <strong>{{ getMembroNome(t.from) }}</strong> deve enviar <strong class="text-divi-emerald">R$ {{ t.val.toFixed(2).replace('.', ',') }}</strong> para <strong>{{ getMembroNome(t.to) }}</strong>.
+            </span>
+          </div>
+          <button 
+            @click="abrirModalNetting(t)"
+            :disabled="isMonthLocked"
+            class="w-full bg-divi-emerald hover:bg-emerald-600 text-white font-black text-[11px] px-4 py-2.5 rounded-xl transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)] disabled:opacity-40 disabled:cursor-not-allowed text-center whitespace-nowrap"
+          >
+            ✅ Já fiz este Pix
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Seção 1: Faturas Fechadas (Fluxos de Revisão ou Acertos Ativos) -->
     <div v-for="fatura in faturasFechadas" :key="fatura.id" class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 overflow-hidden relative">
-      <!-- Glow Decorativo superior -->
       <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
       
       <!-- Cabeçalho da Fatura -->
@@ -450,7 +528,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
             {{ faturaTemAcertosAtivos(fatura.id) ? '⚠️ Faturas Fechadas (Acertos Ativos)' : '🔍 Faturas Fechadas (Em Revisão)' }}
           </span>
           <span class="font-extrabold text-lg flex items-center gap-2">
-            💳 Nubank <span class="text-divi-t3 text-xs font-normal">• {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+            💳 {{ getCartaoNome(fatura.cartaoId) }} <span class="text-divi-t3 text-xs font-normal">• {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
           </span>
           <span class="text-[10px] text-divi-t3 block mt-1">
             Responsável: <strong class="text-divi-t1">{{ getMembroNome(fatura.responsavelId) }}</strong>
@@ -464,7 +542,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
         </button>
       </div>
 
-      <!-- SUB-ESTADO A: EM REVISÃO (Sem acertos gerados ainda) (Gap 2) -->
+      <!-- SUB-ESTADO A: EM REVISÃO -->
       <div v-if="!faturaTemAcertosAtivos(fatura.id)" class="space-y-4">
         <div class="bg-divi-primary-glow/10 border border-divi-primary/20 rounded-2xl p-4 text-xs text-indigo-200 leading-relaxed text-center">
           🛒 <strong>Fatura Fechada sob Revisão Coletiva</strong><br>
@@ -479,16 +557,16 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
         </button>
       </div>
 
-      <!-- SUB-ESTADO B: ACERTOS ATIVOS (Com amortizações parciais de Pix) -->
+      <!-- SUB-ESTADO B: ACERTOS ATIVOS -->
       <div v-else class="space-y-4">
-        <!-- Banner de Status de Pagamento ao Banco (Abordagem A/B) -->
+        <!-- Banner de Status de Pagamento ao Banco -->
         <div v-if="fatura.dataPagamentoBanco" class="bg-divi-emerald-dim border border-emerald-500/20 rounded-2xl p-4 flex justify-between items-center mb-2">
           <div class="text-xs text-emerald-200 leading-relaxed">
             🏦 <strong>Fatura paga ao banco!</strong> O responsável já pagou a fatura do cartão. Envie seu Pix de reembolso a ele.
           </div>
           <button 
             @click="removerPagamentoBancoManual(fatura.id)"
-            class="text-[9px] font-black text-divi-rose hover:text-rose-300 underline ml-2 whitespace-nowrap"
+            class="text-[9px] font-black text-divi-rose hover:text-rose-300 underline ml-2 whitespace-nowrap animate-pulse"
           >
             Estornar
           </button>
@@ -553,7 +631,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
                 :key="m.id"
                 @click="metodoAcerto = m.id as any"
                 class="flex-1 py-2 px-1 text-[10px] font-extrabold rounded-xl border text-center transition-all"
-                :class="metodoAcerto === m.id ? 'bg-divi-primary border-divi-primary text-white' : 'bg-divi-s2 border-divi-border text-divi-t3'"
+                :class="metodoAcerto === m.id ? 'bg-divi-primary border-divi-primary text-white shadow-sm' : 'bg-divi-s2 border-divi-border text-divi-t3'"
               >
                 {{ m.nome }}
               </button>
@@ -594,7 +672,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
           </div>
         </div>
 
-        <!-- Botão especial de encerramento de arrecadação (Abordagem B) -->
+        <!-- Botão especial de encerramento de arrecadação -->
         <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="bg-divi-emerald-dim border border-emerald-500/20 text-white p-5 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 mt-4 shadow-lg">
           <span class="text-xs font-black uppercase tracking-wider text-divi-emerald text-glow-emerald">🎉 Reembolsos Coletados!</span>
           <span class="text-[11px] text-emerald-300">Todos os moradores já enviaram os reembolsos por Pix.</span>
@@ -608,43 +686,105 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
       </div>
     </div>
 
-    <!-- Seção 2: Faturas Abertas (Previsão de Gastos) -->
+    <!-- Seção 2: Faturas Abertas (Previsão de Gastos) com Accordion de Compras (Senior v19) -->
     <div class="glass-card rounded-3xl p-6 shadow-2xl space-y-4 text-divi-t1">
       <h3 class="text-xs font-black text-divi-t3 uppercase tracking-widest">🔍 Faturas Abertas (Previsão de Gastos)</h3>
       
-      <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-divi-border last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
-        <div class="flex justify-between items-center mb-5">
+      <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border border-divi-border/40 rounded-2xl p-4 bg-slate-950/10 space-y-4 last:mb-0 mb-4">
+        <div class="flex justify-between items-center cursor-pointer select-none" @click="toggleFaturaExpandida(fatura.id)">
           <div class="flex flex-col">
-            <span class="font-extrabold text-divi-t1 text-base">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-            <span class="text-xs text-divi-t2 font-bold mt-0.5">Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
+            <span class="font-extrabold text-divi-t1 text-sm flex items-center gap-1.5">
+              💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
+              <ChevronDown v-if="!faturasExpandidas[fatura.id]" class="w-3.5 h-3.5 text-divi-t3" />
+              <ChevronUp v-else class="w-3.5 h-3.5 text-divi-t3" />
+            </span>
+            <span class="text-[10px] text-divi-t3 mt-0.5 block leading-normal">
+              Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }} (Clique para ver compras)
+            </span>
           </div>
           <button 
-            @click="abrirFecharFatura(fatura.id)" 
-            class="text-xs font-black bg-divi-t1 text-slate-950 px-4 py-2.5 rounded-xl hover:bg-slate-200 shadow-md transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            @click.stop="abrirFecharFatura(fatura.id)" 
+            class="text-[10.5px] font-black bg-divi-primary hover:bg-indigo-500 border border-indigo-400/25 text-white px-3.5 py-2.5 rounded-xl shadow-[0_0_12px_var(--primary-glow)] transition-all disabled:opacity-40 disabled:pointer-events-none active:scale-95 shrink-0"
             :disabled="isMonthLocked"
           >
             Fechar Fatura
           </button>
         </div>
 
-        <div class="space-y-3">
+        <!-- Accordion de Compras em Tempo Real (Senior v19) -->
+        <div v-if="faturasExpandidas[fatura.id]" class="border-t border-divi-border/40 pt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
+          <div 
+            v-for="g in gastosDaFatura(fatura.id)" 
+            :key="g.id"
+            class="flex justify-between items-center py-2 px-3 bg-slate-950/20 border border-divi-border/30 rounded-xl text-xs"
+          >
+            <div>
+              <span class="font-bold text-divi-t1 block leading-tight">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
+              <span class="text-[9px] text-divi-t3 mt-0.5 block">Pago por {{ getMembroNome(g.compradorId) }}</span>
+            </div>
+            <span class="font-black text-divi-t1 shrink-0">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</span>
+          </div>
+          <div v-if="gastosDaFatura(fatura.id).length === 0" class="text-center py-3 text-[10px] text-divi-t3">
+            Nenhuma compra registrada nesta fatura.
+          </div>
+        </div>
+
+        <div class="space-y-3 border-t border-divi-border/30 pt-3.5">
           <div v-for="membro in membros" :key="membro.id" class="flex flex-col border-b border-divi-border/40 pb-2.5 mb-2.5 last:border-0 last:pb-0 last:mb-0">
-            <div class="flex justify-between items-center text-sm">
-              <span class="font-bold text-divi-t2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-divi-t2 flex items-center gap-1">
                 {{ membro.nome }} 
-                <span v-if="membro.id === fatura.responsavelId" class="text-[9px] text-divi-primary font-black uppercase ml-1 bg-divi-primary-dim px-1.5 py-0.5 rounded-md">Dono</span>:
+                <span v-if="membro.id === fatura.responsavelId" class="text-[8.5px] text-divi-primary font-black uppercase bg-divi-primary-dim px-1 py-0.5 rounded-md border border-indigo-500/10">Dono</span>:
               </span>
               <span class="font-extrabold text-divi-t1">
                 Pendente: R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
               </span>
             </div>
-            <div class="flex justify-between items-center text-[11px] text-divi-t3 mt-1 pl-2">
+            <div class="flex justify-between items-center text-[10px] text-divi-t3 mt-1 pl-2">
               <span>Consumo: R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}</span>
               <span v-if="getAdiantamento(fatura.id, membro.id) > 0" class="text-divi-emerald font-bold">
                 Adiantado: - R$ {{ formatarDinheiro(getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
               </span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel de Parcelas Futuras (A Vencer) (Senior v19) -->
+    <div v-if="totalFuturasVencer > 0" class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl"></div>
+      <div class="flex justify-between items-center cursor-pointer select-none" @click="showParcelasFuturas = !showParcelasFuturas">
+        <div class="flex items-center gap-2">
+          <TrendingUp class="w-4 h-4 text-amber-400 shrink-0" />
+          <div>
+            <h3 class="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+              ⏳ Parcelas Futuras
+            </h3>
+            <p class="text-[10px] text-divi-t3 mt-0.5 leading-normal">
+              Projeção de cobranças nos meses subsequentes
+            </p>
+          </div>
+        </div>
+        <span class="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1 shrink-0">
+          R$ {{ totalFuturasVencer.toFixed(2).replace('.', ',') }}
+          <ChevronDown v-if="!showParcelasFuturas" class="w-3.5 h-3.5" />
+          <ChevronUp v-else class="w-3.5 h-3.5" />
+        </span>
+      </div>
+
+      <!-- Accordion de Parcelas Detalhadas -->
+      <div v-if="showParcelasFuturas" class="border-t border-divi-border/40 pt-4 mt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
+        <div 
+          v-for="p in parcelasFuturasDetalhadas" 
+          :key="p.id"
+          class="flex justify-between items-center py-2.5 px-3.5 bg-slate-950/20 border border-divi-border/30 rounded-2xl text-xs"
+        >
+          <div>
+            <span class="font-bold text-divi-t1 block leading-tight">{{ p.descricao }}</span>
+            <span class="text-[9px] text-divi-t3 mt-0.5 block">Faltam {{ p.restantes }}x de R$ {{ p.valorParcela.toFixed(2).replace('.', ',') }} ({{ p.responsavel }})</span>
+          </div>
+          <span class="font-black text-amber-400 shrink-0">R$ {{ p.totalFuturo.toFixed(2).replace('.', ',') }}</span>
         </div>
       </div>
     </div>
@@ -663,6 +803,16 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
     <!-- Histórico de Faturas Acertadas (Gap 5) -->
     <div class="mt-8">
       <HistoricoFaturas :membros="props.membros" />
+    </div>
+
+    <!-- Feed de Lançamentos Recentes (Senior v19) -->
+    <div class="mt-8">
+      <ActivityFeed 
+        :gastos="globalGastos"
+        :membros="props.membros"
+        :is-month-locked="isMonthLocked"
+        @desfazerGasto="excluirGasto"
+      />
     </div>
 
     <!-- Modal de Fechamento de Fatura com Dono Variável (Gap 6) -->
@@ -705,7 +855,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
           <input 
             type="text" 
             v-model="nomeNovoPeriodo" 
-            class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm" 
+            class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm focus:border-divi-primary" 
             placeholder="Ex: Junho 2026"
           />
         </div>
@@ -716,5 +866,17 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
         </div>
       </div>
     </div>
+
+    <!-- Modal de Netting Otimizado (Senior v19) -->
+    <ModalAcertoCompensacao 
+      :visible="showModalNetting"
+      :from-id="nettingTarget?.from"
+      :to-id="nettingTarget?.to"
+      :from-name="getMembroNome(nettingTarget?.from)"
+      :to-name="getMembroNome(nettingTarget?.to)"
+      :suggested-value="nettingTarget?.val || 0"
+      @cancel="showModalNetting = false"
+      @confirm="confirmarBaixaNetting"
+    />
   </div>
 </template>
