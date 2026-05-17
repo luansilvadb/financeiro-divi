@@ -36,7 +36,7 @@ const obterNomeMembro = (id?: string) => {
 </script>
 
 <template>
-  <Card class="p-8 shadow-subtle bg-card rounded-cards">
+  <Card class="p-4 md:p-8 shadow-subtle bg-card rounded-cards">
     <div class="flex justify-between items-center mb-6">
       <div class="space-y-1">
         <p class="text-[10px] text-ash font-bold uppercase tracking-widest">Resumo do Checklist</p>
@@ -44,7 +44,7 @@ const obterNomeMembro = (id?: string) => {
           <span class="text-ember font-bold">{{ pagasCount }}</span> de {{ contasFixas.length }} contas quitadas
         </p>
       </div>
-      <div class="w-10 h-10 rounded-full bg-ember/5 flex items-center justify-center">
+      <div class="w-10 h-10 rounded-full bg-ember/5 flex items-center justify-center shrink-0">
         <Info class="w-5 h-5 text-ember" />
       </div>
     </div>
@@ -69,7 +69,7 @@ const obterNomeMembro = (id?: string) => {
         </svg>
         <div class="space-y-1">
           <p class="text-xs font-bold text-charcoal uppercase tracking-wider">Nenhuma conta agendada</p>
-          <p class="text-[11px] text-ash max-w-[240px] mx-auto leading-normal">
+          <p class="text-[11px] text-ash max-w-[240px] mx-auto leading-normal px-4">
             Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes rápidos.
           </p>
         </div>
@@ -80,34 +80,36 @@ const obterNomeMembro = (id?: string) => {
         <div 
           v-for="bill in contasFixas" 
           :key="bill.id" 
-          class="group flex items-center justify-between p-4 rounded-xl border transition-all duration-300"
+          class="group flex items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl border transition-all duration-300"
           :class="verificarPaga(bill) ? 'bg-meadow/5 border-meadow/20' : 'bg-[#fbfaf9] border-stone-surface hover:border-ember/30'"
         >
-          <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="w-10 h-10 rounded-lg bg-card border border-stone-surface flex items-center justify-center text-xl shadow-subtle">
-              {{ bill.icon }}
-            </div>
-            <div class="min-w-0 flex-1">
-              <span class="font-bold text-sm block text-charcoal truncate">{{ bill.name }}</span>
-              <div v-if="verificarPaga(bill)" class="flex items-center gap-1 mt-1">
-                <Check class="w-3 h-3 text-meadow" />
-                <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
-                  R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} • {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
-                </span>
-              </div>
-              <span v-else class="text-[10px] text-ash flex items-center gap-1 mt-1 font-semibold">
-                ⏳ Aguardando Talão
-              </span>
-            </div>
+          <!-- Ícone -->
+          <div class="w-10 h-10 shrink-0 rounded-lg bg-card border border-stone-surface flex items-center justify-center text-xl shadow-subtle">
+            {{ bill.icon }}
           </div>
 
-          <div class="flex items-center gap-2 shrink-0 ml-4">
+          <!-- Nome + Status (cresce e trunca) -->
+          <div class="min-w-0 flex-1">
+            <span class="font-bold text-sm block text-charcoal truncate">{{ bill.name }}</span>
+            <div v-if="verificarPaga(bill)" class="flex items-center gap-1 mt-1">
+              <Check class="w-3 h-3 text-meadow shrink-0" />
+              <span class="text-[10px] text-meadow font-bold uppercase tracking-wider truncate">
+                R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} • {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
+              </span>
+            </div>
+            <span v-else class="text-[10px] text-ash flex items-center gap-1 mt-1 font-semibold">
+              ⏳ Aguardando Talão
+            </span>
+          </div>
+
+          <!-- Ações (nunca encolhem) -->
+          <div class="flex items-center gap-2 shrink-0">
             <Button 
               v-if="!verificarPaga(bill)" 
               @click="$emit('lancar', bill)" 
               variant="primary"
               size="sm"
-              class="h-8 px-3 text-[10px]"
+              class="h-8 px-3 text-[10px] whitespace-nowrap"
               :disabled="isMonthLocked"
             >
               Lançar
@@ -116,7 +118,7 @@ const obterNomeMembro = (id?: string) => {
               variant="secondary" 
               size="icon"
               @click="$emit('configurar', bill)" 
-              class="w-8 h-8 rounded-lg border border-stone-surface"
+              class="w-8 h-8 shrink-0 rounded-lg border border-stone-surface"
             >
               <Settings class="w-4 h-4 text-ash" />
             </Button>

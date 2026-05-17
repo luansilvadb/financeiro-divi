@@ -44,9 +44,9 @@ const handleSalvarTransacao = async () => {
 
 <template>
   <div class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
-    <div class="max-w-[1200px] mx-auto px-6 py-16 md:py-24 relative">
+    <div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-16 pb-28 relative">
       <!-- Header Lúdico e Centralizado -->
-      <header class="mb-20 space-y-8 relative">
+      <header class="mb-8 md:mb-10 space-y-4 md:space-y-8 relative">
         <!-- Mascote Ilustrado 1: Ember Orange (Esquerda) -->
         <div class="absolute -left-20 top-2 hidden xl:block">
           <svg viewBox="0 0 100 100" class="w-16 h-16 animate-bounce" style="animation-duration: 4s;">
@@ -72,12 +72,12 @@ const handleSalvarTransacao = async () => {
         </div>
 
         <div class="flex justify-between items-start">
-          <div class="space-y-4">
+          <div class="space-y-2 md:space-y-4">
             <SectionLabel>Finanças Residenciais</SectionLabel>
-            <h1 class="text-display font-display leading-[1.09] tracking-[-2.11px] text-charcoal">
+            <h1 class="text-4xl md:text-display font-display leading-[1.09] tracking-[-1.5px] md:tracking-[-2.11px] text-charcoal">
               DIVI<span class="text-ember">.</span>
             </h1>
-            <p class="text-body text-graphite max-w-[480px] leading-[1.47] tracking-[-0.2px]">
+            <p class="text-sm md:text-body text-graphite max-w-[480px] leading-[1.47] tracking-[-0.2px]">
               Gestão inteligente e minimalista para quem compartilha a vida.
             </p>
           </div>
