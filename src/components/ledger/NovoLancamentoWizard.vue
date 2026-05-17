@@ -2,6 +2,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../modules/ledger/composables/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
+import Card from '../ui/Card.vue'
+import Button from '../ui/Button.vue'
+import SectionLabel from '../ui/SectionLabel.vue'
+import { 
+  Wallet, 
+  CreditCard, 
+  Handshake, 
+  Plus, 
+  Minus, 
+  Check,
+  Zap
+} from 'lucide-vue-next'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -79,16 +91,11 @@ const handleNext = () => {
 }
 
 const infoParcelamento = computed(() => {
-  if (installments.value <= 1) return 'À vista (Sem parcelamento)'
+  if (installments.value <= 1) return 'À vista'
   const valReais = Number(valor.value) || 0
   const parcela = (valReais / installments.value).toFixed(2).replace('.', ',')
-  return `Serão ${installments.value}x de R$ ${parcela}. (Apenas a 1ª parcela de R$ ${parcela} entra nos acertos de hoje)`
+  return `${installments.value}x de R$ ${parcela}`
 })
-
-const getMembroNome = (id: string | null) => {
-  if (!id) return ''
-  return props.membros.find(m => m.id === id)?.nome || id
-}
 
 // Atalhos de divisão rápida
 const dividirComTodos = () => {
@@ -109,17 +116,9 @@ const toggleSplitMember = (id: string) => {
   }
 }
 
-// Resumo cognitivo para segurança do morador
-const cognitiveSummary = computed(() => {
-  const mPago = getMembroNome(compradorSelecionadoId.value)
-  const mMetodo = wizPayment.value === 'pix' ? 'Pix/Dinheiro' : `Cartão (${getMembroNome(wizCardOwner.value)})`
-  const parts = participantesDivisao.value.map(id => getMembroNome(id)).join(', ')
-  return `Você está salvando: R$ ${(valor.value || 0).toFixed(2).replace('.', ',')} de "${descricao.value || 'gasto'}" pago por ${mPago} no ${mMetodo}, dividido com: ${parts || 'ninguém'}.`
-})
-
 const splitSummaryTitle = computed(() => {
   const count = participantesDivisao.value.length
-  return `Dividido igualmente entre ${count} ${count === 1 ? 'pessoa' : 'pessoas'}`
+  return `Rateio entre ${count} ${count === 1 ? 'pessoa' : 'pessoas'}`
 })
 
 const splitSummaryDesc = computed(() => {
@@ -137,260 +136,244 @@ const handleGravar = async () => {
 </script>
 
 <template>
-  <div class="acrylic-card rounded-f-md p-6 text-fluent-text-p1 flex flex-col min-h-[500px] relative">
-    
-    <!-- Barra de Progresso Slim (Step Dots do Windows 11) -->
-    <div class="flex items-center justify-between mb-6 px-1">
-      <div class="flex-1 flex gap-1">
-        <div 
-          v-for="s in totalSteps" 
-          :key="s"
-          :class="[
-            'h-1 rounded-full transition-all duration-350 ease-fluent-ease',
-            s <= step 
-              ? 'w-5 bg-fluent-accent' 
-              : 'w-1 bg-black/10'
-          ]"
-        ></div>
-      </div>
-      <span class="text-[9px] font-bold text-fluent-accent px-2 tracking-wider uppercase">Passo {{ step }}/5</span>
-    </div>
-
-    <!-- Conteúdo do Passo Ativo -->
-    <div class="flex-1 flex flex-col justify-center">
-      
-      <!-- Passo 1: Escolha do Fluxo/Canal de Pagamento -->
-      <div v-if="step === 1" class="space-y-4">
-        <h2 class="text-base font-bold text-fluent-text-p1 text-center tracking-tight leading-snug">Como você pagou ou fez o lançamento?</h2>
-        <div class="flex flex-col gap-2">
-          <!-- Pix / Dinheiro -->
-          <button 
-            @click="selecionarFluxo('expense', 'pix', null)"
-            class="flex items-center gap-3 bg-white/40 hover:bg-white/80 border border-black/5 hover:border-fluent-accent/25 rounded-f-md p-3 text-left transition-all active:scale-[0.98] duration-200"
-          >
-            <span class="text-2xl">💵</span>
-            <div>
-              <strong class="block text-xs text-fluent-text-p1 font-bold">Fiz um PIX ou Dinheiro</strong>
-              <span class="text-[9px] text-fluent-text-p2 block mt-0.5">Gasto à vista do caixa da casa</span>
-            </div>
-          </button>
-
-          <!-- Cartões Dinâmicos -->
-          <button 
-            v-for="c in cartoes" 
-            :key="c.id"
-            @click="selecionarFluxo('expense', 'card', c.responsavelPadraoId)"
-            class="flex items-center gap-3 bg-white/40 hover:bg-white/80 border border-black/5 hover:border-fluent-accent/25 rounded-f-md p-3 text-left transition-all active:scale-[0.98] duration-200"
-          >
-            <span class="text-2xl">💳</span>
-            <div>
-              <strong class="block text-xs text-fluent-text-p1 font-bold">Passei no {{ c.nome }}</strong>
-              <span class="text-[9px] text-fluent-accent block mt-0.5 font-semibold">Despesa sob fatura de cartão</span>
-            </div>
-          </button>
-
-          <!-- Empréstimo Pessoal -->
-          <button 
-            @click="selecionarFluxo('loan', 'pix', null)"
-            class="flex items-center gap-3 bg-fluent-emerald-dim/40 hover:bg-fluent-emerald-dim/60 border border-fluent-emerald/10 hover:border-fluent-emerald/30 rounded-f-md p-3 text-left transition-all active:scale-[0.98] duration-200"
-          >
-            <span class="text-2xl">🤝</span>
-            <div>
-              <strong class="block text-xs text-fluent-text-p1 font-bold">Fiz um Empréstimo Pessoal</strong>
-              <span class="text-[9px] text-fluent-emerald block mt-0.5 font-semibold">Dinheiro direto para outro morador</span>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Passo 2: Quem pagou / Quem emprestou -->
-      <div v-else-if="step === 2" class="space-y-5">
-        <h2 class="text-base font-bold text-fluent-text-p1 text-center tracking-tight leading-snug">
-          {{ wizFlow === 'loan' ? 'Quem está emprestando o dinheiro?' : 'Quem foi a pessoa que pagou?' }}
-        </h2>
-        <div class="grid grid-cols-3 gap-3">
-          <button 
-            v-for="m in props.membros" 
-            :key="m.id" 
-            @click="compradorSelecionadoId = m.id; next();"
-            class="flex flex-col items-center gap-2 p-3 bg-white/40 hover:bg-white/80 border border-black/5 rounded-f-md transition-all duration-200"
-          >
-            <div class="w-10 h-10 bg-fluent-accent text-white rounded-full flex items-center justify-center font-bold text-base uppercase">
-              {{ m.nome[0] }}
-            </div>
-            <span class="text-[10px] font-bold text-fluent-text-p2">{{ m.nome }}</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Passo 3 (LOAN): Selecionar o Tomador (Borrower) -->
-      <div v-else-if="step === 3 && wizFlow === 'loan'" class="space-y-5">
-        <h2 class="text-base font-bold text-fluent-text-p1 text-center tracking-tight leading-snug">Quem pegou o dinheiro emprestado?</h2>
-        <div class="grid grid-cols-3 gap-3">
-          <button 
-            v-for="m in props.membros.filter(m => m.id !== compradorSelecionadoId)" 
-            :key="m.id" 
-            @click="borrowerId = m.id; next();"
-            class="flex flex-col items-center gap-2 p-3 bg-white/40 hover:bg-white/80 border border-black/5 rounded-f-md transition-all duration-200"
-          >
-            <div class="w-10 h-10 bg-fluent-emerald text-white rounded-full flex items-center justify-center font-bold text-base uppercase">
-              {{ m.nome[0] }}
-            </div>
-            <span class="text-[10px] font-bold text-fluent-text-p2">{{ m.nome }}</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Passo 3 (EXPENSE) ou Passo 4 (LOAN): Valor + Parcelas -->
-      <div v-else-if="(step === 3 && wizFlow === 'expense') || (step === 4 && wizFlow === 'loan')" class="space-y-6">
-        <h2 class="text-base font-bold text-fluent-text-p1 text-center tracking-tight">
-          {{ wizFlow === 'loan' ? 'Qual o valor do empréstimo?' : 'Qual foi o valor total?' }}
-        </h2>
-        <div 
-          class="bg-white/40 border rounded-f-md p-5 text-center transition-all duration-300"
-          :class="[
-            inputShake ? 'animate-shake' : '',
-            showInputWarning && hasValorError ? 'border-fluent-rose/30 bg-fluent-rose-dim/20' : 'border-black/5'
-          ]"
-        >
-          <div class="flex items-baseline justify-center gap-1.5 mb-4">
-            <span class="text-fluent-text-p3 text-xl font-bold">R$</span>
-            <input 
-              v-model.number="valor"
-              type="number"
-              step="0.01"
-              class="w-32 text-3xl font-bold text-fluent-text-p1 bg-transparent text-center focus:outline-none border-b-2 border-dashed border-black/10"
-              :class="showInputWarning && hasValorError ? 'border-fluent-rose/30 text-fluent-rose' : 'focus:border-fluent-accent'"
-              placeholder="0,00"
-              autofocus
-            />
-          </div>
-          
-          <div v-if="showInputWarning && hasValorError" class="text-[10px] text-fluent-rose font-bold mb-3 flex items-center justify-center gap-1">
-            ⚠️ Informe um valor maior que zero
-          </div>
-
-          <!-- Parcelamento -->
-          <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="border-t border-black/5 pt-4 mt-1">
-            <span class="block text-[10px] font-bold text-fluent-text-p3 uppercase tracking-wider mb-2.5">
-              {{ wizFlow === 'loan' ? '🤝 Parcelar devolução?' : '📋 Parcelar no cartão?' }}
-            </span>
-            <div class="flex items-center justify-center gap-3">
-              <button 
-                type="button" 
-                @click="ajustarParcelas(-1)" 
-                class="w-8 h-8 rounded-f-sm border border-black/10 font-bold bg-white text-fluent-text-p1 hover:bg-gray-50 transition-colors"
-              >-</button>
-              <input 
-                v-model.number="installments" 
-                type="number"
-                min="1"
-                class="w-12 text-center font-bold border border-black/10 rounded-f-sm py-1 text-sm bg-white text-fluent-text-p1 focus:outline-none focus:border-fluent-accent"
-              />
-              <button 
-                type="button" 
-                @click="ajustarParcelas(1)" 
-                class="w-8 h-8 rounded-f-sm border border-black/10 font-bold bg-white text-fluent-text-p1 hover:bg-gray-50 transition-colors"
-              >+</button>
-            </div>
-            <span class="block text-[10px] text-fluent-accent mt-3 font-bold">
-              {{ infoParcelamento }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Passo 4 (EXPENSE) ou Passo 5 (LOAN): Nome da Despesa -->
-      <div v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')" class="space-y-5">
-        <h2 class="text-base font-bold text-fluent-text-p1 text-center tracking-tight leading-snug">
-          {{ wizFlow === 'loan' ? 'Escreva um lembrete' : 'Qual a descrição da despesa?' }}
-        </h2>
-        <div class="space-y-4">
-          <input 
-            v-model="descricao"
-            type="text"
-            :placeholder="wizFlow === 'loan' ? 'Ex: Pagar luz dele...' : 'Ex: Supermercado...'"
-            class="w-full p-3 fluent-input text-center text-sm font-bold"
-            autofocus
+  <Card class="p-0 overflow-hidden relative min-h-[600px] flex flex-col bg-card shadow-subtle rounded-cards">
+    <!-- Header / Progress -->
+    <header class="p-8 border-b border-stone-surface bg-[#fbfaf9] relative z-10">
+      <div class="flex justify-between items-center mb-6">
+        <SectionLabel>Lançamento</SectionLabel>
+        <div class="flex gap-1.5">
+          <div 
+            v-for="s in totalSteps" 
+            :key="s"
+            class="h-1 rounded-full transition-all duration-500"
+            :class="[
+              s === step ? 'w-8 bg-ember' : s < step ? 'w-4 bg-ember/40' : 'w-2 bg-stone-surface'
+            ]"
           />
+        </div>
+      </div>
+      
+      <transition 
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 -translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        mode="out-in"
+      >
+        <h2 :key="step" class="text-3xl font-display text-charcoal leading-tight">
+          <template v-if="step === 1">Como você <span class="text-ember">pagou?</span></template>
+          <template v-else-if="step === 2">{{ wizFlow === 'loan' ? 'Quem está' : 'Quem foi que' }} <span class="text-ember">{{ wizFlow === 'loan' ? 'emprestando?' : 'pagou?' }}</span></template>
+          <template v-else-if="step === 3 && wizFlow === 'loan'">Quem pegou <span class="text-ember">emprestado?</span></template>
+          <template v-else-if="(step === 3 && wizFlow === 'expense') || (step === 4 && wizFlow === 'loan')">Qual foi o <span class="text-ember">valor total?</span></template>
+          <template v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')">Qual a <span class="text-ember">descrição?</span></template>
+          <template v-else-if="step === 5 && wizFlow === 'expense'">Com quem <span class="text-ember">dividir?</span></template>
+        </h2>
+      </transition>
+    </header>
 
-          <!-- Quick Sugestions -->
-          <div class="flex justify-center gap-1.5 flex-wrap max-w-xs mx-auto">
+    <!-- Content -->
+    <div class="flex-1 p-8 relative z-10 flex flex-col justify-center bg-card">
+      <transition 
+        enter-active-class="transition duration-500 delay-100 ease-out"
+        enter-from-class="opacity-0 translate-y-4"
+        enter-to-class="opacity-100 translate-y-0"
+        mode="out-in"
+      >
+        <div :key="step" class="w-full">
+          <!-- Passo 1: Escolha do Fluxo -->
+          <div v-if="step === 1" class="space-y-3">
             <button 
-              v-for="chip in quickChips" 
-              :key="chip"
-              type="button"
-              @click="selecionarChip(chip)"
-              class="text-[10px] font-bold bg-white/40 hover:bg-white/80 text-fluent-text-p2 py-1.5 px-3 rounded-f-sm transition-all border border-black/5"
+              @click="selecionarFluxo('expense', 'pix', null)"
+              class="group w-full flex items-center gap-4 p-5 rounded-xl border border-stone-surface bg-[#fbfaf9] hover:border-ember/30 hover:bg-white transition-all duration-300 text-left"
             >
-              {{ chip }}
+              <div class="w-12 h-12 rounded-xl bg-ember/5 text-ember flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Wallet class="w-6 h-6" />
+              </div>
+              <div>
+                <strong class="block text-base font-bold text-charcoal">PIX ou Dinheiro</strong>
+                <span class="text-xs text-ash uppercase tracking-wider font-semibold">Gasto à vista do caixa</span>
+              </div>
+            </button>
+
+            <button 
+              v-for="c in cartoes" 
+              :key="c.id"
+              @click="selecionarFluxo('expense', 'card', c.responsavelPadraoId)"
+              class="group w-full flex items-center gap-4 p-5 rounded-xl border border-stone-surface bg-[#fbfaf9] hover:border-ember/30 hover:bg-white transition-all duration-300 text-left"
+            >
+              <div class="w-12 h-12 rounded-xl bg-sky/5 text-sky flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <CreditCard class="w-6 h-6" />
+              </div>
+              <div>
+                <strong class="block text-base font-bold text-charcoal">Cartão {{ c.nome }}</strong>
+                <span class="text-xs text-sky uppercase tracking-wider font-bold">Despesa sob fatura</span>
+              </div>
+            </button>
+
+            <button 
+              @click="selecionarFluxo('loan', 'pix', null)"
+              class="group w-full flex items-center gap-4 p-5 rounded-xl border border-stone-surface bg-[#fbfaf9] hover:border-ember/30 hover:bg-white transition-all duration-300 text-left"
+            >
+              <div class="w-12 h-12 rounded-xl bg-meadow/5 text-meadow flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Handshake class="w-6 h-6" />
+              </div>
+              <div>
+                <strong class="block text-base font-bold text-charcoal">Empréstimo Pessoal</strong>
+                <span class="text-xs text-ash uppercase tracking-wider font-semibold">Direto entre moradores</span>
+              </div>
             </button>
           </div>
-        </div>
-      </div>
 
-      <!-- Passo 5 (EXPENSE): Divisão Rateio -->
-      <div v-else-if="step === 5 && wizFlow === 'expense'" class="space-y-5">
-        <h2 class="text-base font-bold text-fluent-text-p1 text-center tracking-tight">Com quem dividir?</h2>
-        
-        <div class="flex justify-center gap-4 mb-1">
-          <button type="button" @click="dividirComTodos" class="text-[10px] font-bold text-fluent-accent underline">👥 Todos</button>
-          <button type="button" @click="dividirApenasEu" class="text-[10px] font-bold text-fluent-rose underline">👤 Apenas Eu</button>
-        </div>
+          <!-- Passo 2 & 3 (Membros) -->
+          <div v-else-if="step === 2 || (step === 3 && wizFlow === 'loan')" class="grid grid-cols-2 gap-4">
+            <button 
+              v-for="m in (step === 3 ? props.membros.filter(m => m.id !== compradorSelecionadoId) : props.membros)" 
+              :key="m.id" 
+              @click="step === 2 ? (compradorSelecionadoId = m.id, next()) : (borrowerId = m.id, next())"
+              class="group relative flex flex-col items-center gap-4 p-8 rounded-xl border border-stone-surface bg-[#fbfaf9] hover:border-ember/30 hover:bg-white transition-all duration-300"
+            >
+              <div class="w-16 h-16 rounded-full bg-stone flex items-center justify-center font-display text-2xl text-charcoal group-hover:bg-ember group-hover:text-white transition-all duration-300">
+                {{ m.nome[0] }}
+              </div>
+              <span class="font-bold text-xs tracking-widest uppercase text-charcoal">{{ m.nome }}</span>
+            </button>
+          </div>
 
-        <div class="grid grid-cols-3 gap-2">
-          <button 
-            v-for="m in props.membros" 
-            :key="m.id" 
-            @click="toggleSplitMember(m.id)"
-            class="relative flex flex-col items-center gap-2 p-3 border rounded-f-md transition-all"
-            :class="[participantesDivisao.includes(m.id) ? 'border-fluent-accent/40 bg-fluent-tint-blue' : 'border-black/5 bg-white/20']"
-          >
-            <div class="w-8 h-8 bg-fluent-accent text-white rounded-full flex items-center justify-center font-bold text-xs">
-              {{ m.nome[0] }}
+          <!-- Passo Valor -->
+          <div v-else-if="isValorStep" class="space-y-10">
+            <div 
+              class="relative transition-all duration-300"
+              :class="[inputShake && 'animate-shake']"
+            >
+              <div class="flex items-center justify-center gap-4">
+                <span class="text-4xl font-display text-ash opacity-30">R$</span>
+                <input 
+                  v-model.number="valor"
+                  type="number"
+                  step="0.01"
+                  class="w-full max-w-[200px] text-6xl font-display text-center bg-transparent outline-none text-charcoal border-b-4 border-stone focus:border-ember transition-colors"
+                  placeholder="0,00"
+                  autofocus
+                />
+              </div>
+              <p v-if="showInputWarning && hasValorError" class="text-center text-coral-red font-bold text-xs mt-4 uppercase tracking-widest">
+                ⚠️ Valor inválido
+              </p>
             </div>
-            <span class="text-[9px] font-bold text-fluent-text-p2">{{ m.nome }}</span>
-            <span class="absolute top-1 right-1 text-[10px]">
-              {{ participantesDivisao.includes(m.id) ? '✓' : '' }}
-            </span>
-          </button>
-        </div>
 
-        <div class="bg-fluent-tint-blue border border-fluent-accent/10 rounded-f-sm p-3 text-[9px] font-medium text-fluent-text-p2 leading-normal">
-          {{ cognitiveSummary }}
-        </div>
+            <!-- Parcelamento -->
+            <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="max-w-xs mx-auto p-6 rounded-xl bg-stone-surface/50 border border-stone-surface space-y-4">
+              <label class="block text-[10px] font-bold uppercase text-ash tracking-widest text-center">Parcelamento</label>
+              <div class="flex items-center justify-between">
+                <Button variant="secondary" size="icon" @click="ajustarParcelas(-1)" class="rounded-full h-10 w-10 border border-stone-surface">
+                  <Minus class="w-4 h-4 text-graphite" />
+                </Button>
+                <div class="text-center">
+                  <span class="text-2xl font-display text-charcoal">{{ installments }}x</span>
+                </div>
+                <Button variant="secondary" size="icon" @click="ajustarParcelas(1)" class="rounded-full h-10 w-10 border border-stone-surface">
+                  <Plus class="w-4 h-4 text-graphite" />
+                </Button>
+              </div>
+              <p class="text-center text-[10px] text-ember font-bold uppercase tracking-widest">
+                {{ infoParcelamento }}
+              </p>
+            </div>
+          </div>
 
-        <div class="bg-fluent-emerald-dim/40 border border-fluent-emerald/15 rounded-f-sm p-3 flex items-center gap-3 shadow-sm">
-          <span class="text-2xl">📊</span>
-          <div class="text-left leading-snug">
-            <strong class="block text-fluent-emerald text-[11px] font-bold">{{ splitSummaryTitle }}</strong>
-            <span class="text-[10px] text-fluent-emerald font-semibold">{{ splitSummaryDesc }}</span>
+          <!-- Passo Descrição -->
+          <div v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')" class="space-y-8">
+            <input 
+              v-model="descricao"
+              type="text"
+              class="w-full text-3xl font-display text-center bg-transparent border-b-2 border-stone focus:border-ember outline-none py-4 text-charcoal"
+              placeholder="Descreva aqui..."
+              autofocus
+            />
+            <div class="flex justify-center gap-2 flex-wrap">
+              <button 
+                v-for="chip in quickChips" 
+                :key="chip"
+                @click="selecionarChip(chip)"
+                class="px-4 py-2 rounded-full border border-stone-surface bg-[#fbfaf9] hover:border-ember/30 hover:text-ember text-xs font-bold transition-all duration-200 text-charcoal"
+              >
+                {{ chip }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Passo Divisão -->
+          <div v-else-if="step === 5 && wizFlow === 'expense'" class="space-y-6">
+            <div class="flex justify-center gap-6">
+              <button @click="dividirComTodos" class="text-[10px] font-bold uppercase tracking-widest text-ember hover:underline">Todos</button>
+              <button @click="dividirApenasEu" class="text-[10px] font-bold uppercase tracking-widest text-coral-red hover:underline">Apenas Eu</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <button 
+                v-for="m in props.membros" 
+                :key="m.id" 
+                @click="toggleSplitMember(m.id)"
+                class="relative flex flex-col items-center gap-3 p-4 rounded-xl border transition-all duration-300"
+                :class="[participantesDivisao.includes(m.id) ? 'border-ember bg-ember/5 text-ember' : 'border-stone-surface bg-[#fbfaf9] text-ash']"
+              >
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-display text-sm" :class="[participantesDivisao.includes(m.id) ? 'bg-ember text-white' : 'bg-stone']">
+                  {{ m.nome[0] }}
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider">{{ m.nome }}</span>
+                <div v-if="participantesDivisao.includes(m.id)" class="absolute top-1 right-1">
+                  <Check class="w-3 h-3 text-ember" />
+                </div>
+              </button>
+            </div>
+
+            <div class="p-5 rounded-xl bg-meadow/5 border border-meadow/20 flex gap-4 items-center">
+              <!-- Mascote Ilustrado: Moedinha Feliz Meadow Green -->
+              <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0 animate-bounce" style="animation-duration: 5s;">
+                <circle cx="50" cy="50" r="40" fill="var(--color-meadow-green)" />
+                <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="3" />
+                <!-- Olhinhos Felizes -->
+                <circle cx="40" cy="45" r="4.5" fill="#000" />
+                <circle cx="60" cy="45" r="4.5" fill="#000" />
+                <!-- Sorriso -->
+                <path d="M42,56 Q50,64 58,56" stroke="#000" stroke-width="3.5" stroke-linecap="round" fill="none" />
+                <!-- Brilho Estrela -->
+                <path d="M78,22 L80,26 L85,27 L81,31 L82,36 L78,33 L74,36 L75,31 L71,27 L76,26 Z" fill="var(--color-sunburst-yellow)" />
+              </svg>
+              <div class="space-y-1 min-w-0">
+                <p class="text-[10px] font-bold text-meadow uppercase tracking-widest">{{ splitSummaryTitle }}</p>
+                <p class="text-xs font-semibold text-meadow leading-relaxed">{{ splitSummaryDesc }}</p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
+      </transition>
     </div>
 
-    <!-- Rodapé de Ações Clássico do Windows (Botão Primário no Lado Direito) -->
-    <div class="border-t border-black/5 pt-4 mt-6 flex justify-end gap-2.5">
-      <button 
-        type="button" 
+    <!-- Footer -->
+    <footer class="p-8 border-t border-stone-surface bg-[#fbfaf9] relative z-10 flex gap-4">
+      <Button 
+        variant="secondary" 
+        class="flex-1 h-14 rounded-full border border-stone-surface" 
         @click="step === 1 ? emit('cancelar') : prev()"
-        class="px-4 py-2 bg-white/60 hover:bg-white text-fluent-text-p1 border border-black/10 text-xs font-semibold rounded-f-sm transition-all shadow-sm flex-1"
       >
         {{ step === 1 ? 'Cancelar' : 'Voltar' }}
-      </button>
-
-      <button 
-        type="button" 
+      </Button>
+      <Button 
+        variant="primary" 
+        class="flex-[2] h-14 rounded-full text-lg"
         :disabled="!canAdvance && !isValorStep"
         @click="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? handleGravar() : handleNext()"
-        class="px-4 py-2 bg-fluent-accent hover:bg-fluent-accent-hover text-white text-xs font-semibold rounded-f-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm flex-1"
       >
-        {{ ((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? 'Confirmar' : 'Avançar' }}
-      </button>
-    </div>
-  </div>
+        <template v-if="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5))">
+          Confirmar
+          <Zap class="ml-2 w-5 h-5 fill-current" />
+        </template>
+        <template v-else>
+          Avançar
+        </template>
+      </Button>
+    </footer>
+  </Card>
 </template>
 
 <style scoped>
@@ -402,5 +385,16 @@ const handleGravar = async () => {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
   20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-surface);
+  border-radius: 9999px;
 }
 </style>
