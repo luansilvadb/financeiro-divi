@@ -21,44 +21,44 @@ const handleAdicionar = async () => {
 <template>
   <div class="max-w-md mx-auto space-y-6">
     <div class="flex items-center gap-4 mb-2">
-      <button @click="emit('voltar')" class="p-2 hover:bg-gray-200 rounded-full transition-colors">
-        <ArrowLeft class="w-6 h-6 text-gray-600" />
+      <button @click="emit('voltar')" class="p-2 bg-divi-s2 border border-divi-border hover:bg-divi-s3 rounded-full text-divi-t1 transition-colors">
+        <ArrowLeft class="w-6 h-6 text-divi-t1" />
       </button>
-      <h2 class="text-2xl font-black text-gray-800">⚙️ Configurações</h2>
+      <h2 class="text-2xl font-black text-divi-t1">⚙️ Configurações</h2>
     </div>
 
     <!-- Abas (Tabs) -->
-    <div class="flex border-b border-gray-200">
+    <div class="flex border-b border-divi-border bg-divi-s1/20 p-1 rounded-2xl gap-1">
       <button 
         @click="activeTab = 'membros'"
-        :class="['flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-all', activeTab === 'membros' ? 'border-blue-900 text-blue-900' : 'border-transparent text-gray-400 hover:text-gray-600']"
+        :class="['flex-1 py-3 text-sm font-black text-center rounded-xl transition-all', activeTab === 'membros' ? 'bg-divi-primary text-white shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1']"
       >
         👥 Moradores
       </button>
       <button 
         @click="activeTab = 'cartoes'"
-        :class="['flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-all', activeTab === 'cartoes' ? 'border-blue-900 text-blue-900' : 'border-transparent text-gray-400 hover:text-gray-600']"
+        :class="['flex-1 py-3 text-sm font-black text-center rounded-xl transition-all', activeTab === 'cartoes' ? 'bg-divi-primary text-white shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1']"
       >
-        💳 Cartões de Crédito
+        💳 Cartões
       </button>
     </div>
 
     <!-- Conteúdo Aba 1: Moradores -->
     <div v-if="activeTab === 'membros'" class="space-y-6">
       <!-- Adicionar Novo -->
-      <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Adicionar Novo Morador</h3>
+      <div class="glass-card rounded-3xl p-6 border border-divi-border shadow-lg space-y-4">
+        <h3 class="text-xs font-bold text-divi-t2 uppercase tracking-wider mb-2">Adicionar Novo Morador</h3>
         <div class="flex gap-2">
           <input 
             v-model="novoNome"
             type="text" 
             placeholder="Nome do morador"
-            class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            class="flex-1 px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1"
             @keyup.enter="handleAdicionar"
           />
           <button 
             @click="handleAdicionar"
-            class="bg-blue-900 text-white p-2 rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50"
+            class="bg-blue-900 bg-divi-primary hover:bg-indigo-500 border border-indigo-400/25 text-white p-3 rounded-2xl shadow-[0_0_16px_var(--primary-glow)] disabled:shadow-none transition-all disabled:opacity-50 disabled:bg-divi-s1 disabled:border-divi-border"
             :disabled="!novoNome.trim()"
           >
             <UserPlus class="w-6 h-6" />
@@ -67,23 +67,23 @@ const handleAdicionar = async () => {
       </div>
 
       <!-- Lista de Membros -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="divide-y divide-gray-50">
+      <div class="glass-card rounded-3xl border border-divi-border overflow-hidden shadow-md">
+        <div class="divide-y divide-divi-border">
           <div 
             v-for="membro in membros" 
             :key="membro.id"
-            class="p-4 flex justify-between items-center"
+            class="p-4 flex justify-between items-center hover:bg-divi-s1/20 transition-colors duration-150"
             :class="{ 'opacity-50 grayscale': !membro.ativo }"
           >
             <div>
-              <span class="font-bold text-gray-800">{{ membro.nome }}</span>
-              <span v-if="!membro.ativo" class="ml-2 text-xs text-gray-400 italic">(Desativado)</span>
+              <span class="font-bold text-divi-t1">{{ membro.nome }}</span>
+              <span v-if="!membro.ativo" class="ml-2 text-xs text-divi-t3 italic">(Desativado)</span>
             </div>
             
             <button 
               v-if="membro.ativo"
               @click="desativarMembro(membro.id)"
-              class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              class="text-red-400 p-2.5 text-divi-rose bg-divi-rose-dim/12 hover:bg-divi-rose-dim/20 border border-divi-rose/20 rounded-xl transition-all shadow-sm"
               title="Desativar morador"
             >
               <UserMinus class="w-5 h-5" />

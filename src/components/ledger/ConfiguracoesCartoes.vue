@@ -27,29 +27,29 @@ const adicionarCard = async () => {
 
 <template>
   <div class="space-y-6">
-    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">➕ Novo Cartão</h4>
+    <div class="glass-card p-5 rounded-3xl border border-divi-border shadow-lg space-y-4">
+      <h4 class="text-xs font-black uppercase tracking-wider text-divi-t2 mb-1">➕ Novo Cartão</h4>
       <div class="space-y-3">
         <input 
           v-model="nome" 
           type="text" 
           placeholder="Nome do Cartão (ex: Nubank)" 
-          class="w-full p-2.5 border rounded-lg text-sm bg-white" 
+          class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm" 
         />
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Dia Fechamento (1 a 28)</label>
+          <div class="space-y-1">
+            <label class="text-[10px] uppercase font-bold text-divi-t2 block">Dia Fechamento (1 a 28)</label>
             <input 
               v-model.number="diaFechamento" 
               type="number" 
               min="1" 
               max="28" 
-              class="w-full p-2.5 border rounded-lg text-sm bg-white" 
+              class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm" 
             />
           </div>
-          <div>
-            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Dono/Responsável</label>
-            <select v-model="responsavelId" class="w-full p-2.5 border rounded-lg text-sm bg-white">
+          <div class="space-y-1">
+            <label class="text-[10px] uppercase font-bold text-divi-t2 block">Dono/Responsável</label>
+            <select v-model="responsavelId" class="w-full px-4 py-3 rounded-2xl glass-input outline-none font-bold text-divi-t1 text-sm bg-divi-bg appearance-none border border-divi-border">
               <option value="" disabled>Escolha...</option>
               <option v-for="m in ativos" :key="m.id" :value="m.id">{{ m.nome }}</option>
             </select>
@@ -57,7 +57,7 @@ const adicionarCard = async () => {
         </div>
         <button 
           @click="adicionarCard" 
-          class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-slate-700 transition-colors shadow-sm"
+          class="w-full bg-divi-primary hover:bg-indigo-500 border border-indigo-400/25 text-white font-bold py-3.5 rounded-2xl text-xs shadow-[0_0_16px_var(--primary-glow)] transition-all"
         >
           Cadastrar Cartão
         </button>
@@ -65,21 +65,21 @@ const adicionarCard = async () => {
     </div>
 
     <div class="space-y-3">
-      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">💳 Cartões Cadastrados</h4>
+      <h4 class="text-xs font-black uppercase tracking-wider text-divi-t2">💳 Cartões Cadastrados</h4>
       <div 
         v-for="c in cartoes" 
         :key="c.id" 
-        class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm"
+        class="flex justify-between items-center bg-divi-s1/50 p-4 rounded-2xl border border-divi-border shadow-sm hover:bg-divi-s1/70 transition-colors duration-150"
       >
         <div>
-          <span class="font-bold text-slate-800 block">{{ c.nome }}</span>
-          <span class="text-xs text-slate-500">
+          <span class="font-bold text-divi-t1 block">{{ c.nome }}</span>
+          <span class="text-xs text-divi-t2">
             Fechamento dia: {{ c.diaFechamento }} • Responsável: {{ ativos.find(m => m.id === c.responsavelPadraoId)?.nome || 'Outro' }}
           </span>
         </div>
         <button 
           @click="excluirCartaoManual(c.id)" 
-          class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+          class="text-divi-rose bg-divi-rose-dim/12 hover:bg-divi-rose-dim/20 border border-divi-rose/20 text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
         >
           Excluir
         </button>
