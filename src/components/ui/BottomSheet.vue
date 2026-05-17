@@ -3,11 +3,11 @@
   <Transition name="slide-up">
     <div
       v-if="modelValue"
-      class="fixed inset-0 z-50 pointer-events-none flex justify-center items-end p-0 md:pb-8"
+      class="fixed inset-0 z-50 pointer-events-none flex justify-center items-end p-0"
     >
       <div
-        class="pointer-events-auto flex flex-col bg-card border-t md:border border-stone-surface shadow-2xl transition-all duration-300 text-graphite
-               rounded-t-cardsLarge md:rounded-cards max-h-[90dvh] w-full"
+        class="pointer-events-auto flex flex-col bg-card border-t border-x border-stone-surface shadow-2xl transition-all duration-300 text-graphite
+               rounded-t-cardsLarge md:rounded-t-cards rounded-b-none max-h-[90dvh] w-full"
         :class="widthClass"
         :style="{ maxHeight }"
         @touchstart="onTouchStart"
