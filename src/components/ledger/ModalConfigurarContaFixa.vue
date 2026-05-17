@@ -64,7 +64,7 @@ const salvar = () => {
           <input 
             v-model="name" 
             type="text" 
-            class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
+            class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
           />
         </div>
 
@@ -76,8 +76,8 @@ const salvar = () => {
               v-for="e in ['🔑','💡','💧','🌐','🐶','🔥','🛒','🍔','🚗','💊']" 
               :key="e"
               @click="icon = e"
-              class="text-2xl p-2.5 rounded-xl border transition-all duration-150"
-              :class="icon === e ? 'bg-midnight text-white scale-105 shadow-sm border border-stone-surface' : 'bg-card hover:bg-canvas border border-stone-surface text-charcoal'"
+              class="text-2xl w-12 h-12 flex items-center justify-center rounded-xl border transition-all duration-200"
+              :class="icon === e ? 'bg-ember/10 border-ember scale-110 shadow-sm' : 'bg-[#fbfaf9] border-stone hover:border-ember/30 hover:bg-white'"
             >
               {{ e }}
             </button>
@@ -91,7 +91,7 @@ const salvar = () => {
             v-model.number="fixedValue" 
             type="number" 
             step="0.01" 
-            class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
+            class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
             placeholder="Ex: 150,00" 
           />
         </div>
@@ -105,7 +105,7 @@ const salvar = () => {
               :key="m.id"
               @click="toggleSplit(m.id)"
               class="px-4 py-2.5 rounded-xl border font-bold text-xs transition-all duration-200"
-              :class="defaultSplit.includes(m.id) ? 'bg-midnight text-white font-bold border border-stone-surface shadow-sm' : 'bg-card hover:bg-canvas border border-stone-surface text-charcoal'"
+              :class="defaultSplit.includes(m.id) ? 'bg-midnight text-white font-bold border border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface border border-stone-surface text-charcoal'"
             >
               {{ m.nome }}
             </button>
@@ -116,12 +116,12 @@ const salvar = () => {
           <button 
             v-if="bill?.id" 
             @click="$emit('delete', bill.id)" 
-            class="px-4 py-3 text-xs font-bold bg-coral-red/10 hover:bg-coral-red/20 text-coral-red border border-transparent rounded-xl transition-all"
+            class="px-4 py-3 text-xs font-bold bg-[#fff0f0] hover:bg-[#ffe5e5] text-coral-red border border-transparent rounded-xl transition-all"
           >
             🗑️ Excluir
           </button>
           <div class="flex gap-2 ml-auto">
-            <button @click="$emit('cancel')" class="px-5 py-3 text-xs font-bold bg-canvas hover:bg-stone-surface text-graphite border border-stone-surface rounded-xl transition-all">
+            <button @click="$emit('cancel')" class="px-5 py-3 text-xs font-bold bg-[#f2f0ed] hover:bg-[#eae7e2] text-graphite border border-stone-surface rounded-xl transition-all">
               Cancelar
             </button>
             <button 
