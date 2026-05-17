@@ -432,7 +432,7 @@ const excluirGasto = async (id: string) => {
             class="group flex justify-between items-center p-4 rounded-xl border border-stone bg-[#fbfaf9] hover:border-ember/30 hover:bg-white transition-all duration-300"
           >
             <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-stone flex items-center justify-center font-display text-lg text-charcoal group-hover:bg-ember group-hover:text-white transition-all">
+              <div class="w-12 h-12 rounded-full bg-[#FBF0EC] flex items-center justify-center font-display text-lg text-ember group-hover:bg-ember group-hover:text-white transition-all">
                 {{ m.nome[0] }}
               </div>
               <div>
