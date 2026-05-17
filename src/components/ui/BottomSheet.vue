@@ -184,7 +184,7 @@ const onMouseDown = (e: MouseEvent) => {
   transition: transform 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.12);
 }
 .slide-up-leave-active {
-  transition: transform 0.4s cubic-bezier(0.36, 0.66, 0.04, 1);
+  transition: transform 0.45s cubic-bezier(0.6, -0.28, 0.735, 0.045);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
