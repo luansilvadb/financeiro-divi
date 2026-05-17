@@ -5,19 +5,18 @@ import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ActivityFeed from './components/ledger/ActivityFeed.vue'
 import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
 import { Plus, X, Settings } from 'lucide-vue-next'
-import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from './modules/ledger/core/domain/Transacao'
+import { useTransacoes } from './modules/ledger/composables/useTransacoes'
 import { useMembros } from './modules/ledger/composables/useMembros'
+import { useStorageSync } from './modules/ledger/composables/useStorageSync'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
-const repository = new LocalStorageTransacaoRepository()
-const transacoes = ref<Transacao[]>([])
+const { transacoes, carregar: carregarTransacoes, salvar: salvarTransacao } = useTransacoes()
 const { ativos, membros: todosMembros, carregar: carregarMembros } = useMembros()
 
-const carregarTransacoes = async () => {
-  transacoes.value = await repository.listarTodas()
-}
+// Ativa o listener global de sincronização multi-aba
+useStorageSync()
 
 const saldos = computed(() => {
   return CalculadoraSaldos.calcular(transacoes.value)
@@ -31,8 +30,7 @@ onMounted(async () => {
 })
 
 const handleSalvarTransacao = async (t: Transacao) => {
-  await repository.salvar(t)
-  await carregarTransacoes()
+  await salvarTransacao(t)
   currentView.value = 'dashboard'
 }
 </script>
