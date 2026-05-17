@@ -6,7 +6,7 @@ export interface GastoProps {
   faturaId: string
   descricao: string
   valorTotal: Dinheiro
-  divisoes: DivisaoDeGasto[]
+  divisoes: ReadonlyArray<DivisaoDeGasto>
 }
 
 export class Gasto {
@@ -14,9 +14,13 @@ export class Gasto {
   public readonly faturaId: string
   public readonly descricao: string
   public readonly valorTotal: Dinheiro
-  public readonly divisoes: DivisaoDeGasto[]
+  public readonly divisoes: ReadonlyArray<DivisaoDeGasto>
 
   constructor(props: GastoProps) {
+    if (props.divisoes.length === 0) {
+      throw new Error('Um gasto deve ter pelo menos uma divisão')
+    }
+
     const soma = props.divisoes.reduce((acc, d) => acc.somar(d.valor), Dinheiro.deCentavos(0))
     if (!soma.equals(props.valorTotal)) {
       throw new Error('A soma das divisões deve ser igual ao valor total do gasto')
