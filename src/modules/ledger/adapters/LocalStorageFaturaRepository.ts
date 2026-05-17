@@ -1,5 +1,6 @@
 import type { IFaturaRepository } from '../core/ports/IFaturaRepository'
-import { Fatura, FaturaPeriodo } from '../core/domain/Fatura'
+import { Fatura } from '../core/domain/Fatura'
+import type { FaturaPeriodo } from '../core/domain/Fatura'
 import { StorageLock } from '../../../shared/utils/StorageLock'
 
 export class LocalStorageFaturaRepository implements IFaturaRepository {
