@@ -1,4 +1,4 @@
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { Membro } from '../core/domain/Membro'
 import { LocalStorageMembroRepository } from '../adapters/LocalStorageMembroRepository'
 
@@ -47,11 +47,10 @@ export function useMembros() {
     }
   }
 
-  onMounted(async () => {
-    if (!carregado.value) {
-      await carregar()
-    }
-  })
+  // Garantir carregamento inicial lazy
+  if (!carregado.value) {
+    carregar()
+  }
 
   return {
     membros,
