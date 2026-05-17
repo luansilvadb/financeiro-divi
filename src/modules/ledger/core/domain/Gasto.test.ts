@@ -4,10 +4,11 @@ import { Dinheiro } from '../../../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from './DivisaoDeGasto'
 
 describe('Gasto', () => {
-  it('deve criar um gasto com divisoes validas', () => {
+  it('deve criar um gasto com compradorId e divisoes validas', () => {
     const total = Dinheiro.deCentavos(10000)
     const divisoes = [new DivisaoDeGasto('m1', Dinheiro.deCentavos(10000))]
-    const gasto = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, divisoes })
+    const gasto = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, compradorId: 'm1', divisoes })
+    expect(gasto.compradorId).toBe('m1')
     expect(gasto.valorTotal.centavos).toBe(10000)
   })
 
@@ -16,7 +17,7 @@ describe('Gasto', () => {
     const divisoes = [new DivisaoDeGasto('m1', Dinheiro.deCentavos(5000))]
     
     expect(() => {
-      new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, divisoes })
+      new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, compradorId: 'm1', divisoes })
     }).toThrow('A soma das divisões deve ser igual ao valor total do gasto')
   })
 
@@ -25,7 +26,7 @@ describe('Gasto', () => {
     const divisoes: DivisaoDeGasto[] = []
     
     expect(() => {
-      new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, divisoes })
+      new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, compradorId: 'm1', divisoes })
     }).toThrow('Um gasto deve ter pelo menos uma divisão')
   })
 })
