@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
+import { Fatura } from '../../modules/ledger/core/domain/Fatura'
+import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
+import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
+import ContasFixasPanel from './ContasFixasPanel.vue'
+import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
+import ModalConfigurarContaFixa from './ModalConfigurarContaFixa.vue'
 import RevisaoFatura from './dashboard/RevisaoFatura.vue'
 import HistoricoFaturas from './dashboard/HistoricoFaturas.vue'
 import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
@@ -216,6 +222,173 @@ const todosOsAcertosQuitados = (faturaId: string) => {
   const acertos = acertosDaFatura(faturaId)
   return acertos.length > 0 && acertos.every(a => a.pago)
 }
+
+// --- INTEGRAÇÃO SENIOR V18 (FASES 2-5) ---
+const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
+const { isMonthLocked, setMonthLocked, processarRolloverParcelas, gerarTransacoesNettingSaldoInicial } = useFaturaRollover()
+
+// Modais Contas Fixas
+const showPopupLancar = ref(false)
+const showModalConfigCF = ref(false)
+const billSelecionada = ref<any | null>(null)
+
+const abrirLancarBill = (bill: any) => {
+  billSelecionada.value = bill
+  showPopupLancar.value = true
+}
+
+const abrirConfigurarBill = (bill: any) => {
+  billSelecionada.value = bill
+  showModalConfigCF.value = true
+}
+
+const abrirNovoBill = () => {
+  billSelecionada.value = null
+  showModalConfigCF.value = true
+}
+
+const confirmarLancarBill = async (dados: { valorReal: number, compradorId: string, splitIds: string[] }) => {
+  const activeFaturaId = props.faturasAbertas[0]?.id
+  if (!activeFaturaId) return
+  await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
+  showPopupLancar.value = false
+  await useCartoesEFaturas().inicializar()
+}
+
+const confirmarSalvarTemplate = (template: any) => {
+  salvarContaFixa(template)
+  showModalConfigCF.value = false
+}
+
+const confirmarDeletarTemplate = (id: string) => {
+  excluirContaFixa(id)
+  showModalConfigCF.value = false
+}
+
+// Lógica de Rollover
+const showModalNovoPeriodo = ref(false)
+const nomeNovoPeriodo = ref('')
+
+const sugerirProximoPeriodo = () => {
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  const fat = props.faturasAbertas[0]
+  if (!fat) return ''
+  const mIdx = fat.periodo.mes - 1 // 0-indexed
+  const proximoMIdx = (mIdx + 1) % 12
+  const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
+  return `${meses[proximoMIdx]} ${proximoAno}`
+}
+
+const abrirNovoPeriodoModal = () => {
+  nomeNovoPeriodo.value = sugerirProximoPeriodo()
+  showModalNovoPeriodo.value = true
+}
+
+const obterSaldosFatura = (faturaId: string) => {
+  const fGastos = gastosDaFatura(faturaId)
+  const saldos: Record<string, number> = {}
+  
+  props.membros.forEach(m => {
+    // Total pago pelo membro (Payments)
+    const totalPago = fGastos
+      .filter(g => g.compradorId === m.id)
+      .reduce((sum, g) => sum + g.valorTotal.centavos, 0)
+      
+    // Total consumido pelo membro (Consumption)
+    const totalConsumido = fGastos.reduce((sum, g) => {
+      const div = g.divisoes.find(d => d.membroId === m.id)
+      return sum + (div ? div.valor.centavos : 0)
+    }, 0)
+    
+    saldos[m.id] = (totalPago - totalConsumido) / 100
+  })
+  
+  return saldos
+}
+
+const confirmarNovoPeriodo = async () => {
+  if (!nomeNovoPeriodo.value.trim()) return
+  
+  await executarNovoPeriodo(nomeNovoPeriodo.value)
+  showModalNovoPeriodo.value = false
+}
+
+const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
+  const fAbertas = props.faturasAbertas
+  if (fAbertas.length === 0) return
+
+  // 1. Calcula saldos do período anterior antes de fechar faturas
+  const saldosAcumulados: Record<string, number> = {}
+  props.membros.forEach(m => { saldosAcumulados[m.id] = 0 })
+
+  fAbertas.forEach(f => {
+    const saldosFatura = obterSaldosFatura(f.id)
+    for (const mId in saldosFatura) {
+      saldosAcumulados[mId] += saldosFatura[mId]
+    }
+  })
+
+  // 2. Fecha as faturas atuais
+  for (const f of fAbertas) {
+    await fecharFaturaManual(f.id)
+  }
+
+  // 3. Cria faturas no novo período
+  const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  const mesNum = meses.indexOf(mesStr) + 1 || new Date().getMonth() + 1
+  const anoNum = parseInt(anoStr) || new Date().getFullYear()
+
+  const novasFaturas: any[] = []
+  const { LocalStorageFaturaRepository } = await import('../../modules/ledger/adapters/LocalStorageFaturaRepository')
+  const fRepo = new LocalStorageFaturaRepository()
+
+  for (const card of props.cartoes) {
+    const novaFatura = new Fatura({
+      id: crypto.randomUUID(),
+      cartaoId: card.id,
+      periodo: { mes: mesNum, ano: anoNum },
+      responsavelId: card.responsavelPadraoId,
+      status: 'ABERTA'
+    })
+    await fRepo.salvar(novaFatura)
+    novasFaturas.push(novaFatura)
+  }
+
+  const novaFaturaIdPrincipal = novasFaturas[0]?.id
+
+  if (novaFaturaIdPrincipal) {
+    // 4. Decrementa parcelas
+    const todosGastosAnteriores: Gasto[] = []
+    for (const f of fAbertas) {
+      todosGastosAnteriores.push(...gastosDaFatura(f.id))
+    }
+
+    const gastosParceladosNovos = processarRolloverParcelas(novaFaturaIdPrincipal, todosGastosAnteriores)
+    const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
+    const gRepo = new LocalStorageGastoRepository()
+
+    for (const g of gastosParceladosNovos) {
+      await gRepo.salvar(g)
+    }
+
+    // 5. Netting de saldos e transporte
+    const transacoesCarryover = gerarTransacoesNettingSaldoInicial(
+      novaFaturaIdPrincipal, 
+      `${fAbertas[0]?.periodo.mes}/${fAbertas[0]?.periodo.ano}`, 
+      saldosAcumulados
+    )
+    for (const g of transacoesCarryover) {
+      await gRepo.salvar(g)
+    }
+  }
+
+  // 6. Destranca
+  setMonthLocked(false)
+
+  // 7. Recarrega dados reativos
+  await useCartoesEFaturas().inicializar()
+}
 </script>
 
 <template>
@@ -229,6 +402,36 @@ const todosOsAcertosQuitados = (faturaId: string) => {
   />
 
   <div v-else class="max-w-md mx-auto space-y-6">
+    <!-- BARRA DE TRANCAMENTO SENIOR V18 -->
+    <div 
+      class="border rounded-2xl p-4 flex justify-between items-center text-xs transition-all duration-200"
+      :class="isMonthLocked ? 'bg-amber-950/20 border-amber-800 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-300'"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-base">{{ isMonthLocked ? '🔒' : '🔓' }}</span>
+        <div>
+          <span class="font-extrabold block text-white">{{ isMonthLocked ? 'Período Trancado' : 'Período Aberto' }}</span>
+          <span class="text-[10px] text-text-muted mt-0.5">
+            {{ isMonthLocked ? 'Edições e lançamentos congelados. Inicie um novo período.' : 'Lançamentos e ajustes permitidos.' }}
+          </span>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button 
+          v-if="isMonthLocked"
+          @click="abrirNovoPeriodoModal"
+          class="bg-accent-yellow hover:bg-yellow-400 text-green-950 px-3 py-2 rounded-xl font-black shadow-sm transition-all"
+        >
+          🚀 Novo Período
+        </button>
+        <button 
+          @click="setMonthLocked(!isMonthLocked)"
+          class="bg-white-06 hover:bg-white-12 text-white border border-white-08 px-3 py-2 rounded-xl font-bold transition-all"
+        >
+          {{ isMonthLocked ? 'Destrancar' : 'Trancar Mês' }}
+        </button>
+      </div>
+    </div>
     <!-- Seção 1: Faturas Fechadas (Fluxos de Revisão ou Acertos Ativos) -->
     <div v-for="fatura in faturasFechadas" :key="fatura.id" class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-xl text-white overflow-hidden relative">
       <!-- Glow Decorativo superior -->
@@ -376,7 +579,13 @@ const todosOsAcertosQuitados = (faturaId: string) => {
             <span class="font-extrabold text-slate-800 text-base">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
             <span class="text-xs text-slate-500 font-bold mt-0.5">Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
           </div>
-          <button @click="abrirFecharFatura(fatura.id)" class="text-xs font-black bg-slate-900 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-colors">Fechar Fatura</button>
+          <button 
+            @click="abrirFecharFatura(fatura.id)" 
+            class="text-xs font-black bg-slate-900 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            :disabled="isMonthLocked"
+          >
+            Fechar Fatura
+          </button>
         </div>
 
         <div class="space-y-3">
@@ -401,6 +610,17 @@ const todosOsAcertosQuitados = (faturaId: string) => {
       </div>
     </div>
 
+    <!-- Checklist de Contas Fixas Recorrentes (Fase 2) -->
+    <ContasFixasPanel 
+      :contasFixas="contasFixas"
+      :gastos="globalGastos"
+      :membros="props.membros"
+      :isMonthLocked="isMonthLocked"
+      @lancar="abrirLancarBill"
+      @configurar="abrirConfigurarBill"
+      @novo="abrirNovoBill"
+    />
+
     <!-- Histórico de Faturas Acertadas (Gap 5) -->
     <div class="mt-8">
       <HistoricoFaturas :membros="props.membros" />
@@ -414,5 +634,48 @@ const todosOsAcertosQuitados = (faturaId: string) => {
       @close="showModalFechar = false"
       @confirmar="confirmarFechamentoFatura"
     />
+
+    <!-- Modais do Checklist (Fase 2) -->
+    <PopupLancarContaFixa 
+      :visible="showPopupLancar"
+      :bill="billSelecionada"
+      :membros="props.membros"
+      @confirm="confirmarLancarBill"
+      @cancel="showPopupLancar = false"
+    />
+
+    <ModalConfigurarContaFixa 
+      :visible="showModalConfigCF"
+      :bill="billSelecionada"
+      :membros="props.membros"
+      @save="confirmarSalvarTemplate"
+      @delete="confirmarDeletarTemplate"
+      @cancel="showModalConfigCF = false"
+    />
+
+    <!-- Modal Novo Período (Fase 3) -->
+    <div v-if="showModalNovoPeriodo" class="fixed inset-0 bg-black-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div class="bg-panel-dark border border-white-08 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative text-white">
+        <h3 class="text-xl font-black mb-4">🚀 Iniciar Novo Período</h3>
+        <p class="text-xs text-text-muted mb-4">
+          Isso trancará o mês anterior permanentemente, calculará o netting dos saldos e os transportará como saldo inicial para o novo período.
+        </p>
+        
+        <div class="mb-6">
+          <label class="block text-xs font-black uppercase text-text-muted mb-2">Nome do Novo Período</label>
+          <input 
+            type="text" 
+            v-model="nomeNovoPeriodo" 
+            class="w-full bg-panel-light border border-white-05 p-3 rounded-xl text-white outline-none focus:border-primary font-bold" 
+            placeholder="Ex: Junho 2026"
+          />
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button @click="showModalNovoPeriodo = false" class="px-4 py-2 text-xs font-bold bg-white-06 hover:bg-white-12 rounded-xl transition-all">Cancelar</button>
+          <button @click="confirmarNovoPeriodo" class="px-4 py-2 text-xs font-black bg-accent-yellow hover:bg-yellow-400 text-green-950 rounded-xl transition-all" :disabled="!nomeNovoPeriodo.trim()">Confirmar e Girar</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
