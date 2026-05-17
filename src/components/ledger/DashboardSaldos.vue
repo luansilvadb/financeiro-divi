@@ -29,8 +29,6 @@ import {
   ChevronDown, 
   ChevronUp, 
   Sparkles, 
-  Lock, 
-  Unlock,
   CreditCard,
   History,
   Activity
@@ -386,13 +384,6 @@ const excluirGasto = async (id: string) => {
         : 'border-stone-surface text-graphite'"
     >
       <div class="flex items-center gap-4">
-        <div 
-          class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-          :class="isMonthLocked ? 'bg-ember text-white' : 'bg-stone-surface border border-stone-surface text-ash'"
-        >
-          <Lock v-if="isMonthLocked" class="w-4 h-4" />
-          <Unlock v-else class="w-4 h-4" />
-        </div>
         <div>
           <span class="font-bold block text-sm leading-tight text-charcoal">{{ isMonthLocked ? 'Período Trancado' : 'Período Aberto' }}</span>
           <span class="text-[11px] text-ash block mt-0.5 leading-normal">
