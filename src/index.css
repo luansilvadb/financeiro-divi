@@ -4,30 +4,19 @@
 
 @layer base {
   :root {
-    /* Fundo matizado do Windows 11 (Mica-like tint) */
     --fluent-bg: linear-gradient(135deg, #F3F6FA 0%, #E8F0F8 100%);
-    
-    /* Superfícies Acrílicas (Translucidez e Saturação Suaves) */
     --fluent-card-bg: rgba(255, 255, 255, 0.65);
     --fluent-card-hover: rgba(255, 255, 255, 0.80);
-    
-    /* Outlines e Bordas de Destaque */
     --fluent-border: rgba(0, 0, 0, 0.08);
-    --fluent-border-hi: rgba(255, 255, 255, 0.55); /* Highlight superior para efeito plástico */
-    
-    /* Cores de Marca / Fluent Blue */
+    --fluent-border-hi: rgba(255, 255, 255, 0.55);
     --fluent-accent: #0078D4;
     --fluent-accent-hover: #106EBE;
     --fluent-accent-active: #005A9E;
     --fluent-tint-blue: rgba(0, 120, 212, 0.06);
-    
-    /* Status Semânticos */
-    --fluent-emerald: #107C41; /* Verde clássico Office/Excel */
+    --fluent-emerald: #107C41;
     --fluent-emerald-dim: rgba(16, 124, 65, 0.08);
     --fluent-rose: #A80000;
     --fluent-rose-dim: rgba(168, 0, 0, 0.06);
-    
-    /* Hierarquia Tipográfica (Baseada em Segoe UI / Selawik) */
     --fluent-text-p1: #201F1E;
     --fluent-text-p2: #605E5C;
     --fluent-text-p3: #A19F9D;
@@ -38,51 +27,33 @@
     color: var(--fluent-text-p1);
     font-family: 'Segoe UI', 'Inter', -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
     min-height: 100vh;
   }
 }
 
 @layer utilities {
-  /* Cartão Acrílico Oficial (Fluent Acrylic Material) */
   .acrylic-card {
     background: var(--fluent-card-bg);
     border: 1px solid var(--fluent-border);
     backdrop-filter: blur(30px) saturate(135%);
     -webkit-backdrop-filter: blur(30px) saturate(135%);
-    box-shadow: 
-      0 2px 4px rgba(0, 0, 0, 0.04), 
-      inset 0 1px 0 var(--fluent-border-hi);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 var(--fluent-border-hi);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .acrylic-card:hover {
     background: var(--fluent-card-hover);
-    box-shadow: 
-      0 8px 16px rgba(0, 0, 0, 0.08), 
-      inset 0 1px 0 var(--fluent-border-hi);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--fluent-border-hi);
   }
-
-  /* Input Acrílico com Sublinhado Ativo */
   .fluent-input {
     background: rgba(255, 255, 255, 0.5);
     border: 1px solid var(--fluent-border);
     border-bottom: 2px solid var(--fluent-border);
-    color: var(--fluent-text-p1);
-    font-size: 14px;
     border-radius: 4px;
     transition: all 0.15s ease-out;
   }
-
   .fluent-input:focus {
     background: rgba(255, 255, 255, 0.95);
     border-bottom-color: var(--fluent-accent);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
     outline: none;
-  }
-
-  /* Efeito de Gradiente de Destaque */
-  .fluent-accent-glow {
-    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25);
   }
 }

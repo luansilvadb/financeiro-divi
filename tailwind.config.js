@@ -25,12 +25,12 @@ export default {
         'fluent-tint-blue': 'var(--fluent-tint-blue)',
       },
       borderRadius: {
-        'f-sm': '4px',    // Para inputs, pequenos botões e badges
-        'f-md': '8px',    // Para cartões e botões normais (Corner do Fluent 2)
-        'f-lg': '12px',   // Para modais e envelopes maiores
+        'f-sm': '4px',
+        'f-md': '8px',
+        'f-lg': '12px',
       },
       transitionTimingFunction: {
-        'fluent-ease': 'cubic-bezier(0.16, 1, 0.3, 1)', // Easing característico do Windows 11
+        'fluent-ease': 'cubic-bezier(0.16, 1, 0.3, 1)',
       }
     },
   },
