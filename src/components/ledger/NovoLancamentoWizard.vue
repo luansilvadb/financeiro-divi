@@ -4,6 +4,7 @@ import { useNovoLancamentoWizard } from '../../modules/ledger/composables/useNov
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import WizardProgressBar from './WizardProgressBar.vue'
 import WizardFooter from './WizardFooter.vue'
+import PassoDivisaoOpcional from './wizard/PassoDivisaoOpcional.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -20,10 +21,14 @@ const {
   tipo,
   valor,
   descricao,
-  compradorSelecionadoId, // <- NOVO
+  compradorSelecionadoId,
   cartaoSelecionadoId,
   adiantamentoRemetenteId,
   adiantamentoCartaoId,
+  querDividirAgora,
+  participantesDivisao,
+  modoDivisaoWizard,
+  valoresDivisaoWizard,
   canAdvance,
   next,
   prev,
@@ -184,6 +189,19 @@ const finalizar = async () => {
             class="w-full p-5 text-lg border-2 border-blue-100/50 rounded-2xl focus:border-blue-200 focus:outline-none bg-white/50 text-center placeholder:text-blue-300 text-blue-600"
           />
         </div>
+      </div>
+
+      <!-- Passo 5: Divisao Opcional (Gap 3) -->
+      <div v-else-if="step === 5" key="gasto-step5">
+        <PassoDivisaoOpcional 
+          :membros="props.membros"
+          :valor-total="valor"
+          :comprador-id="compradorSelecionadoId"
+          v-model:quer-dividir="querDividirAgora"
+          v-model:participantes="participantesDivisao"
+          v-model:modo="modoDivisaoWizard"
+          v-model:valores="valoresDivisaoWizard"
+        />
       </div>
     </div>
 

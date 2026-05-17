@@ -16,7 +16,6 @@ const cartaoRepo = new LocalStorageCartaoRepository()
 
 export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[] = []) {
   const step = ref(1)
-  const totalSteps = computed(() => 4)
   const tipo = ref<'GASTO' | 'ADIANTAMENTO'>('GASTO')
 
   // Campos do Gasto
@@ -24,6 +23,17 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
   const valor = ref(0)
   const descricao = ref('')
   const compradorSelecionadoId = ref('') // <- NOVO
+
+  // Campos de Divisão Imediata Opcional (Gap 3)
+  const querDividirAgora = ref(false)
+  const participantesDivisao = ref<string[]>([])
+  const modoDivisaoWizard = ref<'IGUAL' | 'MANUAL'>('IGUAL')
+  const valoresDivisaoWizard = ref<Record<string, number>>({})
+
+  const totalSteps = computed(() => {
+    if (tipo.value === 'GASTO' && querDividirAgora.value) return 5
+    return 4
+  })
 
   // Retrocompatibilidade para templates / testes
   const beneficiarios_selecionados = computed(() => 
@@ -43,6 +53,14 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
       if (step.value === 2) return !!cartaoSelecionadoId.value
       if (step.value === 3) return !!compradorSelecionadoId.value
       if (step.value === 4) return valor.value > 0 && descricao.value.length > 0
+      if (step.value === 5) {
+        if (modoDivisaoWizard.value === 'IGUAL') {
+          return participantesDivisao.value.length > 0
+        } else {
+          const soma = participantesDivisao.value.reduce((acc, id) => acc + (valoresDivisaoWizard.value[id] || 0), 0)
+          return Math.abs(soma - valor.value) < 0.01
+        }
+      }
     } else {
       if (step.value === 2) return !!adiantamentoRemetenteId.value
       if (step.value === 3) return !!adiantamentoCartaoId.value
@@ -66,6 +84,10 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     descricao.value = ''
     compradorSelecionadoId.value = ''
     adiantamentoRemetenteId.value = ''
+    querDividirAgora.value = false
+    participantesDivisao.value = []
+    modoDivisaoWizard.value = 'IGUAL'
+    valoresDivisaoWizard.value = {}
     localStorage.removeItem(STORAGE_KEY)
   }
 
@@ -127,7 +149,18 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
 
     const total = Dinheiro.deReais(Number(valor.value))
-    const divisoes = [new DivisaoDeGasto(compradorSelecionadoId.value, total)] // 100% comprador temporariamente
+    let divisoes: DivisaoDeGasto[] = []
+
+    if (querDividirAgora.value && participantesDivisao.value.length > 0) {
+      if (modoDivisaoWizard.value === 'IGUAL') {
+        const partes = total.distribuir(participantesDivisao.value.length)
+        divisoes = participantesDivisao.value.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
+      } else {
+        divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deReais(valoresDivisaoWizard.value[id] || 0)))
+      }
+    } else {
+      divisoes = [new DivisaoDeGasto(compradorSelecionadoId.value, total)]
+    }
 
     const todasFaturas = await faturaRepo.listarTodas()
     const fatura = todasFaturas.find(f => f.cartaoId === cartaoSelecionadoId.value && f.status === 'ABERTA') 
@@ -177,6 +210,10 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     cartaoSelecionadoId,
     adiantamentoRemetenteId,
     adiantamentoCartaoId,
+    querDividirAgora,
+    participantesDivisao,
+    modoDivisaoWizard,
+    valoresDivisaoWizard,
     canAdvance,
     next,
     prev,
