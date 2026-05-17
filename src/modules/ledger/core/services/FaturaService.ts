@@ -13,11 +13,20 @@ export class FaturaService {
     private acertoRepo: IAcertoMembroRepository
   ) {}
 
-  async fecharFatura(faturaId: string, dataPagamentoBanco?: Date): Promise<void> {
+  async fecharFatura(faturaId: string, responsavelIdOrDate?: string | Date, dataPagamentoBanco?: Date): Promise<void> {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
 
-    fatura.fechar(dataPagamentoBanco)
+    let responsavelId: string | undefined = undefined
+    let dataPagamento: Date | undefined = dataPagamentoBanco
+
+    if (responsavelIdOrDate instanceof Date) {
+      dataPagamento = responsavelIdOrDate
+    } else if (typeof responsavelIdOrDate === 'string') {
+      responsavelId = responsavelIdOrDate
+    }
+
+    fatura.fechar(responsavelId, dataPagamento)
     await this.faturaRepo.salvar(fatura)
   }
 

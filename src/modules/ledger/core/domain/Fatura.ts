@@ -37,7 +37,7 @@ export class Fatura {
   public readonly id: string
   public readonly cartaoId: string
   public readonly periodo: FaturaPeriodo
-  public readonly responsavelId: string
+  private _responsavelId: string
   private _status: FaturaStatus
   private _dataPagamentoBanco?: Date
 
@@ -45,9 +45,13 @@ export class Fatura {
     this.id = props.id
     this.cartaoId = props.cartaoId
     this.periodo = props.periodo
-    this.responsavelId = props.responsavelId
+    this._responsavelId = props.responsavelId
     this._status = props.status
     this._dataPagamentoBanco = props.dataPagamentoBanco
+  }
+
+  get responsavelId(): string {
+    return this._responsavelId
   }
 
   get status(): FaturaStatus {
@@ -64,10 +68,13 @@ export class Fatura {
     }
   }
 
-  fechar(dataPagamentoBanco?: Date) {
+  fechar(responsavelId?: string, dataPagamentoBanco?: Date) {
     if (this._status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
     this._status = 'FECHADA'
     this._dataPagamentoBanco = dataPagamentoBanco
+    if (responsavelId) {
+      this._responsavelId = responsavelId
+    }
   }
 
   marcarComoPagaAoBanco(data: Date = new Date()) {

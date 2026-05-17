@@ -23,6 +23,22 @@ describe('FaturaService', () => {
     expect(acertoRepo.salvar).not.toHaveBeenCalled()
   })
 
+  it('deve fechar a fatura com override de responsavelId', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn() }
+    const antRepo = { buscarPorFatura: vi.fn() }
+    const acertoRepo = { excluirPorFatura: vi.fn(), salvar: vi.fn() }
+
+    const service = new FaturaService(faturaRepo as any, gastoRepo as any, antRepo as any, acertoRepo as any)
+    await service.fecharFatura('f1', 'm2', new Date())
+
+    expect(fatura.status).toBe('FECHADA')
+    expect(fatura.responsavelId).toBe('m2')
+    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+  })
+
   it('deve consolidar os gastos finais e gerar acertos ao confirmar acertos', async () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     const gastos = [
