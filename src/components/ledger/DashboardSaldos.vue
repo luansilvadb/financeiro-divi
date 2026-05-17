@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
+import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -12,6 +13,7 @@ interface Props {
   cartoes: any[]
   calcularConsumo: (faturaId: string, membroId: string) => number
   calcularAdiantamento?: (faturaId: string, membroId: string) => number
+  gastos?: any[]
 }
 
 const props = defineProps<Props>()
@@ -76,7 +78,7 @@ const gastosDaFatura = (faturaId: string) => {
   const list = props.gastos && props.gastos.length > 0
     ? props.gastos
     : globalGastos.value
-  return list.filter(g => g.faturaId === faturaId)
+  return list.filter((g: Gasto) => g.faturaId === faturaId)
 }
 
 // Inicia o painel de divisão interativo

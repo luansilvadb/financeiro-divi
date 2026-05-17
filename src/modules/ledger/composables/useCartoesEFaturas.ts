@@ -11,6 +11,8 @@ import { Fatura } from '../core/domain/Fatura'
 import { AcertoMembro } from '../core/domain/AcertoMembro'
 import { Gasto } from '../core/domain/Gasto'
 import { Antecipacao } from '../core/domain/Antecipacao'
+import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 
 const cartaoRepo = new LocalStorageCartaoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()

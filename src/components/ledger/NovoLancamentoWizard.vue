@@ -21,14 +21,12 @@ const {
   valor,
   descricao,
   compradorSelecionadoId, // <- NOVO
-  beneficiarios_selecionados,
   cartaoSelecionadoId,
   adiantamentoRemetenteId,
   adiantamentoCartaoId,
   canAdvance,
   next,
   prev,
-  toggleBeneficiario,
   finalizarComoGastoCartao,
   finalizarComoAdiantamento
 } = useNovoLancamentoWizard(props.membros)
