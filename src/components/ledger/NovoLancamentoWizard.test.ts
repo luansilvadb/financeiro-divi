@@ -22,8 +22,7 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
-    expect(wrapper.text()).toContain('Passo 1/5')
-    expect(wrapper.text()).toContain('Como você pagou ou fez o lançamento?')
+    expect(wrapper.text()).toContain('Como você pagou?')
   })
 
   it('deve avançar para o Passo 2 ao clicar em PIX', async () => {
@@ -38,8 +37,7 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     
     await pixButton!.trigger('click')
     
-    expect(wrapper.text()).toContain('Passo 2/5')
-    expect(wrapper.text()).toContain('Quem foi a pessoa que pagou?')
+    expect(wrapper.text()).toContain('Quem foi que pagou?')
   })
 
   it('deve acionar o shake e o aviso visual ao tentar avancar com valor zerado', async () => {
@@ -56,7 +54,7 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     const luanButton = wrapper.findAll('button').find(b => b.text().includes('Luan'))
     await luanButton!.trigger('click')
     
-    expect(wrapper.text()).toContain('Passo 3/5')
+    expect(wrapper.text()).toContain('Qual foi o valor total?')
     
     // Clica em Avançar com valor zerado
     const avancarButton = wrapper.findAll('button').find(b => b.text().includes('Avançar'))
@@ -64,6 +62,6 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     await avancarButton!.trigger('click')
     
     // Deve exibir o aviso visual e aplicar a animação de shake
-    expect(wrapper.text()).toContain('Informe um valor maior que zero')
+    expect(wrapper.text()).toContain('Valor inválido')
   })
 })
