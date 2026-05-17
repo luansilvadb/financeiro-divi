@@ -182,6 +182,44 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
+  const atualizarGastoCompletoManual = async (
+    gastoId: string,
+    dados: {
+      descricao: string
+      valorTotal: Dinheiro
+      compradorId: string
+      method: 'pix' | 'card'
+      cardOwner: string | null
+      divisoes: DivisaoDeGasto[]
+      installments: number
+    }
+  ) => {
+    const listGastos = gastos.value
+    const idx = listGastos.findIndex(g => g.id === gastoId)
+    if (idx < 0) return
+
+    const original = listGastos[idx]
+    const novoGasto = new Gasto({
+      id: original.id,
+      faturaId: original.faturaId,
+      descricao: dados.descricao,
+      valorTotal: dados.valorTotal,
+      compradorId: dados.compradorId,
+      divisoes: dados.divisoes,
+      method: dados.method,
+      cardOwner: dados.cardOwner,
+      installments: dados.installments,
+      isLoan: original.isLoan,
+      borrowerId: original.borrowerId,
+      recurringBillId: original.recurringBillId,
+      isSettlement: original.isSettlement,
+      settlementDetails: original.settlementDetails
+    })
+
+    await gastoRepo.salvar(novoGasto)
+    await inicializar()
+  }
+
   const faturasAbertas = computed(() => faturas.value.filter(f => f.status === 'ABERTA'))
   const faturasFechadas = computed(() => faturas.value.filter(f => f.status === 'FECHADA'))
 
@@ -232,6 +270,7 @@ export function useCartoesEFaturas() {
     removerPagamentoBancoManual,
     atualizarGastoDivisoesManual,
     atualizarGastoCompradorManual,
+    atualizarGastoCompletoManual,
     faturasAbertas,
     faturasFechadas,
     calcularConsumoMembro,

@@ -28,7 +28,9 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         borrowerId: g.borrowerId,
         recurringBillId: g.recurringBillId,
         isSettlement: g.isSettlement,
-        settlementDetails: g.settlementDetails
+        settlementDetails: g.settlementDetails,
+        method: g.method,
+        cardOwner: g.cardOwner
       }))
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
     })
@@ -55,7 +57,9 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         borrowerId: g.borrowerId,
         recurringBillId: g.recurringBillId,
         isSettlement: g.isSettlement,
-        settlementDetails: g.settlementDetails
+        settlementDetails: g.settlementDetails,
+        method: g.method,
+        cardOwner: g.cardOwner
       }))
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
     })
@@ -84,7 +88,9 @@ export class LocalStorageGastoRepository implements IGastoRepository {
           borrowerId: g.borrowerId || null,
           recurringBillId: g.recurringBillId || null,
           isSettlement: g.isSettlement || false,
-          settlementDetails: g.settlementDetails || null
+          settlementDetails: g.settlementDetails || null,
+          method: g.method || 'pix',
+          cardOwner: g.cardOwner || null
         })
       })
     } catch (e) {
