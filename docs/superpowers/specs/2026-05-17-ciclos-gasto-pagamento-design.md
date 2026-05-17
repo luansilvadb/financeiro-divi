@@ -63,12 +63,12 @@ Snapshot imutável gerado no momento do fechamento da fatura.
 ## 4. Máquina de Estados e Ciclo de Vida da Fatura
 
 A Fatura é **criada automaticamente** quando o primeiro Gasto ou Antecipação é lançado em um Cartão para um determinado período.
-- **Regra de Período:** O período da Fatura é determinado cruzando a data da transação com o `diaFechamento` do Cartão. Exemplo (Fechamento dia 10): um Gasto em 08/Mai pertence à fatura Abr/Mai (fecha em 10/Mai). Um gasto em 12/Mai pertence à fatura Mai/Jun (fecha em 10/Jun).
+- **Regra de Período:** O período da Fatura é determinado cruzando a data da transação com o `diaFechamento` do Cartão. O dia do fechamento é exclusivo do período anterior (gastos na data exata do fechamento pertencem ao próximo período). Exemplo (Fechamento dia 10): um Gasto em 08/Mai pertence à fatura Abr/Mai (fecha em 10/Mai). Um gasto em 10/Mai ou 12/Mai pertence à fatura Mai/Jun (fecha em 10/Jun).
 
 | Estado | Descrição | Regras |
 | :--- | :--- | :--- |
 | **ABERTA** | Período de acúmulo de gastos. | Permite novos `Gastos` e `Antecipações`. |
-| **FECHADA** | O responsável pagou ao banco. | **Gatilho Manual**. Gera registros de `AcertoMembro`. Bloqueia novos `Gastos`. |
+| **FECHADA** | O responsável pagou ao banco. | **Gatilho Manual**. Gera registros de `AcertoMembro`. Bloqueia novos `Gastos` e `Antecipações`. |
 | **ACERTADA** | Todos os membros e o responsável se quitaram. | **Transição Automática** disparada pelo Serviço de Acerto quando o último `AcertoMembro` da fatura for marcado como `pago: true`. |
 
 ## 5. Regras de Integridade e Auditoria
@@ -79,7 +79,7 @@ A Fatura é **criada automaticamente** quando o primeiro Gasto ou Antecipação 
    - Se `tipo = MEMBRO_PAGA`: O responsável da fatura confirma o recebimento.
    - Se `tipo = RESPONSAVEL_PAGA`: O membro credor confirma o recebimento.
 4. **Fronteira Clara:** `Transacao` (imediata) e `Gasto` (cartão) são entidades distintas para evitar colapso de conceitos e facilitar o cálculo de saldos no Dashboard.
-5. **Validação de Domínio:** A tentativa de lançar ou editar `Gastos` em faturas com status `FECHADA` ou `ACERTADA` deve ser rejeitada pela camada de domínio (Service/Entity), garantindo a integridade dos acertos persistidos.
+5. **Validação de Domínio:** A tentativa de lançar ou editar `Gastos` e `Antecipações` em faturas com status `FECHADA` ou `ACERTADA` deve ser rejeitada pela camada de domínio (Service/Entity), garantindo a integridade dos acertos persistidos.
 6. **Direção do Acerto:** O sistema deve suportar casos onde a antecipação supera o consumo (`tipo: RESPONSAVEL_PAGA`), garantindo que o acerto reflita quem deve para quem.
 
 ## 6. Interface do Usuário (Mudanças)
