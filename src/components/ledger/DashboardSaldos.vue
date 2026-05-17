@@ -428,22 +428,19 @@ const excluirGasto = async (id: string) => {
   />
 
   <div v-else class="max-w-md mx-auto space-y-6">
-    <!-- BARRA DE TRANCAMENTO SENIOR V18 -->
+    <!-- BARRA DE TRANCAMENTO SENIOR V18 (Fluent 2) -->
     <div 
-      class="border rounded-3xl p-4 flex justify-between items-center transition-all duration-300"
+      class="border rounded-f-md p-4 flex justify-between items-center transition-all duration-300"
       :class="isMonthLocked 
-        ? 'bg-divi-amber-dim/10 border-divi-amber/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.06)]' 
-        : 'bg-divi-s1 border-divi-border text-divi-t2'"
+        ? 'bg-fluent-rose-dim/40 border-fluent-rose/10 text-fluent-rose' 
+        : 'bg-white/40 border-black/5 text-fluent-text-p2'"
     >
       <div class="flex items-center gap-3">
-        <div class="p-2 bg-divi-s2 rounded-2xl">
-          <Lock v-if="isMonthLocked" class="w-5 h-5 text-amber-400" />
-          <Unlock v-else class="w-5 h-5 text-divi-primary" />
-        </div>
+        <span class="text-base">{{ isMonthLocked ? '🔒' : '🔓' }}</span>
         <div>
-          <span class="font-extrabold block text-divi-t1">{{ isMonthLocked ? 'Período Trancado' : 'Período Aberto' }}</span>
-          <span class="text-[10px] text-divi-t3 mt-0.5 block leading-normal">
-            {{ isMonthLocked ? 'Lançamentos congelados. Inicie um novo período.' : 'Lançamentos e rateios permitidos.' }}
+          <span class="font-bold block text-fluent-text-p1 text-xs">{{ isMonthLocked ? 'Período Trancado' : 'Período Aberto' }}</span>
+          <span class="text-[10px] text-fluent-text-p2 mt-0.5 block leading-normal">
+            {{ isMonthLocked ? 'Lançamentos congelados pelo administrador.' : 'Lançamentos e rateios liberados.' }}
           </span>
         </div>
       </div>
@@ -451,13 +448,13 @@ const excluirGasto = async (id: string) => {
         <button 
           v-if="isMonthLocked"
           @click="abrirNovoPeriodoModal"
-          class="bg-divi-amber hover:bg-yellow-500 text-slate-950 px-3.5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] flex items-center gap-1.5"
+          class="bg-fluent-accent hover:bg-fluent-accent-hover text-white px-3 py-1.5 rounded-f-sm text-[11px] font-semibold transition-all shadow-sm"
         >
           🚀 Novo Período
         </button>
         <button 
           @click="setMonthLocked(!isMonthLocked)"
-          class="bg-divi-s2 hover:bg-divi-s3 text-divi-t1 border border-divi-border px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all"
+          class="bg-white/70 hover:bg-white text-fluent-text-p1 border border-black/10 px-3 py-1.5 rounded-f-sm text-[11px] font-semibold transition-all shadow-sm"
         >
           {{ isMonthLocked ? 'Destrancar' : 'Trancar Mês' }}
         </button>
@@ -548,41 +545,39 @@ const excluirGasto = async (id: string) => {
       </div>
     </div>
 
-    <!-- Seção 1: Faturas Fechadas (Fluxos de Revisão ou Acertos Ativos) -->
-    <div v-for="fatura in faturasFechadas" :key="fatura.id" class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 overflow-hidden relative">
-      <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
-      
+    <!-- Seção 1: Faturas Fechadas (Estilo Acrílico Fluent 2) -->
+    <div v-for="fatura in faturasFechadas" :key="fatura.id" class="acrylic-card rounded-f-md p-5 space-y-4">
       <!-- Cabeçalho da Fatura -->
-      <div class="flex justify-between items-center border-b border-divi-border pb-4 mb-5">
+      <div class="flex justify-between items-center border-b border-black/5 pb-3">
         <div>
-          <span class="text-xs font-black text-divi-primary uppercase tracking-widest block mb-1">
-            {{ faturaTemAcertosAtivos(fatura.id) ? '⚠️ Faturas Fechadas (Acertos Ativos)' : '🔍 Faturas Fechadas (Em Revisão)' }}
+          <span class="text-[10px] font-bold text-fluent-text-p2 uppercase tracking-wider block mb-0.5">
+            {{ faturaTemAcertosAtivos(fatura.id) ? '⚠️ Fatura Fechada (Acertos)' : '📁 Fatura Fechada (Revisão)' }}
           </span>
-          <span class="font-extrabold text-lg flex items-center gap-2">
-            💳 {{ getCartaoNome(fatura.cartaoId) }} <span class="text-divi-t3 text-xs font-normal">• {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-          </span>
-          <span class="text-[10px] text-divi-t3 block mt-1">
-            Responsável: <strong class="text-divi-t1">{{ getMembroNome(fatura.responsavelId) }}</strong>
+          <span class="font-bold text-xs flex items-center gap-1.5 text-fluent-text-p1">
+            💳 {{ getCartaoNome(fatura.cartaoId) }} <span class="text-fluent-text-p3 text-[10px] font-normal">• {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
           </span>
         </div>
-        <button 
-          @click="emit('reabrirFatura', fatura.id)"
-          class="text-xs font-bold text-divi-t2 hover:text-divi-t1 bg-divi-s2 hover:bg-divi-s3 px-3 py-1.5 rounded-xl transition-all border border-divi-border flex items-center gap-1 shadow-sm"
-        >
-          ↩️ Reabrir
-        </button>
+        <div class="flex items-center gap-2">
+          <span v-if="todosOsAcertosQuitados(fatura.id) && fatura.dataPagamentoBanco" class="text-[9px] font-black text-fluent-emerald bg-fluent-emerald-dim px-2 py-0.5 rounded-f-sm">QUITADA</span>
+          <button 
+            @click="emit('reabrirFatura', fatura.id)"
+            class="text-[10px] font-semibold text-fluent-text-p2 hover:text-fluent-text-p1 bg-white/40 border border-black/5 px-2 py-1 rounded-f-sm transition-all shadow-sm"
+          >
+            Reabrir
+          </button>
+        </div>
       </div>
 
       <!-- SUB-ESTADO A: EM REVISÃO -->
       <div v-if="!faturaTemAcertosAtivos(fatura.id)" class="space-y-4">
-        <div class="bg-divi-primary-glow/10 border border-divi-primary/20 rounded-2xl p-4 text-xs text-indigo-200 leading-relaxed text-center">
+        <div class="bg-fluent-tint-blue border border-fluent-accent/10 rounded-f-sm p-3 text-[11px] text-fluent-text-p2 leading-relaxed text-center">
           🛒 <strong>Fatura Fechada sob Revisão Coletiva</strong><br>
-          <span class="text-divi-t3 block mt-2 text-[10px]">Total Acumulado: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
+          <span class="text-fluent-text-p3 block mt-1 text-[10px]">Total Acumulado: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
         </div>
 
         <button 
           @click="faturaSobRevisao = fatura"
-          class="w-full bg-divi-primary hover:bg-indigo-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-600/20 mt-2 transition-all text-center text-sm flex items-center justify-center gap-2"
+          class="w-full bg-fluent-accent hover:bg-fluent-accent-hover text-white font-bold py-3 rounded-f-md shadow-sm transition-all text-center text-xs flex items-center justify-center gap-2"
         >
           🔍 Revisar Fatura e Ratear
         </button>
@@ -591,129 +586,100 @@ const excluirGasto = async (id: string) => {
       <!-- SUB-ESTADO B: ACERTOS ATIVOS -->
       <div v-else class="space-y-4">
         <!-- Banner de Status de Pagamento ao Banco -->
-        <div v-if="fatura.dataPagamentoBanco" class="bg-divi-emerald-dim border border-emerald-500/20 rounded-2xl p-4 flex justify-between items-center mb-2">
-          <div class="text-xs text-emerald-200 leading-relaxed">
+        <div v-if="fatura.dataPagamentoBanco" class="bg-fluent-emerald-dim border border-fluent-emerald/10 rounded-f-sm p-3 flex justify-between items-center mb-1">
+          <div class="text-[10px] text-fluent-emerald leading-relaxed">
             🏦 <strong>Fatura paga ao banco!</strong> O responsável já pagou a fatura do cartão. Envie seu Pix de reembolso a ele.
           </div>
           <button 
             @click="removerPagamentoBancoManual(fatura.id)"
-            class="text-[9px] font-black text-divi-rose hover:text-rose-300 underline ml-2 whitespace-nowrap animate-pulse"
+            class="text-[9px] font-bold text-fluent-rose hover:underline ml-2 whitespace-nowrap"
           >
             Estornar
           </button>
         </div>
 
-        <div v-else class="bg-divi-amber-dim/20 border border-divi-amber/20 rounded-2xl p-4 space-y-3 mb-2">
-          <div class="text-xs text-amber-200 leading-relaxed">
+        <div v-else class="bg-fluent-rose-dim/40 border border-fluent-rose/10 rounded-f-sm p-3 space-y-3 mb-1">
+          <div class="text-[10px] text-fluent-rose leading-relaxed text-center">
             ⏳ <strong>Aguardando Pagamento ao Banco:</strong> O responsável ainda não pagou a fatura ao banco.
           </div>
           <button 
             @click="registrarPagamentoBancoManual(fatura.id)"
-            class="w-full bg-divi-amber hover:bg-yellow-500 text-slate-950 font-black text-[10px] py-2 rounded-xl transition-all shadow-md shadow-amber-600/10"
+            class="w-full bg-white/80 hover:bg-white text-fluent-text-p1 font-bold text-[10px] py-1.5 rounded-f-sm transition-all border border-black/10 shadow-sm"
           >
-            🏦 Já paguei o banco! (Marcar como Paga ao Banco)
+            🏦 Já paguei o banco!
           </button>
         </div>
 
-        <h4 class="text-xs font-black uppercase text-divi-t3 tracking-wider mb-2">💸 Saldos de Reembolso Pendentes</h4>
+        <h4 class="text-[9px] font-bold uppercase text-fluent-text-p3 tracking-widest mb-1">💸 Reembolsos Pendentes</h4>
 
-        <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="bg-divi-s1 rounded-2xl border border-divi-border p-4 space-y-3">
+        <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="bg-white/30 rounded-f-sm border border-black/5 p-3 space-y-3">
           <div class="flex justify-between items-center">
             <div>
-              <span class="font-extrabold text-sm block text-divi-t1">
-                {{ getMembroNome(acerto.membroId) }} deve para {{ getMembroNome(fatura.responsavelId) }}
+              <span class="font-bold text-xs block text-fluent-text-p1">
+                {{ getMembroNome(acerto.membroId) }} → {{ getMembroNome(fatura.responsavelId) }}
               </span>
-              <span class="text-[10px] text-divi-t3 mt-1 block">
-                Total Acerto: R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}
+              <span class="text-[9px] text-fluent-text-p3 mt-0.5 block">
+                Total: R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}
               </span>
             </div>
             <div class="text-right">
-              <span :class="['font-black text-sm block', acerto.pago ? 'text-divi-emerald text-glow-emerald' : 'text-divi-rose']">
-                {{ acerto.pago ? '✅ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') + ' Restante' }}
+              <span :class="['font-bold text-xs block', acerto.pago ? 'text-fluent-emerald' : 'text-fluent-rose']">
+                {{ acerto.pago ? '✓ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') }}
               </span>
               <button 
                 v-if="!acerto.pago"
                 @click="iniciarPix(acerto)"
-                class="text-[10px] font-black text-divi-primary hover:underline mt-1"
+                class="text-[9px] font-bold text-fluent-accent hover:underline mt-0.5"
               >
                 Registrar Pix
               </button>
             </div>
           </div>
 
-          <!-- Barra de Progresso do Reembolso -->
-          <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-divi-border">
+          <!-- Barra de Progresso Clássica (Step 2) -->
+          <div class="w-full bg-black/5 rounded-f-sm h-1.5 overflow-hidden border border-black/[0.03]">
             <div 
-              class="bg-gradient-to-r from-divi-primary to-divi-violet h-full rounded-full transition-all duration-300"
+              class="bg-fluent-accent h-full rounded-f-sm transition-all duration-300"
               :style="{ width: `${((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100}%` }"
             ></div>
           </div>
 
-          <!-- Amortização Pix Parcial / Customizado expandido -->
-          <div v-if="acertoPixId === acerto.id" class="bg-slate-950 border border-divi-border rounded-2xl p-4 mt-2 space-y-4">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-xs font-black uppercase text-divi-primary">Registrar Baixa de Acerto</span>
-            </div>
-
-            <!-- Seleção de Método -->
-            <div class="flex gap-2">
+          <!-- Amortização Pix Parcial -->
+          <div v-if="acertoPixId === acerto.id" class="bg-white/60 border border-black/10 rounded-f-sm p-3 mt-2 space-y-3">
+            <span class="text-[9px] font-bold uppercase text-fluent-accent block">Baixa de Acerto</span>
+            <div class="flex items-center gap-2">
+              <span class="text-fluent-text-p3 text-[10px] font-bold">R$</span>
+              <input 
+                v-model.number="valorPixInput"
+                type="number"
+                step="0.01"
+                class="fluent-input p-1.5 font-bold text-fluent-text-p1 text-[11px] flex-1"
+              />
               <button 
-                v-for="m in [{id:'pix', nome:'⚡ Pix'}, {id:'cash', nome:'💵 Dinheiro'}, {id:'mutual', nome:'🤝 Abatimento'}]" 
-                :key="m.id"
-                @click="metodoAcerto = m.id as any"
-                class="flex-1 py-2 px-1 text-[10px] font-extrabold rounded-xl border text-center transition-all"
-                :class="metodoAcerto === m.id ? 'bg-divi-primary border-divi-primary text-white shadow-sm' : 'bg-divi-s2 border-divi-border text-divi-t3'"
+                @click="enviarReembolsoPix(acerto.id)"
+                class="bg-fluent-accent hover:bg-fluent-accent-hover text-white font-bold text-[10px] px-3 py-1.5 rounded-f-sm transition-colors"
               >
-                {{ m.nome }}
+                Registrar
               </button>
             </div>
-
-            <!-- Input de Valor -->
-            <div class="space-y-2">
-              <div class="flex items-center gap-2">
-                <span class="text-divi-t3 text-xs font-bold">R$</span>
-                <input 
-                  v-model.number="valorPixInput"
-                  type="number"
-                  step="0.01"
-                  class="glass-input rounded-xl p-2.5 font-extrabold text-divi-t1 focus:outline-none focus:border-divi-primary text-xs flex-1"
-                />
-                <button 
-                  @click="enviarReembolsoPix(acerto.id)"
-                  class="bg-divi-primary hover:bg-indigo-500 text-white font-black text-xs px-4 py-2 rounded-lg transition-colors"
-                >
-                  Registrar
-                </button>
-              </div>
-
-              <!-- Reassurance e Atalho de Quitação com Ajuste -->
-              <div class="text-[10px] text-divi-t3 leading-relaxed">
-                <span v-if="metodoAcerto === 'mutual'" class="text-divi-amber font-bold block mb-1">
-                  💡 Abatimento/Ajuste: Ideal para perdoar centavos ou fazer descontos mútuos.
-                </span>
-                Deseja quitar a dívida inteira com ajuste redondo? 
-                <button 
-                  @click="quitarComAjuste(acerto.id)" 
-                  class="text-divi-emerald hover:text-emerald-300 font-black underline ml-1 cursor-pointer"
-                >
-                  Quitar Total
-                </button>
-              </div>
+            <div class="text-[9px] text-fluent-text-p3">
+              Deseja quitar tudo? 
+              <button @click="quitarComAjuste(acerto.id)" class="text-fluent-emerald font-bold underline ml-1">Quitar Total</button>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Botão especial de encerramento de arrecadação -->
-        <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="bg-divi-emerald-dim border border-emerald-500/20 text-white p-5 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 mt-4 shadow-lg">
-          <span class="text-xs font-black uppercase tracking-wider text-divi-emerald text-glow-emerald">🎉 Reembolsos Coletados!</span>
-          <span class="text-[11px] text-emerald-300">Todos os moradores já enviaram os reembolsos por Pix.</span>
-          <button 
-            @click="registrarPagamentoBancoManual(fatura.id)"
-            class="bg-divi-emerald hover:bg-emerald-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition-colors w-full mt-1 border border-emerald-500/20"
-          >
-            🏦 Registrar Pagamento ao Banco e Quitar Fatura
-          </button>
-        </div>
+      <!-- Botão especial de encerramento de arrecadação (Fluent 2) -->
+      <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="bg-fluent-emerald-dim border border-fluent-emerald/10 text-fluent-emerald p-4 rounded-f-md flex flex-col items-center justify-center text-center space-y-2 mt-4 shadow-sm">
+        <span class="text-[11px] font-bold uppercase tracking-wider">🎉 Reembolsos Coletados!</span>
+        <span class="text-[10px]">Todos os moradores já enviaram os reembolsos por Pix.</span>
+        <button 
+          @click="registrarPagamentoBancoManual(fatura.id)"
+          class="bg-fluent-emerald hover:bg-fluent-emerald-hover text-white font-bold text-[11px] px-4 py-2 rounded-f-sm shadow-sm transition-all w-full mt-1"
+        >
+          🏦 Registrar Pagamento ao Banco
+        </button>
       </div>
     </div>
 

@@ -7,31 +7,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        'divi-bg': 'var(--bg)',
-        'divi-s1': 'var(--s1)',
-        'divi-s2': 'var(--s2)',
-        'divi-s3': 'var(--s3)',
-        'divi-border': 'var(--border)',
-        'divi-border-hi': 'var(--border-hi)',
-        'divi-primary': 'var(--primary)',
-        'divi-primary-dim': 'var(--primary-dim)',
-        'divi-primary-glow': 'var(--primary-glow)',
-        'divi-emerald': 'var(--emerald)',
-        'divi-emerald-dim': 'var(--emerald-dim)',
-        'divi-emerald-glow': 'var(--emerald-glow)',
-        'divi-rose': 'var(--rose)',
-        'divi-rose-dim': 'var(--rose-dim)',
-        'divi-amber': 'var(--amber)',
-        'divi-amber-dim': 'var(--amber-dim)',
-        'divi-blue': 'var(--blue)',
-        'divi-blue-dim': 'var(--blue-dim)',
-        'divi-violet': 'var(--violet)',
-        'divi-t1': 'var(--t1)',
-        'divi-t2': 'var(--t2)',
-        'divi-t3': 'var(--t3)',
-        'divi-t4': 'var(--t4)',
-
-        // ===== FLUENT 2 / WINDOWS 11 TOKENS =====
         'fluent-bg': 'var(--fluent-bg)',
         'fluent-card-bg': 'var(--fluent-card-bg)',
         'fluent-card-hover': 'var(--fluent-card-hover)',
@@ -50,18 +25,12 @@ export default {
         'fluent-tint-blue': 'var(--fluent-tint-blue)',
       },
       borderRadius: {
-        'r-sm': '14px',
-        'r-md': '20px',
-        'r-lg': '26px',
-        'r-xl': '32px',
-        // ===== FLUENT 2 CORNER RADIUS =====
-        'f-sm': '4px',
-        'f-md': '8px',
-        'f-lg': '12px',
+        'f-sm': '4px',    // Para inputs, pequenos botões e badges
+        'f-md': '8px',    // Para cartões e botões normais (Corner do Fluent 2)
+        'f-lg': '12px',   // Para modais e envelopes maiores
       },
       transitionTimingFunction: {
-        // Easing característico do Windows 11 / Fluent Motion
-        'fluent-ease': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'fluent-ease': 'cubic-bezier(0.16, 1, 0.3, 1)', // Easing característico do Windows 11
       }
     },
   },

@@ -39,18 +39,20 @@ const handleSalvarTransacao = async () => {
 }
 
 const closeApp = () => {
-  console.log('Fechando o aplicativo DIVI...')
-  currentView.value = 'dashboard'
+  // Simulação de fechamento no ambiente web
+  window.close();
+  // Fallback se window.close() for bloqueado
+  alert('Comando de fechar recebido. No navegador, você pode fechar esta aba.');
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-transparent flex items-center justify-center p-4">
     <!-- Moldura de Janela do Windows 11 (Companion Shell) -->
-    <div class="w-full max-w-[430px] h-[860px] bg-white/20 border border-black/10 rounded-f-lg shadow-2xl flex flex-col overflow-hidden relative backdrop-blur-3xl">
+    <div class="w-full max-w-[430px] h-[860px] bg-[#E8F0F8]/55 border border-black/10 rounded-f-lg shadow-2xl flex flex-col overflow-hidden relative backdrop-blur-3xl">
       
       <!-- Barra de Título Nativa do Windows 11 -->
-      <div class="h-10 bg-white/40 border-b border-black/5 flex justify-between items-center px-4 select-none shrink-0 z-20">
+      <div class="h-10 bg-white/40 border-b border-black/5 flex justify-between items-center px-4 select-none shrink-0">
         <div class="flex items-center gap-2">
           <!-- Ícone do App DIVI -->
           <span class="text-xs">⚡</span>
@@ -60,13 +62,13 @@ const closeApp = () => {
         <div class="flex items-center gap-4 text-fluent-text-p3">
           <span class="w-3 h-3 hover:text-fluent-text-p1 cursor-pointer flex items-center justify-center text-[10px]">─</span>
           <span class="w-3 h-3 hover:text-fluent-text-p1 cursor-pointer flex items-center justify-center text-[9px]">🗖</span>
-          <span @click="closeApp" class="w-3 h-3 hover:text-red-600 cursor-pointer flex items-center justify-center text-[11px] transition-colors">✕</span>
+          <span @click="closeApp" class="w-3 h-3 hover:text-red-600 cursor-pointer flex items-center justify-center text-[11px]">✕</span>
         </div>
       </div>
 
       <!-- Área Útil do App -->
       <div class="flex-1 overflow-y-auto px-5 py-6 pb-28 relative">
-        <header class="relative text-center mb-6 pt-2">
+        <header class="text-center mb-6 pt-2">
           <!-- Fluent Badge -->
           <div class="inline-flex items-center gap-1.5 bg-fluent-tint-blue border border-fluent-accent/15 text-fluent-accent text-[10px] font-semibold tracking-wider uppercase py-1 px-2.5 rounded-f-sm mb-3">
             <span class="w-1.5 h-1.5 rounded-full bg-fluent-accent animate-pulse"></span>
@@ -77,31 +79,32 @@ const closeApp = () => {
             DIVI
           </h1>
           <p class="text-[11px] text-fluent-text-p2 max-w-[280px] mx-auto leading-relaxed">
-            Despesas da casa divididas com inteligência e zero atrito.
+            Finanças residenciais com a simplicidade nativa do seu sistema.
           </p>
-          
-          <!-- Botão de Configuração e Navegação -->
-          <div class="absolute right-0 top-1/2 -translate-y-1/2 flex gap-2 z-10">
+
+          <!-- Botão de Configuração (Adaptado do original) -->
+          <div class="absolute right-4 top-16 flex gap-2 z-10">
             <button 
               v-if="currentView === 'dashboard'"
               @click="currentView = 'settings'"
-              class="p-2 text-fluent-text-p2 hover:text-fluent-text-p1 hover:bg-black/5 rounded-full transition-all"
+              class="p-2 text-fluent-text-p3 hover:text-fluent-text-p1 hover:bg-white/40 rounded-full transition-all"
               aria-label="Configurações"
             >
-              <Settings class="w-5 h-5" />
+              <Settings class="w-4 h-4" />
             </button>
 
             <button 
               v-if="currentView !== 'dashboard'"
               @click="currentView = 'dashboard'"
-              class="p-2 text-fluent-text-p2 hover:text-fluent-text-p1 hover:bg-black/5 rounded-full transition-all"
+              class="p-2 text-fluent-text-p3 hover:text-fluent-text-p1 hover:bg-white/40 rounded-full transition-all"
               :aria-label="currentView === 'wizard' ? 'Cancelar lançamento' : 'Voltar'"
             >
-              <X class="w-5 h-5" />
+              <X class="w-4 h-4" />
             </button>
           </div>
         </header>
 
+        <!-- Dynamic View Router (Simulado com v-if original para manter compatibilidade) -->
         <main class="flex-1">
           <div v-if="currentView === 'dashboard'" class="space-y-6">
             <DashboardSaldos 
@@ -130,10 +133,6 @@ const closeApp = () => {
             @voltar="currentView = 'dashboard'"
           />
         </main>
-
-        <footer class="max-w-md mx-auto mt-12 text-center text-fluent-text-p3 text-[10px]">
-          &copy; 2026 DIVI - Máquina da Verdade
-        </footer>
       </div>
 
       <!-- Botão Flutuante (FAB) Estilo Fluent 2 - Acrílico Azul -->

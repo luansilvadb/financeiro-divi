@@ -1,40 +1,35 @@
 <template>
-  <div class="glass-card rounded-[24px] p-4 mt-4 relative text-divi-t1 shadow-lg">
-    <!-- Glow Decorativo superior -->
-    <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
-
-    <div class="flex justify-between items-center gap-3 mb-4 relative z-10">
-      <div class="min-w-0 flex-1">
-        <h3 class="text-sm font-black text-divi-t1 flex items-center gap-1.5">
-          Checklist de Contas Fixas
+  <div class="acrylic-card p-5 rounded-f-md mt-5 relative text-fluent-text-p1">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h3 class="text-xs font-bold text-fluent-text-p1 flex items-center gap-1.5 uppercase tracking-wider">
+          ⚙️ Checklist de Contas Fixas
         </h3>
-        <p class="text-[10px] text-divi-t3 mt-0.5 leading-normal">
-          Gerencie e lance de forma simples os talões do mês sem precisar de formulários longos
+        <p class="text-[10px] text-fluent-text-p3 mt-0.5 leading-normal">
+          Lançamentos recorrentes simplificados.
         </p>
       </div>
-      <span class="text-[9px] font-black text-divi-amber bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20 uppercase tracking-widest shrink-0 whitespace-nowrap shadow-[0_0_8px_rgba(245,158,11,0.05)]">
+      <span class="text-[10px] font-semibold text-fluent-accent bg-fluent-tint-blue px-2 py-1 rounded-f-sm border border-fluent-accent/15 shrink-0 whitespace-nowrap">
         {{ pagasCount }}/{{ contasFixas.length }} pagas
       </span>
     </div>
 
-    <div class="grid grid-cols-1 gap-2.5 relative z-10">
-      <!-- Cards de Contas Fixas -->
+    <div class="grid grid-cols-1 gap-2.5">
+      <!-- Widgets de Contas Fixas -->
       <div 
         v-for="bill in contasFixas" 
         :key="bill.id" 
-        class="flex items-center justify-between p-3 rounded-2xl border border-divi-border transition-all duration-150"
-        :class="verificarPaga(bill) 
-          ? 'bg-divi-emerald-dim/10 border-divi-emerald/20 text-divi-t1 shadow-[0_0_12px_rgba(16,185,129,0.03)]' 
-          : 'bg-divi-s1/40 text-divi-t2 hover:bg-divi-s1/60'"
+        class="flex items-center justify-between p-3 rounded-f-sm border transition-all duration-200"
+        :class="verificarPaga(bill) ? 'bg-fluent-emerald-dim/40 border-fluent-emerald/15 text-fluent-text-p1' : 'bg-white/20 border-black/5 text-fluent-text-p2'"
       >
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
           <span class="text-2xl shrink-0">{{ bill.icon }}</span>
           <div class="min-w-0 flex-1">
-            <span class="font-bold text-xs block text-divi-t1 truncate leading-tight">{{ bill.name }}</span>
-            <span v-if="verificarPaga(bill)" class="text-[9px] text-divi-emerald flex items-center gap-1 mt-0.5 font-bold leading-none">
-              ✅ Pago (R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }})
+            <span class="font-bold text-xs block text-fluent-text-p1 truncate">{{ bill.name }}</span>
+            <span v-if="verificarPaga(bill)" class="text-[9px] text-fluent-emerald flex items-center gap-1 mt-0.5 font-semibold leading-none">
+              ✓ Pago (R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }})
             </span>
-            <span v-else class="text-[9px] text-divi-amber flex items-center gap-1 mt-0.5 font-bold leading-none">
+            <span v-else class="text-[9px] text-fluent-text-p3 flex items-center gap-1 mt-0.5 leading-none">
               ⏳ Aguardando Talão
             </span>
           </div>
@@ -43,27 +38,27 @@
           <button 
             v-if="!verificarPaga(bill)" 
             @click="$emit('lancar', bill)" 
-            class="px-3 py-1.5 text-[9px] font-black bg-divi-amber hover:bg-yellow-500 text-slate-950 rounded-xl transition-all shadow-[0_0_10px_rgba(245,158,11,0.2)] active:scale-95"
+            class="px-2.5 py-1 text-[10px] font-semibold bg-fluent-accent hover:bg-fluent-accent-hover text-white rounded-f-sm transition-all shadow-sm"
             :disabled="isMonthLocked"
           >
             Lançar
           </button>
           <button 
             @click="$emit('configurar', bill)" 
-            class="p-1.5 text-[10px] bg-divi-s2 hover:bg-divi-s3 text-divi-t2 hover:text-divi-t1 rounded-xl border border-divi-border transition-all active:scale-95"
+            class="p-1 text-xs bg-white/50 hover:bg-white text-fluent-text-p3 hover:text-fluent-text-p1 rounded-f-sm border border-black/10 transition-all shadow-sm"
           >
             ⚙️
           </button>
         </div>
       </div>
 
-      <!-- Adicionar Nova Conta -->
-      <div 
+      <!-- Adicionar Nova Conta (Estilo Fluent 2) -->
+      <button 
         @click="$emit('novo')" 
-        class="border border-dashed border-divi-border hover:border-divi-primary bg-divi-s1/30 hover:bg-divi-primary-dim/15 rounded-2xl flex justify-center items-center gap-1.5 p-3.5 cursor-pointer transition-all duration-150 group active:scale-[0.99]"
+        class="border border-dashed border-black/10 hover:border-fluent-accent/40 bg-white/20 hover:bg-white/40 rounded-f-sm flex justify-center items-center gap-1.5 p-3 text-fluent-accent font-bold text-[10px] uppercase tracking-wider transition-all"
       >
-        <span class="text-divi-primary font-black text-[10px] uppercase tracking-wider group-hover:text-indigo-400 transition-colors">➕ Adicionar Conta Fixa</span>
-      </div>
+        <span>+ Adicionar Conta Fixa</span>
+      </button>
     </div>
   </div>
 </template>

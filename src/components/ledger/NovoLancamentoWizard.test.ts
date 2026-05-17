@@ -64,6 +64,6 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     await avancarButton!.trigger('click')
     
     // Deve exibir o aviso visual e aplicar a animação de shake
-    expect(wrapper.text()).toContain('O valor do lançamento deve ser maior que zero!')
+    expect(wrapper.text()).toContain('Informe um valor maior que zero')
   })
 })
