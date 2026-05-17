@@ -21,6 +21,7 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
         membroId: a.membroId,
         totalConsumidoCentavos: a.totalConsumido.centavos,
         totalAntecipadoCentavos: a.totalAntecipado.centavos,
+        valorPagoCentavos: a.valorPago.centavos, // <- NOVO
         pago: a.pago,
         dataPagamento: a.dataPagamento ? a.dataPagamento.toISOString() : undefined
       }))
@@ -48,6 +49,7 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
         membroId: a.membroId,
         totalConsumidoCentavos: a.totalConsumido.centavos,
         totalAntecipadoCentavos: a.totalAntecipado.centavos,
+        valorPagoCentavos: a.valorPago.centavos, // <- NOVO
         pago: a.pago,
         dataPagamento: a.dataPagamento ? a.dataPagamento.toISOString() : undefined
       }))
@@ -60,15 +62,29 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
     if (!data) return []
     try {
       const raw = JSON.parse(data) as any[]
-      return raw.map(a => new AcertoMembro({
-        id: a.id,
-        faturaId: a.faturaId,
-        membroId: a.membroId,
-        totalConsumido: Dinheiro.deCentavos(a.totalConsumidoCentavos),
-        totalAntecipado: Dinheiro.deCentavos(a.totalAntecipadoCentavos),
-        pago: a.pago,
-        dataPagamento: a.dataPagamento ? new Date(a.dataPagamento) : undefined
-      }))
+      return raw.map(a => {
+        const totalConsumido = Dinheiro.deCentavos(a.totalConsumidoCentavos)
+        const totalAntecipado = Dinheiro.deCentavos(a.totalAntecipadoCentavos)
+        
+        const diff = totalConsumido.centavos - totalAntecipado.centavos
+        const valorAcerto = Dinheiro.deCentavos(Math.abs(diff))
+        
+        // Retrocompatibilidade: Se valorPagoCentavos não existe, infere pelo status pago
+        const valorPago = a.valorPagoCentavos !== undefined
+          ? Dinheiro.deCentavos(a.valorPagoCentavos)
+          : (a.pago ? valorAcerto : Dinheiro.deCentavos(0))
+
+        return new AcertoMembro({
+          id: a.id,
+          faturaId: a.faturaId,
+          membroId: a.membroId,
+          totalConsumido,
+          totalAntecipado,
+          valorPago, // <- NOVO
+          pago: a.pago,
+          dataPagamento: a.dataPagamento ? new Date(a.dataPagamento) : undefined
+        })
+      })
     } catch (e) {
       console.error(e)
       return []
