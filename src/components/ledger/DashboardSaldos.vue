@@ -676,16 +676,16 @@ const excluirGasto = async (id: string) => {
         <Card 
           v-for="fatura in faturasAbertas" 
           :key="fatura.id" 
-          class="p-0 overflow-hidden"
+          class="overflow-hidden relative bg-card shadow-subtle p-0 rounded-cards"
         >
-          <div class="p-6 border-b border-border bg-muted/30 flex justify-between items-center">
+          <div class="p-6 border-b border-stone-surface bg-[#fbfaf9] flex justify-between items-center">
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center">
+              <div class="w-12 h-12 rounded-xl bg-ember/5 text-ember flex items-center justify-center">
                 <CreditCard class="w-5 h-5" />
               </div>
               <div>
-                <h3 class="font-bold text-lg leading-tight">{{ getCartaoNome(fatura.cartaoId) }}</h3>
-                <p class="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                <h3 class="font-display text-xl text-charcoal leading-none mb-1">{{ getCartaoNome(fatura.cartaoId) }}</h3>
+                <p class="text-[10px] text-ash uppercase tracking-widest">
                   Vencimento: {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
                 </p>
               </div>
@@ -695,27 +695,28 @@ const excluirGasto = async (id: string) => {
               size="sm"
               @click="abrirFecharFatura(fatura.id)"
               :disabled="isMonthLocked"
+              class="rounded-full px-5 text-xs tracking-wide"
             >
               Fechar Fatura
             </Button>
           </div>
 
-          <div class="p-6 space-y-6">
+          <div class="p-8 space-y-6 bg-white">
             <!-- Resumo por membro -->
-            <div class="grid gap-4">
+            <div class="space-y-4">
               <div 
                 v-for="membro in membros" 
                 :key="membro.id" 
                 class="flex justify-between items-center"
               >
                 <div class="flex items-center gap-3">
-                  <div class="w-2 h-2 rounded-full" :class="membro.id === fatura.responsavelId ? 'bg-ember' : 'bg-muted-foreground/30'" />
-                  <span class="text-sm font-medium" :class="membro.id === fatura.responsavelId ? 'text-charcoal' : 'text-ash'">
+                  <div class="w-2 h-2 rounded-full" :class="membro.id === fatura.responsavelId ? 'bg-ember' : 'bg-stone-surface'" />
+                  <span class="font-bold text-base" :class="membro.id === fatura.responsavelId ? 'text-charcoal' : 'text-ash'">
                     {{ membro.nome }}
                   </span>
                 </div>
                 <div class="text-right">
-                  <span class="text-sm font-bold block">
+                  <span class="font-display text-lg text-charcoal block">
                     R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
                   </span>
                 </div>
@@ -725,24 +726,24 @@ const excluirGasto = async (id: string) => {
             <!-- Toggle Detalhes -->
             <button 
               @click="toggleFaturaExpandida(fatura.id)"
-              class="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-widest text-ash hover:text-ember transition-colors border-t border-stone-surface pt-4"
+              class="w-full flex items-center justify-center gap-2 pt-6 text-[11px] font-bold uppercase tracking-widest text-ash hover:text-ember transition-colors border-t border-stone-surface"
             >
               <Activity class="w-3.5 h-3.5" />
               {{ faturasExpandidas[fatura.id] ? 'Ocultar Itens' : 'Ver Detalhes da Fatura' }}
             </button>
 
             <!-- Lista de Gastos (Expandida) -->
-            <div v-if="faturasExpandidas[fatura.id]" class="space-y-3 pt-2">
+            <div v-if="faturasExpandidas[fatura.id]" class="space-y-3 pt-4">
               <div 
                 v-for="g in gastosDaFatura(fatura.id)" 
                 :key="g.id"
-                class="flex justify-between items-center p-3 rounded-lg bg-muted/50 text-xs"
+                class="flex justify-between items-center p-4 rounded-xl border border-stone bg-[#fbfaf9] hover:border-ember/30 transition-colors text-xs"
               >
                 <div>
-                  <span class="font-bold text-foreground block">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
-                  <span class="text-[10px] text-muted-foreground mt-0.5 block">Por {{ getMembroNome(g.compradorId) }}</span>
+                  <span class="font-bold text-charcoal block text-sm">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
+                  <span class="text-[10px] text-ash mt-0.5 block uppercase tracking-wide">Por {{ getMembroNome(g.compradorId) }}</span>
                 </div>
-                <span class="font-bold text-foreground">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</span>
+                <span class="font-display text-base text-charcoal">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</span>
               </div>
             </div>
           </div>
