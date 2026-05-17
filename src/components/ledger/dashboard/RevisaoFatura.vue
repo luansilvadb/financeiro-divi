@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { Fatura } from '../../../modules/ledger/core/domain/Fatura'
 import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
-import { Antecipacao } from '../../../modules/ledger/core/domain/Antecipacao'
 import { useCartoesEFaturas } from '../../../modules/ledger/composables/useCartoesEFaturas'
 import ListaGastosRevisao from './ListaGastosRevisao.vue'
 import PreviaAcertos from './PreviaAcertos.vue'

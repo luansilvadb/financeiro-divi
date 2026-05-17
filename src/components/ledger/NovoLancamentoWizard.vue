@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../modules/ledger/composables/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 
@@ -28,13 +28,10 @@ const {
   borrowerId,
   installments,
   participantesDivisao,
-  modoDivisaoWizard,
-  valoresDivisaoWizard,
   canAdvance,
   next,
   prev,
-  finalizarGastoOuEmprestimo,
-  reset
+  finalizarGastoOuEmprestimo
 } = useNovoLancamentoWizard(props.membros)
 
 // Chips de sugestão inteligentes

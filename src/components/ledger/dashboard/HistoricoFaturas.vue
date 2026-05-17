@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Fatura } from '../../../modules/ledger/core/domain/Fatura'
-import { Cartao } from '../../../modules/ledger/core/domain/Cartao'
-import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
-import { AcertoMembro } from '../../../modules/ledger/core/domain/AcertoMembro'
 import { useCartoesEFaturas } from '../../../modules/ledger/composables/useCartoesEFaturas'
 
 interface Props {

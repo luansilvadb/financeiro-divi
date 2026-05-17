@@ -63,9 +63,6 @@ const saldosLiquidos = computed(() => {
 
 // Calcula as transferências Pix otimizadas para liquidação (quem paga quem)
 const transferenciasPix = computed(() => {
-  const devedores: { id: string; nome: string; montante: number }[] = []
-  const credores: { id: string; nome: string; montante: number }[] = []
-
   // Separamos devedores e credores
   // O responsavelId (quem pagou o banco) assume a dívida final do cartão.
   // Matematicamente:

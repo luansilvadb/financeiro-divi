@@ -40,7 +40,7 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
   })
 
   it('deve validar canAdvance nos passos do fluxo de Empréstimo', () => {
-    const [{ step, wizFlow, compradorSelecionadoId, borrowerId, valor, descricao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard([]))
+    const [{ wizFlow, compradorSelecionadoId, borrowerId, valor, descricao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard([]))
     
     // Passo 1: Escolha do fluxo
     wizFlow.value = 'loan'
@@ -72,7 +72,7 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
   })
 
   it('deve validar canAdvance nos passos do fluxo de Gasto Comum', () => {
-    const [{ step, wizFlow, compradorSelecionadoId, valor, descricao, participantesDivisao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id }))))
+    const [{ wizFlow, compradorSelecionadoId, valor, descricao, participantesDivisao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id }))))
     
     // Passo 1: Escolha do fluxo (Gasto)
     wizFlow.value = 'expense'
