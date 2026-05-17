@@ -2,21 +2,24 @@ import type { ITransacaoRepository } from '../core/ports/ITransacaoRepository'
 import { Transacao } from '../core/domain/Transacao'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { Divisao } from '../core/domain/Divisao'
+import { StorageLock } from '../../../shared/utils/StorageLock'
 
 export class LocalStorageTransacaoRepository implements ITransacaoRepository {
   private readonly STORAGE_KEY = 'divi_transactions'
 
   async salvar(transacao: Transacao): Promise<void> {
-    const todas = await this.listarTodas()
-    const index = todas.findIndex(t => t.id === transacao.id)
-    
-    if (index >= 0) {
-      todas[index] = transacao
-    } else {
-      todas.push(transacao)
-    }
+    await StorageLock.executarAtomico('lock_divi_transactions', async () => {
+      const todas = await this.listarTodas()
+      const index = todas.findIndex(t => t.id === transacao.id)
+      
+      if (index >= 0) {
+        todas[index] = transacao
+      } else {
+        todas.push(transacao)
+      }
 
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(todas))
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(todas))
+    })
   }
 
   async buscarPorId(id: string): Promise<Transacao | null> {
