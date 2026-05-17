@@ -1,0 +1,117 @@
+<h2>💸 Pagamentos, Reembolsos & Saldo Pendente</h2>
+<p class="subtitle">Como funciona o registro do pagamento da fatura ao banco e as transferências/reembolsos entre membros.</p>
+
+<div class="split">
+  <!-- Coluna da Esquerda: Registro do Pagamento ao Banco -->
+  <div class="mockup" style="border: 2px solid #1e3a8a; background: #fafafa; flex: 1.2;">
+    <div class="mockup-header" style="background: #1e3a8a; color: white; padding: 0.75rem 1rem;">
+      <span>🏦 Pagamento ao Banco (Fatura)</span>
+    </div>
+    <div class="mockup-body" style="padding: 1.25rem; font-family: sans-serif;">
+      <p style="font-size: 0.8rem; color: #4b5563; margin-bottom: 1.25rem;">
+        O dono do cartão (responsável principal) precisa quitar a fatura integral com o banco no vencimento.
+      </p>
+
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+        <span style="font-size: 0.65rem; color: #1e40af; uppercase; font-weight: bold; display: block;">Status da Fatura no Banco</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+          <strong style="font-size: 1.1rem; color: #1e3a8a;">R$ 280,00</strong>
+          <span style="font-size: 0.7rem; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 9999px; font-weight: bold;">AGUARDANDO PAGAMENTO</span>
+        </div>
+      </div>
+
+      <button style="width: 100%; background: #1e3a8a; color: white; font-weight: bold; padding: 0.75rem; border-radius: 12px; border: none; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+        💳 Marcar Fatura como Paga ao Banco
+      </button>
+      <span style="font-size: 0.65rem; color: #6b7280; display: block; text-align: center; margin-top: 0.5rem;">
+        (Confirma que o responsável quitou o valor total com a operadora do cartão)
+      </span>
+    </div>
+  </div>
+
+  <!-- Coluna da Direita: Reembolsos dos Membros e Saldo Pendente -->
+  <div class="mockup" style="border: 2px solid #059669; background: #fafafa; flex: 1.5;">
+    <div class="mockup-header" style="background: #059669; color: white; padding: 0.75rem 1rem;">
+      <span>🔄 Reembolsos para o Responsável</span>
+    </div>
+    <div class="mockup-body" style="padding: 1.25rem; font-family: sans-serif; max-height: 480px; overflow-y: auto;">
+      <p style="font-size: 0.8rem; color: #4b5563; margin-bottom: 1rem;">
+        Registre os pagamentos que os membros fizeram para você (reembolso). Suporta pagamentos parciais e carregamento de saldo.
+      </p>
+
+      <!-- Membro 1: Bianca -->
+      <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.75rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem;">B</div>
+            <div>
+              <strong style="font-size: 0.8rem; color: #1f2937;">Bianca</strong>
+              <span style="font-size: 0.65rem; color: #6b7280; display: block;">Total devido: R$ 92,00</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.85rem; font-weight: bold; color: #dc2626; display: block;">Faltam R$ 42,00</span>
+            <span style="font-size: 0.6rem; color: #059669; font-weight: bold;">Pago R$ 50,00</span>
+          </div>
+        </div>
+        
+        <!-- Ações para Bianca -->
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; border-t: 1px solid #f3f4f6; pt-2; font-size: 0.7rem;">
+          <button style="flex: 1; background: #e6f4ea; color: #137333; font-weight: bold; border: 1px solid #ceead6; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
+            ➕ Registrar Parcial
+          </button>
+          <button style="flex: 1; background: #f1f3f4; color: #3c4043; font-weight: bold; border: 1px solid #dadce0; padding: 4px 8px; border-radius: 6px; cursor: pointer;" title="Joga a dívida de R$ 42,00 para a fatura do mês seguinte">
+            ➡️ Rolar R$ 42 p/ Junho
+          </button>
+        </div>
+      </div>
+
+      <!-- Membro 2: Matheus -->
+      <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: #e0e7ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem;">M</div>
+            <div>
+              <strong style="font-size: 0.8rem; color: #1f2937;">Matheus</strong>
+              <span style="font-size: 0.65rem; color: #6b7280; display: block;">Total devido: R$ 50,00</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.85rem; font-weight: bold; color: #dc2626; display: block;">Faltam R$ 50,00</span>
+            <span style="font-size: 0.6rem; color: #9ca3af;">Nenhum pagamento</span>
+          </div>
+        </div>
+        
+        <!-- Ações para Matheus -->
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; border-t: 1px solid #f3f4f6; pt-2; font-size: 0.7rem;">
+          <button style="flex: 1.5; background: #059669; color: white; font-weight: bold; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
+            ✔️ Quitar Total (R$ 50)
+          </button>
+          <button style="flex: 1; background: #f1f3f4; color: #3c4043; font-weight: bold; border: 1px solid #dadce0; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
+            ➕ Parcial
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mt-6">
+  <h3 class="text-slate-800 font-bold mb-4">Como você prefere gerenciar os saldos pendentes não pagos?</h3>
+  <div class="options">
+    <div class="option" data-choice="rolagem-automatica" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Rolar Automaticamente (Carregar Saldo)</h3>
+        <p>Ao fechar/acertar o mês, qualquer saldo restante não quitado é somado automaticamente à dívida do membro na fatura do mês seguinte.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="rolagem-manual" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Acerto Manual Independente</h3>
+        <p>A fatura do mês anterior continua aberta/pendente de acerto até que os membros transfiram todo o dinheiro restante (sem misturar com o mês seguinte).</p>
+      </div>
+    </div>
+  </div>
+</div>

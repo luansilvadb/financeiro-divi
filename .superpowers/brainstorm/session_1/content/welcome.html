@@ -1,0 +1,59 @@
+<h2>💳 Remodelagem do Fluxo de Cartão de Crédito</h2>
+<p class="subtitle">Desenhando uma jornada financeira mais humana e alinhada ao comportamento real de casas compartilhadas.</p>
+
+<div class="section bg-slate-900 text-slate-100 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+  <h3 class="text-indigo-400 font-bold">A Nova Jornada Realista</h3>
+  <p class="text-sm text-slate-300">
+    Atualmente, o sistema exige uma divisão imediata e definição de pagamento no lançamento da compra. 
+    A nossa proposta é separar o <strong>uso do cartão</strong> do <strong>acerto de contas definitivo</strong>.
+  </p>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <h4 class="text-xs uppercase tracking-wider font-extrabold text-indigo-300 mb-2">1. No Momento da Compra</h4>
+      <ul class="text-xs space-y-2 text-slate-300 list-disc list-inside">
+        <li>Qualquer membro usa o cartão</li>
+        <li>O limite é consumido de forma transparente</li>
+        <li>Registra-se apenas <strong>quem usou</strong> e quem é o <strong>responsável potencial</strong></li>
+        <li>Sem pressões para divisão final ou quitação imediata</li>
+      </ul>
+    </div>
+    
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <h4 class="text-xs uppercase tracking-wider font-extrabold text-indigo-300 mb-2">2. Após o Fechamento</h4>
+      <ul class="text-xs space-y-2 text-slate-300 list-disc list-inside">
+        <li>A fatura é consolidada</li>
+        <li>Os membros conferem suas compras</li>
+        <li>Permite-se ajustes manuais e divisão proporcional/customizada</li>
+        <li>Gera-se a dívida e registra-se reembolsos parciais ou totais</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+  <h3 class="text-slate-800 font-bold mb-4">Escolha o primeiro ponto para discutirmos:</h3>
+  <div class="options">
+    <div class="option" data-choice="wizard-cadastro" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Lançamento Simplificado (Wizard)</h3>
+        <p>Como deve ser a tela de adicionar um gasto? Vamos retirar a divisão obrigatória imediata.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="fatura-fechamento" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Fechamento e Ajustes de Fatura</h3>
+        <p>Como visualizamos a fatura fechada, os acertos calculados e como permitimos ajustes manuais.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="pagamentos-reembolsos" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Pagamento e Reembolsos Parciais</h3>
+        <p>Como registramos que o dono pagou a fatura e como os membros fazem transferências e acertos parciais.</p>
+      </div>
+    </div>
+  </div>
+</div>
