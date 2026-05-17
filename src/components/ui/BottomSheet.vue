@@ -124,9 +124,19 @@ const onTouchEnd = (e: TouchEvent) => {
 
   const delta = e.changedTouches[0].clientY - touchStartY.value
   const currentTarget = e.currentTarget as HTMLElement
-  currentTarget.style.transition = ''
-  currentTarget.style.transform = ''
-  if (delta > 100) close()
+  
+  if (delta > 100) {
+    currentTarget.style.transition = ''
+    currentTarget.style.transform = ''
+    close()
+  } else {
+    // Snap back com rebote de mola premium!
+    currentTarget.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15)'
+    currentTarget.style.transform = 'translateY(0)'
+    setTimeout(() => {
+      currentTarget.style.transition = ''
+    }, 500)
+  }
 }
 
 // ── Mouse drag-to-close (desktop) ───────────────────────────
@@ -147,9 +157,18 @@ const onMouseDown = (e: MouseEvent) => {
   }
 
   const onUp = (ev: MouseEvent) => {
-    currentTarget.style.transition = ''
-    currentTarget.style.transform = ''
-    if (ev.clientY - startY > 100) close()
+    if (ev.clientY - startY > 100) {
+      currentTarget.style.transition = ''
+      currentTarget.style.transform = ''
+      close()
+    } else {
+      // Snap back com rebote de mola premium!
+      currentTarget.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15)'
+      currentTarget.style.transform = 'translateY(0)'
+      setTimeout(() => {
+        currentTarget.style.transition = ''
+      }, 500)
+    }
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
   }
@@ -160,9 +179,15 @@ const onMouseDown = (e: MouseEvent) => {
 </script>
 
 <style scoped>
-/* Sheet */
-.slide-up-enter-active,
-.slide-up-leave-active { transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); }
+/* Transição do Sheet com efeito elástico/mola estilo iOS */
+.slide-up-enter-active {
+  transition: transform 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.12);
+}
+.slide-up-leave-active {
+  transition: transform 0.4s cubic-bezier(0.36, 0.66, 0.04, 1);
+}
 .slide-up-enter-from,
-.slide-up-leave-to    { transform: translateY(100%); }
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
 </style>
