@@ -38,10 +38,16 @@ const confirmar = () => {
 <template>
   <div 
     v-if="show && props.fatura" 
-    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-6"
+    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
   >
-    <Card class="w-full max-w-md p-0 overflow-hidden bg-card shadow-lg border border-stone-surface rounded-cards">
-      <div class="p-8 space-y-6">
+    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
+    <div 
+      class="w-full sm:max-w-md overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards shadow-lg flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
+    >
+      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
+      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
+
+      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
         <!-- Header -->
         <div class="flex justify-between items-start">
           <div class="space-y-2">
@@ -54,7 +60,7 @@ const confirmar = () => {
         </div>
 
         <!-- Info Box (Meadow Green) -->
-        <div class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow text-xs font-semibold leading-relaxed">
+        <div class="flex gap-4 p-4 rounded-xl bg-meadow-green/5 border border-meadow-green/20 text-meadow-green text-xs font-semibold leading-relaxed">
           <Info class="w-5 h-5 shrink-0 mt-0.5" />
           <p>
             O membro escolhido será o responsável por quitar a fatura junto ao banco e receberá os repasses dos outros membros.
@@ -76,6 +82,19 @@ const confirmar = () => {
           <Button variant="primary" @click="confirmar" :disabled="!responsavelId">Confirmar</Button>
         </div>
       </div>
-    </Card>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-surface);
+  border-radius: 9999px;
+}
+</style>
