@@ -78,7 +78,8 @@ const handleAdicionar = async () => {
             @click="handleAdicionar"
             :disabled="!novoNome.trim()"
             :variant="novoNome.trim() ? 'primary' : 'secondary'"
-            class="h-12 w-12 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-30 border border-stone-surface"
+            size="icon"
+            class="h-12 w-12 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-30 border border-stone-surface flex items-center justify-center"
             :class="novoNome.trim() ? 'bg-ember text-white hover:bg-ember/90 shadow-sm border-transparent' : ''"
           >
             <UserPlus class="w-5 h-5" />
