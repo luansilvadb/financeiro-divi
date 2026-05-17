@@ -2,7 +2,6 @@
 import { ref, watch } from 'vue'
 import { Fatura } from '../../../modules/ledger/core/domain/Fatura'
 import SeletorMembros from '../shared/SeletorMembros.vue'
-import Card from '../../ui/Card.vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'
 import { X, Info } from 'lucide-vue-next'

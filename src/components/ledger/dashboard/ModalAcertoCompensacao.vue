@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import Card from '../../ui/Card.vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'
 import { Wallet, Banknote, RefreshCcw } from 'lucide-vue-next'

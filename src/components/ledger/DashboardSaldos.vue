@@ -187,7 +187,7 @@ const todosOsAcertosQuitados = (faturaId: string) => {
 
 // --- INTEGRAÇÃO SENIOR V18 (FASES 2-5) ---
 const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
-const { isMonthLocked, setMonthLocked, processarRolloverParcelas, gerarTransacoesNettingSaldoInicial } = useFaturaRollover()
+const { isMonthLocked, setMonthLocked } = useFaturaRollover()
 
 // Modais Contas Fixas
 const showPopupLancar = ref(false)

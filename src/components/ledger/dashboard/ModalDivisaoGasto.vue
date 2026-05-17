@@ -106,7 +106,7 @@ const salvar = () => {
 
 <template>
   <NonModalBottomSheet :visible="show && props.gasto !== null" width-class="md:w-[460px]">
-    <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow flex flex-col">
+    <div v-if="props.gasto" class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow flex flex-col">
         <!-- Header -->
         <div class="flex justify-between items-center border-b border-stone-surface pb-4 shrink-0">
           <div>
