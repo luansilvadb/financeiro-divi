@@ -2,15 +2,19 @@
 import { computed } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
-import Card from '../ui/Card.vue'
-import Button from '../ui/Button.vue'
-import { Check, Settings, Plus, Info } from 'lucide-vue-next'
+import { Plus, Settings } from 'lucide-vue-next'
 
 const props = defineProps<{
   contasFixas: ContaFixa[]
   gastos: Gasto[]
   membros: { id: string; nome: string }[]
   isMonthLocked: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'lancar', bill: ContaFixa): void
+  (e: 'configurar', bill: ContaFixa): void
+  (e: 'novo'): void
 }>()
 
 const pagasCount = computed(() => {
@@ -36,104 +40,83 @@ const obterNomeMembro = (id?: string) => {
 </script>
 
 <template>
-  <Card class="p-4 md:p-8 shadow-subtle bg-card rounded-cards">
-    <div class="flex justify-between items-center mb-6">
-      <div class="space-y-1">
-        <p class="text-[10px] text-ash font-bold uppercase tracking-widest">Resumo do Checklist</p>
-        <p class="text-sm font-bold text-charcoal">
-          <span class="text-ember font-bold">{{ pagasCount }}</span> de {{ contasFixas.length }} contas quitadas
+  <div class="contas-fixas-card bg-white p-[18px] rounded-[10px] shadow-[inset_0_0_0_1px_#f2f0ed] text-[#474645]">
+    <div class="flex justify-between items-start gap-3 mb-3.5">
+      <div class="min-w-0">
+        <h3 class="text-[15px] leading-tight font-semibold text-[#343433] tracking-[-0.2px]">
+          Contas fixas
+        </h3>
+        <p class="text-xs leading-snug text-[#848281] mt-1">
+          Recorrentes do mes.
         </p>
       </div>
-      <div class="w-10 h-10 rounded-full bg-ember/5 flex items-center justify-center shrink-0">
-        <Info class="w-5 h-5 text-ember" />
-      </div>
+      <span class="shrink-0 text-xs font-semibold text-[#121212] bg-[#f6f4ef] px-3 py-1.5 rounded-full">
+        {{ pagasCount }}/{{ contasFixas.length }} pagas
+      </span>
     </div>
 
-    <div class="grid gap-3">
-      <!-- Estado Vazio Ilustrado se não houver contas fixas cadastradas -->
-      <div v-if="contasFixas.length === 0" class="text-center py-12 border border-dashed border-stone rounded-xl space-y-4 bg-canvas/30">
-        <!-- Mascote Verde Meadow com Talão de Notas -->
-        <svg viewBox="0 0 100 100" class="w-20 h-20 mx-auto animate-bounce" style="animation-duration: 6s;">
-          <path d="M15,50 Q20,15 50,20 Q80,25 85,55 Q90,85 50,80 Q10,75 15,50 Z" fill="var(--color-meadow-green)" />
-          <circle cx="42" cy="45" r="4.5" fill="#000" />
-          <circle cx="62" cy="45" r="4.5" fill="#000" />
-          <path d="M46,56 Q52,62 58,56" stroke="#000" stroke-width="3" stroke-linecap="round" fill="none" />
-          <!-- Clipboard/Talão de Notas -->
-          <rect x="25" y="62" width="18" height="22" rx="2" fill="#ffffff" stroke="#000" stroke-width="2" />
-          <rect x="29" y="58" width="10" height="4" rx="1" fill="var(--color-ember-orange)" stroke="#000" stroke-width="1.5" />
-          <line x1="30" y1="69" x2="40" y2="69" stroke="#000" stroke-width="2" />
-          <line x1="30" y1="75" x2="40" y2="75" stroke="#000" stroke-width="2" />
-          <!-- Perninhas -->
-          <line x1="35" y1="78" x2="25" y2="92" stroke="#000" stroke-width="3" stroke-linecap="round" />
-          <line x1="65" y1="78" x2="75" y2="92" stroke="#000" stroke-width="3" stroke-linecap="round" />
-        </svg>
-        <div class="space-y-1">
-          <p class="text-xs font-bold text-charcoal uppercase tracking-wider">Nenhuma conta agendada</p>
-          <p class="text-[11px] text-ash max-w-[240px] mx-auto leading-normal px-4">
-            Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes rápidos.
-          </p>
-        </div>
+    <div class="grid grid-cols-1 gap-2">
+      <div v-if="contasFixas.length === 0" class="text-center py-8 px-4 border border-dashed border-[#c6c6c6] rounded-[10px] bg-[#f8f7f4]">
+        <p class="text-sm font-semibold text-[#343433] tracking-[-0.17px]">Nenhuma conta agendada</p>
+        <p class="text-xs text-[#848281] max-w-[260px] mx-auto leading-snug mt-1">
+          Cadastre aluguel, luz ou internet para lancamentos recorrentes rapidos.
+        </p>
       </div>
 
-      <!-- Widgets de Contas Fixas (Se existirem) -->
       <template v-else>
-        <div 
-          v-for="bill in contasFixas" 
-          :key="bill.id" 
-          class="group flex items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl border transition-all duration-300"
-          :class="verificarPaga(bill) ? 'bg-meadow/5 border-meadow/20' : 'bg-[#fbfaf9] border-stone-surface hover:border-ember/30'"
+        <div
+          v-for="bill in contasFixas"
+          :key="bill.id"
+          class="flex items-center justify-between gap-2.5 p-2.5 rounded-[10px] bg-[#f8f7f4] transition-colors duration-200 hover:bg-[#f2f0ed]"
         >
-          <!-- Ícone -->
-          <div class="w-10 h-10 shrink-0 rounded-lg bg-card border border-stone-surface flex items-center justify-center text-xl shadow-subtle">
-            {{ bill.icon }}
-          </div>
-
-          <!-- Nome + Status (cresce e trunca) -->
-          <div class="min-w-0 flex-1">
-            <span class="font-bold text-sm block text-charcoal truncate">{{ bill.name }}</span>
-            <div v-if="verificarPaga(bill)" class="flex items-center gap-1 mt-1">
-              <Check class="w-3 h-3 text-meadow shrink-0" />
-              <span class="text-[10px] text-meadow font-bold uppercase tracking-wider truncate">
-                R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} • {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-[34px] h-[34px] shrink-0 rounded-full bg-white shadow-[inset_0_0_0_1px_#f2f0ed] flex items-center justify-center text-base">
+              {{ bill.icon }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="font-semibold text-[13px] leading-tight block text-[#343433] tracking-[-0.17px] truncate">{{ bill.name }}</span>
+              <span v-if="verificarPaga(bill)" class="text-[11px] text-[#848281] flex items-center gap-1.5 mt-1 truncate">
+                <span class="w-2 h-2 rounded-full bg-[#00ca48] shrink-0"></span>
+                R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
+              </span>
+              <span v-else class="text-[11px] text-[#848281] flex items-center gap-1.5 mt-1">
+                <span class="w-2 h-2 rounded-full bg-[#ffbb26] shrink-0"></span>
+                Aguardando talao
               </span>
             </div>
-            <span v-else class="text-[10px] text-ash flex items-center gap-1 mt-1 font-semibold">
-              ⏳ Aguardando Talão
-            </span>
           </div>
 
-          <!-- Ações (nunca encolhem) -->
-          <div class="flex items-center gap-2 shrink-0">
-            <Button 
-              v-if="!verificarPaga(bill)" 
-              @click="$emit('lancar', bill)" 
-              variant="primary"
-              size="sm"
-              class="h-8 px-3 text-[10px] whitespace-nowrap"
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              v-if="!verificarPaga(bill)"
+              @click="$emit('lancar', bill)"
+              class="px-3 py-2 text-xs font-semibold bg-[#121212] hover:bg-[#343433] text-white rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="isMonthLocked"
+              :data-testid="`lancar-conta-${bill.id}`"
             >
-              Lançar
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="icon"
-              @click="$emit('configurar', bill)" 
-              class="w-8 h-8 shrink-0 rounded-lg border border-stone-surface"
+              Lancar
+            </button>
+            <button
+              @click="$emit('configurar', bill)"
+              class="w-[30px] h-[30px] flex items-center justify-center text-[#848281] hover:text-[#343433] bg-white rounded-full shadow-[inset_0_0_0_1px_#f2f0ed] transition-colors"
+              :data-testid="`configurar-conta-${bill.id}`"
+              :aria-label="`Configurar ${bill.name}`"
+              title="Configurar conta"
             >
-              <Settings class="w-4 h-4 text-ash" />
-            </Button>
+              <Settings class="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </template>
 
-      <!-- Adicionar Nova Conta -->
-      <button 
-        @click="$emit('novo')" 
-        class="group flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone hover:border-ember hover:bg-ember/5 transition-all duration-300 text-ash hover:text-ember font-bold text-xs uppercase tracking-widest mt-2"
+      <button
+        @click="$emit('novo')"
+        class="group flex justify-center items-center gap-2 p-3 rounded-[10px] border border-dashed border-[#c6c6c6] hover:border-[#474645] hover:bg-[#f8f7f4] transition-colors duration-200 text-[#474645] font-semibold text-xs mt-1"
+        data-testid="nova-conta-fixa"
       >
-        <Plus class="w-4 h-4 transition-transform group-hover:scale-110" />
-        <span>Adicionar Conta Fixa</span>
+        <Plus class="w-3.5 h-3.5" />
+        <span>Adicionar conta fixa</span>
       </button>
     </div>
-  </Card>
+  </div>
 </template>
