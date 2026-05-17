@@ -1,4 +1,4 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
@@ -13,9 +13,11 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
   const next = () => step.value++
   const prev = () => step.value--
 
+  let transitionTimeout: ReturnType<typeof setTimeout>
   const selecionarTipo = (t: 'gasto' | 'ganho') => {
     tipo.value = t
-    setTimeout(() => next(), 50)
+    clearTimeout(transitionTimeout)
+    transitionTimeout = setTimeout(() => next(), 50)
   }
 
   // Carregar do localStorage
@@ -24,12 +26,12 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     if (saved) {
       try {
         const data = JSON.parse(saved)
-        if (data.tipo) tipo.value = data.tipo
-        if (data.step) step.value = data.step
-        if (data.valor) valor.value = data.valor
-        if (data.descricao) descricao.value = data.descricao
-        if (data.beneficiarios_selecionados) beneficiarios_selecionados.value = data.beneficiarios_selecionados
-        if (data.pagamentos) pagamentos.value = data.pagamentos
+        if (data.tipo !== undefined) tipo.value = data.tipo
+        if (data.step !== undefined) step.value = data.step
+        if (data.valor !== undefined) valor.value = data.valor
+        if (data.descricao !== undefined) descricao.value = data.descricao
+        if (data.beneficiarios_selecionados !== undefined) beneficiarios_selecionados.value = data.beneficiarios_selecionados
+        if (data.pagamentos !== undefined) pagamentos.value = data.pagamentos
       } catch (e) {
         console.error('Erro ao carregar rascunho:', e)
       }
@@ -55,6 +57,11 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     },
     { deep: true }
   )
+
+  onUnmounted(() => {
+    clearTimeout(saveTimeout)
+    clearTimeout(transitionTimeout)
+  })
 
   return {
     step,

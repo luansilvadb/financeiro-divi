@@ -1,5 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
 import { useNovoLancamentoWizard } from './useNovoLancamentoWizard'
+
+// Helper para testar composables que usam hooks de ciclo de vida
+function withSetup<T>(composable: () => T) {
+  let result: T
+  const app = createApp(defineComponent({
+    setup() {
+      result = composable()
+      return () => {}
+    }
+  }))
+  app.mount(document.createElement('div'))
+  return [result!, app] as const
+}
 
 describe('useNovoLancamentoWizard', () => {
   beforeEach(() => {
@@ -8,7 +22,7 @@ describe('useNovoLancamentoWizard', () => {
   })
 
   it('deve iniciar com o estado padrão', () => {
-    const { step, tipo, valor, descricao } = useNovoLancamentoWizard([])
+    const [{ step, tipo, valor, descricao }] = withSetup(() => useNovoLancamentoWizard([]))
     expect(step.value).toBe(1)
     expect(tipo.value).toBeNull()
     expect(valor.value).toBe(0)
@@ -16,7 +30,7 @@ describe('useNovoLancamentoWizard', () => {
   })
 
   it('deve avançar e retroceder passos', () => {
-    const { step, next, prev } = useNovoLancamentoWizard([])
+    const [{ step, next, prev }] = withSetup(() => useNovoLancamentoWizard([]))
     next()
     expect(step.value).toBe(2)
     prev()
@@ -25,7 +39,7 @@ describe('useNovoLancamentoWizard', () => {
 
   it('deve avançar automaticamente ao selecionar tipo', async () => {
     vi.useFakeTimers()
-    const { step, selecionarTipo } = useNovoLancamentoWizard([])
+    const [{ step, selecionarTipo }] = withSetup(() => useNovoLancamentoWizard([]))
     
     selecionarTipo('gasto')
     expect(step.value).toBe(1) // Ainda no 1 imediatamente
@@ -36,7 +50,7 @@ describe('useNovoLancamentoWizard', () => {
 
   it('deve persistir no localStorage ao mudar estado', async () => {
     vi.useFakeTimers()
-    const { tipo, selecionarTipo } = useNovoLancamentoWizard([])
+    const [{ tipo }] = withSetup(() => useNovoLancamentoWizard([]))
     
     tipo.value = 'gasto'
     
@@ -48,5 +62,55 @@ describe('useNovoLancamentoWizard', () => {
     
     const saved = JSON.parse(localStorage.getItem('divi_rascunho_novo_lancamento') || '{}')
     expect(saved.tipo).toBe('gasto')
+  })
+
+  it('deve restaurar rascunho do localStorage no onMounted', () => {
+    const data = {
+      tipo: 'ganho',
+      step: 2,
+      valor: 150,
+      descricao: 'Venda',
+      beneficiarios_selecionados: ['1'],
+      pagamentos: { '1': 150 }
+    }
+    localStorage.setItem('divi_rascunho_novo_lancamento', JSON.stringify(data))
+
+    const [{ tipo, step, valor, descricao }] = withSetup(() => useNovoLancamentoWizard([]))
+    
+    expect(tipo.value).toBe('ganho')
+    expect(step.value).toBe(2)
+    expect(valor.value).toBe(150)
+    expect(descricao.value).toBe('Venda')
+  })
+
+  it('deve restaurar valor 0 e descrição vazia do rascunho', () => {
+    const data = {
+      tipo: 'gasto',
+      step: 3,
+      valor: 0,
+      descricao: '',
+      beneficiarios_selecionados: [],
+      pagamentos: {}
+    }
+    localStorage.setItem('divi_rascunho_novo_lancamento', JSON.stringify(data))
+
+    const [{ valor, descricao }] = withSetup(() => useNovoLancamentoWizard([]))
+    
+    expect(valor.value).toBe(0)
+    expect(descricao.value).toBe('')
+  })
+
+  it('deve limpar timeouts no onUnmounted', () => {
+    vi.useFakeTimers()
+    const spyClearTimeout = vi.spyOn(window, 'clearTimeout')
+    
+    const [, app] = withSetup(() => useNovoLancamentoWizard([]))
+    
+    app.unmount()
+    
+    // Deve chamar clearTimeout pelo menos para saveTimeout e transitionTimeout
+    expect(spyClearTimeout).toHaveBeenCalled()
+    
+    spyClearTimeout.mockRestore()
   })
 })
