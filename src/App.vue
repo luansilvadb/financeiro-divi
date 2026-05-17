@@ -7,7 +7,7 @@ import Button from './components/ui/Button.vue'
 import SectionLabel from './components/ui/SectionLabel.vue'
 import InvertedSection from './components/ui/InvertedSection.vue'
 import BottomSheet from './components/ui/BottomSheet.vue'
-import { Plus, Settings, X, ChevronLeft, ShieldCheck, Heart } from 'lucide-vue-next'
+import { Plus, Settings, X, ShieldCheck, Heart } from 'lucide-vue-next'
 import { useMembros } from './modules/ledger/composables/useMembros'
 import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
@@ -105,15 +105,6 @@ const handleSalvarTransacao = async () => {
         </div>
 
         <!-- View Title/Navigation -->
-        <nav v-if="currentView !== 'dashboard'" class="pt-4">
-          <button 
-            @click="currentView = 'dashboard'"
-            class="group flex items-center gap-2 text-sm font-semibold text-graphite hover:text-ember transition-colors"
-          >
-            <ChevronLeft class="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            Voltar para o Dashboard
-          </button>
-        </nav>
       </header>
 
       <!-- Main Content -->
