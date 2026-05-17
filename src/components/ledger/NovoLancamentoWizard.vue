@@ -14,7 +14,6 @@ const emit = defineEmits(['salvar', 'cancelar'])
 const {
   step,
   totalSteps,
-  tipo,
   valor,
   descricao,
   beneficiarios_selecionados,

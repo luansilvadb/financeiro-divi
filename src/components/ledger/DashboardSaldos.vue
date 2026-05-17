@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import { Fatura } from '../../modules/ledger/core/domain/Fatura'
-import { AcertoMembro } from '../../modules/ledger/core/domain/AcertoMembro'
-import { Cartao } from '../../modules/ledger/core/domain/Cartao'
 
 interface Props {
   membros: { id: string; nome: string }[]
-  faturasAbertas: Fatura[]
-  faturasFechadas: Fatura[]
-  acertosPendentes: AcertoMembro[]
-  cartoes: Cartao[]
+  faturasAbertas: any[]
+  faturasFechadas: any[]
+  acertosPendentes: any[]
+  cartoes: any[]
   calcularConsumo: (faturaId: string, membroId: string) => number
 }
 

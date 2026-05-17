@@ -12,7 +12,6 @@ const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
 const {
   cartoes,
-  faturas,
   acertos,
   inicializar: inicializarCartoes,
   fecharFaturaManual,

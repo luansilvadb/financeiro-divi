@@ -9,7 +9,7 @@ const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 const gastoRepo = new LocalStorageGastoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()
 
-export function useNovoLancamentoWizard(membros: { id: string; nome: string }[]) {
+export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]) {
   const step = ref(1)
   const totalSteps = 3
   const tipo = ref<'gasto' | null>('gasto') // Focado exclusivamente em gasto/despesa
