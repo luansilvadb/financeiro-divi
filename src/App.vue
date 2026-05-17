@@ -3,21 +3,17 @@ import { ref, onMounted, computed } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ActivityFeed from './components/ledger/ActivityFeed.vue'
-import { Plus, X } from 'lucide-vue-next'
+import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
+import { Plus, X, Settings } from 'lucide-vue-next'
 import { LocalStorageTransacaoRepository } from './modules/ledger/adapters/LocalStorageTransacaoRepository'
 import { CalculadoraSaldos } from './modules/ledger/core/services/CalculadoraSaldos'
 import { Transacao } from './modules/ledger/core/domain/Transacao'
+import { useMembros } from './modules/ledger/composables/useMembros'
 
-const currentView = ref<'dashboard' | 'wizard'>('dashboard')
+const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const repository = new LocalStorageTransacaoRepository()
 const transacoes = ref<Transacao[]>([])
-
-const membros = [
-  { id: 'luan', nome: 'Luan' },
-  { id: 'maria', nome: 'Maria' },
-  { id: 'joao', nome: 'João' },
-  { id: 'paula', nome: 'Paula' }
-]
+const { ativos: membros, carregar: carregarMembros } = useMembros()
 
 const carregarTransacoes = async () => {
   transacoes.value = await repository.listarTodas()
@@ -28,7 +24,10 @@ const saldos = computed(() => {
 })
 
 onMounted(async () => {
-  await carregarTransacoes()
+  await Promise.all([
+    carregarTransacoes(),
+    carregarMembros()
+  ])
 })
 
 const handleSalvarTransacao = async (t: Transacao) => {
@@ -44,14 +43,25 @@ const handleSalvarTransacao = async (t: Transacao) => {
       <h1 class="text-3xl font-extrabold text-blue-900 tracking-tight">DIVI</h1>
       <p class="text-blue-600 font-medium">Orquestrador Financeiro</p>
       
-      <button 
-        v-if="currentView === 'wizard'"
-        @click="currentView = 'dashboard'"
-        class="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 rounded-full"
-        aria-label="Cancelar lançamento"
-      >
-        <X class="w-6 h-6" />
-      </button>
+      <div class="absolute right-0 top-1/2 -translate-y-1/2 flex gap-2">
+        <button 
+          v-if="currentView === 'dashboard'"
+          @click="currentView = 'settings'"
+          class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 rounded-full"
+          aria-label="Configurações"
+        >
+          <Settings class="w-6 h-6" />
+        </button>
+
+        <button 
+          v-if="currentView !== 'dashboard'"
+          @click="currentView = 'dashboard'"
+          class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 rounded-full"
+          :aria-label="currentView === 'wizard' ? 'Cancelar lançamento' : 'Voltar'"
+        >
+          <X class="w-6 h-6" />
+        </button>
+      </div>
     </header>
 
     <main>
@@ -74,6 +84,11 @@ const handleSalvarTransacao = async (t: Transacao) => {
         :membros="membros"
         @salvar="handleSalvarTransacao"
         @cancelar="currentView = 'dashboard'"
+      />
+
+      <ConfiguracoesMembros
+        v-else-if="currentView === 'settings'"
+        @voltar="currentView = 'dashboard'"
       />
     </main>
 
