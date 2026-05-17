@@ -21,7 +21,7 @@ import DetalhamentoSaldosCard from './dashboard/DetalhamentoSaldosCard.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import SectionLabel from '../ui/SectionLabel.vue'
-import NonModalBottomSheet from '../ui/NonModalBottomSheet.vue'
+import BottomSheet from '../ui/BottomSheet.vue'
 import { 
   Check,
   ArrowUpRight, 
@@ -867,7 +867,7 @@ const excluirGasto = async (id: string) => {
     />
 
     <!-- Bottomsheet Não Modal Novo Período -->
-    <NonModalBottomSheet :visible="showModalNovoPeriodo" width-class="md:w-[420px]">
+    <BottomSheet :model-value="showModalNovoPeriodo" @update:model-value="val => { if (!val) showModalNovoPeriodo = false }" width-class="md:w-[420px]">
       <div class="p-8 space-y-6 flex-grow">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Transição</SectionLabel>
@@ -892,7 +892,7 @@ const excluirGasto = async (id: string) => {
           <Button variant="primary" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">Confirmar</Button>
         </div>
       </div>
-    </NonModalBottomSheet>
+    </BottomSheet>
 
     <!-- Modal de Netting Otimizado (Senior v19) -->
     <ModalAcertoCompensacao 

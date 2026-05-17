@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'
 import { Wallet, Banknote, RefreshCcw } from 'lucide-vue-next'
-import NonModalBottomSheet from '../../ui/NonModalBottomSheet.vue'
+import BottomSheet from '../../ui/BottomSheet.vue'
 
 interface Props {
   visible: boolean
@@ -42,7 +42,7 @@ const handleConfirmar = () => {
 </script>
 
 <template>
-  <NonModalBottomSheet :visible="visible" width-class="md:w-[440px]">
+  <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[440px]">
     <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Liquidação</SectionLabel>
@@ -107,7 +107,7 @@ const handleConfirmar = () => {
           <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0">Confirmar</Button>
         </div>
     </div>
-  </NonModalBottomSheet>
+  </BottomSheet>
 </template>
 
 <style scoped>

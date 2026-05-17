@@ -5,7 +5,7 @@ import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import Button from '../ui/Button.vue'
 import SectionLabel from '../ui/SectionLabel.vue'
-import NonModalBottomSheet from '../ui/NonModalBottomSheet.vue'
+import BottomSheet from '../ui/BottomSheet.vue'
 import { Check, CreditCard, Wallet, Users, Info } from 'lucide-vue-next'
 
 interface Props {
@@ -116,7 +116,7 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <NonModalBottomSheet :visible="props.visible" width-class="md:w-[460px]">
+  <BottomSheet :model-value="props.visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[460px]">
     <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Ajuste</SectionLabel>
@@ -234,7 +234,7 @@ const handleConfirm = () => {
           <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
         </div>
     </div>
-  </NonModalBottomSheet>
+  </BottomSheet>
 </template>
 
 <style scoped>

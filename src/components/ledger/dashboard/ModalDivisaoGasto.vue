@@ -4,7 +4,7 @@ import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
 import { DivisaoDeGasto } from '../../../modules/ledger/core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import SeletorMembros from '../shared/SeletorMembros.vue'
-import NonModalBottomSheet from '../../ui/NonModalBottomSheet.vue'
+import BottomSheet from '../../ui/BottomSheet.vue'
 
 interface Props {
   show: boolean
@@ -105,7 +105,7 @@ const salvar = () => {
 </script>
 
 <template>
-  <NonModalBottomSheet :visible="show && props.gasto !== null" width-class="md:w-[460px]">
+  <BottomSheet :model-value="show && props.gasto !== null" @update:model-value="val => { if (!val) emit('close') }" width-class="md:w-[460px]">
     <div v-if="props.gasto" class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow flex flex-col">
         <!-- Header -->
         <div class="flex justify-between items-center border-b border-stone-surface pb-4 shrink-0">
@@ -234,7 +234,7 @@ const salvar = () => {
           </button>
         </div>
     </div>
-  </NonModalBottomSheet>
+  </BottomSheet>
 </template>
 
 <style scoped>

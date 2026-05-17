@@ -5,7 +5,7 @@ import SeletorMembros from '../shared/SeletorMembros.vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'
 import { X, Info } from 'lucide-vue-next'
-import NonModalBottomSheet from '../../ui/NonModalBottomSheet.vue'
+import BottomSheet from '../../ui/BottomSheet.vue'
 
 interface Props {
   show: boolean
@@ -36,7 +36,7 @@ const confirmar = () => {
 </script>
 
 <template>
-  <NonModalBottomSheet :visible="show && props.fatura !== null" width-class="md:w-[440px]">
+  <BottomSheet :model-value="show && props.fatura !== null" @update:model-value="val => { if (!val) emit('close') }" width-class="md:w-[440px]">
     <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <!-- Header -->
         <div class="flex justify-between items-start">
@@ -72,7 +72,7 @@ const confirmar = () => {
           <Button variant="primary" @click="confirmar" :disabled="!responsavelId">Confirmar</Button>
         </div>
     </div>
-  </NonModalBottomSheet>
+  </BottomSheet>
 </template>
 
 <style scoped>

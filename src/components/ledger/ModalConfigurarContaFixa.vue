@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
-import NonModalBottomSheet from '../ui/NonModalBottomSheet.vue'
+import BottomSheet from '../ui/BottomSheet.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -52,7 +52,7 @@ const salvar = () => {
 </script>
 
 <template>
-  <NonModalBottomSheet :visible="visible" width-class="md:w-[420px]">
+  <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) $emit('cancel') }" width-class="md:w-[420px]">
     <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <h3 class="text-xl font-display text-charcoal flex items-center gap-2 mb-2">
           ⚙️ Configurar Conta Fixa
@@ -134,7 +134,7 @@ const salvar = () => {
           </div>
         </div>
     </div>
-  </NonModalBottomSheet>
+  </BottomSheet>
 </template>
 
 <style scoped>

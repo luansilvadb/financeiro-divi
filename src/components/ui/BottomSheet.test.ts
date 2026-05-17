@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import NonModalBottomSheet from './NonModalBottomSheet.vue'
+import BottomSheet from './BottomSheet.vue'
 
-describe('NonModalBottomSheet', () => {
-  it('deve renderizar o conteudo do slot quando visible for true', () => {
-    const wrapper = mount(NonModalBottomSheet, {
-      props: { visible: true },
+describe('BottomSheet', () => {
+  it('deve renderizar o conteudo do slot quando modelValue for true', () => {
+    const wrapper = mount(BottomSheet, {
+      props: { modelValue: true },
       slots: {
         default: '<div id="test-content">Conteudo de Teste</div>'
       }
@@ -14,9 +14,9 @@ describe('NonModalBottomSheet', () => {
     expect(wrapper.text()).toContain('Conteudo de Teste')
   })
 
-  it('nao deve renderizar o conteudo quando visible for false', () => {
-    const wrapper = mount(NonModalBottomSheet, {
-      props: { visible: false },
+  it('nao deve renderizar o conteudo quando modelValue for false', () => {
+    const wrapper = mount(BottomSheet, {
+      props: { modelValue: false },
       slots: {
         default: '<div>Conteudo</div>'
       }

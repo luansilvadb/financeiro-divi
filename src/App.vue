@@ -6,7 +6,7 @@ import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
 import Button from './components/ui/Button.vue'
 import SectionLabel from './components/ui/SectionLabel.vue'
 import InvertedSection from './components/ui/InvertedSection.vue'
-import NonModalBottomSheet from './components/ui/NonModalBottomSheet.vue'
+import BottomSheet from './components/ui/BottomSheet.vue'
 import { Plus, Settings, X, ChevronLeft, ShieldCheck, Heart } from 'lucide-vue-next'
 import { useMembros } from './modules/ledger/composables/useMembros'
 import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
@@ -181,10 +181,10 @@ const handleSalvarTransacao = async () => {
     </transition>
 
     <!-- Bottomsheet Não Modal do Wizard de Novo Lançamento -->
-    <NonModalBottomSheet 
-      :visible="currentView === 'wizard'"
+    <BottomSheet 
+      :model-value="currentView === 'wizard'"
+      @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
       width-class="md:w-[560px]"
-      max-height-class="max-h-[85vh]"
     >
       <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col">
         <NovoLancamentoWizard 
@@ -193,7 +193,7 @@ const handleSalvarTransacao = async () => {
           @cancelar="currentView = 'dashboard'"
         />
       </div>
-    </NonModalBottomSheet>
+    </BottomSheet>
   </div>
 </template>
 
