@@ -28,6 +28,13 @@ const acertosDaFatura = (faturaId: string) => {
 const formatarDinheiro = (centavos: number) => {
   return Dinheiro.deCentavos(centavos).centavos / 100
 }
+
+const confirmarFecharFatura = (fatura: any) => {
+  const nomeCartao = getCartaoNome(fatura.cartaoId)
+  if (confirm(`Tem certeza que deseja fechar a fatura do ${nomeCartao} (${fatura.periodo.mes}/${fatura.periodo.ano})? Isso irá consolidar os gastos e gerar os acertos para os membros.`)) {
+    emit('fecharFatura', fatura.id)
+  }
+}
 </script>
 
 <template>
@@ -61,7 +68,7 @@ const formatarDinheiro = (centavos: number) => {
       <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-slate-100 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
         <div class="flex justify-between items-center mb-3">
           <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
+          <button @click="confirmarFecharFatura(fatura)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
         </div>
 
         <div class="space-y-2">
