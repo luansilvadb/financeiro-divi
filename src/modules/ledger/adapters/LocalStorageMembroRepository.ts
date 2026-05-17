@@ -1,20 +1,23 @@
 import type { IMembroRepository } from '../core/ports/IMembroRepository'
 import { Membro } from '../core/domain/Membro'
+import { StorageLock } from '../../../shared/utils/StorageLock'
 
 export class LocalStorageMembroRepository implements IMembroRepository {
   private readonly STORAGE_KEY = 'divi_membros'
 
   async salvar(membro: Membro): Promise<void> {
-    const membros = await this.listarTodos()
-    const index = membros.findIndex(m => m.id === membro.id)
-    
-    if (index >= 0) {
-      membros[index] = membro
-    } else {
-      membros.push(membro)
-    }
-    
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(membros))
+    await StorageLock.executarAtomico('lock_divi_membros', async () => {
+      const membros = await this.listarTodos()
+      const index = membros.findIndex(m => m.id === membro.id)
+      
+      if (index >= 0) {
+        membros[index] = membro
+      } else {
+        membros.push(membro)
+      }
+      
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(membros))
+    })
   }
 
   async listarTodos(): Promise<Membro[]> {
