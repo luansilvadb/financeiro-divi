@@ -5,6 +5,7 @@ import { CalculadoraSaldos } from '../../modules/ledger/core/services/Calculador
 import { Transacao } from '../../modules/ledger/core/domain/Transacao'
 import CardSaldoMembro from './dashboard/CardSaldoMembro.vue'
 import ItemExtratoCard from './dashboard/ItemExtratoCard.vue'
+import SugestaoAcertos from './dashboard/SugestaoAcertos.vue'
 
 interface Props {
   saldos: Map<string, Dinheiro>
@@ -14,6 +15,14 @@ interface Props {
 
 const props = defineProps<Props>()
 const selectedMemberId = ref<string | null>(null)
+
+const getMembroNome = (id: string) => {
+  return props.membros.find(m => m.id === id)?.nome || id
+}
+
+const acertos = computed(() => {
+  return CalculadoraSaldos.calcularAcertos(props.saldos)
+})
 
 const saldosList = computed(() => {
   return props.membros
@@ -60,5 +69,10 @@ const toggleDrilldown = (id: string) => {
         </template>
       </CardSaldoMembro>
     </div>
+
+    <SugestaoAcertos 
+      :acertos="acertos"
+      :get-membro-nome="getMembroNome"
+    />
   </div>
 </template>

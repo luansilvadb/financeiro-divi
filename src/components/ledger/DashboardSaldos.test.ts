@@ -110,4 +110,15 @@ describe('DashboardSaldos', () => {
     expect(wrapper.text()).toContain('Inativo Com Historico')
     expect(wrapper.text()).not.toContain('Inativo Sem Historico')
   })
+
+  it('deve exibir a seção de acertos de contas quando houver saldos pendentes', () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: { membros, saldos, transacoes }
+    })
+
+    expect(wrapper.text()).toContain('Como acertar as contas')
+    expect(wrapper.text()).toContain('Maria')
+    expect(wrapper.text()).toContain('Luan')
+    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('R$ 10,00')
+  })
 })
