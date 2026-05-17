@@ -70,7 +70,7 @@ const detailedBreakdown = computed(() => {
 </script>
 
 <template>
-  <div class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 space-y-5 border border-divi-border/50">
+  <div class="glass-card rounded-3xl p-6 shadow-2xl text-divi-t1 space-y-5 border border-white/10">
     <div>
       <h3 class="text-xs font-black text-divi-t3 uppercase tracking-widest block mb-0.5">
         🔍 Detalhamento Granular de Contas
@@ -82,7 +82,7 @@ const detailedBreakdown = computed(() => {
       <div 
         v-for="m in props.membros" 
         :key="m.id" 
-        class="border-b border-divi-border/40 pb-5 last:border-b-0 last:pb-0"
+        class="border-b border-white/5 pb-5 last:border-b-0 last:pb-0"
       >
         <div class="flex justify-between items-center mb-3">
           <div class="flex items-center gap-2">
@@ -102,7 +102,7 @@ const detailedBreakdown = computed(() => {
         <!-- Colunas Granulares -->
         <div class="grid grid-cols-3 gap-2.5 text-[11px] leading-relaxed">
           <!-- Coluna PIX -->
-          <div class="bg-slate-950/20 border border-divi-border/30 rounded-xl p-2.5 space-y-1">
+          <div class="bg-slate-950/20 border border-white/5 rounded-xl p-2.5 space-y-1">
             <span class="block text-[9px] font-black uppercase text-divi-primary mb-1">💵 PIX</span>
             <div class="flex justify-between">
               <span class="text-divi-t3">Fez:</span>
@@ -115,7 +115,7 @@ const detailedBreakdown = computed(() => {
           </div>
 
           <!-- Coluna Cartão -->
-          <div class="bg-slate-950/20 border border-divi-border/30 rounded-xl p-2.5 space-y-1">
+          <div class="bg-slate-950/20 border border-white/5 rounded-xl p-2.5 space-y-1">
             <span class="block text-[9px] font-black uppercase text-divi-primary mb-1">💳 Cartão</span>
             <div class="flex justify-between">
               <span class="text-divi-t3">Fez:</span>
@@ -128,7 +128,7 @@ const detailedBreakdown = computed(() => {
           </div>
 
           <!-- Coluna Empréstimos -->
-          <div class="bg-slate-950/20 border border-divi-border/30 rounded-xl p-2.5 space-y-1">
+          <div class="bg-slate-950/20 border border-white/5 rounded-xl p-2.5 space-y-1">
             <span class="block text-[9px] font-black uppercase text-divi-primary mb-1">🤝 Empréstimo</span>
             <div class="flex justify-between">
               <span class="text-divi-t3">Fez:</span>

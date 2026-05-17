@@ -483,10 +483,10 @@ const excluirGasto = async (id: string) => {
         <div 
           v-for="m in props.membros" 
           :key="m.id" 
-          class="flex justify-between items-center bg-slate-950/20 border border-divi-border/40 rounded-2xl p-3.5 hover:border-divi-primary/20 transition-all"
+          class="flex justify-between items-center bg-slate-950/20 border border-white/5 rounded-2xl p-3.5 hover:border-divi-primary/20 transition-all"
         >
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-divi-s2 border border-divi-border/60 text-white flex items-center justify-center font-black text-sm uppercase">
+            <div class="w-10 h-10 rounded-full bg-divi-s2 border border-white/10 text-white flex items-center justify-center font-black text-sm uppercase">
               {{ m.nome[0] }}
             </div>
             <div>
@@ -721,7 +721,7 @@ const excluirGasto = async (id: string) => {
     <div class="glass-card rounded-3xl p-6 shadow-2xl space-y-4 text-divi-t1">
       <h3 class="text-xs font-black text-divi-t3 uppercase tracking-widest">🔍 Faturas Abertas (Previsão de Gastos)</h3>
       
-      <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border border-divi-border/40 rounded-2xl p-4 bg-slate-950/10 space-y-4 last:mb-0 mb-4">
+      <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border border-white/5 rounded-2xl p-4 bg-slate-950/10 space-y-4 last:mb-0 mb-4">
         <div class="flex justify-between items-center cursor-pointer select-none" @click="toggleFaturaExpandida(fatura.id)">
           <div class="flex flex-col">
             <span class="font-extrabold text-divi-t1 text-sm flex items-center gap-1.5">
@@ -743,11 +743,11 @@ const excluirGasto = async (id: string) => {
         </div>
 
         <!-- Accordion de Compras em Tempo Real (Senior v19) -->
-        <div v-if="faturasExpandidas[fatura.id]" class="border-t border-divi-border/40 pt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
+        <div v-if="faturasExpandidas[fatura.id]" class="border-t border-white/5 pt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
           <div 
             v-for="g in gastosDaFatura(fatura.id)" 
             :key="g.id"
-            class="flex justify-between items-center py-2 px-3 bg-slate-950/20 border border-divi-border/30 rounded-xl text-xs"
+            class="flex justify-between items-center py-2 px-3 bg-slate-950/20 border border-white/5 rounded-xl text-xs"
           >
             <div>
               <span class="font-bold text-divi-t1 block leading-tight">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
@@ -760,8 +760,8 @@ const excluirGasto = async (id: string) => {
           </div>
         </div>
 
-        <div class="space-y-3 border-t border-divi-border/30 pt-3.5">
-          <div v-for="membro in membros" :key="membro.id" class="flex flex-col border-b border-divi-border/40 pb-2.5 mb-2.5 last:border-0 last:pb-0 last:mb-0">
+        <div class="space-y-3 border-t border-white/5 pt-3.5">
+          <div v-for="membro in membros" :key="membro.id" class="flex flex-col border-b border-white/5 pb-2.5 mb-2.5 last:border-0 last:pb-0 last:mb-0">
             <div class="flex justify-between items-center text-xs">
               <span class="font-bold text-divi-t2 flex items-center gap-1">
                 {{ membro.nome }} 
@@ -805,11 +805,11 @@ const excluirGasto = async (id: string) => {
       </div>
 
       <!-- Accordion de Parcelas Detalhadas -->
-      <div v-if="showParcelasFuturas" class="border-t border-divi-border/40 pt-4 mt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
+      <div v-if="showParcelasFuturas" class="border-t border-white/5 pt-4 mt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
         <div 
           v-for="p in parcelasFuturasDetalhadas" 
           :key="p.id"
-          class="flex justify-between items-center py-2.5 px-3.5 bg-slate-950/20 border border-divi-border/30 rounded-2xl text-xs"
+          class="flex justify-between items-center py-2.5 px-3.5 bg-slate-950/20 border border-white/5 rounded-2xl text-xs"
         >
           <div>
             <span class="font-bold text-divi-t1 block leading-tight">{{ p.descricao }}</span>

@@ -46,7 +46,7 @@ const handleDelete = (id: string) => {
       <div 
         v-for="g in sortedGastos" 
         :key="g.id"
-        class="flex flex-col p-3.5 rounded-2xl bg-divi-s1/20 border border-divi-border/40 hover:border-divi-primary/30 transition-all space-y-3"
+        class="flex flex-col p-3.5 rounded-2xl bg-divi-s1/20 border border-white/5 hover:border-divi-primary/30 transition-all space-y-3"
       >
         <div class="flex justify-between items-start gap-2">
           <div>
@@ -62,7 +62,7 @@ const handleDelete = (id: string) => {
         </div>
 
         <!-- Ações do Feed -->
-        <div class="flex justify-end gap-2 border-t border-divi-border/30 pt-2.5">
+        <div class="flex justify-end gap-2 border-t border-white/5 pt-2.5">
           <button 
             v-if="!g.isSettlement"
             type="button"
