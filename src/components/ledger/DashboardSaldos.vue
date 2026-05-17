@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { Fatura } from '../../modules/ledger/core/domain/Fatura'
@@ -29,12 +28,11 @@ const props = defineProps<Props>()
 const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura'])
 
 const {
-  confirmarAcertosManual,
   registrarReembolsoParcialManual,
   registrarPagamentoBancoManual,
   removerPagamentoBancoManual,
-  atualizarGastoDivisoesManual,
   fecharFaturaManual,
+  quitarAcertoMembro,
   gastos: globalGastos,
   acertos: globalAcertos
 } = useCartoesEFaturas()
@@ -60,10 +58,10 @@ const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string
   faturaParaFechar.value = null
 }
 
-// Estado interativo do editor de divisão por gasto
-const gastoExpandidoId = ref<string | null>(null)
-const modoDivisao = ref<'IGUAL' | 'CUSTOMIZADO' | 'PORCENTAGEM'>('IGUAL')
-const valoresDivisao = ref<Record<string, number>>({}) // membroId -> valor (R$ ou %)
+// Estado interativo do editor de divisão por gasto (desativado)
+// const gastoExpandidoId = ref<string | null>(null)
+// const modoDivisao = ref<'IGUAL' | 'CUSTOMIZADO' | 'PORCENTAGEM'>('IGUAL')
+// const valoresDivisao = ref<Record<string, number>>({}) // membroId -> valor (R$ ou %)
 
 // Estado de Pix Parcial por acerto
 const acertoPixId = ref<string | null>(null)
@@ -114,6 +112,7 @@ const gastosDaFatura = (faturaId: string) => {
   return list.filter((g: Gasto) => g.faturaId === faturaId)
 }
 
+/*
 // Inicia o painel de divisão interativo
 const iniciarEdicaoDivisao = (gasto: any) => {
   gastoExpandidoId.value = gasto.id
@@ -204,7 +203,7 @@ const somaDivisaoIncorreta = (gasto: any) => {
     return Math.abs(soma - 100) > 0.01
   }
   return false
-}
+*/
 
 // Inicia Pix
 const iniciarPix = (acerto: any) => {
@@ -301,7 +300,7 @@ const obterSaldosFatura = (faturaId: string) => {
       
     // Total consumido pelo membro (Consumption)
     const totalConsumido = fGastos.reduce((sum, g) => {
-      const div = g.divisoes.find(d => d.membroId === m.id)
+      const div = g.divisoes.find((d: any) => d.membroId === m.id)
       return sum + (div ? div.valor.centavos : 0)
     }, 0)
     
@@ -551,7 +550,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
               <button 
                 v-for="m in [{id:'pix', nome:'⚡ Pix'}, {id:'cash', nome:'💵 Dinheiro'}, {id:'mutual', nome:'🤝 Abatimento'}]" 
                 :key="m.id"
-                @click="metodoAcerto = m.id"
+                @click="metodoAcerto = m.id as any"
                 class="flex-1 py-2 px-1 text-[10px] font-extrabold rounded-xl border text-center transition-all"
                 :class="metodoAcerto === m.id ? 'bg-primary border-primary text-white' : 'bg-slate-800 border-slate-700 text-slate-400'"
               >
