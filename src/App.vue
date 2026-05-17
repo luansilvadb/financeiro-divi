@@ -6,6 +6,7 @@ import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
 import Button from './components/ui/Button.vue'
 import SectionLabel from './components/ui/SectionLabel.vue'
 import InvertedSection from './components/ui/InvertedSection.vue'
+import NonModalBottomSheet from './components/ui/NonModalBottomSheet.vue'
 import { Plus, Settings, X, ChevronLeft, ShieldCheck, Heart } from 'lucide-vue-next'
 import { useMembros } from './modules/ledger/composables/useMembros'
 import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
@@ -179,26 +180,20 @@ const handleSalvarTransacao = async () => {
       </Button>
     </transition>
 
-    <!-- Overlay do Wizard de Novo Lançamento: Bottom-sheet no Mobile, Modal no Desktop -->
-    <div 
-      v-if="currentView === 'wizard'"
-      class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
+    <!-- Bottomsheet Não Modal do Wizard de Novo Lançamento -->
+    <NonModalBottomSheet 
+      :visible="currentView === 'wizard'"
+      width-class="md:w-[560px]"
+      max-height-class="max-h-[85vh]"
     >
-      <div 
-        class="w-full sm:max-w-xl overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cardsLarge shadow-lg flex flex-col max-h-[95vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
-      >
-        <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
-        <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
-        
-        <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-          <NovoLancamentoWizard 
-            :membros="ativos"
-            @salvar="handleSalvarTransacao"
-            @cancelar="currentView = 'dashboard'"
-          />
-        </div>
+      <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col">
+        <NovoLancamentoWizard 
+          :membros="ativos"
+          @salvar="handleSalvarTransacao"
+          @cancelar="currentView = 'dashboard'"
+        />
       </div>
-    </div>
+    </NonModalBottomSheet>
   </div>
 </template>
 
