@@ -35,7 +35,7 @@ const formatarDinheiro = (valor: any) => {
 <template>
   <div class="glass-card border border-divi-border rounded-3xl p-3.5 shadow-lg text-divi-t1">
     <!-- Header -->
-    <div class="flex justify-between items-center border-b border-divi-border/40 pb-2 mb-3">
+    <div class="flex justify-between items-center border-b border-divi-border pb-2 mb-3">
       <h3 class="text-xs font-black uppercase text-divi-t2 tracking-wider flex items-center gap-1.5">
         <Clock class="w-3.5 h-3.5 text-divi-primary text-glow-primary" /> Atividade Recente
       </h3>
@@ -54,7 +54,7 @@ const formatarDinheiro = (valor: any) => {
       <div 
         v-for="t in sortedTransacoes" 
         :key="t.id"
-        class="flex justify-between items-center p-2.5 rounded-2xl bg-divi-s1/30 border border-divi-border/40 hover:border-divi-primary/30 transition-all hover:bg-divi-s1/50"
+        class="flex justify-between items-center p-2.5 rounded-2xl bg-divi-s1/30 border border-divi-border hover:border-divi-primary/30 transition-all hover:bg-divi-s1/50"
       >
         <div class="flex items-center gap-2.5 min-w-0">
           <!-- Compact Avatar -->

@@ -42,7 +42,7 @@ const formatarDivisao = (g: Gasto) => {
       <div 
         v-for="g in props.gastos" 
         :key="g.id"
-        class="flex justify-between items-center bg-divi-s1/40 border border-divi-border/40 hover:border-divi-primary/30 p-3 rounded-2xl transition-all group hover:bg-divi-s1/60 hover:shadow-[0_0_12px_var(--primary-glow)] duration-150"
+        class="flex justify-between items-center bg-divi-s1/40 border border-divi-border hover:border-divi-primary/30 p-3 rounded-2xl transition-all group hover:bg-divi-s1/60 hover:shadow-[0_0_12px_var(--primary-glow)] duration-150"
       >
         <div class="flex items-center gap-2.5 flex-1 min-w-0">
           <!-- Compact Avatar -->

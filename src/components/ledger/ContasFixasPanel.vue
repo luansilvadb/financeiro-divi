@@ -22,10 +22,10 @@
       <div 
         v-for="bill in contasFixas" 
         :key="bill.id" 
-        class="flex items-center justify-between p-3 rounded-2xl border transition-all duration-150"
+        class="flex items-center justify-between p-3 rounded-2xl border border-divi-border transition-all duration-150"
         :class="verificarPaga(bill) 
-          ? 'bg-divi-emerald-dim/10 border-divi-emerald/25 text-divi-t1 shadow-[0_0_12px_rgba(16,185,129,0.03)]' 
-          : 'bg-divi-s1/40 border-divi-border/40 text-divi-t2 hover:bg-divi-s1/60'"
+          ? 'bg-divi-emerald-dim/10 border-divi-emerald/20 text-divi-t1 shadow-[0_0_12px_rgba(16,185,129,0.03)]' 
+          : 'bg-divi-s1/40 text-divi-t2 hover:bg-divi-s1/60'"
       >
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
           <span class="text-2xl shrink-0">{{ bill.icon }}</span>
@@ -60,7 +60,7 @@
       <!-- Adicionar Nova Conta -->
       <div 
         @click="$emit('novo')" 
-        class="border border-dashed border-divi-border/60 hover:border-divi-primary bg-divi-s1/30 hover:bg-divi-primary-dim/15 rounded-2xl flex justify-center items-center gap-1.5 p-3.5 cursor-pointer transition-all duration-150 group active:scale-[0.99]"
+        class="border border-dashed border-divi-border hover:border-divi-primary bg-divi-s1/30 hover:bg-divi-primary-dim/15 rounded-2xl flex justify-center items-center gap-1.5 p-3.5 cursor-pointer transition-all duration-150 group active:scale-[0.99]"
       >
         <span class="text-divi-primary font-black text-[10px] uppercase tracking-wider group-hover:text-indigo-400 transition-colors">➕ Adicionar Conta Fixa</span>
       </div>

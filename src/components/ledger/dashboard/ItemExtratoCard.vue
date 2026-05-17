@@ -70,8 +70,8 @@ const pagamentosDetalhados = computed(() => {
     </div>
 
     <!-- Nível 2: Grid de Fluxo Compactado -->
-    <div class="mx-4 py-3 flex border-t border-divi-border/40 text-divi-t1">
-      <div class="flex-1 space-y-0.5 pr-3 border-r border-divi-border/30">
+    <div class="mx-4 py-3 flex border-t border-divi-border text-divi-t1">
+      <div class="flex-1 space-y-0.5 pr-3 border-r border-divi-border">
         <span class="text-[8px] font-bold text-divi-t2 uppercase tracking-wider">Você Pagou</span>
         <p class="text-xs font-mono font-bold text-divi-t1">{{ formatarDinheiro(item.valorPago) }}</p>
       </div>
@@ -105,8 +105,8 @@ const pagamentosDetalhados = computed(() => {
     </div>
 
     <!-- Nível 3: Auditoria Compacta -->
-    <div v-if="isExpanded" class="bg-divi-s1/20 border-t border-divi-border/40 p-4 space-y-3 text-divi-t1">
-      <div class="flex justify-between items-center border-b border-divi-border/30 pb-2">
+    <div v-if="isExpanded" class="bg-divi-s1/20 border-t border-divi-border p-4 space-y-3 text-divi-t1">
+      <div class="flex justify-between items-center border-b border-divi-border pb-2">
         <span class="text-[9px] font-black text-divi-t2 uppercase tracking-wider">Total Bruto da Nota</span>
         <span class="text-xs font-mono font-black text-divi-t1">{{ formatarDinheiro(item.transacao.total) }}</span>
       </div>
@@ -130,7 +130,7 @@ const pagamentosDetalhados = computed(() => {
     </div>
 
     <!-- Rodapé: Saldo Acumulado -->
-    <div :class="['px-4 py-2 flex justify-between items-center border-t border-divi-border/30', 
+    <div :class="['px-4 py-2 flex justify-between items-center border-t border-divi-border', 
                    item.valorLiquido.centavos > 0 ? 'bg-divi-emerald-dim/5' : 
                    (item.valorLiquido.centavos === 0 ? 'bg-divi-s1/5' : 'bg-divi-rose-dim/5')]">
       <span :class="['text-[9px] font-black uppercase tracking-wider', 

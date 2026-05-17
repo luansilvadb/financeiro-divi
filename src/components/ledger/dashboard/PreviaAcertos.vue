@@ -149,7 +149,7 @@ const transferenciasPix = computed(() => {
           </div>
         </div>
 
-        <div class="pt-1.5 border-t border-divi-border/30 flex justify-between items-center text-[10px]">
+        <div class="pt-1.5 border-t border-divi-border flex justify-between items-center text-[10px]">
           <span class="text-divi-t2 font-bold">Líquido:</span>
           <strong 
             :class="[
@@ -181,7 +181,7 @@ const transferenciasPix = computed(() => {
         <div 
           v-for="(t, idx) in transferenciasPix" 
           :key="idx"
-          class="flex items-center justify-between bg-divi-s1/30 border border-divi-border/40 p-3 rounded-2xl"
+          class="flex items-center justify-between bg-divi-s1/30 border border-divi-border p-3 rounded-2xl"
         >
           <!-- Remetente -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
