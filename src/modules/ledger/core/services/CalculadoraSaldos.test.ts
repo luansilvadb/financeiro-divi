@@ -115,4 +115,24 @@ describe('CalculadoraSaldos', () => {
     const totalAcertado = acertos.reduce((acc, a) => acc + a.valor.centavos, 0)
     expect(totalAcertado).toBe(5000)
   })
+
+  it('deve calcular o extrato detalhado com saldo acumulado para um membro', () => {
+    const t1 = new Transacao({
+      id: 't1',
+      descricao: 'Mercado',
+      total: Dinheiro.deReais(100),
+      pagamentos: [{ membro_id: 'luan', valor: Dinheiro.deReais(100) }],
+      divisoes: [
+        new Divisao('luan', Dinheiro.deReais(50)),
+        new Divisao('maria', Dinheiro.deReais(50))
+      ],
+      status: 'pendente',
+      data: new Date('2026-05-01')
+    })
+
+    const extrato = CalculadoraSaldos.obterExtratoMembro('luan', [t1])
+    expect(extrato).toHaveLength(1)
+    expect(extrato[0].valorLiquido.centavos).toBe(5000) // Pagou 100, consumiu 50
+    expect(extrato[0].saldoAcumulado.centavos).toBe(5000)
+  })
 })

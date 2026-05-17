@@ -7,6 +7,16 @@ export interface Acerto {
   valor: Dinheiro
 }
 
+export interface ItemExtrato {
+  id: string
+  descricao: string
+  data: Date
+  valorPago: Dinheiro
+  valorConsumido: Dinheiro
+  valorLiquido: Dinheiro
+  saldoAcumulado: Dinheiro
+}
+
 export class CalculadoraSaldos {
   static calcular(transacoes: Transacao[]): Map<string, Dinheiro> {
     const saldosCentavos = new Map<string, number>()
@@ -82,5 +92,29 @@ export class CalculadoraSaldos {
     }
 
     return acertos
+  }
+
+  static obterExtratoMembro(membroId: string, transacoes: Transacao[]): ItemExtrato[] {
+    const transacoesOrdenadas = [...transacoes].sort((a, b) => a.data.getTime() - b.data.getTime())
+    
+    let saldoAcumulado = Dinheiro.deCentavos(0)
+    
+    return transacoesOrdenadas.map(t => {
+      const valorPago = t.pagamentos.find(p => p.membro_id === membroId)?.valor || Dinheiro.deCentavos(0)
+      const valorConsumido = t.divisoes.find(d => d.beneficiario_id === membroId)?.valor || Dinheiro.deCentavos(0)
+      const valorLiquido = valorPago.subtrair(valorConsumido)
+      
+      saldoAcumulado = saldoAcumulado.somar(valorLiquido)
+      
+      return {
+        id: t.id,
+        descricao: t.descricao,
+        data: t.data,
+        valorPago,
+        valorConsumido,
+        valorLiquido,
+        saldoAcumulado
+      }
+    })
   }
 }
