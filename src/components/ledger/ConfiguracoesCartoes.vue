@@ -119,7 +119,7 @@ const adicionarCard = async () => {
             variant="secondary"
             size="icon"
             @click="excluirCartaoManual(c.id)" 
-            class="text-ash hover:text-coral-red hover:bg-[#fff0f0] border border-transparent rounded-full"
+            class="bg-coral-red/10 text-coral-red hover:bg-coral-red/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <Trash2 class="w-4 h-4" />
           </Button>

@@ -77,10 +77,11 @@ const handleAdicionar = async () => {
           <Button 
             @click="handleAdicionar"
             :disabled="!novoNome.trim()"
-            :variant="novoNome.trim() ? 'primary' : 'secondary'"
             size="icon"
-            class="h-12 w-12 shrink-0 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-30 border border-stone-surface flex items-center justify-center"
-            :class="novoNome.trim() ? 'bg-ember text-white hover:bg-ember/90 shadow-sm border-transparent' : ''"
+            class="h-12 w-12 shrink-0 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center"
+            :class="novoNome.trim() 
+              ? 'bg-ember/10 text-ember hover:bg-ember/20 shadow-sm border border-transparent' 
+              : 'bg-stone/40 text-ash/40 border border-stone-surface/20 opacity-50'"
           >
             <UserPlus class="w-5 h-5" />
           </Button>
@@ -110,7 +111,7 @@ const handleAdicionar = async () => {
             variant="secondary"
             size="icon"
             @click="desativarMembro(membro.id)"
-            class="text-ash hover:text-coral-red hover:bg-[#fff0f0] border border-transparent rounded-full"
+            class="bg-coral-red/10 text-coral-red hover:bg-coral-red/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
             title="Desativar morador"
           >
             <UserMinus class="w-4 h-4" />
