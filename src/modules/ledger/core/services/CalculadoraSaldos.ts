@@ -15,6 +15,7 @@ export interface ItemExtrato {
   valorConsumido: Dinheiro
   valorLiquido: Dinheiro
   saldoAcumulado: Dinheiro
+  transacao: Transacao
 }
 
 export class CalculadoraSaldos {
@@ -121,7 +122,8 @@ export class CalculadoraSaldos {
         valorPago,
         valorConsumido,
         valorLiquido,
-        saldoAcumulado
+        saldoAcumulado,
+        transacao: t
       }
     })
   }
