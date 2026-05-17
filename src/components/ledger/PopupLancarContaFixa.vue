@@ -1,6 +1,6 @@
 <template>
-  <div v-if="visible" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-    <div class="bg-card w-full max-w-[420px] rounded-cards p-8 relative text-charcoal border border-stone-surface space-y-6 shadow-lg">
+  <NonModalBottomSheet :visible="visible" width-class="md:w-[420px]">
+    <div class="p-8 relative text-charcoal space-y-6 flex flex-col flex-grow">
       <h3 class="text-xl font-display text-charcoal flex items-center gap-2 mb-2">
         <span>{{ bill?.icon }}</span> Lançar {{ bill?.name }}
       </h3>
@@ -68,12 +68,13 @@
         </button>
       </div>
     </div>
-  </div>
+  </NonModalBottomSheet>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
+import NonModalBottomSheet from '../ui/NonModalBottomSheet.vue'
 
 const props = defineProps<{
   visible: boolean
