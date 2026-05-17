@@ -16,6 +16,9 @@ export class Antecipacao {
   public readonly data: Date
 
   constructor(props: AntecipacaoProps) {
+    if (props.valor.centavos <= 0) {
+      throw new Error('Valor da antecipação deve ser maior que zero')
+    }
     this.id = props.id
     this.faturaId = props.faturaId
     this.membroId = props.membroId
