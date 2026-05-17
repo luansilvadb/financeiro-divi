@@ -107,28 +107,28 @@ const transferenciasPix = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-5">
-    <div class="flex justify-between items-center border-b border-divi-border pb-2">
+  <div class="space-y-4">
+    <div class="flex justify-between items-center border-b border-divi-border pb-1.5">
       <span class="text-xs font-black uppercase text-divi-t2 tracking-wider">Prévia de Acertos (Saldos Coletivos)</span>
-      <span class="text-[10px] text-divi-primary font-black bg-divi-primary-dim border border-indigo-500/20 px-2 py-0.5 rounded">Reativo</span>
+      <span class="text-[9px] text-divi-primary font-black bg-divi-primary-dim border border-indigo-500/20 px-2 py-0.5 rounded">Reativo</span>
     </div>
 
     <!-- Tabela de Consumos e Adiantamentos Individuais -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
       <div 
         v-for="s in saldosLiquidos" 
         :key="s.id"
         :class="[
-          'p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 glass-card',
-          s.id === props.responsavelId ? 'border-divi-primary/40 bg-divi-primary-dim/15' : 'border-divi-border'
+          'p-3.5 rounded-2xl border transition-all flex flex-col justify-between space-y-2.5 glass-card',
+          s.id === props.responsavelId ? 'border-divi-primary/40 bg-divi-primary-dim/10' : 'border-divi-border'
         ]"
       >
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-divi-s2 border border-divi-border font-black text-[10px] flex items-center justify-center text-divi-t1 shadow-[0_0_8px_rgba(255,255,255,0.05)]">
+            <div class="w-6 h-6 rounded-full bg-divi-s2 border border-divi-border font-black text-[9px] flex items-center justify-center text-divi-t1 shadow-[0_0_8px_rgba(255,255,255,0.05)]">
               {{ s.nome[0].toUpperCase() }}
             </div>
-            <strong class="text-xs text-divi-t1 font-black">{{ s.nome }}</strong>
+            <strong class="text-xs text-divi-t1 font-bold">{{ s.nome }}</strong>
           </div>
           <span 
             v-if="s.id === props.responsavelId" 
@@ -138,7 +138,7 @@ const transferenciasPix = computed(() => {
           </span>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 text-[10px]">
+        <div class="grid grid-cols-2 gap-2 text-[9px]">
           <div>
             <span class="text-divi-t2 font-medium block">Consumido:</span>
             <strong class="text-divi-t1 font-bold">R$ {{ s.consumo.toFixed(2).replace('.', ',') }}</strong>
@@ -149,7 +149,7 @@ const transferenciasPix = computed(() => {
           </div>
         </div>
 
-        <div class="pt-2 border-t border-divi-border/40 flex justify-between items-center text-xs">
+        <div class="pt-1.5 border-t border-divi-border/30 flex justify-between items-center text-[10px]">
           <span class="text-divi-t2 font-bold">Líquido:</span>
           <strong 
             :class="[
@@ -164,24 +164,24 @@ const transferenciasPix = computed(() => {
     </div>
 
     <!-- Fluxo Pix Recomendado (Quem Paga Quem) -->
-    <div class="glass-card border border-divi-border text-divi-t1 rounded-3xl p-5 shadow-lg space-y-4">
+    <div class="glass-card border border-divi-border text-divi-t1 rounded-3xl p-4 shadow-lg space-y-3">
       <div class="flex items-center gap-2">
-        <span class="text-lg">💸</span>
+        <span class="text-base">💸</span>
         <div>
           <h4 class="text-xs font-black uppercase tracking-wider text-divi-t1">Fluxo do Acerto (Pix)</h4>
           <span class="text-[9px] text-divi-t2 font-bold block mt-0.5">Transferências calculadas para acerto de contas</span>
         </div>
       </div>
 
-      <div v-if="transferenciasPix.length === 0" class="text-center py-4 text-xs text-divi-t2">
+      <div v-if="transferenciasPix.length === 0" class="text-center py-3 text-xs text-divi-t2">
         ⚖️ Contas zeradas! Não há necessidade de transferências Pix.
       </div>
 
-      <div v-else class="space-y-3">
+      <div class="space-y-2" v-else>
         <div 
           v-for="(t, idx) in transferenciasPix" 
           :key="idx"
-          class="flex items-center justify-between bg-divi-s1/40 border border-divi-border p-4 rounded-2xl"
+          class="flex items-center justify-between bg-divi-s1/30 border border-divi-border/40 p-3 rounded-2xl"
         >
           <!-- Remetente -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -189,21 +189,21 @@ const transferenciasPix = computed(() => {
               {{ t.deNome[0].toUpperCase() }}
             </div>
             <div class="min-w-0">
-              <strong class="text-xs font-bold block truncate">{{ t.deNome }}</strong>
+              <strong class="text-xs font-bold block truncate leading-tight">{{ t.deNome }}</strong>
               <span class="text-[8px] text-divi-t3 font-medium">envia Pix</span>
             </div>
           </div>
 
           <!-- Seta com Direção e Valor -->
-          <div class="flex flex-col items-center justify-center px-4 shrink-0">
+          <div class="flex flex-col items-center justify-center px-3 shrink-0">
             <span class="text-xs font-black text-divi-amber text-glow-amber">R$ {{ t.valor.toFixed(2).replace('.', ',') }}</span>
-            <span class="text-sm tracking-widest text-divi-t3/40 mt-0.5">➔➔➔</span>
+            <span class="text-xs tracking-widest text-divi-t3/30 mt-0.5">➔➔➔</span>
           </div>
 
           <!-- Destinatário -->
           <div class="flex items-center gap-2 flex-1 justify-end min-w-0 text-right">
             <div class="min-w-0">
-              <strong class="text-xs font-bold block truncate">{{ t.paraNome }}</strong>
+              <strong class="text-xs font-bold block truncate leading-tight">{{ t.paraNome }}</strong>
               <span class="text-[8px] text-divi-t3 font-medium">recebe Pix</span>
             </div>
             <div class="w-8 h-8 rounded-full bg-divi-s2 border border-divi-border font-black text-xs text-divi-t1 flex items-center justify-center shrink-0">
