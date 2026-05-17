@@ -7,7 +7,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        /* DIVI Legacy Theme Mapped to Fluent Variables */
         'divi-bg': 'var(--bg)',
         'divi-s1': 'var(--s1)',
         'divi-s2': 'var(--s2)',
@@ -32,7 +31,7 @@ export default {
         'divi-t3': 'var(--t3)',
         'divi-t4': 'var(--t4)',
 
-        /* Fluent 2 Brand Theme Variables */
+        // ===== FLUENT 2 / WINDOWS 11 TOKENS =====
         'fluent-bg': 'var(--fluent-bg)',
         'fluent-card-bg': 'var(--fluent-card-bg)',
         'fluent-card-hover': 'var(--fluent-card-hover)',
@@ -51,19 +50,18 @@ export default {
         'fluent-tint-blue': 'var(--fluent-tint-blue)',
       },
       borderRadius: {
-        /* DIVI Legacy Radii */
         'r-sm': '14px',
         'r-md': '20px',
         'r-lg': '26px',
         'r-xl': '32px',
-
-        /* Fluent 2 Radii */
-        'f-sm': '4px',    // Para inputs, pequenos botões e badges
-        'f-md': '8px',    // Para cartões e botões normais (Corner do Fluent 2)
-        'f-lg': '12px',   // Para modais e envelopes maiores
+        // ===== FLUENT 2 CORNER RADIUS =====
+        'f-sm': '4px',
+        'f-md': '8px',
+        'f-lg': '12px',
       },
       transitionTimingFunction: {
-        'fluent-ease': 'cubic-bezier(0.16, 1, 0.3, 1)', // Easing característico do Windows 11
+        // Easing característico do Windows 11 / Fluent Motion
+        'fluent-ease': 'cubic-bezier(0.16, 1, 0.3, 1)',
       }
     },
   },
