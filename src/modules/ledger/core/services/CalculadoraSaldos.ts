@@ -63,9 +63,9 @@ export class CalculadoraSaldos {
     return acertos
   }
 
-  private static _resolverAcertos(saldos: number[], ids: string[], acertos: Acerto[]): void {
+  private static _resolverAcertos(saldos: number[], ids: string[], acertos: Acerto[]): boolean {
     const i = saldos.findIndex(s => s < 0)
-    if (i === -1) return // nenhum devedor restante, acabou
+    if (i === -1) return true // todos devedores quitados, sucesso!
 
     for (let j = 0; j < saldos.length; j++) {
       if (saldos[j] <= 0) continue // pula quem não é credor
@@ -77,20 +77,24 @@ export class CalculadoraSaldos {
       novosSaldos[i] += transferencia
       novosSaldos[j] -= transferencia
 
+      const checkpoint = acertos.length
       acertos.push({ 
         de: ids[i], 
         para: ids[j], 
         valor: Dinheiro.deCentavos(transferencia) 
       })
 
-      this._resolverAcertos(novosSaldos, ids, acertos)
+      // NOTA TÉCNICA: Em um sistema matematicamente balanceado (soma = 0), 
+      // o sucesso é garantido na primeira exploração. O backtracking abaixo 
+      // atua como uma salvaguarda de integridade (Defense-in-Depth).
+      if (this._resolverAcertos(novosSaldos, ids, acertos)) return true
 
-      // Se o devedor i foi totalmente quitado na cópia, retornamos
-      if (novosSaldos[i] === 0) return
-
-      // Backtrack real: remove o acerto e tenta próximo credor
-      acertos.pop()
+      // ✅ Backtrack Real: Se este caminho falhou em resolver o grupo todo, 
+      // limpa os acertos tentados e tenta o próximo credor
+      acertos.splice(checkpoint)
     }
+
+    return false // Não foi possível resolver o grupo a partir deste estado
   }
 
   static obterExtratoMembro(membroId: string, transacoes: Transacao[]): ItemExtrato[] {
