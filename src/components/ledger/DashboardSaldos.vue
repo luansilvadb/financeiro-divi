@@ -37,6 +37,10 @@ const getConsumo = (faturaId: string, membroId: string) => {
 const getAdiantamento = (faturaId: string, membroId: string) => {
   return props.calcularAdiantamento ? props.calcularAdiantamento(faturaId, membroId) : 0
 }
+
+const calcularTotalFatura = (faturaId: string) => {
+  return props.membros.reduce((sum, m) => sum + getConsumo(faturaId, m.id), 0)
+}
 </script>
 
 <template>
@@ -77,8 +81,11 @@ const getAdiantamento = (faturaId: string, membroId: string) => {
       
       <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-slate-100 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
         <div class="flex justify-between items-center mb-4">
-          <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
+          <div class="flex flex-col">
+            <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+            <span class="text-xs text-slate-500 font-semibold">Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
+          </div>
+          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
         </div>
 
         <div class="space-y-3">
