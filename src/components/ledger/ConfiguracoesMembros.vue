@@ -30,15 +30,15 @@ const handleAdicionar = async () => {
       </div>
     </div>
 
-    <!-- Abas (Tabs switcher no padrão Family) -->
-    <div class="flex bg-stone p-1.5 rounded-xl gap-1.5 border border-stone-surface">
+    <!-- Abas -->
+    <div class="flex gap-8 border-b border-stone-surface">
       <button 
         @click="activeTab = 'membros'"
         :class="[
-          'flex-1 py-3 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 flex items-center justify-center gap-2',
+          'pb-4 text-xs font-bold uppercase tracking-widest transition-all duration-200 flex items-center gap-2 border-b-2 mb-[-1px]',
           activeTab === 'membros' 
-            ? 'bg-card text-ember shadow-subtle border border-stone-surface' 
-            : 'text-ash hover:text-charcoal'
+            ? 'border-ember text-ember' 
+            : 'border-transparent text-ash hover:text-charcoal'
         ]"
       >
         <Users class="w-4 h-4" />
@@ -47,10 +47,10 @@ const handleAdicionar = async () => {
       <button 
         @click="activeTab = 'cartoes'"
         :class="[
-          'flex-1 py-3 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 flex items-center justify-center gap-2',
+          'pb-4 text-xs font-bold uppercase tracking-widest transition-all duration-200 flex items-center gap-2 border-b-2 mb-[-1px]',
           activeTab === 'cartoes' 
-            ? 'bg-card text-ember shadow-subtle border border-stone-surface' 
-            : 'text-ash hover:text-charcoal'
+            ? 'border-ember text-ember' 
+            : 'border-transparent text-ash hover:text-charcoal'
         ]"
       >
         <CreditCard class="w-4 h-4" />
