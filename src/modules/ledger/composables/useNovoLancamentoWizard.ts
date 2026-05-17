@@ -1,58 +1,64 @@
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Gasto } from '../core/domain/Gasto'
-import { Antecipacao } from '../core/domain/Antecipacao'
 import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
 import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
-import { LocalStorageAntecipacaoRepository } from '../adapters/LocalStorageAntecipacaoRepository'
 import { LocalStorageCartaoRepository } from '../adapters/LocalStorageCartaoRepository'
+import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
-const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
+const STORAGE_KEY = 'divi_rascunho_novo_lancamento_v18'
 const gastoRepo = new LocalStorageGastoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()
-const antRepo = new LocalStorageAntecipacaoRepository()
 const cartaoRepo = new LocalStorageCartaoRepository()
 
-export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[] = []) {
+export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] = []) {
   const step = ref(1)
-  const tipo = ref<'GASTO' | 'ADIANTAMENTO'>('GASTO')
 
-  // Campos do Gasto
-  const cartaoSelecionadoId = ref('')
+  // Controle de Fluxo v18
+  const wizFlow = ref<'expense' | 'loan'>('expense')
+  const wizPayment = ref<'pix' | 'card'>('pix')
+  const wizCardOwner = ref<string | null>(null)
+
+  // Dados do Lançamento
   const valor = ref(0)
   const descricao = ref('')
-  const compradorSelecionadoId = ref('') // <- NOVO
+  const compradorSelecionadoId = ref('')
+  const borrowerId = ref<string | null>(null)
+  const installments = ref(1)
 
-  // Campos de Divisão Imediata Opcional (Gap 3)
-  const querDividirAgora = ref(false)
-  const participantesDivisao = ref<string[]>([])
+  // Divisão Imediata
+  const querDividirAgora = ref(true)
+  const participantesDivisao = ref<string[]>(membros.map(m => m.id))
   const modoDivisaoWizard = ref<'IGUAL' | 'MANUAL'>('IGUAL')
   const valoresDivisaoWizard = ref<Record<string, number>>({})
 
-  const totalSteps = computed(() => {
-    if (tipo.value === 'GASTO' && querDividirAgora.value) return 5
-    return 4
-  })
+  // Trilha uniforme de 5 passos para ambos os fluxos
+  const totalSteps = computed(() => 5)
 
-  // Retrocompatibilidade para templates / testes
-  const beneficiarios_selecionados = computed(() => 
-    compradorSelecionadoId.value ? [compradorSelecionadoId.value] : []
-  )
+  const next = () => {
+    if (step.value < totalSteps.value) {
+      step.value++
+    }
+  }
 
-  // Campos do Adiantamento
-  const adiantamentoRemetenteId = ref('')
-  const adiantamentoCartaoId = ref('')
-
-  const next = () => step.value++
-  const prev = () => step.value--
+  const prev = () => {
+    if (step.value > 1) {
+      step.value--
+    }
+  }
 
   const canAdvance = computed(() => {
-    if (step.value === 1) return true // Escolha de ação
-    if (tipo.value === 'GASTO') {
-      if (step.value === 2) return !!cartaoSelecionadoId.value
-      if (step.value === 3) return !!compradorSelecionadoId.value
-      if (step.value === 4) return valor.value > 0 && descricao.value.length > 0
+    if (step.value === 1) return true
+    
+    if (wizFlow.value === 'loan') {
+      if (step.value === 2) return !!compradorSelecionadoId.value
+      if (step.value === 3) return !!borrowerId.value
+      if (step.value === 4) return valor.value > 0
+      if (step.value === 5) return descricao.value.trim().length > 0
+    } else {
+      if (step.value === 2) return !!compradorSelecionadoId.value
+      if (step.value === 3) return valor.value > 0
+      if (step.value === 4) return descricao.value.trim().length > 0
       if (step.value === 5) {
         if (modoDivisaoWizard.value === 'IGUAL') {
           return participantesDivisao.value.length > 0
@@ -61,74 +67,115 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
           return Math.abs(soma - valor.value) < 0.01
         }
       }
-    } else {
-      if (step.value === 2) return !!adiantamentoRemetenteId.value
-      if (step.value === 3) return !!adiantamentoCartaoId.value
-      if (step.value === 4) return valor.value > 0
     }
     return false
   })
 
-  // Retrocompatibilidade para testes
-  const toggleBeneficiario = (id: string) => {
-    if (compradorSelecionadoId.value === id) {
-      compradorSelecionadoId.value = ''
+  const finalizarGastoOuEmprestimo = async () => {
+    if (!compradorSelecionadoId.value) throw new Error('Selecione quem pagou/emprestou')
+    if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
+
+    const total = Dinheiro.deReais(Number(valor.value))
+    let divisoes: DivisaoDeGasto[] = []
+
+    if (wizFlow.value === 'loan') {
+      if (!borrowerId.value) throw new Error('Selecione quem pegou emprestado')
+      divisoes = [new DivisaoDeGasto(borrowerId.value, total)]
     } else {
-      compradorSelecionadoId.value = id
+      if (participantesDivisao.value.length === 0) throw new Error('Selecione pelo menos uma pessoa para dividir')
+      
+      if (modoDivisaoWizard.value === 'IGUAL') {
+        const partes = total.distribuir(participantesDivisao.value.length)
+        divisoes = participantesDivisao.value.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
+      } else {
+        divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deReais(valoresDivisaoWizard.value[id] || 0)))
+      }
     }
+
+    const todasFaturas = await faturaRepo.listarTodas()
+    let faturaAtiva = todasFaturas.find(f => f.status === 'ABERTA')
+    
+    // Se o pagamento for em cartão, tenta achar a fatura do cartão
+    if (wizPayment.value === 'card' && wizCardOwner.value) {
+      const todosCartoes = await cartaoRepo.listarTodos()
+      const cartao = todosCartoes.find(c => c.responsavelPadraoId === compradorSelecionadoId.value || c.id === wizCardOwner.value)
+      if (cartao) {
+        faturaAtiva = todasFaturas.find(f => f.cartaoId === cartao.id && f.status === 'ABERTA') || faturaAtiva
+      }
+    }
+
+    // Fallback se não encontrar nenhuma aberta
+    if (!faturaAtiva) {
+      faturaAtiva = todasFaturas[0]
+    }
+    
+    if (!faturaAtiva) throw new Error('Nenhuma fatura encontrada para registrar o lançamento')
+
+    const novoGasto = new Gasto({
+      id: crypto.randomUUID(),
+      faturaId: faturaAtiva.id,
+      descricao: wizFlow.value === 'loan' ? (descricao.value.trim() || 'Empréstimo Pessoal') : descricao.value,
+      valorTotal: total,
+      compradorId: compradorSelecionadoId.value,
+      divisoes,
+      installments: installments.value,
+      isLoan: wizFlow.value === 'loan',
+      borrowerId: borrowerId.value
+    })
+
+    await gastoRepo.salvar(novoGasto)
+    reset()
   }
 
   const reset = () => {
     step.value = 1
+    wizFlow.value = 'expense'
+    wizPayment.value = 'pix'
+    wizCardOwner.value = null
     valor.value = 0
     descricao.value = ''
     compradorSelecionadoId.value = ''
-    adiantamentoRemetenteId.value = ''
-    querDividirAgora.value = false
-    participantesDivisao.value = []
+    borrowerId.value = null
+    installments.value = 1
+    participantesDivisao.value = membros.map(m => m.id)
     modoDivisaoWizard.value = 'IGUAL'
     valoresDivisaoWizard.value = {}
     localStorage.removeItem(STORAGE_KEY)
   }
 
-  // Carregar do localStorage
+  // Persistência de Rascunho no LocalStorage
   onMounted(async () => {
-    const todosCartoes = await cartaoRepo.listarTodos()
-    if (todosCartoes.length > 0) {
-      cartaoSelecionadoId.value = todosCartoes[0].id
-      adiantamentoCartaoId.value = todosCartoes[0].id
-    }
-
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       try {
         const data = JSON.parse(saved)
         if (data.step !== undefined) step.value = data.step
-        if (data.tipo !== undefined) tipo.value = data.tipo
+        if (data.wizFlow !== undefined) wizFlow.value = data.wizFlow
+        if (data.wizPayment !== undefined) wizPayment.value = data.wizPayment
+        if (data.wizCardOwner !== undefined) wizCardOwner.value = data.wizCardOwner
         if (data.valor !== undefined) valor.value = data.valor
         if (data.descricao !== undefined) descricao.value = data.descricao
         if (data.compradorSelecionadoId !== undefined) compradorSelecionadoId.value = data.compradorSelecionadoId
-        if (data.cartaoSelecionadoId !== undefined) cartaoSelecionadoId.value = data.cartaoSelecionadoId
-        if (data.adiantamentoRemetenteId !== undefined) adiantamentoRemetenteId.value = data.adiantamentoRemetenteId
-        if (data.adiantamentoCartaoId !== undefined) adiantamentoCartaoId.value = data.adiantamentoCartaoId
+        if (data.borrowerId !== undefined) borrowerId.value = data.borrowerId
+        if (data.installments !== undefined) installments.value = data.installments
       } catch (e) {
-        console.error('Erro ao carregar rascunho:', e)
+        console.error('Erro ao carregar rascunho sênior:', e)
       }
     }
   })
 
-  // Watcher para salvar
   let saveTimeout: ReturnType<typeof setTimeout>
   watch(
     () => ({
       step: step.value,
-      tipo: tipo.value,
+      wizFlow: wizFlow.value,
+      wizPayment: wizPayment.value,
+      wizCardOwner: wizCardOwner.value,
       valor: valor.value,
       descricao: descricao.value,
       compradorSelecionadoId: compradorSelecionadoId.value,
-      cartaoSelecionadoId: cartaoSelecionadoId.value,
-      adiantamentoRemetenteId: adiantamentoRemetenteId.value,
-      adiantamentoCartaoId: adiantamentoCartaoId.value
+      borrowerId: borrowerId.value,
+      installments: installments.value
     }),
     (state) => {
       clearTimeout(saveTimeout)
@@ -143,73 +190,17 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     clearTimeout(saveTimeout)
   })
 
-  const finalizarComoGastoCartao = async () => {
-    if (!cartaoSelecionadoId.value) throw new Error('Selecione um cartão')
-    if (!compradorSelecionadoId.value) throw new Error('Selecione quem usou')
-    if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
-
-    const total = Dinheiro.deReais(Number(valor.value))
-    let divisoes: DivisaoDeGasto[] = []
-
-    if (querDividirAgora.value && participantesDivisao.value.length > 0) {
-      if (modoDivisaoWizard.value === 'IGUAL') {
-        const partes = total.distribuir(participantesDivisao.value.length)
-        divisoes = participantesDivisao.value.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
-      } else {
-        divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deReais(valoresDivisaoWizard.value[id] || 0)))
-      }
-    } else {
-      divisoes = [new DivisaoDeGasto(compradorSelecionadoId.value, total)]
-    }
-
-    const todasFaturas = await faturaRepo.listarTodas()
-    const fatura = todasFaturas.find(f => f.cartaoId === cartaoSelecionadoId.value && f.status === 'ABERTA') 
-      || todasFaturas[0]
-
-    if (!fatura) throw new Error('Nenhuma fatura aberta encontrada para este cartão')
-
-    const novoGasto = new Gasto({
-      id: crypto.randomUUID(),
-      faturaId: fatura.id,
-      descricao: descricao.value,
-      valorTotal: total,
-      compradorId: compradorSelecionadoId.value,
-      divisoes
-    })
-
-    await gastoRepo.salvar(novoGasto)
-    reset()
-  }
-
-  const finalizarComoAdiantamento = async () => {
-    const total = Dinheiro.deReais(valor.value)
-    const todasFaturas = await faturaRepo.listarTodas()
-    const fatura = todasFaturas.find(f => f.cartaoId === adiantamentoCartaoId.value && f.status === 'ABERTA')
-      || todasFaturas[0]
-
-    const novoAdiantamento = new Antecipacao({
-      id: crypto.randomUUID(),
-      faturaId: fatura.id,
-      membroId: adiantamentoRemetenteId.value,
-      valor: total,
-      data: new Date()
-    })
-
-    await antRepo.salvar(novoAdiantamento)
-    reset()
-  }
-
   return {
     step,
     totalSteps,
-    tipo,
+    wizFlow,
+    wizPayment,
+    wizCardOwner,
     valor,
     descricao,
     compradorSelecionadoId,
-    beneficiarios_selecionados,
-    cartaoSelecionadoId,
-    adiantamentoRemetenteId,
-    adiantamentoCartaoId,
+    borrowerId,
+    installments,
     querDividirAgora,
     participantesDivisao,
     modoDivisaoWizard,
@@ -217,9 +208,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     canAdvance,
     next,
     prev,
-    toggleBeneficiario,
     reset,
-    finalizarComoGastoCartao,
-    finalizarComoAdiantamento
+    finalizarGastoOuEmprestimo
   }
 }

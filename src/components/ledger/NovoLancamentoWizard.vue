@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../modules/ledger/composables/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
-import WizardProgressBar from './WizardProgressBar.vue'
-import WizardFooter from './WizardFooter.vue'
-import PassoDivisaoOpcional from './wizard/PassoDivisaoOpcional.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -13,279 +10,358 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['salvar', 'cancelar'])
 
-const { cartoes } = useCartoesEFaturas()
+const { cartoes, inicializar: inicializarCartoes } = useCartoesEFaturas()
+
+onMounted(async () => {
+  await inicializarCartoes()
+})
 
 const {
   step,
   totalSteps,
-  tipo,
+  wizFlow,
+  wizPayment,
+  wizCardOwner,
   valor,
   descricao,
   compradorSelecionadoId,
-  cartaoSelecionadoId,
-  adiantamentoRemetenteId,
-  adiantamentoCartaoId,
-  querDividirAgora,
+  borrowerId,
+  installments,
   participantesDivisao,
   modoDivisaoWizard,
   valoresDivisaoWizard,
   canAdvance,
   next,
   prev,
-  finalizarComoGastoCartao,
-  finalizarComoAdiantamento
+  finalizarGastoOuEmprestimo,
+  reset
 } = useNovoLancamentoWizard(props.membros)
 
-const valorInput = ref<HTMLInputElement | null>(null)
-
-const focarValorInput = () => {
-  if ((tipo.value === 'GASTO' && step.value === 4) || (tipo.value === 'ADIANTAMENTO' && step.value === 4)) {
-    setTimeout(() => {
-      valorInput.value?.focus()
-    }, 150)
+// Chips de sugestão inteligentes
+const quickChips = computed(() => {
+  if (wizFlow.value === 'loan') {
+    return ['Empréstimo', 'Luz dele', 'Uber compartilhado', 'Supermercado']
   }
-}
-
-onMounted(() => {
-  focarValorInput()
+  return ['Mercado', 'Ifood', 'Luz', 'Internet', 'Água', 'Limpeza']
 })
 
-const selecionarCartao = (id: string) => {
-  cartaoSelecionadoId.value = id
-  next()
-  focarValorInput()
+const selecionarChip = (chip: string) => {
+  descricao.value = chip
 }
 
-const selecionarAdiantamentoCartao = (id: string) => {
-  adiantamentoCartaoId.value = id
-  next()
-  focarValorInput()
-}
-
-const selecionarRemetente = (id: string) => {
-  adiantamentoRemetenteId.value = id
+const selecionarFluxo = (flow: 'expense' | 'loan', payment: 'pix' | 'card', cardOwner: string | null) => {
+  wizFlow.value = flow
+  wizPayment.value = payment
+  wizCardOwner.value = cardOwner
   next()
 }
 
-const finalizar = async () => {
-  if (tipo.value === 'GASTO') {
-    await finalizarComoGastoCartao()
-  } else {
-    await finalizarComoAdiantamento()
+const ajustarParcelas = (delta: number) => {
+  installments.value = Math.max(1, installments.value + delta)
+}
+
+const infoParcelamento = computed(() => {
+  if (installments.value <= 1) return 'À vista (Sem parcelamento)'
+  const valReais = Number(valor.value) || 0
+  const parcela = (valReais / installments.value).toFixed(2).replace('.', ',')
+  return `Serão ${installments.value}x de R$ ${parcela}. (Apenas a 1ª parcela de R$ ${parcela} entra nos acertos de hoje)`
+})
+
+const getMembroNome = (id: string | null) => {
+  if (!id) return ''
+  return props.membros.find(m => m.id === id)?.nome || id
+}
+
+// Atalhos de divisão rápida
+const dividirComTodos = () => {
+  participantesDivisao.value = props.membros.map(m => m.id)
+}
+const dividirApenasEu = () => {
+  if (compradorSelecionadoId.value) {
+    participantesDivisao.value = [compradorSelecionadoId.value]
   }
+}
+
+const toggleSplitMember = (id: string) => {
+  const idx = participantesDivisao.value.indexOf(id)
+  if (idx >= 0) {
+    participantesDivisao.value.splice(idx, 1)
+  } else {
+    participantesDivisao.value.push(id)
+  }
+}
+
+// Resumo cognitivo para segurança do morador
+const cognitiveSummary = computed(() => {
+  const mPago = getMembroNome(compradorSelecionadoId.value)
+  const mMetodo = wizPayment.value === 'pix' ? 'Pix/Dinheiro' : `Cartão (${getMembroNome(wizCardOwner.value)})`
+  const parts = participantesDivisao.value.map(id => getMembroNome(id)).join(', ')
+  return `Você está salvando: R$ ${(valor.value || 0).toFixed(2).replace('.', ',')} de "${descricao.value || 'gasto'}" pago por ${mPago} no ${mMetodo}, dividido com: ${parts || 'ninguém'}.`
+})
+
+const splitSummaryTitle = computed(() => {
+  const count = participantesDivisao.value.length
+  return `Dividido igualmente entre ${count} ${count === 1 ? 'pessoa' : 'pessoas'}`
+})
+
+const splitSummaryDesc = computed(() => {
+  const count = participantesDivisao.value.length
+  if (count === 0) return 'Selecione quem dividirá'
+  const valReais = Number(valor.value) || 0
+  const cadaUm = (valReais / count).toFixed(2).replace('.', ',')
+  return `Cada um paga R$ ${cadaUm}`
+})
+
+const handleGravar = async () => {
+  await finalizarGastoOuEmprestimo()
   emit('salvar')
 }
 </script>
 
 <template>
-  <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md pb-24 md:pb-6">
-    <WizardProgressBar :current-step="step" :total-steps="totalSteps" />
+  <div class="max-w-md mx-auto bg-white rounded-3xl border border-slate-100 shadow-xl p-6 text-slate-800 flex flex-col min-h-[500px]">
+    
+    <!-- Barra de Progresso Sênior Premium -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex-1 flex gap-1.5 px-4">
+        <div 
+          v-for="s in totalSteps" 
+          :key="s"
+          :class="['h-2 flex-1 rounded-full transition-all duration-300', s <= step ? 'bg-indigo-600' : 'bg-slate-100']"
+        ></div>
+      </div>
+      <span class="text-xs font-black text-indigo-600 px-3 tracking-widest uppercase">Passo {{ step }}/5</span>
+    </div>
 
-    <!-- Passo 1: O que você quer fazer? -->
-    <div v-if="step === 1" key="step1" class="space-y-6">
-      <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">O que você quer fazer?</h2>
+    <!-- Conteúdo do Passo Ativo -->
+    <div class="flex-1 flex flex-col justify-center">
       
-      <div class="flex flex-col gap-4">
-        <button 
-          @click="tipo = 'GASTO'; next();"
-          class="flex items-center gap-4 p-5 border-2 rounded-2xl border-blue-50 bg-blue-50/20 hover:border-blue-500 hover:bg-blue-50/50 shadow-sm transition-all text-left w-full group"
-        >
-          <span class="text-3xl">🛍️</span>
-          <div>
-            <strong class="block text-gray-800 text-base">Novo Gasto no Cartão</strong>
-            <span class="text-xs text-gray-500">Registrar uma compra (divisão detalhada posterior)</span>
-          </div>
-        </button>
-
-        <button 
-          @click="tipo = 'ADIANTAMENTO'; next();"
-          class="flex items-center gap-4 p-5 border-2 rounded-2xl border-emerald-50 bg-emerald-50/20 hover:border-emerald-500 hover:bg-emerald-50/50 shadow-sm transition-all text-left w-full group"
-        >
-          <span class="text-3xl">💸</span>
-          <div>
-            <strong class="block text-gray-800 text-base">Registrar Pagamento Antecipado</strong>
-            <span class="text-xs text-gray-500">Paguei uma conta da casa antes do fechamento</span>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- FLUXO GASTO -->
-    <div v-else-if="tipo === 'GASTO'">
-      <!-- Passo 2: Escolha do Cartão -->
-      <div v-if="step === 2" key="gasto-step2">
-        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Escolha o cartão para o gasto</h2>
-        <div class="grid grid-cols-1 gap-4">
+      <!-- Passo 1: Escolha do Fluxo/Canal de Pagamento -->
+      <div v-if="step === 1" class="space-y-6">
+        <h2 class="text-xl font-black text-slate-800 text-center tracking-tight leading-snug">Como você pagou ou fez o lançamento?</h2>
+        <div class="flex flex-col gap-3.5">
+          <!-- Pix / Dinheiro -->
           <button 
-            v-for="c in cartoes"
+            @click="selecionarFluxo('expense', 'pix', null)"
+            class="flex items-center gap-4 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
+          >
+            <span class="text-3xl">💵</span>
+            <div>
+              <strong class="block text-sm text-slate-800 font-extrabold">Fiz um PIX ou Dinheiro (Da Casa)</strong>
+              <span class="text-xs text-slate-500 font-bold">Gasto imediato fora de faturas de cartões</span>
+            </div>
+          </button>
+
+          <!-- Cartões Dinâmicos -->
+          <button 
+            v-for="c in cartoes" 
             :key="c.id"
-            @click="selecionarCartao(c.id)"
-            :class="[
-              'flex items-center justify-between p-6 border-2 rounded-2xl group shadow-sm transition-all text-left w-full',
-              cartaoSelecionadoId === c.id ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-blue-600 hover:bg-blue-50/50'
-            ]"
+            @click="selecionarFluxo('expense', 'card', c.responsavelPadraoId)"
+            class="flex items-center gap-4 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
           >
-            <div class="flex items-center gap-5">
-              <div class="bg-blue-900 text-white p-3 rounded-xl text-lg font-black shadow-md tracking-wider">
-                {{ c.nome.substring(0, 2).toUpperCase() }}
-              </div>
-              <div>
-                <span class="block font-bold text-gray-800 text-lg">{{ c.nome }}</span>
-                <span class="text-xs text-gray-500">
-                  Fechamento todo dia {{ c.diaFechamento }} • Dono: {{ props.membros.find(m => m.id === c.responsavelPadraoId)?.nome || 'Outro' }}
-                </span>
-              </div>
+            <span class="text-3xl">💳</span>
+            <div>
+              <strong class="block text-sm text-slate-800 font-extrabold">Passei no {{ c.nome }}</strong>
+              <span class="text-xs text-indigo-600 font-bold">Gasto registrado sob fatura de cartão</span>
             </div>
           </button>
-        </div>
-      </div>
 
-      <!-- Passo 3: Quem passou o cartão? -->
-      <div v-else-if="step === 3" key="gasto-step3">
-        <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">Quem passou o cartão?</h2>
-        
-        <div class="grid grid-cols-2 gap-4 mb-8">
+          <!-- Empréstimo Pessoal -->
           <button 
-            v-for="membro in props.membros" 
-            :key="membro.id"
-            @click="compradorSelecionadoId = membro.id; next(); focarValorInput();"
-            :class="[
-              'p-4 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all',
-              compradorSelecionadoId === membro.id 
-                ? 'border-blue-600 bg-blue-50/50 shadow-sm' 
-                : 'border-slate-50 hover:border-blue-600/30'
-            ]"
+            @click="selecionarFluxo('loan', 'pix', null)"
+            class="flex items-center gap-4 bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
           >
-            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-700">
-              {{ membro.nome[0].toUpperCase() }}
+            <span class="text-3xl">🤝</span>
+            <div>
+              <strong class="block text-sm text-emerald-800 font-extrabold">Fiz um Empréstimo Pessoal</strong>
+              <span class="text-xs text-emerald-600 font-bold">Dinheiro emprestado direto para outro morador</span>
             </div>
-            <span class="font-bold text-sm text-gray-800">{{ membro.nome }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Passo 4: Dados do Gasto -->
-      <div v-else-if="step === 4" key="gasto-step4">
-        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Qual o valor e descrição?</h2>
-        
-        <div class="mb-10 text-center bg-blue-50/50 p-10 rounded-[2.5rem] border-2 border-blue-100 group">
-          <div class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Valor Total</div>
-          <div class="flex items-baseline justify-center gap-2 mb-8">
-            <span class="text-blue-300 text-2xl font-bold">R$</span>
-            <input 
-              ref="valorInput"
-              v-model.number="valor"
-              type="number" 
-              step="0.01"
-              class="w-48 text-6xl font-black text-blue-600 bg-transparent border-none focus:outline-none mono tracking-tighter text-center"
-              placeholder="0,00"
-            />
-          </div>
-          
-          <input 
-            v-model="descricao"
-            type="text" 
-            placeholder="O que você comprou?" 
-            class="w-full p-5 text-lg border-2 border-blue-100/50 rounded-2xl focus:border-blue-200 focus:outline-none bg-white/50 text-center placeholder:text-blue-300 text-blue-600"
-          />
-        </div>
-      </div>
-
-      <!-- Passo 5: Divisao Opcional (Gap 3) -->
-      <div v-else-if="step === 5" key="gasto-step5">
-        <PassoDivisaoOpcional 
-          :membros="props.membros"
-          :valor-total="valor"
-          :comprador-id="compradorSelecionadoId"
-          v-model:quer-dividir="querDividirAgora"
-          v-model:participantes="participantesDivisao"
-          v-model:modo="modoDivisaoWizard"
-          v-model:valores="valoresDivisaoWizard"
-        />
-      </div>
-    </div>
-
-    <!-- FLUXO ADIANTAMENTO -->
-    <div v-else-if="tipo === 'ADIANTAMENTO'">
-      <!-- Passo 2: Quem enviou? -->
-      <div v-if="step === 2" key="ant-step2">
-        <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">Quem está pagando?</h2>
-        <div class="grid grid-cols-2 gap-4">
+      <!-- Passo 2: Quem pagou / Quem emprestou -->
+      <div v-else-if="step === 2" class="space-y-6">
+        <h2 class="text-xl font-black text-slate-800 text-center tracking-tight leading-snug">
+          {{ wizFlow === 'loan' ? 'Quem está emprestando o dinheiro?' : 'Quem foi a pessoa que pagou?' }}
+        </h2>
+        <div class="grid grid-cols-3 gap-4">
           <button 
             v-for="m in props.membros" 
-            :key="m.id"
-            @click="selecionarRemetente(m.id)"
-            :class="[
-              'p-5 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all',
-              adiantamentoRemetenteId === m.id 
-                ? 'border-emerald-600 bg-emerald-50/30' 
-                : 'border-slate-50 hover:border-emerald-600/30'
-            ]"
+            :key="m.id" 
+            @click="compradorSelecionadoId = m.id; next();"
+            class="flex flex-col items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-2xl transition-all"
           >
-            <div class="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-xl font-bold text-emerald-700">
-              {{ m.nome[0].toUpperCase() }}
+            <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center font-black text-lg">
+              {{ m.nome[0] }}
             </div>
-            <span class="font-bold text-sm text-gray-800">{{ m.nome }}</span>
+            <span class="text-xs font-extrabold text-slate-700">{{ m.nome }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Passo 3: Para qual cartão? -->
-      <div v-else-if="step === 3" key="ant-step3">
-        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Para qual cartão/fatura é a conta?</h2>
-        <div class="grid grid-cols-1 gap-4">
+      <!-- Passo 3 (LOAN): Selecionar o Tomador (Borrower) -->
+      <div v-else-if="step === 3 && wizFlow === 'loan'" class="space-y-6">
+        <h2 class="text-xl font-black text-slate-800 text-center tracking-tight leading-snug">Quem pegou o dinheiro emprestado?</h2>
+        <div class="grid grid-cols-3 gap-4">
+          <!-- Exclui o Lender para evitar erros -->
           <button 
-            v-for="c in cartoes"
-            :key="c.id"
-            @click="selecionarAdiantamentoCartao(c.id)"
-            :class="[
-              'flex items-center justify-between p-6 border-2 rounded-2xl group shadow-sm transition-all text-left w-full',
-              adiantamentoCartaoId === c.id ? 'border-emerald-600 bg-emerald-50/30' : 'border-slate-100 hover:border-emerald-600 hover:bg-emerald-50/30'
-            ]"
+            v-for="m in props.membros.filter(m => m.id !== compradorSelecionadoId)" 
+            :key="m.id" 
+            @click="borrowerId = m.id; next();"
+            class="flex flex-col items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-2xl transition-all"
           >
-            <div class="flex items-center gap-5">
-              <div class="bg-emerald-700 text-white p-3 rounded-xl text-lg font-black shadow-md tracking-wider">
-                {{ c.nome.substring(0, 2).toUpperCase() }}
-              </div>
-              <div>
-                <span class="block font-bold text-gray-800 text-lg">{{ c.nome }}</span>
-                <span class="text-xs text-gray-500 text-emerald-700 font-bold">
-                  Destinatário: {{ props.membros.find(m => m.id === c.responsavelPadraoId)?.nome || 'Dono do Cartão' }}
-                </span>
-              </div>
+            <div class="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center font-black text-lg">
+              {{ m.nome[0] }}
             </div>
+            <span class="text-xs font-extrabold text-slate-700">{{ m.nome }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Passo 4: Qual o valor do Pix? -->
-      <div v-else-if="step === 4" key="ant-step4">
-        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Qual o valor pago?</h2>
-        
-        <div class="mb-10 text-center bg-emerald-50/30 p-10 rounded-[2.5rem] border-2 border-emerald-100 group">
-          <div class="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4">Valor Pago (Pix/Dinheiro)</div>
-          <div class="flex items-baseline justify-center gap-2">
-            <span class="text-emerald-500 text-2xl font-bold">R$</span>
+      <!-- Passo 3 (EXPENSE) ou Passo 4 (LOAN): Valor + Parcelas -->
+      <div v-else-if="(step === 3 && wizFlow === 'expense') || (step === 4 && wizFlow === 'loan')" class="space-y-8">
+        <h2 class="text-xl font-black text-slate-800 text-center tracking-tight">
+          {{ wizFlow === 'loan' ? 'Qual o valor total do empréstimo?' : 'Qual foi o valor total?' }}
+        </h2>
+        <div class="bg-slate-50 border-2 border-slate-200/60 rounded-3xl p-6 text-center shadow-inner">
+          <div class="flex items-baseline justify-center gap-1.5 mb-5">
+            <span class="text-slate-400 text-2xl font-black">R$</span>
             <input 
-              ref="valorInput"
               v-model.number="valor"
-              type="number" 
+              type="number"
               step="0.01"
-              class="w-48 text-6xl font-black text-emerald-600 bg-transparent border-none focus:outline-none mono tracking-tighter text-center"
+              class="w-44 text-4xl font-black text-slate-800 bg-transparent text-center focus:outline-none focus:border-indigo-500 border-b-2 border-dashed border-slate-300"
               placeholder="0,00"
+              autofocus
             />
+          </div>
+
+          <!-- Parcelamento Digitável -->
+          <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="border-t border-slate-200 pt-5 mt-2">
+            <span class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-3">
+              {{ wizFlow === 'loan' ? '🤝 Quer parcelar a devolução deste empréstimo?' : '📋 Quer parcelar esta compra no cartão?' }}
+            </span>
+            <div class="flex items-center justify-center gap-3.5">
+              <button 
+                type="button" 
+                @click="ajustarParcelas(-1)" 
+                class="w-10 h-10 rounded-full border border-slate-300 font-extrabold bg-white text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
+              >-</button>
+              <input 
+                v-model.number="installments" 
+                type="number"
+                min="1"
+                class="w-16 text-center font-black border-2 border-slate-300 rounded-xl py-1 text-base focus:outline-none focus:border-indigo-500"
+              />
+              <button 
+                type="button" 
+                @click="ajustarParcelas(1)" 
+                class="w-10 h-10 rounded-full border border-slate-300 font-extrabold bg-white text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
+              >+</button>
+              <span class="text-xs text-slate-500 font-bold">meses / parcelas</span>
+            </div>
+            <!-- Feedback dinâmico das parcelas -->
+            <span class="block text-xs text-indigo-600 mt-3.5 font-bold leading-normal">
+              {{ infoParcelamento }}
+            </span>
           </div>
         </div>
       </div>
+
+      <!-- Passo 4 (EXPENSE) ou Passo 5 (LOAN): Nome da Despesa / Lembrete -->
+      <div v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')" class="space-y-6">
+        <h2 class="text-xl font-black text-slate-800 text-center tracking-tight leading-snug">
+          {{ wizFlow === 'loan' ? 'Escreva um lembrete para este empréstimo' : 'Qual o nome/descrição desta despesa?' }}
+        </h2>
+        <div class="space-y-5">
+          <input 
+            v-model="descricao"
+            type="text"
+            :placeholder="wizFlow === 'loan' ? 'Ex: Pagar a conta de luz dele, Pix rápido...' : 'Ex: Supermercado, Almoço, Farmácia...'"
+            class="w-full p-4 border-2 border-slate-200 rounded-2xl text-center text-base font-bold focus:outline-none focus:border-indigo-500 shadow-sm"
+            autofocus
+          />
+
+          <!-- Quick Sugestions Chips -->
+          <div class="flex justify-center gap-2 flex-wrap max-w-sm mx-auto">
+            <button 
+              v-for="chip in quickChips" 
+              :key="chip"
+              type="button"
+              @click="selecionarChip(chip)"
+              class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3.5 rounded-full transition-colors active:scale-95"
+            >
+              {{ chip }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passo 5 (EXPENSE): Divisão Rateio Coletivo -->
+      <div v-else-if="step === 5 && wizFlow === 'expense'" class="space-y-6">
+        <h2 class="text-xl font-black text-slate-800 text-center tracking-tight">Com quem quer dividir esta conta?</h2>
+        
+        <!-- Atalhos rápidos -->
+        <div class="flex justify-center gap-5 mb-1.5">
+          <button type="button" @click="dividirComTodos" class="text-xs font-black text-indigo-600 underline">👥 Dividir com Todos</button>
+          <button type="button" @click="dividirApenasEu" class="text-xs font-black text-rose-600 underline">👤 Apenas Eu</button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <button 
+            v-for="m in props.membros" 
+            :key="m.id" 
+            @click="toggleSplitMember(m.id)"
+            class="relative flex flex-col items-center gap-2 p-3 border-2 rounded-2xl transition-all"
+            :class="[participantesDivisao.includes(m.id) ? 'border-indigo-600 bg-indigo-50/10' : 'border-slate-200 bg-slate-50/50']"
+          >
+            <div class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-black text-sm">
+              {{ m.nome[0] }}
+            </div>
+            <span class="text-[10px] font-black text-slate-700">{{ m.nome }}</span>
+            <span class="absolute top-1.5 right-1.5 text-xs">
+              {{ participantesDivisao.includes(m.id) ? '✅' : '⬜' }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Feedback cognitivo de segurança -->
+        <div class="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-4 text-[10px] font-medium text-indigo-700 leading-normal">
+          {{ cognitiveSummary }}
+        </div>
+
+        <!-- Quadro final de rateio -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm">
+          <span class="text-3xl">📊</span>
+          <div class="text-left leading-snug">
+            <strong class="block text-emerald-800 text-xs font-black">{{ splitSummaryTitle }}</strong>
+            <span class="text-[10px] text-emerald-600 font-extrabold">{{ splitSummaryDesc }}</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <WizardFooter 
-      :step="step" 
-      :total-steps="totalSteps" 
-      :can-advance="canAdvance"
-      @next="next(); focarValorInput();"
-      @prev="prev"
-      @finish="finalizar"
-    />
+    <!-- Rodapé de Ações do Wizard (Navegação) -->
+    <div class="border-t border-slate-100 pt-6 mt-6 flex justify-between gap-4">
+      <button 
+        type="button" 
+        @click="step === 1 ? emit('cancelar') : prev()"
+        class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm py-4 rounded-2xl transition-all shadow-sm"
+      >
+        {{ step === 1 ? 'Cancelar' : 'Voltar' }}
+      </button>
+
+      <button 
+        type="button" 
+        :disabled="!canAdvance"
+        @click="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? handleGravar() : next()"
+        class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm py-4 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-600/10"
+      >
+        {{ ((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? 'Confirmar e Gravar' : 'Avançar' }}
+      </button>
+    </div>
+
   </div>
 </template>

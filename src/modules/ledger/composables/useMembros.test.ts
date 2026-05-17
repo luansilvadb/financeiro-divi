@@ -20,25 +20,21 @@ describe('useMembros', () => {
     vi.clearAllMocks()
   })
 
-  it('deve realizar a migração inicial se o repositório estiver vazio', async () => {
+  it('deve iniciar vazio se o repositório estiver vazio', async () => {
     const { membros, carregar } = useMembros()
     
     await carregar()
 
-    expect(membros.value.length).toBe(4)
-    expect(membros.value.map(m => m.nome)).toContain('Luan')
-    expect(membros.value.map(m => m.nome)).toContain('Maria')
-    expect(membros.value.map(m => m.nome)).toContain('João')
-    expect(membros.value.map(m => m.nome)).toContain('Paula')
+    expect(membros.value.length).toBe(0)
   })
 
   it('deve adicionar um novo membro', async () => {
     const { membros, adicionarMembro, carregar } = useMembros()
-    await carregar() // migração
+    await carregar() 
     
     await adicionarMembro('Novo Membro')
     
-    expect(membros.value.length).toBe(5)
+    expect(membros.value.length).toBe(1)
     expect(membros.value.find(m => m.nome === 'Novo Membro')).toBeDefined()
   })
 

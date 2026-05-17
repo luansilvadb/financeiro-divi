@@ -65,8 +65,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ContaFixa } from '../../core/domain/ContaFixa'
-import { Gasto } from '../../core/domain/Gasto'
+import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
+import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 
 const props = defineProps<{
   contasFixas: ContaFixa[]

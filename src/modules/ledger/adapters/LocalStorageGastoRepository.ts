@@ -22,7 +22,13 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         descricao: g.descricao,
         valorTotalCentavos: g.valorTotal.centavos,
         compradorId: g.compradorId, // <- NOVO
-        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos }))
+        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
+        installments: g.installments,
+        isLoan: g.isLoan,
+        borrowerId: g.borrowerId,
+        recurringBillId: g.recurringBillId,
+        isSettlement: g.isSettlement,
+        settlementDetails: g.settlementDetails
       }))
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
     })
@@ -50,7 +56,13 @@ export class LocalStorageGastoRepository implements IGastoRepository {
           descricao: g.descricao,
           valorTotal: Dinheiro.deCentavos(g.valorTotalCentavos),
           compradorId, // <- NOVO
-          divisoes
+          divisoes,
+          installments: g.installments || 1,
+          isLoan: g.isLoan || false,
+          borrowerId: g.borrowerId || null,
+          recurringBillId: g.recurringBillId || null,
+          isSettlement: g.isSettlement || false,
+          settlementDetails: g.settlementDetails || null
         })
       })
     } catch (e) {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NovoLancamentoWizard from './NovoLancamentoWizard.vue'
 
-describe('NovoLancamentoWizard - Fluxo de Cartão', () => {
+describe('NovoLancamentoWizard - Sênior v18', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
@@ -18,23 +18,27 @@ describe('NovoLancamentoWizard - Fluxo de Cartão', () => {
     { id: 'm2', nome: 'Maria' }
   ]
 
-  it('deve ter 4 passos totais e começar no passo 1 selecionando tipo de ação', () => {
+  it('deve iniciar no Passo 1/5 perguntando como foi feito o lançamento', () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
-    expect(wrapper.text()).toContain('Passo 1 de 4')
-    expect(wrapper.text()).toContain('O que você quer fazer?')
+    expect(wrapper.text()).toContain('Passo 1/5')
+    expect(wrapper.text()).toContain('Como você pagou ou fez o lançamento?')
   })
 
-  it('deve avançar do passo 1 para o 2 ao selecionar gasto', async () => {
+  it('deve avançar para o Passo 2 ao clicar em PIX', async () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
-    const choices = wrapper.findAll('button')
-    // O primeiro botão é "Novo Gasto no Cartão"
-    await choices[0].trigger('click')
     
-    expect(wrapper.text()).toContain('Passo 2 de 4')
-    expect(wrapper.text()).toContain('Escolha o cartão')
+    // Localiza e clica no botão PIX
+    const buttons = wrapper.findAll('button')
+    const pixButton = buttons.find(b => b.text().includes('PIX'))
+    expect(pixButton).toBeDefined()
+    
+    await pixButton!.trigger('click')
+    
+    expect(wrapper.text()).toContain('Passo 2/5')
+    expect(wrapper.text()).toContain('Quem foi a pessoa que pagou?')
   })
 })

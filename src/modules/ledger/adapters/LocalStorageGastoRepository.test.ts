@@ -39,4 +39,29 @@ describe('LocalStorageGastoRepository', () => {
     expect(list.length).toBe(1)
     expect(list[0].compradorId).toBe('m_legacy')
   })
+
+  it('deve salvar e carregar gastos contendo dados de parcelamento e empréstimos', async () => {
+    const repo = new LocalStorageGastoRepository()
+    const divisoes = [new DivisaoDeGasto('m2', Dinheiro.deCentavos(10000))]
+    const gasto = new Gasto({
+      id: 'gasto_loan_1',
+      faturaId: 'f1',
+      descricao: 'Empréstimo da Luz',
+      valorTotal: Dinheiro.deCentavos(10000),
+      compradorId: 'm1',
+      divisoes,
+      installments: 2,
+      isLoan: true,
+      borrowerId: 'm2'
+    })
+
+    await repo.salvar(gasto)
+    const porFatura = await repo.buscarPorFatura('f1')
+    const recuperado = porFatura.find(g => g.id === 'gasto_loan_1')
+
+    expect(recuperado).toBeDefined()
+    expect(recuperado!.installments).toBe(2)
+    expect(recuperado!.isLoan).toBe(true)
+    expect(recuperado!.borrowerId).toBe('m2')
+  })
 })

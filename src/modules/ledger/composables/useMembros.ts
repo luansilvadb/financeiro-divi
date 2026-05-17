@@ -15,21 +15,6 @@ export function useMembros() {
   const carregar = async () => {
     let lista = await repository.listarTodos()
     
-    // Migração inicial: Se vazio, popula com os hardcoded
-    if (lista.length === 0) {
-      const iniciais = [
-        { id: 'luan', nome: 'Luan' },
-        { id: 'maria', nome: 'Maria' },
-        { id: 'joao', nome: 'João' },
-        { id: 'paula', nome: 'Paula' }
-      ]
-      for (const m of iniciais) {
-        const novo = new Membro(m)
-        await repository.salvar(novo)
-      }
-      lista = await repository.listarTodos()
-    }
-    
     membros.value = lista
     inicializado.value = true
   }

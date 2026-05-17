@@ -2,7 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
 import { DivisaoDeGasto } from '../../../modules/ledger/core/domain/DivisaoDeGasto'
-import { Dinheiro } from '../../../../shared/primitives/Dinheiro'
+import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import SeletorMembros from '../shared/SeletorMembros.vue'
 
 interface Props {
   show: boolean
@@ -48,18 +49,7 @@ watch(
   { immediate: true }
 )
 
-const toggleParticipante = (id: string) => {
-  const idx = participantes.value.indexOf(id)
-  if (idx >= 0) {
-    participantes.value.splice(idx, 1)
-  } else {
-    participantes.value.push(id)
-  }
-
-  if (modo.value === 'MANUAL') {
-    recalcularSugestaoManual()
-  }
-}
+// toggleParticipante foi removido pois SeletorMembros gerencia isso nativamente com v-model
 
 const setModo = (newModo: 'IGUAL' | 'MANUAL') => {
   modo.value = newModo
@@ -154,28 +144,10 @@ const salvar = () => {
         <!-- 1. Comprador -->
         <div class="space-y-2">
           <label class="text-xs font-black uppercase text-gray-400 tracking-wider block">Quem Comprou (Dono do gasto)</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button 
-              v-for="m in props.membros" 
-              :key="m.id"
-              type="button"
-              @click="compradorId = m.id"
-              :class="[
-                'p-3 border-2 rounded-2xl flex flex-col items-center gap-1.5 transition-all text-xs font-bold',
-                compradorId === m.id ? 'border-blue-600 bg-blue-50/20 text-blue-800' : 'border-slate-100 hover:border-blue-600/30 text-gray-600'
-              ]"
-            >
-              <div 
-                :class="[
-                  'w-8 h-8 rounded-full flex items-center justify-center font-black text-xs',
-                  compradorId === m.id ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-                ]"
-              >
-                {{ m.nome[0].toUpperCase() }}
-              </div>
-              <span class="truncate w-full text-center">{{ m.nome }}</span>
-            </button>
-          </div>
+          <SeletorMembros 
+            :membros="props.membros"
+            v-model="compradorId"
+          />
         </div>
 
         <!-- 2. Rateio e Divisão -->
@@ -209,28 +181,12 @@ const salvar = () => {
           <!-- Participantes -->
           <div class="space-y-2">
             <span class="text-xs font-bold text-gray-400">Quem divide essa conta:</span>
-            <div class="grid grid-cols-3 gap-2">
-              <button 
-                v-for="m in props.membros" 
-                :key="m.id"
-                type="button"
-                @click="toggleParticipante(m.id)"
-                :class="[
-                  'p-3 border-2 rounded-2xl flex flex-col items-center gap-1.5 transition-all text-xs font-bold',
-                  participantes.includes(m.id) ? 'border-blue-600 bg-blue-50/20 text-blue-800' : 'border-slate-100 hover:border-blue-600/30 text-gray-600'
-                ]"
-              >
-                <div 
-                  :class="[
-                    'w-8 h-8 rounded-full flex items-center justify-center font-black text-xs',
-                    participantes.includes(m.id) ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-                  ]"
-                >
-                  {{ m.nome[0].toUpperCase() }}
-                </div>
-                <span class="truncate w-full text-center">{{ m.nome }}</span>
-              </button>
-            </div>
+            <SeletorMembros 
+              :membros="props.membros"
+              v-model="participantes"
+              :multiple="true"
+              @update:model-value="modo === 'MANUAL' ? recalcularSugestaoManual() : null"
+            />
           </div>
 
           <!-- Valores Detalhados -->

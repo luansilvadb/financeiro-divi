@@ -14,73 +14,92 @@ function withSetup<T>(composable: () => T) {
   return [result!, app] as const
 }
 
-describe('useNovoLancamentoWizard - Fluxo de Cartão', () => {
+describe('useNovoLancamentoWizard - Sênior v18', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.useRealTimers()
   })
 
-  it('deve iniciar com o estado padrão para cartões', () => {
-    const [{ step, valor, descricao, cartaoSelecionadoId }] = withSetup(() => useNovoLancamentoWizard([]))
+  it('deve inicializar com o estado padrão sênior', () => {
+    const [{ step, totalSteps, wizFlow, wizPayment, installments, borrowerId }] = withSetup(() => useNovoLancamentoWizard([]))
     expect(step.value).toBe(1)
-    expect(valor.value).toBe(0)
-    expect(descricao.value).toBe('')
-    expect(cartaoSelecionadoId.value).toBe('')
+    expect(totalSteps.value).toBe(5)
+    expect(wizFlow.value).toBe('expense')
+    expect(wizPayment.value).toBe('pix')
+    expect(installments.value).toBe(1)
+    expect(borrowerId.value).toBeNull()
   })
 
-  it('deve avançar e retroceder passos', () => {
+  it('deve avançar e retroceder passos corretamente', () => {
     const [{ step, next, prev }] = withSetup(() => useNovoLancamentoWizard([]))
+    expect(step.value).toBe(1)
     next()
     expect(step.value).toBe(2)
     prev()
     expect(step.value).toBe(1)
   })
 
-  it('deve selecionar comprador', () => {
-    const [{ compradorSelecionadoId }] = withSetup(() => useNovoLancamentoWizard([]))
-    expect(compradorSelecionadoId.value).toBe('')
-    compradorSelecionadoId.value = 'm1'
-    expect(compradorSelecionadoId.value).toBe('m1')
-  })
-
-  it('deve alternar o fluxo entre Gasto e Adiantamento corretamente', () => {
-    const [{ tipo, step, canAdvance }] = withSetup(() => useNovoLancamentoWizard([]))
-    expect(tipo.value).toBe('GASTO')
-    expect(step.value).toBe(1)
+  it('deve validar canAdvance nos passos do fluxo de Empréstimo', () => {
+    const [{ step, wizFlow, compradorSelecionadoId, borrowerId, valor, descricao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard([]))
     
-    // No passo 1 (escolha de ação), sempre podemos avançar
+    // Passo 1: Escolha do fluxo
+    wizFlow.value = 'loan'
     expect(canAdvance.value).toBe(true)
+    next()
 
-    tipo.value = 'ADIANTAMENTO'
-    expect(tipo.value).toBe('ADIANTAMENTO')
+    // Passo 2: Lender
+    expect(canAdvance.value).toBe(false)
+    compradorSelecionadoId.value = 'luan'
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 3: Borrower
+    expect(canAdvance.value).toBe(false)
+    borrowerId.value = 'joao'
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 4: Valor
+    expect(canAdvance.value).toBe(false)
+    valor.value = 500
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 5: Descrição/Lembrete
+    expect(canAdvance.value).toBe(false)
+    descricao.value = 'Empréstimo do Aluguel'
+    expect(canAdvance.value).toBe(true)
   })
 
-  it('deve alternar totalSteps e validar canAdvance no passo 5 com divisao igual ou manual', () => {
-    const [{ step, tipo, querDividirAgora, totalSteps, canAdvance, participantesDivisao, modoDivisaoWizard, valoresDivisaoWizard, valor, compradorSelecionadoId }] = withSetup(() => useNovoLancamentoWizard([]))
+  it('deve validar canAdvance nos passos do fluxo de Gasto Comum', () => {
+    const [{ step, wizFlow, compradorSelecionadoId, valor, descricao, participantesDivisao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id }))))
     
-    tipo.value = 'GASTO'
-    compradorSelecionadoId.value = 'm1'
-    valor.value = 100
-    
-    expect(totalSteps.value).toBe(4) // Sem divisao imediata, sao 4 passos
-    
-    querDividirAgora.value = true
-    expect(totalSteps.value).toBe(5) // Com divisao imediata, sao 5 passos
-    
-    step.value = 5
-    
-    // Modo IGUAL: canAdvance e falso se nao houver participantes
+    // Passo 1: Escolha do fluxo (Gasto)
+    wizFlow.value = 'expense'
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 2: Quem pagou?
     expect(canAdvance.value).toBe(false)
-    
-    participantesDivisao.value = ['m1', 'm2']
-    expect(canAdvance.value).toBe(true) // Agora tem participantes
-    
-    // Modo MANUAL: canAdvance e falso se a soma dos valores nao bater
-    modoDivisaoWizard.value = 'MANUAL'
-    valoresDivisaoWizard.value = { m1: 50, m2: 40 }
-    expect(canAdvance.value).toBe(false) // 50 + 40 = 90 (total = 100) -> Diferente!
-    
-    valoresDivisaoWizard.value = { m1: 50, m2: 50 }
-    expect(canAdvance.value).toBe(true) // 50 + 50 = 100 -> Perfeito!
+    compradorSelecionadoId.value = 'luan'
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 3: Qual foi o valor?
+    expect(canAdvance.value).toBe(false)
+    valor.value = 250
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 4: Descrição
+    expect(canAdvance.value).toBe(false)
+    descricao.value = 'Churrasco'
+    expect(canAdvance.value).toBe(true)
+    next()
+
+    // Passo 5: Divisão rateio
+    expect(canAdvance.value).toBe(true) // Padrão seleciona todos, então pode avançar
+    participantesDivisao.value = []
+    expect(canAdvance.value).toBe(false) // Se ninguém, não pode avançar
   })
 })

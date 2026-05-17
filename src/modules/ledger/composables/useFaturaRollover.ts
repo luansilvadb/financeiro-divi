@@ -4,7 +4,12 @@ import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
 export function useFaturaRollover() {
-  const isMonthLocked = ref(false)
+  const isMonthLocked = ref(localStorage.getItem('divi_is_month_locked') === 'true')
+
+  const setMonthLocked = (locked: boolean) => {
+    isMonthLocked.value = locked
+    localStorage.setItem('divi_is_month_locked', locked ? 'true' : 'false')
+  }
 
   const processarRolloverParcelas = (novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] => {
     return gastosAnteriores
@@ -80,6 +85,7 @@ export function useFaturaRollover() {
 
   return {
     isMonthLocked,
+    setMonthLocked,
     processarRolloverParcelas,
     gerarTransacoesNettingSaldoInicial
   }

@@ -86,7 +86,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { ContaFixa } from '../../core/domain/ContaFixa'
+import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 
 const props = defineProps<{
   visible: boolean

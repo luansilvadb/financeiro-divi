@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { ContaFixa } from '../core/domain/ContaFixa'
+import type { ContaFixa } from '../core/domain/ContaFixa'
 import { Gasto } from '../core/domain/Gasto'
 import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
