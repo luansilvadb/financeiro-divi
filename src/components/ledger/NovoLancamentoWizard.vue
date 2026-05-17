@@ -98,8 +98,8 @@ const finalizar = async () => {
         >
           <span class="text-3xl">💸</span>
           <div>
-            <strong class="block text-gray-800 text-base">Registrar Adiantamento</strong>
-            <span class="text-xs text-gray-500">Registrar transferência de dinheiro para o dono do cartão</span>
+            <strong class="block text-gray-800 text-base">Registrar Pagamento Antecipado</strong>
+            <span class="text-xs text-gray-500">Paguei uma conta da casa antes do fechamento</span>
           </div>
         </button>
       </div>
@@ -191,7 +191,7 @@ const finalizar = async () => {
     <div v-else-if="tipo === 'ADIANTAMENTO'">
       <!-- Passo 2: Quem enviou? -->
       <div v-if="step === 2" key="ant-step2">
-        <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">Quem está adiantando o dinheiro?</h2>
+        <h2 class="text-xl font-bold mb-6 text-gray-800 text-center">Quem está pagando?</h2>
         <div class="grid grid-cols-2 gap-4">
           <button 
             v-for="m in props.membros" 
@@ -214,7 +214,7 @@ const finalizar = async () => {
 
       <!-- Passo 3: Para qual cartão? -->
       <div v-else-if="step === 3" key="ant-step3">
-        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Para qual cartão/fatura?</h2>
+        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Para qual cartão/fatura é a conta?</h2>
         <div class="grid grid-cols-1 gap-4">
           <button 
             v-for="c in cartoes"
@@ -242,10 +242,10 @@ const finalizar = async () => {
 
       <!-- Passo 4: Qual o valor do Pix? -->
       <div v-else-if="step === 4" key="ant-step4">
-        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Qual o valor do adiantamento?</h2>
+        <h2 class="text-xl font-bold mb-8 text-gray-800 text-center">Qual o valor pago?</h2>
         
         <div class="mb-10 text-center bg-emerald-50/30 p-10 rounded-[2.5rem] border-2 border-emerald-100 group">
-          <div class="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4">Valor Adiantado (Pix)</div>
+          <div class="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4">Valor Pago (Pix/Dinheiro)</div>
           <div class="flex items-baseline justify-center gap-2">
             <span class="text-emerald-500 text-2xl font-bold">R$</span>
             <input 
