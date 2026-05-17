@@ -22,4 +22,11 @@ describe('StorageLock', () => {
     const result = await StorageLock.executarAtomico('test', async () => 'fallback')
     expect(result).toBe('fallback')
   })
+
+  it('deve propagar erros da operação', async () => {
+    const error = new Error('falha na operação')
+    await expect(StorageLock.executarAtomico('test', async () => {
+      throw error
+    })).rejects.toThrow('falha na operação')
+  })
 })

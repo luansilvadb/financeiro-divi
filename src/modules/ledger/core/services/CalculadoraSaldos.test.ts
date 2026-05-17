@@ -234,10 +234,8 @@ describe('CalculadoraSaldos', () => {
     ])
     
     const acertos = CalculadoraSaldos.calcularAcertos(saldos)
-    // Verifica se o total de transferências é otimizado (geralmente 3 aqui)
     expect(acertos.length).toBeLessThanOrEqual(3)
     
-    // Verifica se os saldos finais seriam zerados
     const saldosFinais = new Map(saldos)
     acertos.forEach(a => {
       saldosFinais.set(a.de, saldosFinais.get(a.de)!.somar(a.valor))
@@ -247,6 +245,34 @@ describe('CalculadoraSaldos', () => {
     for (const saldo of saldosFinais.values()) {
       expect(saldo.isZero()).toBe(true)
     }
+  })
+
+  it('deve lidar corretamente com devedor que precisa de múltiplos credores (Regressão Checkpoint)', () => {
+    // Cenário do usuário: A: -500, B: +100, C: +150, D: +250
+    const saldos = new Map([
+      ['A', Dinheiro.deCentavos(-500)],
+      ['B', Dinheiro.deCentavos(100)],
+      ['C', Dinheiro.deCentavos(150)],
+      ['D', Dinheiro.deCentavos(250)]
+    ])
+
+    const acertos = CalculadoraSaldos.calcularAcertos(saldos)
+    
+    // Verificação de Integridade Matemática
+    const saldosFinais = new Map(saldos)
+    acertos.forEach(a => {
+      saldosFinais.set(a.de, saldosFinais.get(a.de)!.somar(a.valor))
+      saldosFinais.set(a.para, saldosFinais.get(a.para)!.subtrair(a.valor))
+    })
+
+    for (const [id, saldo] of saldosFinais) {
+      expect(saldo.isZero(), `Membro ${id} deveria estar zerado mas tem ${saldo.centavos}`).toBe(true)
+    }
+
+    // Verificação de não-duplicação de sugestões (o bug removia errado o pop)
+    // Se o bug existisse, haveria acertos repetidos ou fantasmas no array
+    const beneficiariosD = acertos.filter(a => a.para === 'D').length
+    expect(beneficiariosD).toBeLessThanOrEqual(1) // No cenário otimizado, D recebe de um por vez na árvore
   })
 })
 

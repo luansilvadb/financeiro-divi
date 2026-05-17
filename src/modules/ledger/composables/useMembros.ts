@@ -6,30 +6,43 @@ import { LocalStorageMembroRepository } from '../adapters/LocalStorageMembroRepo
 const repository = new LocalStorageMembroRepository()
 const membros = ref<Membro[]>([])
 const carregado = ref(false)
+let carregandoPromise: Promise<void> | null = null
 
 export function useMembros() {
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
   const carregar = async () => {
-    let lista = await repository.listarTodos()
-    
-    // Migração inicial: Se vazio, popula com os hardcoded
-    if (lista.length === 0) {
-      const iniciais = [
-        { id: 'luan', nome: 'Luan' },
-        { id: 'maria', nome: 'Maria' },
-        { id: 'joao', nome: 'João' },
-        { id: 'paula', nome: 'Paula' }
-      ]
-      for (const m of iniciais) {
-        const novo = new Membro(m)
-        await repository.salvar(novo)
+    // Se já estiver carregando, retorna a promessa existente
+    if (carregandoPromise) return carregandoPromise
+
+    carregandoPromise = (async () => {
+      try {
+        let lista = await repository.listarTodos()
+        
+        // Migração inicial: Se vazio, popula com os hardcoded
+        if (lista.length === 0) {
+          const iniciais = [
+            { id: 'luan', nome: 'Luan' },
+            { id: 'maria', nome: 'Maria' },
+            { id: 'joao', nome: 'João' },
+            { id: 'paula', nome: 'Paula' }
+          ]
+          // Salva todos os iniciais
+          for (const m of iniciais) {
+            const novo = new Membro(m)
+            await repository.salvar(novo)
+          }
+          lista = await repository.listarTodos()
+        }
+        
+        membros.value = lista
+        carregado.value = true
+      } finally {
+        carregandoPromise = null
       }
-      lista = await repository.listarTodos()
-    }
-    
-    membros.value = lista
-    carregado.value = true
+    })()
+
+    return carregandoPromise
   }
 
   const adicionarMembro = async (nome: string) => {

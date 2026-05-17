@@ -5,12 +5,24 @@ import { LocalStorageTransacaoRepository } from '../adapters/LocalStorageTransac
 // Estado global compartilhado por todas as instâncias (Singleton)
 const transacoes = ref<Transacao[]>([])
 const inicializado = ref(false)
+let carregandoPromise: Promise<void> | null = null
 const repository = new LocalStorageTransacaoRepository()
 
 export function useTransacoes() {
   const carregar = async () => {
-    transacoes.value = await repository.listarTodas()
-    inicializado.value = true
+    // Se já estiver carregando, retorna a promessa existente
+    if (carregandoPromise) return carregandoPromise
+
+    carregandoPromise = (async () => {
+      try {
+        transacoes.value = await repository.listarTodas()
+        inicializado.value = true
+      } finally {
+        carregandoPromise = null
+      }
+    })()
+
+    return carregandoPromise
   }
 
   const salvar = async (t: Transacao) => {
