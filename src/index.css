@@ -1,3 +1,78 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #07090F;
+    --s1: rgba(255, 255, 255, 0.04);
+    --s2: rgba(255, 255, 255, 0.07);
+    --s3: rgba(255, 255, 255, 0.11);
+    --border: rgba(255, 255, 255, 0.07);
+    --border-hi: rgba(255, 255, 255, 0.14);
+    
+    --primary: #6366F1;
+    --primary-dim: rgba(99, 102, 241, 0.15);
+    --primary-glow: rgba(99, 102, 241, 0.30);
+    
+    --emerald: #10B981;
+    --emerald-dim: rgba(16, 185, 129, 0.12);
+    --emerald-glow: rgba(16, 185, 129, 0.25);
+    
+    --rose: #F43F5E;
+    --rose-dim: rgba(244, 63, 94, 0.12);
+    
+    --amber: #F59E0B;
+    --amber-dim: rgba(245, 158, 11, 0.12);
+    
+    --blue: #3B82F6;
+    --blue-dim: rgba(59, 130, 246, 0.12);
+    
+    --violet: #8B5CF6;
+    
+    --t1: #F8FAFC;
+    --t2: rgba(248, 250, 252, 0.60);
+    --t3: rgba(248, 250, 252, 0.35);
+    --t4: rgba(248, 250, 252, 0.20);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--t1);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  
+  .glass-input {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    color: var(--t1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 16px var(--primary-glow);
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+  
+  .glow-emerald {
+    box-shadow: 0 0 20px var(--emerald-glow);
+  }
+
+  .text-glow-emerald {
+    text-shadow: 0 0 8px var(--emerald-glow);
+  }
+}
