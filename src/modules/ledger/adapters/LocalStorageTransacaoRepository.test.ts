@@ -28,6 +28,7 @@ describe('LocalStorageTransacaoRepository', () => {
     expect(buscada?.id).toBe('1')
     expect(buscada?.total).toBeInstanceOf(Dinheiro)
     expect(buscada?.total.centavos).toBe(10000)
+    expect(buscada?.total.formatar()).toBe('R$\u00a0100,00')
     expect(buscada?.data).toBeInstanceOf(Date)
     expect(buscada?.data.toISOString()).toBe('2024-01-01T10:00:00.000Z')
     expect(buscada?.divisoes[0].valor).toBeInstanceOf(Dinheiro)

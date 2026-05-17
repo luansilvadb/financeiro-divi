@@ -46,13 +46,21 @@ export class LocalStorageTransacaoRepository implements ITransacaoRepository {
             total: Dinheiro.deCentavos(t.total.centavos),
             data: new Date(t.data),
             pagamentos: (t.pagamentos || [])
-              .filter((p: any) => p.valor && typeof p.valor.centavos === 'number')
+              .filter((p: any) => {
+                const valido = p.valor && typeof p.valor.centavos === 'number'
+                if (!valido) console.error(`[DIVI] Pagamento corrompido ignorado na transação ${t.id}:`, p)
+                return valido
+              })
               .map((p: any) => ({
                 membro_id: p.membro_id,
                 valor: Dinheiro.deCentavos(p.valor.centavos)
               })),
             divisoes: t.divisoes
-              .filter((d: any) => d.valor && typeof d.valor.centavos === 'number')
+              .filter((d: any) => {
+                const valido = d.valor && typeof d.valor.centavos === 'number'
+                if (!valido) console.error(`[DIVI] Divisão corrompida ignorada na transação ${t.id}:`, d)
+                return valido
+              })
               .map((d: any) => new Divisao(d.beneficiario_id, Dinheiro.deCentavos(d.valor.centavos)))
           })
           transacoes.push(transacao)
