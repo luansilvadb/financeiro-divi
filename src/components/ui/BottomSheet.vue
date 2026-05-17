@@ -130,12 +130,12 @@ const onTouchEnd = (e: TouchEvent) => {
     currentTarget.style.transform = ''
     close()
   } else {
-    // Snap back com rebote de mola premium!
-    currentTarget.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15)'
+    // Retorno suave e sutil sem elasticidade
+    currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
     currentTarget.style.transform = 'translateY(0)'
     setTimeout(() => {
       currentTarget.style.transition = ''
-    }, 500)
+    }, 400)
   }
 }
 
@@ -162,12 +162,12 @@ const onMouseDown = (e: MouseEvent) => {
       currentTarget.style.transform = ''
       close()
     } else {
-      // Snap back com rebote de mola premium!
-      currentTarget.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15)'
+      // Retorno suave e sutil sem elasticidade
+      currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
       currentTarget.style.transform = 'translateY(0)'
       setTimeout(() => {
         currentTarget.style.transition = ''
-      }, 500)
+      }, 400)
     }
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
@@ -179,12 +179,12 @@ const onMouseDown = (e: MouseEvent) => {
 </script>
 
 <style scoped>
-/* Transição do Sheet com efeito elástico/mola estilo iOS */
+/* Transição do Sheet sutil sem elasticidade (slide up & slide down espelhados) */
 .slide-up-enter-active {
-  transition: transform 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.12);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .slide-up-leave-active {
-  transition: transform 0.45s cubic-bezier(0.6, -0.28, 0.735, 0.045);
+  transition: transform 0.35s cubic-bezier(0.7, 0, 0.84, 0);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
