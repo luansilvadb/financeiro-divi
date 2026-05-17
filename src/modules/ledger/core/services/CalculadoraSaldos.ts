@@ -100,8 +100,16 @@ export class CalculadoraSaldos {
     let saldoAcumulado = Dinheiro.deCentavos(0)
     
     return transacoesOrdenadas.map(t => {
-      const valorPago = t.pagamentos.find(p => p.membro_id === membroId)?.valor || Dinheiro.deCentavos(0)
-      const valorConsumido = t.divisoes.find(d => d.beneficiario_id === membroId)?.valor || Dinheiro.deCentavos(0)
+      const centavosPagos = t.pagamentos
+        .filter(p => p.membro_id === membroId)
+        .reduce((acc, p) => acc + p.valor.centavos, 0)
+        
+      const centavosConsumidos = t.divisoes
+        .filter(d => d.beneficiario_id === membroId)
+        .reduce((acc, d) => acc + d.valor.centavos, 0)
+
+      const valorPago = Dinheiro.deCentavos(centavosPagos)
+      const valorConsumido = Dinheiro.deCentavos(centavosConsumidos)
       const valorLiquido = valorPago.subtrair(valorConsumido)
       
       saldoAcumulado = saldoAcumulado.somar(valorLiquido)
