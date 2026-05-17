@@ -17,6 +17,7 @@ import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
 import ModalAcertoCompensacao from './dashboard/ModalAcertoCompensacao.vue'
 import ActivityFeed from './ActivityFeed.vue'
 import ModalAjustarGasto from './ModalAjustarGasto.vue'
+import DetalhamentoSaldosCard from './dashboard/DetalhamentoSaldosCard.vue'
 import { 
   Plus, 
   Settings, 
@@ -509,6 +510,15 @@ const excluirGasto = async (id: string) => {
           </span>
         </div>
       </div>
+    </div>
+
+    <!-- Detalhamento Granular de Saldos por Coluna (Senior v19) -->
+    <div class="mt-6">
+      <DetalhamentoSaldosCard 
+        :membros="props.membros"
+        :gastos="globalGastos"
+        :saldosUnificados="saldosUnificadosAtivos"
+      />
     </div>
 
     <!-- Painel de Compensação Otimizada (Netting Live) (Senior v19) -->

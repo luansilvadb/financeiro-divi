@@ -73,4 +73,27 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('Lanche Barato')
     expect(wrapper.text()).toContain('Ajustar')
   })
+
+  it('deve renderizar o Detalhamento Granular de Contas', async () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: [] as any,
+        acertosPendentes: [] as any,
+        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        cartoes: [{ id: 'c1', nome: 'Nubank', responsavelPadraoId: 'm1' }] as any,
+        calcularConsumo: () => 0,
+        gastos: [] as any
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    
+    // Deve conter o título do card
+    expect(wrapper.text()).toContain('Detalhamento Granular de Contas')
+    // Deve conter os rótulos das colunas
+    expect(wrapper.text()).toContain('PIX')
+    expect(wrapper.text()).toContain('Cartão')
+    expect(wrapper.text()).toContain('Empréstimo')
+  })
 })
