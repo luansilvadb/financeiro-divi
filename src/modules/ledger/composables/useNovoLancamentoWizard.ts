@@ -1,52 +1,30 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { Transacao } from '../core/domain/Transacao'
-import { Divisao } from '../core/domain/Divisao'
+import { Gasto } from '../core/domain/Gasto'
+import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
+import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
+import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
+const gastoRepo = new LocalStorageGastoRepository()
+const faturaRepo = new LocalStorageFaturaRepository()
 
 export function useNovoLancamentoWizard(membros: { id: string; nome: string }[]) {
   const step = ref(1)
   const totalSteps = 3
-  const tipo = ref<'gasto' | 'ganho' | null>(null)
+  const tipo = ref<'gasto' | null>('gasto') // Focado exclusivamente em gasto/despesa
   const valor = ref(0)
   const descricao = ref('')
   const beneficiarios_selecionados = ref<string[]>([])
-  const pagamentos = ref<Record<string, number>>({})
-  const intencao = ref<'solo' | 'split'>('solo')
-
-  // Inicializar pagamentos
-  watch(() => membros, (novos) => {
-    novos.forEach(m => {
-      if (pagamentos.value[m.id] === undefined) {
-        pagamentos.value[m.id] = 0
-      }
-    })
-  }, { immediate: true })
-
-  const somaPagamentos = computed(() => {
-    return Object.values(pagamentos.value).reduce((acc, val) => acc + (val || 0), 0)
-  })
-
-  const restantePagamento = computed(() => {
-    return valor.value - somaPagamentos.value
-  })
-
-  const pagamentosEquilibrados = computed(() => {
-    return Math.abs(restantePagamento.value) < 0.001
-  })
-
-  watch(beneficiarios_selecionados, (newList) => {
-    intencao.value = newList.length > 1 ? 'split' : 'solo'
-  }, { deep: true })
+  const cartaoSelecionadoId = ref<string>('c1')
 
   const next = () => step.value++
   const prev = () => step.value--
 
   const canAdvance = computed(() => {
-    if (step.value === 1) return tipo.value !== null
+    if (step.value === 1) return true // Escolha do cartão
     if (step.value === 2) return valor.value > 0 && descricao.value.length > 0
-    if (step.value === 3) return beneficiarios_selecionados.value.length > 0 && pagamentosEquilibrados.value
+    if (step.value === 3) return beneficiarios_selecionados.value.length > 0
     return false
   })
 
@@ -62,20 +40,8 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[])
     step.value = 1
     valor.value = 0
     descricao.value = ''
-    tipo.value = null
-    intencao.value = 'solo'
     beneficiarios_selecionados.value = []
-    Object.keys(pagamentos.value).forEach(id => {
-      pagamentos.value[id] = 0
-    })
     localStorage.removeItem(STORAGE_KEY)
-  }
-
-  let transitionTimeout: ReturnType<typeof setTimeout>
-  const selecionarTipo = (t: 'gasto' | 'ganho') => {
-    tipo.value = t
-    clearTimeout(transitionTimeout)
-    transitionTimeout = setTimeout(() => next(), 50)
   }
 
   // Carregar do localStorage
@@ -84,13 +50,11 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[])
     if (saved) {
       try {
         const data = JSON.parse(saved)
-        if (data.tipo !== undefined) tipo.value = data.tipo
         if (data.step !== undefined) step.value = data.step
         if (data.valor !== undefined) valor.value = data.valor
         if (data.descricao !== undefined) descricao.value = data.descricao
-        if (data.intencao !== undefined) intencao.value = data.intencao
         if (data.beneficiarios_selecionados !== undefined) beneficiarios_selecionados.value = data.beneficiarios_selecionados
-        if (data.pagamentos !== undefined) pagamentos.value = data.pagamentos
+        if (data.cartaoSelecionadoId !== undefined) cartaoSelecionadoId.value = data.cartaoSelecionadoId
       } catch (e) {
         console.error('Erro ao carregar rascunho:', e)
       }
@@ -101,13 +65,11 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[])
   let saveTimeout: ReturnType<typeof setTimeout>
   watch(
     () => ({
-      tipo: tipo.value,
       step: step.value,
       valor: valor.value,
       descricao: descricao.value,
-      intencao: intencao.value,
       beneficiarios_selecionados: [...beneficiarios_selecionados.value],
-      pagamentos: { ...pagamentos.value }
+      cartaoSelecionadoId: cartaoSelecionadoId.value
     }),
     (state) => {
       clearTimeout(saveTimeout)
@@ -120,38 +82,27 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[])
 
   onUnmounted(() => {
     clearTimeout(saveTimeout)
-    clearTimeout(transitionTimeout)
   })
 
-  const finalizar = () => {
-    const totalRaw = Dinheiro.deReais(valor.value)
-    const total = tipo.value === 'ganho' ? Dinheiro.deCentavos(-totalRaw.centavos) : totalRaw
-
+  const finalizarComoGastoCartao = async () => {
+    const total = Dinheiro.deReais(valor.value)
     const partes = total.distribuir(beneficiarios_selecionados.value.length)
-    const divisoes = beneficiarios_selecionados.value.map((id, index) => new Divisao(id, partes[index]))
+    const divisoes = beneficiarios_selecionados.value.map((membroId, index) => new DivisaoDeGasto(membroId, partes[index]))
 
-    const listaPagamentos = Object.entries(pagamentos.value)
-      .filter(([_, val]) => (val || 0) > 0)
-      .map(([membro_id, val]) => {
-        const v = Dinheiro.deReais(val)
-        return {
-          membro_id,
-          valor: tipo.value === 'ganho' ? Dinheiro.deCentavos(-v.centavos) : v
-        }
-      })
+    const todasFaturas = await faturaRepo.listarTodas()
+    const fatura = todasFaturas.find(f => f.cartaoId === cartaoSelecionadoId.value && f.status === 'ABERTA') 
+      || todasFaturas[0]
 
-    const transacao = new Transacao({
+    const novoGasto = new Gasto({
       id: crypto.randomUUID(),
+      faturaId: fatura.id,
       descricao: descricao.value,
-      total,
-      pagamentos: listaPagamentos,
-      divisoes,
-      status: 'pendente',
-      data: new Date()
+      valorTotal: total,
+      divisoes
     })
 
+    await gastoRepo.salvar(novoGasto)
     reset()
-    return transacao
   }
 
   return {
@@ -161,16 +112,12 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[])
     valor,
     descricao,
     beneficiarios_selecionados,
-    pagamentos,
-    intencao,
-    restantePagamento,
-    pagamentosEquilibrados,
+    cartaoSelecionadoId,
     canAdvance,
     next,
     prev,
-    selecionarTipo,
     toggleBeneficiario,
     reset,
-    finalizar
+    finalizarComoGastoCartao
   }
 }
