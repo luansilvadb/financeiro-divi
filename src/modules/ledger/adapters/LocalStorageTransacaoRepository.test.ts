@@ -31,6 +31,7 @@ describe('LocalStorageTransacaoRepository', () => {
     expect(buscada?.data).toBeInstanceOf(Date)
     expect(buscada?.data.toISOString()).toBe('2024-01-01T10:00:00.000Z')
     expect(buscada?.divisoes[0].valor).toBeInstanceOf(Dinheiro)
+    expect(buscada?.pagamentos[0].valor).toBeInstanceOf(Dinheiro)
   })
 
   it('deve persistir dados entre instâncias diferentes do repositório', async () => {

@@ -45,6 +45,12 @@ export class LocalStorageTransacaoRepository implements ITransacaoRepository {
             ...t,
             total: Dinheiro.deCentavos(t.total.centavos),
             data: new Date(t.data),
+            pagamentos: (t.pagamentos || [])
+              .filter((p: any) => p.valor && typeof p.valor.centavos === 'number')
+              .map((p: any) => ({
+                membro_id: p.membro_id,
+                valor: Dinheiro.deCentavos(p.valor.centavos)
+              })),
             divisoes: t.divisoes
               .filter((d: any) => d.valor && typeof d.valor.centavos === 'number')
               .map((d: any) => new Divisao(d.beneficiario_id, Dinheiro.deCentavos(d.valor.centavos)))
