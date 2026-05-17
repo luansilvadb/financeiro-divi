@@ -60,7 +60,10 @@ Snapshot imutável gerado no momento do fechamento da fatura.
 - `pago: boolean`
 - `dataPagamento?: Date`
 
-## 4. Máquina de Estados da Fatura
+## 4. Máquina de Estados e Ciclo de Vida da Fatura
+
+A Fatura é **criada automaticamente** quando o primeiro Gasto ou Antecipação é lançado em um Cartão para um determinado período.
+- **Regra de Período:** O período da Fatura é determinado cruzando a data da transação com o `diaFechamento` do Cartão. Exemplo (Fechamento dia 10): um Gasto em 08/Mai pertence à fatura Abr/Mai (fecha em 10/Mai). Um gasto em 12/Mai pertence à fatura Mai/Jun (fecha em 10/Jun).
 
 | Estado | Descrição | Regras |
 | :--- | :--- | :--- |
@@ -72,7 +75,9 @@ Snapshot imutável gerado no momento do fechamento da fatura.
 
 1. **Exclusão do Responsável:** O responsável da fatura não aparece na lista de `AcertoMembro`. O valor que ele consumiu é considerado "pago" pelo ato de quitar a fatura junto ao banco.
 2. **Imutabilidade do Acerto:** Uma vez gerado o `AcertoMembro` no fechamento, ele não muda se um `Gasto` for editado.
-3. **Soberania do Responsável:** Apenas o responsável da fatura (ou um administrador) pode marcar um `AcertoMembro` como pago.
+3. **Soberania do Acerto:** A confirmação de pagamento depende da direção do acerto:
+   - Se `tipo = MEMBRO_PAGA`: O responsável da fatura confirma o recebimento.
+   - Se `tipo = RESPONSAVEL_PAGA`: O membro credor confirma o recebimento.
 4. **Fronteira Clara:** `Transacao` (imediata) e `Gasto` (cartão) são entidades distintas para evitar colapso de conceitos e facilitar o cálculo de saldos no Dashboard.
 5. **Validação de Domínio:** A tentativa de lançar ou editar `Gastos` em faturas com status `FECHADA` ou `ACERTADA` deve ser rejeitada pela camada de domínio (Service/Entity), garantindo a integridade dos acertos persistidos.
 6. **Direção do Acerto:** O sistema deve suportar casos onde a antecipação supera o consumo (`tipo: RESPONSAVEL_PAGA`), garantindo que o acerto reflita quem deve para quem.
@@ -86,7 +91,11 @@ Snapshot imutável gerado no momento do fechamento da fatura.
 ## 7. Definição de Pronto (DoR)
 - [ ] Entidades `Cartao`, `Fatura`, `Gasto`, `Antecipacao` e `AcertoMembro` implementadas com testes unitários.
 - [ ] Repositórios e testes de integração para todas as novas entidades.
+- [ ] Lógica de determinação de período (`determinarPeriodo`) implementada e testada.
 - [ ] Serviço de Fechamento de Fatura implementado com persistência de `AcertoMembro` e cálculo de `tipo` (direção).
 - [ ] Validação de domínio impedindo gastos em faturas fechadas.
 - [ ] Lógica de transição automática `FECHADA` -> `ACERTADA` implementada e testada.
-- [ ] Dashboard adaptado para distinguir saldo imediato de saldo de faturas.
+- [ ] Dashboard adaptado:
+  - Exibe saldos imediatos (vindos de `Transacao`) e saldos de fatura (vindos de `AcertoMembro`) separadamente.
+  - Faturas `ABERTAS` não afetam o saldo devedor principal do Dashboard (podem ser exibidas como previsão).
+  - Faturas `FECHADAS` com `AcertoMembro` pendente aparecem como dívidas ativas para o membro devedor.
