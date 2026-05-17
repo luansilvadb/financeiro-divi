@@ -63,11 +63,23 @@ Os componentes estenderão e utilizarão as variáveis cromáticas HSL injetadas
 *   **Ações de Estilo:**
     *   Mesmo em layouts maiores (desktop), a revisão usará o fundo escuro uniforme, os cards imersivos `.glass-card` e o fluxo de acerto com setas estilizadas em degradê de alta fidelidade visual.
 
+### 3.5. Especificações de Tipografia e Alta Densidade (Grid Compacto)
+Para atingir o equilíbrio perfeito entre visibilidade de dados e estética premium no mobile-first, os seguintes padrões de espaçamento e tipografia de alta densidade são obrigatórios em todos os componentes refinados:
+
+*   **Paddings Compactos:** Cartões de lista, itens de feed e extratos reduzem o padding de `p-6` (ou `p-4`) para `p-3.5` ou `p-3` no mobile.
+*   **Margens Verticais Apertadas:** Em vez de `space-y-3` ou `gap-3`, o fluxo vertical de listas usará `space-y-2` ou `gap-2` para otimizar a área útil da tela.
+*   **Hierarquia de Pesos (Apple/Fintech Style):**
+    *   Valores numéricos e preços usarão `font-black` (peso 900) para pop imediato.
+    *   Títulos principais em `font-bold` (peso 700) com tamanho ajustado para `text-sm` ou `text-xs` nas listas.
+    *   Rótulos secundários usarão opacidades de auto-contraste (`text-divi-t2` com `text-[10px]` ou `text-[9px]`) e espaçamento de letras sutil (`tracking-wider`).
+*   **Avatares Compactos:** Avatares de membros no feed e listas de rateio passam a ter diâmetro de `32px` (anteriormente `40px`), garantindo que a linha de transação mantenha-se em linha única sem quebras.
+
 ---
 
 ## 4. Plano de Testes e Validação
 
 Para cada componente editado:
 1.  **Garantia Funcional:** Rodar os testes do Vitest (`npx vitest run`) para garantir que os seletores funcionais e eventos emitidos continuem operando perfeitamente (zero quebra física de testes).
-2.  **Validação Visual (Vite Dev Server):** Acessar a aplicação localmente e capturar screenshots de modais abertos, histórico de transações e abas de configurações para atestar a perfeição pixel-a-pixel.
+2.  **Validação Visual (Vite Dev Server):** Acessar a aplicação localmente e inspecionar os elementos refinados no navegador para atestar a perfeição de espaçamento de 8px entre linhas e alinhamento dos textos em auto-contraste.
 3.  **Build de Produção:** Testar a compilação final (`npm run build`) para verificar se nenhuma tipagem TypeScript ou importação foi afetada pelas alterações visuais.
+
