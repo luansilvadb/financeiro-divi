@@ -47,54 +47,50 @@ export class CalculadoraSaldos {
   }
 
   static calcularAcertos(saldos: Map<string, Dinheiro>): Acerto[] {
-    const acertos: Acerto[] = []
-    const devedores: { id: string; saldo: number }[] = []
-    const credores: { id: string; saldo: number }[] = []
-
-    for (const [id, saldo] of saldos.entries()) {
-      if (saldo.centavos < 0) {
-        devedores.push({ id, saldo: Math.abs(saldo.centavos) })
-      } else if (saldo.centavos > 0) {
-        credores.push({ id, saldo: saldo.centavos })
-      }
-    }
-
-    // Sort to optimize (highest amounts first)
-    devedores.sort((a, b) => b.saldo - a.saldo)
-    credores.sort((a, b) => b.saldo - a.saldo)
-
-    let i = 0, j = 0
-    while (i < devedores.length && j < credores.length) {
-      const devedor = devedores[i]
-      const credor = credores[j]
-      const valorTransferencia = Math.min(devedor.saldo, credor.saldo)
-
-      if (valorTransferencia > 0) {
-        acertos.push({
-          de: devedor.id,
-          para: credor.id,
-          valor: Dinheiro.deCentavos(valorTransferencia)
-        })
-      }
-
-      devedor.saldo -= valorTransferencia
-      credor.saldo -= valorTransferencia
-
-      if (devedor.saldo === 0) i++
-      if (credor.saldo === 0) j++
-    }
-
-    // Verificação de integridade: a soma dos saldos residuais deve ser zero
-    const saldoResidual = devedores.reduce((acc, d) => acc + d.saldo, 0) + 
-                          credores.reduce((acc, c) => acc + c.saldo, 0)
-    
-    if (saldoResidual > 0) {
-      // Isso indica que o input 'saldos' não somava zero (erro em algum lugar do fluxo de dados)
-      console.error('Saldos desbalanceados detectados:', { devedores, credores, saldoResidual })
+    const total = Array.from(saldos.values()).reduce((acc, s) => acc + s.centavos, 0)
+    if (total !== 0) {
       throw new Error('Erro de integridade: Os saldos informados para o acerto de contas não estão balanceados.')
     }
 
+    const sortedEntries = Array.from(saldos.entries())
+      .sort((a, b) => Math.abs(b[1].centavos) - Math.abs(a[1].centavos))
+
+    const ids = sortedEntries.map(e => e[0])
+    const valoresCentavos = sortedEntries.map(e => e[1].centavos)
+    const acertos: Acerto[] = []
+
+    this._resolverAcertos(valoresCentavos, ids, acertos)
     return acertos
+  }
+
+  private static _resolverAcertos(saldos: number[], ids: string[], acertos: Acerto[]): void {
+    const i = saldos.findIndex(s => s < 0)
+    if (i === -1) return // nenhum devedor restante, acabou
+
+    for (let j = 0; j < saldos.length; j++) {
+      if (saldos[j] <= 0) continue // pula quem não é credor
+
+      const transferencia = Math.min(Math.abs(saldos[i]), saldos[j])
+
+      // Trabalha em cópia para preservar o estado original para o backtrack
+      const novosSaldos = [...saldos]
+      novosSaldos[i] += transferencia
+      novosSaldos[j] -= transferencia
+
+      acertos.push({ 
+        de: ids[i], 
+        para: ids[j], 
+        valor: Dinheiro.deCentavos(transferencia) 
+      })
+
+      this._resolverAcertos(novosSaldos, ids, acertos)
+
+      // Se o devedor i foi totalmente quitado na cópia, retornamos
+      if (novosSaldos[i] === 0) return
+
+      // Backtrack real: remove o acerto e tenta próximo credor
+      acertos.pop()
+    }
   }
 
   static obterExtratoMembro(membroId: string, transacoes: Transacao[]): ItemExtrato[] {

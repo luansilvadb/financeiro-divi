@@ -223,6 +223,30 @@ describe('CalculadoraSaldos', () => {
     const saldos = CalculadoraSaldos.calcular([t])
     expect(saldos.has('ana')).toBe(false)
     expect(saldos.size).toBe(0)
+  })
+
+  it('deve encontrar o menor número de transferências em cenários fragmentados', () => {
+    const saldos = new Map([
+      ['alice', Dinheiro.deCentavos(500)],
+      ['bob', Dinheiro.deCentavos(-300)],
+      ['carol', Dinheiro.deCentavos(100)],
+      ['dan', Dinheiro.deCentavos(-300)]
+    ])
+    
+    const acertos = CalculadoraSaldos.calcularAcertos(saldos)
+    // Verifica se o total de transferências é otimizado (geralmente 3 aqui)
+    expect(acertos.length).toBeLessThanOrEqual(3)
+    
+    // Verifica se os saldos finais seriam zerados
+    const saldosFinais = new Map(saldos)
+    acertos.forEach(a => {
+      saldosFinais.set(a.de, saldosFinais.get(a.de)!.somar(a.valor))
+      saldosFinais.set(a.para, saldosFinais.get(a.para)!.subtrair(a.valor))
     })
-    })
+    
+    for (const saldo of saldosFinais.values()) {
+      expect(saldo.isZero()).toBe(true)
+    }
+  })
+})
 
