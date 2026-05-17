@@ -25,4 +25,36 @@ describe('AcertoService', () => {
     expect(fatura.status).toBe('ACERTADA')
     expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
   })
+
+  it('deve registrar reembolso parcial e marcar fatura acertada quando zerar a divida', async () => {
+    const acerto = new AcertoMembro({
+      id: 'ac1',
+      faturaId: 'f1',
+      membroId: 'm1',
+      totalConsumido: Dinheiro.deCentavos(10000),
+      totalAntecipado: Dinheiro.deCentavos(2000)
+    }) // valorAcerto = 8000
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm2', status: 'FECHADA' })
+
+    const acertoRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(acerto),
+      buscarPorFatura: vi.fn().mockResolvedValue([acerto]),
+      salvar: vi.fn()
+    }
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any)
+
+    // Amortiza parcial
+    await service.registrarReembolsoMembro('ac1', Dinheiro.deCentavos(5000))
+    expect(acerto.pago).toBe(false)
+    expect(acerto.valorPago.centavos).toBe(5000)
+    expect(fatura.status).toBe('FECHADA')
+
+    // Quita restante
+    await service.registrarReembolsoMembro('ac1', Dinheiro.deCentavos(3000))
+    expect(acerto.pago).toBe(true)
+    expect(fatura.status).toBe('ACERTADA')
+    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+  })
 })
