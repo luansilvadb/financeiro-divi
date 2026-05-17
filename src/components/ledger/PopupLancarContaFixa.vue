@@ -2,7 +2,7 @@
   <div v-if="visible" class="fixed inset-0 bg-black-80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
     <div class="bg-panel-dark border border-white-08 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative text-white">
       <h3 class="text-xl font-black text-white flex items-center gap-2 mb-4">
-        <span>{{ bill.icon }}</span> Lançar {{ bill.name }}
+        <span>{{ bill?.icon }}</span> Lançar {{ bill?.name }}
       </h3>
 
       <!-- Valor Input -->
@@ -73,11 +73,11 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { ContaFixa } from '../../core/domain/ContaFixa'
+import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 
 const props = defineProps<{
   visible: boolean
-  bill: ContaFixa
+  bill: ContaFixa | null
   membros: { id: string; nome: string }[]
 }>()
 
