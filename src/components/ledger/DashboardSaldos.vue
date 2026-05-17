@@ -4,6 +4,9 @@ import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
+import RevisaoFatura from './dashboard/RevisaoFatura.vue'
+import HistoricoFaturas from './dashboard/HistoricoFaturas.vue'
+import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -25,9 +28,31 @@ const {
   registrarPagamentoBancoManual,
   removerPagamentoBancoManual,
   atualizarGastoDivisoesManual,
+  fecharFaturaManual,
   gastos: globalGastos,
   acertos: globalAcertos
 } = useCartoesEFaturas()
+
+// Estado de revisão imersiva (Gap 2)
+const faturaSobRevisao = ref<any | null>(null)
+
+// Estado do modal de fechamento (Gap 6)
+const showModalFechar = ref(false)
+const faturaParaFechar = ref<any | null>(null)
+
+const abrirFecharFatura = (faturaId: string) => {
+  const fatura = props.faturasAbertas.find(f => f.id === faturaId)
+  if (fatura) {
+    faturaParaFechar.value = fatura
+    showModalFechar.value = true
+  }
+}
+
+const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
+  await fecharFaturaManual(faturaId, responsavelId)
+  showModalFechar.value = false
+  faturaParaFechar.value = null
+}
 
 // Estado interativo do editor de divisão por gasto
 const gastoExpandidoId = ref<string | null>(null)
@@ -194,7 +219,16 @@ const todosOsAcertosQuitados = (faturaId: string) => {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto space-y-6">
+  <!-- Modo de Revisão Imersiva (Gap 2) -->
+  <RevisaoFatura 
+    v-if="faturaSobRevisao"
+    :fatura="faturaSobRevisao"
+    :membros="props.membros"
+    @voltar="faturaSobRevisao = null"
+    @acertoConfirmado="faturaSobRevisao = null"
+  />
+
+  <div v-else class="max-w-md mx-auto space-y-6">
     <!-- Seção 1: Faturas Fechadas (Fluxos de Revisão ou Acertos Ativos) -->
     <div v-for="fatura in faturasFechadas" :key="fatura.id" class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-xl text-white overflow-hidden relative">
       <!-- Glow Decorativo superior -->
@@ -221,119 +255,18 @@ const todosOsAcertosQuitados = (faturaId: string) => {
         </button>
       </div>
 
-      <!-- SUB-ESTADO A: EM REVISÃO (Sem acertos gerados ainda) -->
+      <!-- SUB-ESTADO A: EM REVISÃO (Sem acertos gerados ainda) (Gap 2) -->
       <div v-if="!faturaTemAcertosAtivos(fatura.id)" class="space-y-4">
-        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4 text-xs text-indigo-200 leading-relaxed">
-          💡 <strong>Modo de Revisão Coletivo:</strong> Verifique quem fez cada compra e como ela será dividida. Quando terminar, confirme para gerar os Pix.
+        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 text-xs text-indigo-200 leading-relaxed text-center">
+          🛒 <strong>Fatura Fechada sob Revisão Coletiva</strong><br>
+          <span class="text-slate-400 block mt-2 text-[10px]">Total Acumulado: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
         </div>
 
-        <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider mb-2">🛍️ Extrato da Fatura</h4>
-        
-        <div v-for="gasto in gastosDaFatura(fatura.id)" :key="gasto.id" class="bg-slate-800/40 rounded-2xl border border-slate-800 p-4 space-y-3">
-          <div class="flex justify-between items-start">
-            <div>
-              <span class="font-extrabold text-sm block text-slate-200">{{ gasto.descricao }}</span>
-              <span class="text-xs text-slate-400 mt-1 block">
-                Comprador: 
-                <select 
-                  :value="gasto.compradorId" 
-                  @change="alterarCompradorGasto(gasto, ($event.target as HTMLSelectElement).value)"
-                  class="bg-slate-900 border border-slate-700 rounded-lg text-xs px-2 py-0.5 text-white font-bold ml-1 outline-none"
-                >
-                  <option v-for="m in membros" :key="m.id" :value="m.id">{{ m.nome }}</option>
-                </select>
-              </span>
-            </div>
-            <div class="text-right">
-              <span class="font-black text-indigo-400 text-sm block">R$ {{ formatarDinheiro(gasto.valorTotal.centavos).toFixed(2).replace('.', ',') }}</span>
-              <button 
-                @click="iniciarEdicaoDivisao(gasto)"
-                class="text-[10px] font-bold text-slate-400 hover:text-white underline mt-1"
-              >
-                ✏️ Editar Divisão
-              </button>
-            </div>
-          </div>
-
-          <!-- Divisões do gasto detalhadas -->
-          <div class="flex flex-wrap gap-1.5 pt-1">
-            <span 
-              v-for="div in gasto.divisoes" 
-              :key="div.membroId" 
-              class="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300"
-            >
-              {{ getMembroNome(div.membroId) }}: R$ {{ formatarDinheiro(div.valor.centavos).toFixed(2).replace('.', ',') }}
-            </span>
-          </div>
-
-          <!-- Painel Interativo de Edição de Divisão expandido -->
-          <div v-if="gastoExpandidoId === gasto.id" class="bg-slate-900 border border-indigo-500/20 rounded-2xl p-4 mt-3 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-              <span class="text-xs font-black uppercase text-indigo-400">Tipo de Divisão</span>
-              <div class="flex gap-1">
-                <button 
-                  v-for="mode in ['IGUAL', 'CUSTOMIZADO', 'PORCENTAGEM'] as const"
-                  :key="mode"
-                  @click="modoDivisao = mode"
-                  :class="[
-                    'text-[9px] font-black px-2 py-1 rounded-lg transition-all',
-                    modoDivisao === mode ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
-                  ]"
-                >
-                  {{ mode === 'IGUAL' ? '🛍️ Igual' : mode === 'CUSTOMIZADO' ? '✏️ Valor' : '📊 %' }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Inputs Dinâmicos para membros da casa -->
-            <div class="space-y-3">
-              <div v-for="membro in membros" :key="membro.id" class="flex justify-between items-center text-xs">
-                <span class="font-bold text-slate-300">{{ membro.nome }}</span>
-                <div class="flex items-center gap-1.5">
-                  <span v-if="modoDivisao !== 'IGUAL'" class="text-slate-500 font-bold">
-                    {{ modoDivisao === 'CUSTOMIZADO' ? 'R$' : '%' }}
-                  </span>
-                  <input 
-                    v-model.number="valoresDivisao[membro.id]"
-                    type="number"
-                    step="any"
-                    :disabled="modoDivisao === 'IGUAL'"
-                    class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-1 text-center font-black text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50 text-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Aviso de Validação do somatório -->
-            <div v-if="somaDivisaoIncorreta(gasto)" class="text-[10px] font-black text-rose-400 text-center leading-relaxed">
-              ⚠️ A soma deve bater exatamente com 
-              {{ modoDivisao === 'CUSTOMIZADO' ? 'R$ ' + formatarDinheiro(gasto.valorTotal.centavos).toFixed(2) : '100%' }}
-            </div>
-
-            <div class="flex gap-2 justify-end pt-2 border-t border-slate-800">
-              <button 
-                @click="gastoExpandidoId = null" 
-                class="text-xs font-bold text-slate-400 hover:text-white px-3 py-1.5 rounded-lg"
-              >
-                Cancelar
-              </button>
-              <button 
-                @click="salvarDivisaoCustomizada(gasto)" 
-                :disabled="somaDivisaoIncorreta(gasto)"
-                class="text-xs font-black bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white px-4 py-1.5 rounded-lg shadow-md transition-all"
-              >
-                Salvar Divisão
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Confirmar acertos finais da Fatura -->
         <button 
-          @click="confirmarAcertosManual(fatura.id)"
-          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-600/20 mt-6 transition-all text-center text-sm"
+          @click="faturaSobRevisao = fatura"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-600/20 mt-2 transition-all text-center text-sm flex items-center justify-center gap-2"
         >
-          🔒 Confirmar Divisão e Gerar Acertos
+          🔍 Revisar Fatura e Ratear
         </button>
       </div>
 
@@ -443,7 +376,7 @@ const todosOsAcertosQuitados = (faturaId: string) => {
             <span class="font-extrabold text-slate-800 text-base">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
             <span class="text-xs text-slate-500 font-bold mt-0.5">Total Fatura: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</span>
           </div>
-          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-black bg-slate-900 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-colors">Fechar Fatura</button>
+          <button @click="abrirFecharFatura(fatura.id)" class="text-xs font-black bg-slate-900 text-white px-4 py-2.5 rounded-xl hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-colors">Fechar Fatura</button>
         </div>
 
         <div class="space-y-3">
@@ -467,5 +400,19 @@ const todosOsAcertosQuitados = (faturaId: string) => {
         </div>
       </div>
     </div>
+
+    <!-- Histórico de Faturas Acertadas (Gap 5) -->
+    <div class="mt-8">
+      <HistoricoFaturas :membros="props.membros" />
+    </div>
+
+    <!-- Modal de Fechamento de Fatura com Dono Variável (Gap 6) -->
+    <ModalFecharFatura 
+      :show="showModalFechar"
+      :fatura="faturaParaFechar"
+      :membros="props.membros"
+      @close="showModalFechar = false"
+      @confirmar="confirmarFechamentoFatura"
+    />
   </div>
 </template>
