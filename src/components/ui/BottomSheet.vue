@@ -126,16 +126,10 @@ const onTouchEnd = (e: TouchEvent) => {
   const currentTarget = e.currentTarget as HTMLElement
   
   if (delta > 100) {
-    // Desliza suavemente até 100% a partir do ponto onde o usuário soltou, evitando "pulos"
-    currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.7, 0, 0.84, 0)'
+    // Aplica a transição e altera para 100% fechando imediatamente, deixando o Vue desmontar o elemento no tempo certo
+    currentTarget.style.transition = 'transform 0.35s cubic-bezier(0.7, 0, 0.84, 0)'
     currentTarget.style.transform = 'translateY(100%)'
-    setTimeout(() => {
-      close()
-      setTimeout(() => {
-        currentTarget.style.transition = ''
-        currentTarget.style.transform = ''
-      }, 50)
-    }, 300)
+    close()
   } else {
     // Retorno suave e sutil sem elasticidade
     currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -166,16 +160,10 @@ const onMouseDown = (e: MouseEvent) => {
   const onUp = (ev: MouseEvent) => {
     const delta = ev.clientY - startY
     if (delta > 100) {
-      // Desliza suavemente até 100% a partir do ponto onde o usuário soltou, evitando "pulos"
-      currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.7, 0, 0.84, 0)'
+      // Aplica a transição e altera para 100% fechando imediatamente, deixando o Vue desmontar o elemento no tempo certo
+      currentTarget.style.transition = 'transform 0.35s cubic-bezier(0.7, 0, 0.84, 0)'
       currentTarget.style.transform = 'translateY(100%)'
-      setTimeout(() => {
-        close()
-        setTimeout(() => {
-          currentTarget.style.transition = ''
-          currentTarget.style.transform = ''
-        }, 50)
-      }, 300)
+      close()
     } else {
       // Retorno suave e sutil sem elasticidade
       currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
