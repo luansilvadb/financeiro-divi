@@ -11,8 +11,10 @@ import { Plus, Settings, X, ShieldCheck, Heart } from 'lucide-vue-next'
 import { useMembros } from './modules/ledger/composables/useMembros'
 import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
+import { useBottomSheetState } from './composables/useBottomSheetState'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
+const { isAnyBottomSheetOpen } = useBottomSheetState()
 const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
 const {
   cartoes,
@@ -165,7 +167,7 @@ const handleSalvarTransacao = async () => {
       leave-to-class="scale-0"
     >
       <Button
-        v-if="currentView === 'dashboard'"
+        v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
         variant="primary"
         class="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-lg z-[100] active:scale-95"
         @click="currentView = 'wizard'"

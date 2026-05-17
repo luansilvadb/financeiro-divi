@@ -47,7 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
+import { useBottomSheetState } from '../../composables/useBottomSheetState'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -60,6 +61,22 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const close = () => emit('update:modelValue', false)
+
+const { registerOpen, registerClose } = useBottomSheetState()
+
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen) {
+    registerOpen()
+  } else {
+    registerClose()
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (props.modelValue) {
+    registerClose()
+  }
+})
 
 // Helper: check if all scrollable ancestors inside the bottomsheet are at scrollTop === 0
 const isScrollAtTop = (target: HTMLElement, currentTarget: HTMLElement): boolean => {
