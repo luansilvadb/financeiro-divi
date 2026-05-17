@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../modules/ledger/composables/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 
@@ -55,6 +55,27 @@ const selecionarFluxo = (flow: 'expense' | 'loan', payment: 'pix' | 'card', card
 
 const ajustarParcelas = (delta: number) => {
   installments.value = Math.max(1, installments.value + delta)
+}
+
+const isValorStep = computed(() => (step.value === 3 && wizFlow.value === 'expense') || (step.value === 4 && wizFlow.value === 'loan'))
+const hasValorError = computed(() => isValorStep.value && (valor.value === undefined || valor.value === null || Number(valor.value) <= 0))
+const showInputWarning = ref(false)
+const inputShake = ref(false)
+
+const triggerShake = () => {
+  inputShake.value = true
+  showInputWarning.value = true
+  setTimeout(() => {
+    inputShake.value = false
+  }, 500)
+}
+
+const handleNext = () => {
+  if (isValorStep.value && hasValorError.value) {
+    triggerShake()
+    return
+  }
+  next()
 }
 
 const infoParcelamento = computed(() => {
@@ -154,12 +175,12 @@ const handleGravar = async () => {
             v-for="c in cartoes" 
             :key="c.id"
             @click="selecionarFluxo('expense', 'card', c.responsavelPadraoId)"
-            class="flex items-center gap-4 bg-divi-primary-dim/20 hover:bg-divi-primary-dim/30 border border-divi-primary/30 rounded-2xl p-4 text-left transition-all active:scale-[0.98] shadow-[0_0_12px_rgba(99,102,241,0.04)]"
+            class="flex items-center gap-4 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-2xl p-4 text-left transition-all active:scale-[0.98] shadow-[0_0_12px_rgba(99,102,241,0.04)]"
           >
             <span class="text-3xl">💳</span>
             <div>
               <strong class="block text-sm text-divi-t1 font-extrabold">Passei no {{ c.nome }}</strong>
-              <span class="text-xs text-divi-primary font-bold">Gasto registrado sob fatura de cartão</span>
+              <span class="text-xs text-indigo-600 font-bold">Gasto registrado sob fatura de cartão</span>
             </div>
           </button>
 
@@ -221,17 +242,28 @@ const handleGravar = async () => {
         <h2 class="text-xl font-black text-divi-t1 text-center tracking-tight">
           {{ wizFlow === 'loan' ? 'Qual o valor total do empréstimo?' : 'Qual foi o valor total?' }}
         </h2>
-        <div class="bg-slate-950 border border-divi-border rounded-3xl p-6 text-center shadow-inner">
+        <div 
+          class="bg-slate-950 border rounded-3xl p-6 text-center shadow-inner transition-all duration-300"
+          :class="[
+            inputShake ? 'animate-shake' : '',
+            showInputWarning && hasValorError ? 'border-red-500/40 bg-red-500/5' : 'border-divi-border'
+          ]"
+        >
           <div class="flex items-baseline justify-center gap-1.5 mb-5">
             <span class="text-divi-t3 text-2xl font-black">R$</span>
             <input 
               v-model.number="valor"
               type="number"
               step="0.01"
-              class="w-44 text-4xl font-black text-divi-t1 bg-transparent text-center focus:outline-none focus:border-divi-primary border-b-2 border-dashed border-divi-border"
+              class="w-44 text-4xl font-black text-divi-t1 bg-transparent text-center focus:outline-none focus:border-divi-primary border-b-2 border-dashed"
+              :class="showInputWarning && hasValorError ? 'border-red-500/40 text-red-400' : 'border-divi-border'"
               placeholder="0,00"
               autofocus
             />
+          </div>
+          
+          <div v-if="showInputWarning && hasValorError" class="text-[10px] text-red-400 font-black mb-4 flex items-center justify-center gap-1">
+            ⚠️ O valor do lançamento deve ser maior que zero!
           </div>
 
           <!-- Parcelamento Digitável -->
@@ -352,8 +384,8 @@ const handleGravar = async () => {
 
       <button 
         type="button" 
-        :disabled="!canAdvance"
-        @click="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? handleGravar() : next()"
+        :disabled="!canAdvance && !isValorStep"
+        @click="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? handleGravar() : handleNext()"
         class="flex-1 bg-divi-primary hover:bg-indigo-500 text-white font-black text-sm py-4 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_var(--primary-glow)] hover:scale-[1.01] active:scale-95"
       >
         {{ ((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? 'Confirmar e Gravar' : 'Avançar' }}
@@ -362,3 +394,15 @@ const handleGravar = async () => {
 
   </div>
 </template>
+
+<style scoped>
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+</style>

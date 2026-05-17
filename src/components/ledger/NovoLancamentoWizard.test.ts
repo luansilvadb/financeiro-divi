@@ -41,4 +41,29 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     expect(wrapper.text()).toContain('Passo 2/5')
     expect(wrapper.text()).toContain('Quem foi a pessoa que pagou?')
   })
+
+  it('deve acionar o shake e o aviso visual ao tentar avancar com valor zerado', async () => {
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
+    
+    // Avança para o Passo 2 clicando em PIX
+    const buttons = wrapper.findAll('button')
+    const pixButton = buttons.find(b => b.text().includes('PIX'))
+    await pixButton!.trigger('click')
+    
+    // Avança para o Passo 3 selecionando quem pagou (Luan)
+    const luanButton = wrapper.findAll('button').find(b => b.text().includes('Luan'))
+    await luanButton!.trigger('click')
+    
+    expect(wrapper.text()).toContain('Passo 3/5')
+    
+    // Clica em Avançar com valor zerado
+    const avancarButton = wrapper.findAll('button').find(b => b.text().includes('Avançar'))
+    expect(avancarButton).toBeDefined()
+    await avancarButton!.trigger('click')
+    
+    // Deve exibir o aviso visual e aplicar a animação de shake
+    expect(wrapper.text()).toContain('O valor do lançamento deve ser maior que zero!')
+  })
 })
