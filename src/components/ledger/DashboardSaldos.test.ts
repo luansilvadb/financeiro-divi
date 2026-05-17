@@ -39,6 +39,27 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('R$ 0,00')
   })
 
+  it('renderiza o card de proximas faturas no padrao Family', () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'm1', nome: 'Joao' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: [] as any,
+        acertosPendentes: [] as any,
+        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
+        calcularConsumo: () => 15000,
+        calcularAdiantamento: () => 0
+      }
+    })
+
+    const card = wrapper.find('[data-testid="proximas-faturas-card-f1"]')
+
+    expect(card.exists()).toBe(true)
+    expect(card.classes()).toContain('proximas-faturas-card')
+    expect(wrapper.text()).toContain('Fechar fatura')
+    expect(wrapper.text()).toContain('Ver detalhes')
+  })
+
   it('deve disparar a abertura do modal de ajuste ao clicar no botao de ajustar', async () => {
     const wrapper = mount(DashboardSaldos, {
       props: {

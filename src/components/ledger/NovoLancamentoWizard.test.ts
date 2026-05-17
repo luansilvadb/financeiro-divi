@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NovoLancamentoWizard from './NovoLancamentoWizard.vue'
 
-describe('NovoLancamentoWizard - Sênior v18', () => {
+describe('NovoLancamentoWizard - Senior v18', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
@@ -18,50 +18,61 @@ describe('NovoLancamentoWizard - Sênior v18', () => {
     { id: 'm2', nome: 'Maria' }
   ]
 
-  it('deve iniciar no Passo 1/5 perguntando como foi feito o lançamento', () => {
+  const semAcentos = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+
+  it('inicia no Passo 1 perguntando como foi feito o lancamento', () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
-    expect(wrapper.text()).toContain('Como você pagou?')
+
+    expect(semAcentos(wrapper.text())).toContain('Como voce pagou?')
   })
 
-  it('deve avançar para o Passo 2 ao clicar em PIX', async () => {
+  it('renderiza o wizard utilitario no padrao Family', () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
-    
-    // Localiza e clica no botão PIX
+
+    const wizard = wrapper.find('[data-testid="novo-lancamento-wizard"]')
+
+    expect(wizard.exists()).toBe(true)
+    expect(wizard.classes()).toContain('wizard-family')
+    expect(wizard.classes()).not.toContain('shadow-subtle')
+    expect(wrapper.text()).toContain('Passo 1 de 5')
+  })
+
+  it('avanca para o Passo 2 ao clicar em PIX', async () => {
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
+
     const buttons = wrapper.findAll('button')
     const pixButton = buttons.find(b => b.text().includes('PIX'))
     expect(pixButton).toBeDefined()
-    
+
     await pixButton!.trigger('click')
-    
-    expect(wrapper.text()).toContain('Quem foi que pagou?')
+
+    expect(semAcentos(wrapper.text())).toContain('Quem foi que pagou?')
   })
 
-  it('deve acionar o shake e o aviso visual ao tentar avancar com valor zerado', async () => {
+  it('aciona o aviso visual ao tentar avancar com valor zerado', async () => {
     const wrapper = mount(NovoLancamentoWizard, {
       props: { membros }
     })
-    
-    // Avança para o Passo 2 clicando em PIX
+
     const buttons = wrapper.findAll('button')
     const pixButton = buttons.find(b => b.text().includes('PIX'))
     await pixButton!.trigger('click')
-    
-    // Avança para o Passo 3 selecionando quem pagou (Luan)
+
     const luanButton = wrapper.findAll('button').find(b => b.text().includes('Luan'))
     await luanButton!.trigger('click')
-    
-    expect(wrapper.text()).toContain('Qual foi o valor total?')
-    
-    // Clica em Avançar com valor zerado
-    const avancarButton = wrapper.findAll('button').find(b => b.text().includes('Avançar'))
+
+    expect(semAcentos(wrapper.text())).toContain('Qual foi o valor total?')
+
+    const avancarButton = wrapper.findAll('button').find(b => semAcentos(b.text()).includes('Avancar'))
     expect(avancarButton).toBeDefined()
     await avancarButton!.trigger('click')
-    
-    // Deve exibir o aviso visual e aplicar a animação de shake
-    expect(wrapper.text()).toContain('Valor inválido')
+
+    expect(semAcentos(wrapper.text())).toContain('Valor invalido')
   })
 })

@@ -672,51 +672,50 @@ const excluirGasto = async (id: string) => {
         <h2 class="text-3xl font-display text-charcoal">Próximas <span class="text-ember">Faturas</span></h2>
       </div>
       
-      <div class="grid gap-6">
-        <Card 
-          v-for="fatura in faturasAbertas" 
-          :key="fatura.id" 
-          class="overflow-hidden relative bg-card shadow-subtle p-0 rounded-cards"
+      <div class="grid gap-4">
+        <div
+          v-for="fatura in faturasAbertas"
+          :key="fatura.id"
+          class="proximas-faturas-card overflow-hidden relative bg-white shadow-[inset_0_0_0_1px_#f2f0ed] p-0 rounded-[10px] text-[#474645]"
+          :data-testid="`proximas-faturas-card-${fatura.id}`"
         >
-          <div class="p-6 border-b border-stone-surface bg-[#fbfaf9] flex justify-between items-center">
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-xl bg-ember/5 text-ember flex items-center justify-center">
+          <div class="p-5 border-b border-[#f2f0ed] bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-full bg-[#f8f7f4] shadow-[inset_0_0_0_1px_#f2f0ed] text-[#474645] flex items-center justify-center shrink-0">
                 <CreditCard class="w-5 h-5" />
               </div>
-              <div>
-                <h3 class="font-display text-xl text-charcoal leading-none mb-1">{{ getCartaoNome(fatura.cartaoId) }}</h3>
-                <p class="text-[10px] text-ash uppercase tracking-widest">
-                  Vencimento: {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
+              <div class="min-w-0">
+                <h3 class="font-semibold text-[19px] text-[#343433] leading-tight tracking-[-0.25px] truncate">{{ getCartaoNome(fatura.cartaoId) }}</h3>
+                <p class="inline-flex mt-1 text-xs text-[#848281] bg-[#f6f4ef] rounded-full px-2.5 py-1">
+                  Vence em {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
                 </p>
               </div>
             </div>
-            <Button 
-              variant="secondary"
-              size="sm"
+            <button
               @click="abrirFecharFatura(fatura.id)"
               :disabled="isMonthLocked"
-              class="rounded-full px-5 text-xs tracking-wide"
+              class="shrink-0 px-4 py-2.5 text-xs font-semibold bg-[#121212] hover:bg-[#343433] text-white rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Fechar Fatura
-            </Button>
+              Fechar fatura
+            </button>
           </div>
 
-          <div class="p-8 space-y-6 bg-white">
+          <div class="p-5 space-y-4 bg-white">
             <!-- Resumo por membro -->
-            <div class="space-y-4">
+            <div class="grid gap-2">
               <div 
                 v-for="membro in membros" 
                 :key="membro.id" 
-                class="flex justify-between items-center"
+                class="flex justify-between items-center gap-3 rounded-[10px] bg-[#f8f7f4] p-3"
               >
-                <div class="flex items-center gap-3">
-                  <div class="w-2 h-2 rounded-full" :class="membro.id === fatura.responsavelId ? 'bg-ember' : 'bg-stone-surface'" />
-                  <span class="font-bold text-base" :class="membro.id === fatura.responsavelId ? 'text-charcoal' : 'text-ash'">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-2 h-2 rounded-full shrink-0" :class="membro.id === fatura.responsavelId ? 'bg-[#ffbb26]' : 'bg-[#c6c6c6]'" />
+                  <span class="font-semibold text-[13px] leading-tight truncate" :class="membro.id === fatura.responsavelId ? 'text-[#343433]' : 'text-[#848281]'">
                     {{ membro.nome }}
                   </span>
                 </div>
                 <div class="text-right">
-                  <span class="font-display text-lg text-charcoal block">
+                  <span class="font-semibold text-[15px] text-[#343433] tracking-[-0.2px] block">
                     R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
                   </span>
                 </div>
@@ -726,10 +725,10 @@ const excluirGasto = async (id: string) => {
             <!-- Toggle Detalhes -->
             <button 
               @click="toggleFaturaExpandida(fatura.id)"
-              class="w-full flex items-center justify-center gap-2 pt-6 text-[11px] font-bold uppercase tracking-widest text-ash hover:text-ember transition-colors border-t border-stone-surface"
+              class="w-full flex items-center justify-center gap-2 pt-4 text-xs font-semibold text-[#474645] hover:text-[#121212] transition-colors border-t border-[#f2f0ed]"
             >
               <Activity class="w-3.5 h-3.5" />
-              {{ faturasExpandidas[fatura.id] ? 'Ocultar Itens' : 'Ver Detalhes da Fatura' }}
+              {{ faturasExpandidas[fatura.id] ? 'Ocultar itens' : 'Ver detalhes' }}
             </button>
 
             <!-- Lista de Gastos (Expandida) -->
@@ -737,17 +736,17 @@ const excluirGasto = async (id: string) => {
               <div 
                 v-for="g in gastosDaFatura(fatura.id)" 
                 :key="g.id"
-                class="flex justify-between items-center p-4 rounded-xl border border-stone bg-[#fbfaf9] hover:border-ember/30 transition-colors text-xs"
+                class="flex justify-between items-center gap-3 p-3 rounded-[10px] bg-[#f8f7f4] shadow-[inset_0_0_0_1px_#f2f0ed] transition-colors text-xs"
               >
-                <div>
-                  <span class="font-bold text-charcoal block text-sm">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
-                  <span class="text-[10px] text-ash mt-0.5 block uppercase tracking-wide">Por {{ getMembroNome(g.compradorId) }}</span>
+                <div class="min-w-0">
+                  <span class="font-semibold text-[#343433] block text-sm truncate">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
+                  <span class="text-[11px] text-[#848281] mt-0.5 block">Por {{ getMembroNome(g.compradorId) }}</span>
                 </div>
-                <span class="font-display text-base text-charcoal">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</span>
+                <span class="font-semibold text-sm text-[#343433] shrink-0">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</span>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </section>
 

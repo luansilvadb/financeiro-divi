@@ -163,8 +163,10 @@ const handleSalvarTransacao = async () => {
       <Button
         v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
         variant="primary"
-        class="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-lg z-[100] active:scale-95"
+        class="fab-rounded fixed bottom-8 right-8 w-14 h-14 p-0 rounded-full shadow-[0_1px_6px_rgba(0,0,0,0.08),0_0_24px_rgba(0,0,0,0.08)] z-[100] active:scale-95"
         @click="currentView = 'wizard'"
+        data-testid="novo-lancamento-fab"
+        aria-label="Novo lancamento"
       >
         <Plus class="w-6 h-6 stroke-[3px]" />
       </Button>
