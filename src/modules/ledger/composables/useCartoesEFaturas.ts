@@ -104,8 +104,8 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
-  const fecharFaturaManual = async (faturaId: string) => {
-    await faturaService.fecharFatura(faturaId, new Date())
+  const fecharFaturaManual = async (faturaId: string, responsavelId?: string) => {
+    await faturaService.fecharFatura(faturaId, responsavelId, new Date())
     await inicializar()
   }
 
@@ -163,6 +163,25 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
+  const atualizarGastoCompradorManual = async (gastoId: string, compradorId: string) => {
+    const listGastos = gastos.value
+    const idx = listGastos.findIndex(g => g.id === gastoId)
+    if (idx < 0) return
+
+    const original = listGastos[idx]
+    const novoGasto = new Gasto({
+      id: original.id,
+      faturaId: original.faturaId,
+      descricao: original.descricao,
+      valorTotal: original.valorTotal,
+      compradorId: compradorId,
+      divisoes: original.divisoes
+    })
+
+    await gastoRepo.salvar(novoGasto)
+    await inicializar()
+  }
+
   const faturasAbertas = computed(() => faturas.value.filter(f => f.status === 'ABERTA'))
   const faturasFechadas = computed(() => faturas.value.filter(f => f.status === 'FECHADA'))
 
@@ -208,10 +227,11 @@ export function useCartoesEFaturas() {
     quitarAcertoMembro,
     registrarAdiantamentoManual,
     confirmarAcertosManual, // <- NOVO
-    registrarReembolsoParcialManual, // <- NOVO
-    registrarPagamentoBancoManual, // <- NOVO
-    removerPagamentoBancoManual, // <- NOVO
-    atualizarGastoDivisoesManual, // <- NOVO
+    registrarReembolsoParcialManual,
+    registrarPagamentoBancoManual,
+    removerPagamentoBancoManual,
+    atualizarGastoDivisoesManual,
+    atualizarGastoCompradorManual,
     faturasAbertas,
     faturasFechadas,
     calcularConsumoMembro,
