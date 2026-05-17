@@ -33,19 +33,25 @@ describe('AcertoMembro', () => {
     expect(acerto.valorAcerto.centavos).toBe(0)
   })
 
-  it('deve marcar o acerto como pago', () => {
+  it('deve registrar reembolso parcial e quitar quando atingir valor total', () => {
     const acerto = new AcertoMembro({
-      id: 'ac4', faturaId: 'f1', membroId: 'm1',
+      id: 'ac4',
+      faturaId: 'f1',
+      membroId: 'm1',
       totalConsumido: Dinheiro.deCentavos(10000),
       totalAntecipado: Dinheiro.deCentavos(2000)
-    })
+    }) // Valor acerto = 8000
     expect(acerto.pago).toBe(false)
+    expect(acerto.valorPago.centavos).toBe(0)
     expect(acerto.dataPagamento).toBeUndefined()
 
-    const dataPagamento = new Date('2026-05-18T10:00:00Z')
-    acerto.marcarComoPago(dataPagamento)
-    
+    acerto.registrarReembolso(Dinheiro.deCentavos(5000), new Date('2026-05-18T10:00:00Z'))
+    expect(acerto.pago).toBe(false)
+    expect(acerto.valorPago.centavos).toBe(5000)
+
+    acerto.registrarReembolso(Dinheiro.deCentavos(3000), new Date('2026-05-19T10:00:00Z'))
     expect(acerto.pago).toBe(true)
-    expect(acerto.dataPagamento).toEqual(dataPagamento)
+    expect(acerto.valorPago.centavos).toBe(8000)
+    expect(acerto.dataPagamento).toEqual(new Date('2026-05-19T10:00:00Z'))
   })
 })

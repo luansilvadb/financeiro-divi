@@ -8,6 +8,7 @@ export interface AcertoMembroProps {
   membroId: string
   totalConsumido: Dinheiro
   totalAntecipado: Dinheiro
+  valorPago?: Dinheiro // <- NOVO
   pago?: boolean
   dataPagamento?: Date
 }
@@ -20,6 +21,7 @@ export class AcertoMembro {
   public readonly totalAntecipado: Dinheiro
   public readonly valorAcerto: Dinheiro
   public readonly tipo: TipoAcerto
+  public valorPago: Dinheiro // <- NOVO
   public pago: boolean
   public dataPagamento?: Date
 
@@ -29,16 +31,37 @@ export class AcertoMembro {
     this.membroId = props.membroId
     this.totalConsumido = props.totalConsumido
     this.totalAntecipado = props.totalAntecipado
-    this.pago = props.pago ?? false
+    this.valorPago = props.valorPago ?? Dinheiro.deCentavos(0) // <- NOVO
     this.dataPagamento = props.dataPagamento
     
     const diff = props.totalConsumido.centavos - props.totalAntecipado.centavos
     this.valorAcerto = Dinheiro.deCentavos(Math.abs(diff))
     this.tipo = diff >= 0 ? 'MEMBRO_PAGA' : 'RESPONSAVEL_PAGA'
+    this.pago = props.pago ?? (this.valorPago.centavos >= this.valorAcerto.centavos)
   }
 
-  marcarComoPago(data: Date = new Date()) {
-    this.pago = true
-    this.dataPagamento = data
+  public registrarReembolso(valor: Dinheiro, data: Date = new Date()): void {
+    if (valor.centavos <= 0) {
+      throw new Error('Valor do reembolso deve ser maior que zero')
+    }
+    const novoTotalPago = this.valorPago.somar(valor)
+    if (novoTotalPago.centavos > this.valorAcerto.centavos) {
+      throw new Error('Valor do reembolso excede a dívida total do acerto')
+    }
+    this.valorPago = novoTotalPago
+    if (this.valorPago.centavos >= this.valorAcerto.centavos) {
+      this.pago = true
+      this.dataPagamento = data
+    }
+  }
+
+  public marcarComoPago(data: Date = new Date()): void {
+    const faltaPagar = Dinheiro.deCentavos(this.valorAcerto.centavos - this.valorPago.centavos)
+    if (faltaPagar.centavos > 0) {
+      this.registrarReembolso(faltaPagar, data)
+    } else {
+      this.pago = true
+      this.dataPagamento = data
+    }
   }
 }
