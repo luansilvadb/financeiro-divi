@@ -8,6 +8,8 @@ import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
 import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
 import { useSaldosUnificados } from '../../modules/ledger/composables/useSaldosUnificados'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
+import { LocalStorageGastoRepository } from '../../modules/ledger/adapters/LocalStorageGastoRepository'
+import { LocalStorageFaturaRepository } from '../../modules/ledger/adapters/LocalStorageFaturaRepository'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import ModalConfigurarContaFixa from './ModalConfigurarContaFixa.vue'
@@ -285,7 +287,6 @@ const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: n
   const activeFaturaId = props.faturasAbertas[0]?.id
   if (!activeFaturaId) return
 
-  const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
   const gRepo = new LocalStorageGastoRepository()
 
   const acertoGasto = new Gasto({
@@ -363,7 +364,6 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   const anoNum = parseInt(anoStr) || new Date().getFullYear()
 
   const novasFaturas: any[] = []
-  const { LocalStorageFaturaRepository } = await import('../../modules/ledger/adapters/LocalStorageFaturaRepository')
   const fRepo = new LocalStorageFaturaRepository()
 
   for (const card of props.cartoes) {
@@ -381,7 +381,6 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   const novaFaturaIdPrincipal = novasFaturas[0]?.id
 
   if (novaFaturaIdPrincipal) {
-    const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
     const gRepo = new LocalStorageGastoRepository()
 
     // 4. Decrementar parcelas ativas
@@ -416,7 +415,6 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
 
 // --- DESFAZER LANÇAMENTOS DO FEED ---
 const excluirGasto = async (id: string) => {
-  const { LocalStorageGastoRepository } = await import('../../modules/ledger/adapters/LocalStorageGastoRepository')
   const gRepo = new LocalStorageGastoRepository()
   await gRepo.excluir(id)
   await useCartoesEFaturas().inicializar()
