@@ -21,6 +21,7 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         faturaId: g.faturaId,
         descricao: g.descricao,
         valorTotalCentavos: g.valorTotal.centavos,
+        compradorId: g.compradorId, // <- NOVO
         divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos }))
       }))
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
@@ -37,13 +38,21 @@ export class LocalStorageGastoRepository implements IGastoRepository {
     if (!data) return []
     try {
       const raw = JSON.parse(data) as any[]
-      return raw.map(g => new Gasto({
-        id: g.id,
-        faturaId: g.faturaId,
-        descricao: g.descricao,
-        valorTotal: Dinheiro.deCentavos(g.valorTotalCentavos),
-        divisoes: g.divisoes.map((d: any) => new DivisaoDeGasto(d.membroId, Dinheiro.deCentavos(d.centavos)))
-      }))
+      return raw.map(g => {
+        const divisoes = g.divisoes.map((d: any) => new DivisaoDeGasto(d.membroId, Dinheiro.deCentavos(d.centavos)))
+        
+        // Retrocompatibilidade: Se compradorId não existir, pega o primeiro das divisões
+        const compradorId = g.compradorId || divisoes[0]?.membroId || 'membro_padrao'
+
+        return new Gasto({
+          id: g.id,
+          faturaId: g.faturaId,
+          descricao: g.descricao,
+          valorTotal: Dinheiro.deCentavos(g.valorTotalCentavos),
+          compradorId, // <- NOVO
+          divisoes
+        })
+      })
     } catch (e) {
       console.error(e)
       return []
