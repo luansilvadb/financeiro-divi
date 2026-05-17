@@ -68,6 +68,11 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
+  const reabrirFaturaManual = async (faturaId: string) => {
+    await faturaService.reabrirFatura(faturaId)
+    await inicializar()
+  }
+
   const quitarAcertoMembro = async (acertoId: string) => {
     await acertoService.marcarPago(acertoId, new Date())
     await inicializar()
@@ -96,6 +101,7 @@ export function useCartoesEFaturas() {
     gastos,
     inicializar,
     fecharFaturaManual,
+    reabrirFaturaManual,
     quitarAcertoMembro,
     faturasAbertas,
     faturasFechadas,

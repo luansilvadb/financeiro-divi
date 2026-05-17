@@ -38,6 +38,23 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
     return todos.filter(a => a.faturaId === faturaId)
   }
 
+  async excluirPorFatura(faturaId: string): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_acertos_membro', async () => {
+      const todos = await this.listarTodos()
+      const filtrados = todos.filter(a => a.faturaId !== faturaId)
+      const dtos = filtrados.map(a => ({
+        id: a.id,
+        faturaId: a.faturaId,
+        membroId: a.membroId,
+        totalConsumidoCentavos: a.totalConsumido.centavos,
+        totalAntecipadoCentavos: a.totalAntecipado.centavos,
+        pago: a.pago,
+        dataPagamento: a.dataPagamento ? a.dataPagamento.toISOString() : undefined
+      }))
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+    })
+  }
+
   private async listarTodos(): Promise<AcertoMembro[]> {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []

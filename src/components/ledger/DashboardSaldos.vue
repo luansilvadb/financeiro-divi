@@ -11,7 +11,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto'])
+const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura'])
 
 const getMembroNome = (id: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
@@ -28,13 +28,6 @@ const acertosDaFatura = (faturaId: string) => {
 const formatarDinheiro = (centavos: number) => {
   return Dinheiro.deCentavos(centavos).centavos / 100
 }
-
-const confirmarFecharFatura = (fatura: any) => {
-  const nomeCartao = getCartaoNome(fatura.cartaoId)
-  if (confirm(`Tem certeza que deseja fechar a fatura do ${nomeCartao} (${fatura.periodo.mes}/${fatura.periodo.ano})? Isso irá consolidar os gastos e gerar os acertos para os membros.`)) {
-    emit('fecharFatura', fatura.id)
-  }
-}
 </script>
 
 <template>
@@ -45,8 +38,16 @@ const confirmarFecharFatura = (fatura: any) => {
       
       <div v-for="fatura in faturasFechadas" :key="fatura.id" class="space-y-4 mb-4 last:mb-0">
         <div class="flex justify-between items-center border-b border-amber-200/50 pb-2">
-          <span class="font-bold text-slate-800 text-sm">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-          <span class="text-xs text-amber-700 font-medium">Responsável: {{ getMembroNome(fatura.responsavelId) }}</span>
+          <div class="flex flex-col">
+            <span class="font-bold text-slate-800 text-sm">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
+            <span class="text-[10px] text-amber-700 font-semibold uppercase tracking-wider">Responsável: {{ getMembroNome(fatura.responsavelId) }}</span>
+          </div>
+          <button 
+            @click="emit('reabrirFatura', fatura.id)"
+            class="text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-amber-200/40 hover:bg-amber-200/70 px-2 py-1 rounded-lg transition-all border border-amber-300/30 flex items-center gap-1 shadow-sm"
+          >
+            ↩️ Desfazer
+          </button>
         </div>
 
         <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="flex justify-between items-center bg-white p-3 rounded-xl border border-amber-100 shadow-sm">
@@ -68,7 +69,7 @@ const confirmarFecharFatura = (fatura: any) => {
       <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-slate-100 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
         <div class="flex justify-between items-center mb-3">
           <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
-          <button @click="confirmarFecharFatura(fatura)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
+          <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
         </div>
 
         <div class="space-y-2">

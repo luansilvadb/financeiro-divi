@@ -33,4 +33,21 @@ describe('FaturaService', () => {
     expect(acertoSalvo.valorAcerto.centavos).toBe(50) // 100 consumo - 50 antecipado
     expect(acertoSalvo.tipo).toBe('MEMBRO_PAGA')
   })
+
+  it('deve reabrir a fatura e excluir os acertos persistidos', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA', dataPagamentoBanco: new Date() })
+
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn(), salvar: vi.fn() }
+    const antRepo = { buscarPorFatura: vi.fn(), salvar: vi.fn() }
+    const acertoRepo = { buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn() }
+
+    const service = new FaturaService(faturaRepo as any, gastoRepo as any, antRepo as any, acertoRepo as any)
+    await service.reabrirFatura('f1')
+
+    expect(fatura.status).toBe('ABERTA')
+    expect(fatura.dataPagamentoBanco).toBeUndefined()
+    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+    expect(acertoRepo.excluirPorFatura).toHaveBeenCalledWith('f1')
+  })
 })

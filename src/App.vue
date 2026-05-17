@@ -15,6 +15,7 @@ const {
   acertos,
   inicializar: inicializarCartoes,
   fecharFaturaManual,
+  reabrirFaturaManual,
   quitarAcertoMembro,
   faturasAbertas,
   faturasFechadas,
@@ -75,6 +76,7 @@ const handleSalvarTransacao = async () => {
           :calcular-consumo="calcularConsumoMembro"
           @quitarAcerto="quitarAcertoMembro"
           @fecharFatura="fecharFaturaManual"
+          @reabrirFatura="reabrirFaturaManual"
         />
       </div>
       

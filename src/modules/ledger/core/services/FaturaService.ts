@@ -52,4 +52,14 @@ export class FaturaService {
     fatura.fechar(dataPagamentoBanco)
     await this.faturaRepo.salvar(fatura)
   }
+
+  async reabrirFatura(faturaId: string): Promise<void> {
+    const fatura = await this.faturaRepo.buscarPorId(faturaId)
+    if (!fatura) throw new Error('Fatura não encontrada')
+
+    fatura.reabrir()
+    await this.faturaRepo.salvar(fatura)
+
+    await this.acertoRepo.excluirPorFatura(faturaId)
+  }
 }
