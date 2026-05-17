@@ -1,4 +1,5 @@
-import { Fatura, FaturaPeriodo } from '../domain/Fatura'
+import { Fatura } from '../domain/Fatura'
+import type { FaturaPeriodo } from '../domain/Fatura'
 
 export interface IFaturaRepository {
   buscarPorId(id: string): Promise<Fatura | null>
