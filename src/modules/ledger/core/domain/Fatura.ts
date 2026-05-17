@@ -15,6 +15,9 @@ export interface FaturaProps {
 }
 
 export function determinarPeriodoFatura(dataGasto: Date, diaFechamento: number): FaturaPeriodo {
+  if (diaFechamento < 1 || diaFechamento > 31) {
+    throw new Error('diaFechamento deve ser entre 1 e 31')
+  }
   const diaGasto = dataGasto.getUTCDate()
   let mes = dataGasto.getUTCMonth() + 1
   let ano = dataGasto.getUTCFullYear()
@@ -35,32 +38,40 @@ export class Fatura {
   public readonly cartaoId: string
   public readonly periodo: FaturaPeriodo
   public readonly responsavelId: string
-  public status: FaturaStatus
-  public dataPagamentoBanco?: Date
+  private _status: FaturaStatus
+  private _dataPagamentoBanco?: Date
 
   constructor(props: FaturaProps) {
     this.id = props.id
     this.cartaoId = props.cartaoId
     this.periodo = props.periodo
     this.responsavelId = props.responsavelId
-    this.status = props.status
-    this.dataPagamentoBanco = props.dataPagamentoBanco
+    this._status = props.status
+    this._dataPagamentoBanco = props.dataPagamentoBanco
+  }
+
+  get status(): FaturaStatus {
+    return this._status
+  }
+
+  get dataPagamentoBanco(): Date | undefined {
+    return this._dataPagamentoBanco
   }
 
   validarOperacaoPermitida() {
-    if (this.status !== 'ABERTA') {
+    if (this._status !== 'ABERTA') {
       throw new Error('Fatura não está ABERTA')
     }
   }
 
   fechar(dataPagamentoBanco: Date = new Date()) {
-    if (this.status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
-    this.status = 'FECHADA'
-    this.dataPagamentoBanco = dataPagamentoBanco
+    if (this._status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
+    this._status = 'FECHADA'
+    this._dataPagamentoBanco = dataPagamentoBanco
   }
 
   marcarAcertada() {
-    if (this.status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser acertadas')
-    this.status = 'ACERTADA'
+    if (this._status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser acertadas')
+    this._status = 'ACERTADA'
   }
 }
