@@ -113,4 +113,34 @@ describe('useNovoLancamentoWizard', () => {
     
     spyClearTimeout.mockRestore()
   })
+
+  it('deve gerar uma transação válida ao finalizar', () => {
+    const membros = [{ id: '1', nome: 'M1' }]
+    const [wizard] = withSetup(() => useNovoLancamentoWizard(membros))
+    wizard.tipo.value = 'gasto'
+    wizard.valor.value = 100
+    wizard.descricao.value = 'Teste'
+    wizard.beneficiarios_selecionados.value = ['1']
+    wizard.pagamentos.value = { '1': 100 }
+
+    // @ts-ignore - finalizar ainda não existe
+    const transacao = wizard.finalizar()
+    expect(transacao.descricao).toBe('Teste')
+    expect(transacao.total.centavos).toBe(10000)
+  })
+
+  it('deve lidar com ganhos (negativando o total)', () => {
+    const membros = [{ id: '1', nome: 'M1' }]
+    const [wizard] = withSetup(() => useNovoLancamentoWizard(membros))
+    wizard.tipo.value = 'ganho'
+    wizard.valor.value = 100
+    wizard.descricao.value = 'Venda'
+    wizard.beneficiarios_selecionados.value = ['1']
+    wizard.pagamentos.value = { '1': 100 }
+
+    const transacao = wizard.finalizar()
+    expect(transacao.total.centavos).toBe(-10000)
+    expect(transacao.divisoes[0].valor.centavos).toBe(-10000)
+    expect(transacao.pagamentos[0].valor.centavos).toBe(-10000)
+  })
 })

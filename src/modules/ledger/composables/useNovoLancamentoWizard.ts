@@ -1,4 +1,7 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import { Transacao } from '../core/domain/Transacao'
+import { Divisao } from '../core/domain/Divisao'
 
 const STORAGE_KEY = 'divi_rascunho_novo_lancamento'
 
@@ -63,6 +66,37 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     clearTimeout(transitionTimeout)
   })
 
+  const finalizar = () => {
+    const totalRaw = Dinheiro.deReais(valor.value)
+    const total = tipo.value === 'ganho' ? Dinheiro.deCentavos(-totalRaw.centavos) : totalRaw
+
+    const partes = total.distribuir(beneficiarios_selecionados.value.length)
+    const divisoes = beneficiarios_selecionados.value.map((id, index) => new Divisao(id, partes[index]))
+
+    const listaPagamentos = Object.entries(pagamentos.value)
+      .filter(([_, val]) => (val || 0) > 0)
+      .map(([membro_id, val]) => {
+        const v = Dinheiro.deReais(val)
+        return {
+          membro_id,
+          valor: tipo.value === 'ganho' ? Dinheiro.deCentavos(-v.centavos) : v
+        }
+      })
+
+    const transacao = new Transacao({
+      id: crypto.randomUUID(),
+      descricao: descricao.value,
+      total,
+      pagamentos: listaPagamentos,
+      divisoes,
+      status: 'pendente',
+      data: new Date()
+    })
+
+    localStorage.removeItem(STORAGE_KEY)
+    return transacao
+  }
+
   return {
     step,
     tipo,
@@ -72,6 +106,7 @@ export function useNovoLancamentoWizard(_membros: { id: string; nome: string }[]
     pagamentos,
     next,
     prev,
-    selecionarTipo
+    selecionarTipo,
+    finalizar
   }
 }
