@@ -207,5 +207,22 @@ describe('CalculadoraSaldos', () => {
     expect(extrato[0].valorPago.centavos).toBe(10000)
     expect(extrato[0].valorConsumido.centavos).toBe(5000)
     expect(extrato[0].valorLiquido.centavos).toBe(5000)
-  })
-})
+    })
+
+    it('deve filtrar membros que possuem saldo zero (quitados)', () => {
+    const t = new Transacao({
+      id: 't1',
+      descricao: 'Teste',
+      total: Dinheiro.deReais(10),
+      pagamentos: [{ membro_id: 'ana', valor: Dinheiro.deReais(10) }],
+      divisoes: [new Divisao('ana', Dinheiro.deReais(10))], // Ana pagou e consumiu o mesmo
+      status: 'pendente',
+      data: new Date()
+    })
+
+    const saldos = CalculadoraSaldos.calcular([t])
+    expect(saldos.has('ana')).toBe(false)
+    expect(saldos.size).toBe(0)
+    })
+    })
+

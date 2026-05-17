@@ -38,7 +38,9 @@ export class CalculadoraSaldos {
 
     const result = new Map<string, Dinheiro>()
     for (const [id, centavos] of saldosCentavos.entries()) {
-      result.set(id, Dinheiro.deCentavos(centavos))
+      if (centavos !== 0) {
+        result.set(id, Dinheiro.deCentavos(centavos))
+      }
     }
 
     return result
