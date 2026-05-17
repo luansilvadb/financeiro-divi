@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Clock } from 'lucide-vue-next'
+import { Clock, Edit3, Trash2 } from 'lucide-vue-next'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { computed } from 'vue'
+import Card from '../ui/Card.vue'
+import Button from '../ui/Button.vue'
 
 interface Props {
   gastos: Gasto[]
@@ -13,7 +15,7 @@ const props = defineProps<Props>()
 const emit = defineEmits(['desfazerGasto', 'ajustarGasto'])
 
 const sortedGastos = computed(() => {
-  return [...props.gastos].sort((a, b) => b.id.localeCompare(a.id)) // Ordenação estável descendente
+  return [...props.gastos].sort((a, b) => b.id.localeCompare(a.id))
 })
 
 const getMembroNome = (id: string) => {
@@ -28,60 +30,91 @@ const handleDelete = (id: string) => {
 </script>
 
 <template>
-  <div class="glass-card border border-divi-border rounded-3xl p-5 shadow-lg text-divi-t1">
-    <div class="flex justify-between items-center border-b border-divi-border pb-3 mb-4">
-      <h3 class="text-xs font-black uppercase text-divi-t2 tracking-wider flex items-center gap-1.5">
-        <Clock class="w-3.5 h-3.5 text-divi-primary text-glow-primary" /> Lançamentos Recentes
-      </h3>
-      <span class="text-[9px] bg-divi-s2 border border-divi-border text-divi-t2 font-bold px-2 py-0.5 rounded-full">
-        {{ sortedGastos.length }} registros
-      </span>
-    </div>
-
-    <div v-if="sortedGastos.length === 0" class="text-center py-6 text-xs text-divi-t3">
-      Nenhum lançamento no período ativo.
-    </div>
-
-    <div v-else class="space-y-3 max-h-[384px] overflow-y-auto pr-1">
-      <div 
-        v-for="g in sortedGastos" 
-        :key="g.id"
-        class="flex flex-col p-3.5 rounded-2xl bg-divi-s1/20 border border-white/5 hover:border-divi-primary/30 transition-all space-y-3"
-      >
-        <div class="flex justify-between items-start gap-2">
-          <div>
-            <span class="font-extrabold text-xs text-divi-t1 block">{{ g.descricao }}</span>
-            <span class="text-[9.5px] text-divi-t3 block mt-1 uppercase tracking-wider font-semibold">
-              {{ g.isLoan ? '🤝 Empréstimo' : g.isSettlement ? '🔄 Acerto' : g.method === 'card' ? '💳 Cartão' : '💵 Pix' }} • 
-              Pago por: <strong class="text-divi-t2">{{ getMembroNome(g.compradorId) }}</strong>
-            </span>
-          </div>
-          <strong class="text-xs font-black text-glow-primary text-divi-primary shrink-0">
-            R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}
-          </strong>
+  <Card class="p-8 shadow-subtle bg-card rounded-cards">
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-ember/5 flex items-center justify-center">
+          <Clock class="w-5 h-5 text-ember" />
         </div>
-
-        <!-- Ações do Feed -->
-        <div class="flex justify-end gap-2 border-t border-white/5 pt-2.5">
-          <button 
-            v-if="!g.isSettlement"
-            type="button"
-            @click="emit('ajustarGasto', g.id)"
-            :disabled="props.isMonthLocked"
-            class="px-3 py-1.5 text-[9.5px] font-black bg-divi-primary/10 hover:bg-divi-primary/20 text-divi-primary rounded-lg border border-divi-primary/20 transition-all disabled:opacity-40"
-          >
-            ✏️ Ajustar
-          </button>
-          <button 
-            type="button"
-            @click="handleDelete(g.id)"
-            :disabled="props.isMonthLocked"
-            class="px-3 py-1.5 text-[9.5px] font-black bg-divi-rose/10 hover:bg-divi-rose/20 text-divi-rose rounded-lg border border-divi-rose/20 transition-all disabled:opacity-40"
-          >
-            🗑️ Desfazer
-          </button>
+        <div>
+          <h3 class="text-sm font-bold text-charcoal uppercase tracking-widest">Registros Recentes</h3>
+          <p class="text-[10px] text-ash font-semibold uppercase tracking-wider mt-0.5">
+            {{ sortedGastos.length }} movimentações
+          </p>
         </div>
       </div>
     </div>
-  </div>
+
+    <div v-if="sortedGastos.length === 0" class="text-center py-12 border border-dashed border-stone rounded-xl">
+      <p class="text-sm text-ash">Nenhum lançamento no período ativo.</p>
+    </div>
+
+    <div v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+      <div 
+        v-for="g in sortedGastos" 
+        :key="g.id"
+        class="group flex flex-col p-4 rounded-xl border border-stone bg-canvas hover:border-ember/30 transition-all duration-200 space-y-4"
+      >
+        <div class="flex justify-between items-start gap-4">
+          <div class="space-y-1">
+            <span class="font-bold text-sm text-charcoal block">{{ g.descricao }}</span>
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span class="text-[10px] font-bold text-ember uppercase tracking-wider">
+                {{ g.isLoan ? '🤝 Empréstimo' : g.isSettlement ? '🔄 Acerto' : g.method === 'card' ? '💳 Cartão' : '⚡ Pix' }}
+              </span>
+              <span class="text-[10px] text-ash">
+                • Pago por <strong class="text-charcoal font-semibold">{{ getMembroNome(g.compradorId) }}</strong>
+              </span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="font-display text-lg text-charcoal">
+              R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Ações do Feed -->
+        <div class="flex justify-end gap-2 pt-3 border-t border-stone opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button 
+            v-if="!g.isSettlement"
+            variant="secondary"
+            size="sm"
+            class="h-8 px-3 text-[10px] border border-stone-surface"
+            @click="emit('ajustarGasto', g.id)"
+            :disabled="props.isMonthLocked"
+          >
+            <Edit3 class="w-3.5 h-3.5 mr-1.5" />
+            Ajustar
+          </Button>
+          <Button 
+            variant="secondary"
+            size="sm"
+            class="h-8 px-3 text-[10px] text-coral-red hover:bg-[#fff0f0] border border-transparent"
+            @click="handleDelete(g.id)"
+            :disabled="props.isMonthLocked"
+          >
+            <Trash2 class="w-3.5 h-3.5 mr-1.5" />
+            Excluir
+          </Button>
+        </div>
+      </div>
+    </div>
+  </Card>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(203, 213, 225, 0.3);
+}
+</style>
