@@ -19,7 +19,8 @@ const {
   quitarAcertoMembro,
   faturasAbertas,
   faturasFechadas,
-  calcularConsumoMembro
+  calcularConsumoMembro,
+  calcularAdiantamentoMembro
 } = useCartoesEFaturas()
 
 // Ativa o listener global de sincronização multi-aba
@@ -74,6 +75,7 @@ const handleSalvarTransacao = async () => {
           :acertosPendentes="acertos"
           :cartoes="cartoes"
           :calcular-consumo="calcularConsumoMembro"
+          :calcular-adiantamento="calcularAdiantamentoMembro"
           @quitarAcerto="quitarAcertoMembro"
           @fecharFatura="fecharFaturaManual"
           @reabrirFatura="reabrirFaturaManual"

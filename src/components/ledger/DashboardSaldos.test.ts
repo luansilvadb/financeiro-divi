@@ -19,4 +19,22 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('Maria deve para João')
     expect(wrapper.text()).toContain('R$ 80,00')
   })
+
+  it('deve exibir o saldo devedor líquido deduzindo os adiantamentos', () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: [] as any,
+        acertosPendentes: [] as any,
+        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
+        calcularConsumo: () => 15000, // R$ 150,00
+        calcularAdiantamento: () => 5000 // R$ 50,00 adiantados
+      }
+    })
+
+    expect(wrapper.text()).toContain('Consumo: R$ 150,00')
+    expect(wrapper.text()).toContain('Adiantado: - R$ 50,00')
+    expect(wrapper.text()).toContain('Pendente: R$ 100,00')
+  })
 })

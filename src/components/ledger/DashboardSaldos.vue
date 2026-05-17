@@ -8,6 +8,7 @@ interface Props {
   acertosPendentes: any[]
   cartoes: any[]
   calcularConsumo: (faturaId: string, membroId: string) => number
+  calcularAdiantamento?: (faturaId: string, membroId: string) => number
 }
 
 const props = defineProps<Props>()
@@ -27,6 +28,14 @@ const acertosDaFatura = (faturaId: string) => {
 
 const formatarDinheiro = (centavos: number) => {
   return Dinheiro.deCentavos(centavos).centavos / 100
+}
+
+const getConsumo = (faturaId: string, membroId: string) => {
+  return props.calcularConsumo(faturaId, membroId)
+}
+
+const getAdiantamento = (faturaId: string, membroId: string) => {
+  return props.calcularAdiantamento ? props.calcularAdiantamento(faturaId, membroId) : 0
 }
 </script>
 
@@ -67,15 +76,28 @@ const formatarDinheiro = (centavos: number) => {
       <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">🔍 Faturas Abertas (Previsão de Gastos)</h3>
       
       <div v-for="fatura in faturasAbertas" :key="fatura.id" class="border-b border-slate-100 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0">
-        <div class="flex justify-between items-center mb-3">
+        <div class="flex justify-between items-center mb-4">
           <span class="font-bold text-slate-800">💳 {{ getCartaoNome(fatura.cartaoId) }} • {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</span>
           <button @click="emit('fecharFatura', fatura.id)" class="text-xs font-bold bg-slate-800 text-white px-3 py-1 rounded-lg hover:bg-slate-700 shadow-sm transition-colors">Fechar Fatura</button>
         </div>
 
-        <div class="space-y-2">
-          <div v-for="membro in membros" :key="membro.id" class="flex justify-between items-center text-sm">
-            <span class="text-slate-600">{{ membro.nome }} <span v-if="membro.id === fatura.responsavelId" class="text-xs text-indigo-500 font-semibold">(Responsável)</span>:</span>
-            <span class="font-semibold text-slate-800">R$ {{ formatarDinheiro(calcularConsumo(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}</span>
+        <div class="space-y-3">
+          <div v-for="membro in membros" :key="membro.id" class="flex flex-col border-b border-slate-50 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
+            <div class="flex justify-between items-center text-sm">
+              <span class="font-bold text-slate-700">
+                {{ membro.nome }} 
+                <span v-if="membro.id === fatura.responsavelId" class="text-[10px] text-indigo-500 font-extrabold uppercase ml-1">(Dono)</span>:
+              </span>
+              <span class="font-extrabold text-slate-800">
+                Pendente: R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
+              </span>
+            </div>
+            <div class="flex justify-between items-center text-[11px] text-slate-400 mt-1 pl-2">
+              <span>Consumo: R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}</span>
+              <span v-if="getAdiantamento(fatura.id, membro.id) > 0" class="text-emerald-600 font-bold">
+                Adiantado: - R$ {{ formatarDinheiro(getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
