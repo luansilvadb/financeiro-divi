@@ -6,6 +6,7 @@ import { useCartoesEFaturas } from '../../../modules/ledger/composables/useCarto
 import ListaGastosRevisao from './ListaGastosRevisao.vue'
 import PreviaAcertos from './PreviaAcertos.vue'
 import ModalDivisaoGasto from './ModalDivisaoGasto.vue'
+import { ChevronLeft } from 'lucide-vue-next'
 
 interface Props {
   fatura: Fatura
@@ -85,20 +86,20 @@ const totalFatura = computed(() => {
 <template>
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
     <!-- Top Header -->
-    <div class="glass-card border border-divi-border p-6 rounded-3xl shadow-lg flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-divi-t1 relative overflow-hidden">
+    <div class="bg-card shadow-subtle border border-stone-surface p-6 rounded-cards flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-graphite relative overflow-hidden">
       <div class="flex items-center gap-4">
         <button 
           @click="emit('voltar')"
-          class="w-10 h-10 rounded-full bg-divi-s2 hover:bg-divi-s3 text-divi-t1 font-bold flex items-center justify-center border border-divi-border transition-all active:scale-95 rotate-180"
+          class="w-10 h-10 rounded-full bg-[#f6f4ef] hover:bg-stone-surface text-graphite font-bold flex items-center justify-center border border-stone-surface transition-all active:scale-95"
         >
-          ➔
+          <ChevronLeft class="w-4 h-4" />
         </button>
         <div>
-          <h2 class="text-xl font-black text-divi-t1 flex items-center gap-2">
+          <h2 class="text-xl font-semibold text-charcoal flex items-center gap-2">
             Revisão da Fatura
-            <span class="text-[10px] bg-divi-amber-dim/15 text-divi-amber border border-divi-amber/20 font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">Fechada</span>
+            <span class="text-[10px] bg-ember/15 text-ember border border-ember/20 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Fechada</span>
           </h2>
-          <span class="text-xs text-divi-t2 font-medium block mt-1">
+          <span class="text-xs text-ash font-medium block mt-1">
             Fatura do mês {{ props.fatura.periodo.mes }}/{{ props.fatura.periodo.ano }} • Total de R$ {{ totalFatura.toFixed(2).replace('.', ',') }}
           </span>
         </div>
@@ -107,14 +108,14 @@ const totalFatura = computed(() => {
       <div class="flex gap-2">
         <button 
           @click="reabrirFatura"
-          class="px-4 py-2.5 border border-divi-rose/25 bg-divi-rose-dim/15 hover:bg-divi-rose-dim/25 text-divi-rose rounded-2xl text-xs font-black transition-all active:scale-95 shadow-sm"
+          class="px-4 py-2.5 border border-coral-red/25 bg-coral-red/5 hover:bg-coral-red/10 text-coral-red rounded-buttonspill text-xs font-semibold transition-all active:scale-95"
         >
           🔓 Reabrir Fatura
         </button>
         <button 
           @click="confirmarAcertos"
           :disabled="processandoConfirmacao"
-          class="px-5 py-2.5 bg-divi-primary hover:bg-indigo-500 disabled:bg-divi-s1 border border-indigo-400/25 disabled:border-divi-border disabled:text-divi-t3 text-white rounded-2xl text-xs font-black shadow-[0_0_16px_var(--primary-glow)] disabled:shadow-none transition-all active:scale-95 flex items-center gap-2"
+          class="px-5 py-2.5 bg-midnight hover:bg-charcoal-primary disabled:bg-stone-surface disabled:text-ash text-white rounded-buttonspill text-xs font-semibold transition-all active:scale-95 flex items-center gap-2"
         >
           <span v-if="processandoConfirmacao">Processando...</span>
           <span v-else>✅ Confirmar Acertos Pix</span>
@@ -125,7 +126,7 @@ const totalFatura = computed(() => {
     <!-- Main Content Split (2 Colunas) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Coluna da Esquerda: Extrato -->
-      <div class="lg:col-span-7 glass-card border border-divi-border rounded-3xl p-5 md:p-6 shadow-md space-y-4 text-divi-t1">
+      <div class="lg:col-span-7 bg-card shadow-subtle border border-stone-surface rounded-cards p-5 md:p-6 space-y-4 text-graphite">
         <ListaGastosRevisao 
           :gastos="gastosFatura" 
           :membros="props.membros" 

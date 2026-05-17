@@ -3,13 +3,11 @@ import { ref, computed } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
-import { Fatura } from '../../modules/ledger/core/domain/Fatura'
 import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
 import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
 import { useSaldosUnificados } from '../../modules/ledger/composables/useSaldosUnificados'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { LocalStorageGastoRepository } from '../../modules/ledger/adapters/LocalStorageGastoRepository'
-import { LocalStorageFaturaRepository } from '../../modules/ledger/adapters/LocalStorageFaturaRepository'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import ModalConfigurarContaFixa from './ModalConfigurarContaFixa.vue'
@@ -346,70 +344,17 @@ const showParcelasFuturas = ref(false)
 
 // --- EXECUÇÃO DE ROLLOVER SEGURO ---
 const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
-  const fAbertas = props.faturasAbertas
-  if (fAbertas.length === 0) return
+  const { executarRolloverPeriodo } = useFaturaRollover()
+  
+  await executarRolloverPeriodo(
+    nomeNovoPeriodo,
+    props.faturasAbertas,
+    props.cartoes,
+    saldosUnificadosAtivos.value,
+    currentMonthName.value,
+    fecharFaturaManual
+  )
 
-  // 1. Coleta os saldos unificados acumulados live do período que está sendo fechado
-  const saldosAcumulados = { ...saldosUnificadosAtivos.value }
-
-  // 2. Fechar as faturas abertas do período
-  for (const f of fAbertas) {
-    await fecharFaturaManual(f.id)
-  }
-
-  // 3. Criar faturas e período no novo mês
-  const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')
-  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  const mesNum = meses.indexOf(mesStr) + 1 || new Date().getMonth() + 1
-  const anoNum = parseInt(anoStr) || new Date().getFullYear()
-
-  const novasFaturas: any[] = []
-  const fRepo = new LocalStorageFaturaRepository()
-
-  for (const card of props.cartoes) {
-    const novaFatura = new Fatura({
-      id: crypto.randomUUID(),
-      cartaoId: card.id,
-      periodo: { mes: mesNum, ano: anoNum },
-      responsavelId: card.responsavelPadraoId,
-      status: 'ABERTA'
-    })
-    await fRepo.salvar(novaFatura)
-    novasFaturas.push(novaFatura)
-  }
-
-  const novaFaturaIdPrincipal = novasFaturas[0]?.id
-
-  if (novaFaturaIdPrincipal) {
-    const gRepo = new LocalStorageGastoRepository()
-
-    // 4. Decrementar parcelas ativas
-    const todosGastosAnteriores: Gasto[] = []
-    for (const f of fAbertas) {
-      const porFatura = await gRepo.buscarPorFatura(f.id)
-      todosGastosAnteriores.push(...porFatura)
-    }
-
-    const gastosParceladosNovos = processarRolloverParcelas(novaFaturaIdPrincipal, todosGastosAnteriores)
-    for (const g of gastosParceladosNovos) {
-      await gRepo.salvar(g)
-    }
-
-    // 5. Aplicar Netting final e carregar saldos devedores/credores como "Saldo Inicial Pendente"
-    const transacoesCarryover = gerarTransacoesNettingSaldoInicial(
-      novaFaturaIdPrincipal, 
-      currentMonthName.value, 
-      saldosAcumulados
-    )
-    for (const g of transacoesCarryover) {
-      await gRepo.salvar(g)
-    }
-  }
-
-  // 6. Destranca
-  setMonthLocked(false)
-
-  // 7. Recarrega dados reativos
   await useCartoesEFaturas().inicializar()
 }
 

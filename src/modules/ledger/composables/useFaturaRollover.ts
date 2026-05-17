@@ -2,6 +2,9 @@ import { ref } from 'vue'
 import { Gasto } from '../core/domain/Gasto'
 import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
+import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
+import { Fatura } from '../core/domain/Fatura'
 
 export function useFaturaRollover() {
   const isMonthLocked = ref(localStorage.getItem('divi_is_month_locked') === 'true')
@@ -83,10 +86,80 @@ export function useFaturaRollover() {
     return carryovers
   }
 
+  const executarRolloverPeriodo = async (
+    nomeNovoPeriodo: string,
+    faturasAbertas: Fatura[],
+    cartoes: any[],
+    saldosAcumulados: Record<string, number>,
+    nomePeriodoAnterior: string,
+    fecharFaturaManual: (faturaId: string) => Promise<void>
+  ) => {
+    if (faturasAbertas.length === 0) return
+
+    // 1. Fechar as faturas abertas do período
+    for (const f of faturasAbertas) {
+      await fecharFaturaManual(f.id)
+    }
+
+    // 2. Criar faturas e período no novo mês
+    const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    const mesNum = meses.indexOf(mesStr) + 1 || new Date().getMonth() + 1
+    const anoNum = parseInt(anoStr) || new Date().getFullYear()
+
+    const novasFaturas: Fatura[] = []
+    const fRepo = new LocalStorageFaturaRepository()
+
+    for (const card of cartoes) {
+      const novaFatura = new Fatura({
+        id: crypto.randomUUID(),
+        cartaoId: card.id,
+        periodo: { mes: mesNum, ano: anoNum },
+        responsavelId: card.responsavelPadraoId,
+        status: 'ABERTA'
+      })
+      await fRepo.salvar(novaFatura)
+      novasFaturas.push(novaFatura)
+    }
+
+    const novaFaturaIdPrincipal = novasFaturas[0]?.id
+
+    if (novaFaturaIdPrincipal) {
+      const gRepo = new LocalStorageGastoRepository()
+
+      // 3. Decrementar parcelas ativas
+      const todosGastosAnteriores: Gasto[] = []
+      for (const f of faturasAbertas) {
+        const porFatura = await gRepo.buscarPorFatura(f.id)
+        todosGastosAnteriores.push(...porFatura)
+      }
+
+      const gastosParceladosNovos = processarRolloverParcelas(novaFaturaIdPrincipal, todosGastosAnteriores)
+      for (const g of gastosParceladosNovos) {
+        await gRepo.salvar(g)
+      }
+
+      // 4. Aplicar Netting final e carregar saldos devedores/credores como "Saldo Inicial Pendente"
+      const transacoesCarryover = gerarTransacoesNettingSaldoInicial(
+        novaFaturaIdPrincipal, 
+        nomePeriodoAnterior, 
+        saldosAcumulados
+      )
+      for (const g of transacoesCarryover) {
+        await gRepo.salvar(g)
+      }
+    }
+
+    // 5. Destranca
+    setMonthLocked(false)
+  }
+
   return {
     isMonthLocked,
     setMonthLocked,
     processarRolloverParcelas,
-    gerarTransacoesNettingSaldoInicial
+    gerarTransacoesNettingSaldoInicial,
+    executarRolloverPeriodo
   }
 }
+

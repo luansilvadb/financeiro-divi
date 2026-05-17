@@ -28,27 +28,26 @@ const formatarDivisao = (g: Gasto) => {
 
 <template>
   <div class="space-y-3">
-    <div class="flex justify-between items-center border-b border-divi-border pb-2">
-      <span class="text-xs font-black uppercase text-divi-t2 tracking-wider">Itens da Fatura (Extrato)</span>
-      <span class="text-[10px] text-divi-t2 font-bold bg-divi-s2 border border-divi-border px-2.5 py-0.5 rounded-full">{{ props.gastos.length }} compras</span>
+    <div class="flex justify-between items-center border-b border-stone-surface pb-2">
+      <span class="text-xs font-bold uppercase text-ash tracking-wider">Itens da Fatura (Extrato)</span>
+      <span class="text-[10px] text-charcoal font-bold bg-stone-surface border border-stone-surface px-2.5 py-0.5 rounded-full">{{ props.gastos.length }} compras</span>
     </div>
 
-    <div v-if="props.gastos.length === 0" class="text-center py-8 bg-divi-s1/20 rounded-3xl border border-dashed border-divi-border">
+    <div v-if="props.gastos.length === 0" class="text-center py-8 bg-stone-surface/30 rounded-cards border border-dashed border-stone-surface">
       <span class="text-2xl block mb-1">🛒</span>
-      <strong class="text-xs text-divi-t2 block">Nenhuma compra registrada nesta fatura.</strong>
+      <strong class="text-xs text-ash block">Nenhuma compra registrada nesta fatura.</strong>
     </div>
 
     <div v-else class="space-y-2">
       <div 
         v-for="g in props.gastos" 
         :key="g.id"
-        class="flex justify-between items-center bg-divi-s1/40 border border-divi-border hover:border-divi-primary/30 p-3 rounded-2xl transition-all group hover:bg-divi-s1/60 hover:shadow-[0_0_12px_var(--primary-glow)] duration-150"
+        class="flex justify-between items-center bg-[#fbfaf9] border border-stone-surface hover:border-ember/30 p-3 rounded-cards transition-all group hover:bg-white duration-150"
       >
         <div class="flex items-center gap-2.5 flex-1 min-w-0">
-          <!-- Compact Avatar -->
+          <!-- Avatar Compacto -->
           <div 
-            v-tooltip="getCompradorNome(g.compradorId)"
-            class="w-8 h-8 rounded-full bg-divi-primary-dim/20 text-divi-primary font-black text-xs flex items-center justify-center border border-divi-primary/25 shadow-[0_0_8px_var(--primary-glow)] shrink-0"
+            class="w-8 h-8 rounded-full bg-stone-surface text-charcoal font-bold text-xs flex items-center justify-center border border-stone-surface shrink-0"
           >
             {{ getCompradorNome(g.compradorId)[0].toUpperCase() }}
           </div>
@@ -56,22 +55,22 @@ const formatarDivisao = (g: Gasto) => {
           <!-- Dados do Gasto -->
           <div class="min-w-0 flex-1">
             <div class="flex items-baseline gap-2">
-              <strong class="text-xs font-bold text-divi-t1 truncate leading-tight">{{ g.descricao }}</strong>
+              <strong class="text-xs font-bold text-charcoal truncate leading-tight">{{ g.descricao }}</strong>
             </div>
-            <span class="text-[9px] text-divi-t2 font-medium block mt-0.5">{{ formatarDivisao(g) }}</span>
+            <span class="text-[9px] text-ash font-medium block mt-0.5">{{ formatarDivisao(g) }}</span>
           </div>
         </div>
 
-        <!-- Valor e Acoes -->
+        <!-- Valor e Ações -->
         <div class="flex items-center gap-3 shrink-0">
           <div class="text-right">
-            <strong class="text-xs font-black text-divi-t1">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</strong>
+            <strong class="text-xs font-bold text-charcoal">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</strong>
           </div>
 
           <button 
             type="button"
             @click="emit('editarRateio', g)"
-            class="px-2.5 py-1.5 bg-divi-s2 hover:bg-divi-primary hover:text-white border border-divi-border hover:border-indigo-400/25 rounded-xl text-[9px] font-black text-divi-t2 transition-all active:scale-95 hover:shadow-[0_0_12px_var(--primary-glow)] duration-150"
+            class="px-3 py-1.5 bg-[#f6f4ef] hover:bg-stone-surface border border-stone-surface rounded-buttonspill text-[9px] font-semibold text-midnight transition-all active:scale-95 duration-150"
           >
             ✂️ Ratear
           </button>

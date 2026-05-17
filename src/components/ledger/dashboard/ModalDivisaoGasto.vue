@@ -27,18 +27,15 @@ watch(
       compradorId.value = g.compradorId
       participantes.value = g.divisoes.map(d => d.membroId)
       
-      // Se há apenas uma divisão com 100% no comprador, é uma divisão simplificada (não dividida de fato)
       const ehSimplificada = g.divisoes.length === 1 && g.divisoes[0].membroId === g.compradorId && g.divisoes[0].valor.centavos === g.valorTotal.centavos
       
       if (ehSimplificada) {
         modo.value = 'IGUAL'
       } else {
-        // Testa se os valores são iguais para inferir o modo
         const todosIguais = g.divisoes.every((d, _, arr) => d.valor.centavos === arr[0].valor.centavos)
         modo.value = todosIguais ? 'IGUAL' : 'MANUAL'
       }
 
-      // Preenche os valores manuais
       const vals: Record<string, number> = {}
       g.divisoes.forEach(d => {
         vals[d.membroId] = d.valor.centavos / 100
@@ -48,8 +45,6 @@ watch(
   },
   { immediate: true }
 )
-
-// toggleParticipante foi removido pois SeletorMembros gerencia isso nativamente com v-model
 
 const setModo = (newModo: 'IGUAL' | 'MANUAL') => {
   modo.value = newModo
@@ -111,39 +106,39 @@ const salvar = () => {
 <template>
   <div 
     v-if="show && props.gasto" 
-    class="fixed inset-0 bg-[#040814]/85 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
+    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
   >
-    <div class="glass-card w-full max-w-md rounded-3xl shadow-2xl p-6 border border-divi-border flex flex-col max-h-[90vh] text-divi-t1">
+    <div class="bg-card shadow-lg w-full max-w-md rounded-cards p-6 border border-stone-surface flex flex-col max-h-[90vh] text-graphite">
       <!-- Header -->
-      <div class="flex justify-between items-center mb-6 border-b border-divi-border pb-4">
+      <div class="flex justify-between items-center mb-6 border-b border-stone-surface pb-4">
         <div>
-          <h3 class="text-lg font-black text-divi-t1">Rateio & Comprador</h3>
-          <span class="text-xs text-divi-t2 font-bold block mt-1">Ajuste de rateio de forma simples</span>
+          <h3 class="text-lg font-bold text-charcoal">Rateio & Comprador</h3>
+          <span class="text-xs text-ash font-bold block mt-1">Ajuste de rateio de forma simples</span>
         </div>
         <button 
           @click="emit('close')"
-          class="w-8 h-8 rounded-full bg-divi-s2 hover:bg-divi-s3 text-divi-t2 hover:text-divi-t1 font-bold flex items-center justify-center transition-all"
+          class="w-8 h-8 rounded-full bg-stone-surface hover:bg-stone text-ash hover:text-charcoal font-bold flex items-center justify-center transition-all"
         >
           ✕
         </button>
       </div>
 
       <!-- Info Gasto -->
-      <div class="bg-divi-s1 border border-divi-border rounded-2xl p-4 mb-5 flex justify-between items-center">
+      <div class="bg-stone-surface border border-stone-surface rounded-cards p-4 mb-5 flex justify-between items-center">
         <div>
-          <span class="text-[10px] uppercase font-black tracking-widest text-divi-primary">Gasto sob Revisão</span>
-          <strong class="block text-divi-t1 text-sm mt-0.5">{{ props.gasto.descricao }}</strong>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-ember">Gasto sob Revisão</span>
+          <strong class="block text-charcoal text-sm mt-0.5">{{ props.gasto.descricao }}</strong>
         </div>
         <div class="text-right">
-          <span class="text-xs font-bold text-divi-t2">Valor</span>
-          <strong class="block text-divi-primary text-lg font-black text-glow-primary">R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</strong>
+          <span class="text-xs font-bold text-ash">Valor</span>
+          <strong class="block text-ember text-lg font-bold">R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</strong>
         </div>
       </div>
 
       <div class="space-y-5 overflow-y-auto flex-1 pr-1">
         <!-- 1. Comprador -->
         <div class="space-y-2">
-          <label class="text-xs font-black uppercase text-divi-t2 tracking-wider block">Quem Comprou (Dono do gasto)</label>
+          <label class="text-xs font-bold uppercase text-ash tracking-wider block">Quem Comprou (Dono do gasto)</label>
           <SeletorMembros 
             :membros="props.membros"
             v-model="compradorId"
@@ -151,16 +146,16 @@ const salvar = () => {
         </div>
 
         <!-- 2. Rateio e Divisão -->
-        <div class="bg-divi-s1/30 border border-divi-border rounded-2xl p-4 space-y-4">
-          <div class="flex justify-between items-center pb-2 border-b border-divi-border">
-            <span class="text-xs font-black uppercase text-divi-t2 tracking-wider">Configurar Rateio</span>
-            <div class="flex bg-divi-s2 p-0.5 rounded-lg border border-divi-border">
+        <div class="bg-stone-surface/30 border border-stone-surface rounded-cards p-4 space-y-4">
+          <div class="flex justify-between items-center pb-2 border-b border-stone-surface">
+            <span class="text-xs font-bold uppercase text-ash tracking-wider">Configurar Rateio</span>
+            <div class="flex bg-stone-surface p-0.5 rounded-lg border border-stone-surface">
               <button 
                 type="button"
                 @click="setModo('IGUAL')"
                 :class="[
-                  'text-[10px] font-black px-2.5 py-1 rounded-md transition-all',
-                  modo === 'IGUAL' ? 'bg-divi-primary text-white shadow-sm shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1'
+                  'text-[10px] font-bold px-2.5 py-1 rounded-md transition-all',
+                  modo === 'IGUAL' ? 'bg-midnight text-white shadow-sm' : 'text-ash hover:text-charcoal'
                 ]"
               >
                 ⚖️ Igual
@@ -169,8 +164,8 @@ const salvar = () => {
                 type="button"
                 @click="setModo('MANUAL')"
                 :class="[
-                  'text-[10px] font-black px-2.5 py-1 rounded-md transition-all',
-                  modo === 'MANUAL' ? 'bg-divi-primary text-white shadow-sm shadow-[0_0_12px_var(--primary-glow)]' : 'text-divi-t2 hover:text-divi-t1'
+                  'text-[10px] font-bold px-2.5 py-1 rounded-md transition-all',
+                  modo === 'MANUAL' ? 'bg-midnight text-white shadow-sm' : 'text-ash hover:text-charcoal'
                 ]"
               >
                 ✏️ Manual
@@ -180,7 +175,7 @@ const salvar = () => {
 
           <!-- Participantes -->
           <div class="space-y-2">
-            <span class="text-xs font-bold text-divi-t2">Quem divide essa conta:</span>
+            <span class="text-xs font-bold text-ash">Quem divide essa conta:</span>
             <SeletorMembros 
               :membros="props.membros"
               v-model="participantes"
@@ -190,30 +185,30 @@ const salvar = () => {
           </div>
 
           <!-- Valores Detalhados -->
-          <div v-if="participantes.length > 0" class="pt-3 border-t border-divi-border">
+          <div v-if="participantes.length > 0" class="pt-3 border-t border-stone-surface">
             <!-- Modo IGUAL -->
-            <div v-if="modo === 'IGUAL'" class="bg-divi-s1 border border-divi-border p-4 rounded-xl text-center">
-              <span class="text-[10px] text-divi-t2 font-bold block mb-1">Cada pessoa paga</span>
-              <strong class="text-xl font-black text-divi-primary text-glow-primary">R$ {{ valorSugeridoIgual.toFixed(2).replace('.', ',') }}</strong>
+            <div v-if="modo === 'IGUAL'" class="bg-[#fbfaf9] border border-stone-surface p-4 rounded-cards text-center">
+              <span class="text-[10px] text-ash font-bold block mb-1">Cada pessoa paga</span>
+              <strong class="text-xl font-bold text-charcoal">R$ {{ valorSugeridoIgual.toFixed(2).replace('.', ',') }}</strong>
             </div>
 
             <!-- Modo MANUAL -->
             <div v-else class="space-y-3">
               <div v-for="id in participantes" :key="id" class="flex justify-between items-center text-xs">
-                <span class="font-bold text-divi-t1">{{ props.membros.find(m => m.id === id)?.nome }}</span>
+                <span class="font-bold text-charcoal">{{ props.membros.find(m => m.id === id)?.nome }}</span>
                 <div class="flex items-center gap-1.5">
-                  <span class="text-divi-t2 font-bold">R$</span>
+                  <span class="text-ash font-bold">R$</span>
                   <input 
                     type="number"
                     step="0.01"
                     v-model.number="valores[id]"
-                    class="w-24 px-2 py-1.5 text-center font-bold text-divi-t1 rounded-lg glass-input outline-none"
+                    class="w-24 px-2 py-1.5 text-center font-bold text-charcoal rounded-lg border border-stone-surface bg-[#fbfaf9] focus:border-ember outline-none"
                   />
                 </div>
               </div>
 
-              <!-- Soma manual erro -->
-              <div v-if="erroSoma" class="text-[10px] font-bold text-divi-rose leading-normal bg-divi-rose-dim/15 border border-divi-rose/25 p-2 rounded-xl text-center">
+              <!-- Erro de Soma Manual -->
+              <div v-if="erroSoma" class="text-[10px] font-bold text-coral-red leading-normal bg-coral-red/5 border border-coral-red/25 p-2 rounded-cards text-center animate-pulse">
                 ⚠️ A soma dos valores (R$ {{ somaManual.toFixed(2).replace('.', ',') }}) deve fechar exatamente R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}.
               </div>
             </div>
@@ -222,10 +217,10 @@ const salvar = () => {
       </div>
 
       <!-- Footer Buttons -->
-      <div class="border-t border-divi-border pt-4 mt-6 flex gap-3">
+      <div class="border-t border-stone-surface pt-4 mt-6 flex gap-3">
         <button 
           @click="emit('close')"
-          class="flex-1 py-3.5 border border-divi-border bg-divi-s2 hover:bg-divi-s3 rounded-2xl text-xs font-black text-divi-t1 transition-all"
+          class="flex-1 py-3 border border-stone-surface bg-[#f6f4ef] hover:bg-stone-surface rounded-buttonspill text-xs font-semibold text-charcoal transition-all active:scale-[0.98]"
         >
           Cancelar
         </button>
@@ -233,8 +228,8 @@ const salvar = () => {
           @click="salvar"
           :disabled="!podeSalvar"
           :class="[
-            'flex-1 py-3.5 rounded-2xl text-xs font-black text-white transition-all shadow-md',
-            podeSalvar ? 'bg-divi-primary hover:bg-indigo-500 shadow-[0_0_16px_var(--primary-glow)] border border-indigo-400/25' : 'bg-divi-s1 border border-divi-border text-divi-t3 cursor-not-allowed shadow-none'
+            'flex-1 py-3 rounded-buttonspill text-xs font-semibold text-white transition-all',
+            podeSalvar ? 'bg-midnight hover:bg-charcoal-primary shadow-sm' : 'bg-[#e2dfd9] text-smoke cursor-not-allowed shadow-none'
           ]"
         >
           Salvar Rateio
