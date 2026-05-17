@@ -28,6 +28,8 @@ import {
   TrendingUp, 
   ChevronDown, 
   ChevronUp, 
+  ChevronLeft,
+  ChevronRight,
   Sparkles, 
   CreditCard,
   History,
@@ -419,9 +421,17 @@ const excluirGasto = async (id: string) => {
           <SectionLabel>Visão Geral</SectionLabel>
           <h2 class="text-heading font-display text-charcoal">Saldo <span class="text-ember">Unificado</span></h2>
         </div>
-        <span class="text-[10px] font-mono uppercase tracking-widest text-ash bg-stone px-3 py-1 rounded-full border border-stone-surface">
-          {{ currentMonthName }}
-        </span>
+        <div class="flex items-center gap-1 bg-stone border border-stone-surface rounded-full p-1">
+          <button class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-ash hover:text-charcoal transition-all">
+            <ChevronLeft class="w-3.5 h-3.5" />
+          </button>
+          <span class="text-[10px] font-mono uppercase tracking-widest text-charcoal px-2">
+            {{ currentMonthName }}
+          </span>
+          <button class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-ash hover:text-charcoal transition-all">
+            <ChevronRight class="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       <Card class="overflow-hidden relative bg-card shadow-subtle p-8 rounded-cards">
