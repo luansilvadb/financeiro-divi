@@ -35,13 +35,13 @@ describe('ConfiguracoesMembros', () => {
     expect(wrapper.text()).toContain('Luan')
     expect(wrapper.text()).toContain('Maria')
     expect(wrapper.text()).toContain('Joao')
-    expect(wrapper.text()).toContain('(Desativado)')
+    expect(wrapper.text()).toContain('Desativado')
   })
 
   it('deve chamar adicionarMembro ao preencher o nome e clicar no botão', async () => {
     const wrapper = mount(ConfiguracoesMembros)
     const input = wrapper.find('input')
-    const button = wrapper.find('button.bg-blue-900')
+    const button = wrapper.find('button.h-12')
 
     await input.setValue('Novo Morador')
     await button.trigger('click')
@@ -51,7 +51,7 @@ describe('ConfiguracoesMembros', () => {
 
   it('deve chamar desativarMembro ao clicar no botão de desativar', async () => {
     const wrapper = mount(ConfiguracoesMembros)
-    const btnDesativar = wrapper.find('button.text-red-400')
+    const btnDesativar = wrapper.find('button[title="Desativar morador"]')
 
     await btnDesativar.trigger('click')
 
@@ -60,15 +60,15 @@ describe('ConfiguracoesMembros', () => {
 
   it('não deve mostrar botão de desativar para membros já desativados', () => {
     const wrapper = mount(ConfiguracoesMembros)
-    const items = wrapper.findAll('.glass-card .flex-col > div')
+    const items = wrapper.findAll('.grid.gap-3 > div')
     
     const itemDesativado = items.find(i => i.text().includes('Joao'))
-    expect(itemDesativado?.find('button.text-red-400').exists()).toBe(false)
+    expect(itemDesativado?.find('button[title="Desativar morador"]').exists()).toBe(false)
   })
 
   it('deve emitir evento voltar ao clicar no botão de volta', async () => {
     const wrapper = mount(ConfiguracoesMembros)
-    const btnVoltar = wrapper.find('button.p-2') // O botão com seta de voltar
+    const btnVoltar = wrapper.find('button.rounded-full.border') // O botão com seta de voltar
 
     await btnVoltar.trigger('click')
 
