@@ -21,6 +21,7 @@ import DetalhamentoSaldosCard from './dashboard/DetalhamentoSaldosCard.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import SectionLabel from '../ui/SectionLabel.vue'
+import NonModalBottomSheet from '../ui/NonModalBottomSheet.vue'
 import { 
   Check,
   ArrowUpRight, 
@@ -865,35 +866,33 @@ const excluirGasto = async (id: string) => {
       @cancel="showModalConfigCF = false"
     />
 
-    <!-- Modal Novo Período (Design System Family) -->
-    <div v-if="showModalNovoPeriodo" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-6">
-      <Card class="w-full max-w-md p-0 overflow-hidden bg-card shadow-lg rounded-cards">
-        <div class="p-8 space-y-6">
-          <div class="space-y-2 text-center">
-            <SectionLabel class="mx-auto">Transição</SectionLabel>
-            <h3 class="text-3xl font-display text-charcoal">Novo <span class="text-ember">Período</span></h3>
-            <p class="text-xs text-ash leading-relaxed">
-              O mês anterior será trancado permanentemente. O saldo será transportado automaticamente para o novo período.
-            </p>
-          </div>
-          
-          <div class="space-y-3">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Mês de Referência</label>
-            <input 
-              type="text" 
-              v-model="nomeNovoPeriodo" 
-              class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all" 
-              placeholder="Ex: Junho 2026"
-            />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <Button variant="secondary" @click="showModalNovoPeriodo = false">Cancelar</Button>
-            <Button variant="primary" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">Confirmar</Button>
-          </div>
+    <!-- Bottomsheet Não Modal Novo Período -->
+    <NonModalBottomSheet :visible="showModalNovoPeriodo" width-class="md:w-[420px]">
+      <div class="p-8 space-y-6 flex-grow">
+        <div class="space-y-2 text-center">
+          <SectionLabel class="mx-auto">Transição</SectionLabel>
+          <h3 class="text-3xl font-display text-charcoal">Novo <span class="text-ember">Período</span></h3>
+          <p class="text-xs text-ash leading-relaxed">
+            O mês anterior será trancado permanentemente. O saldo será transportado automaticamente para o novo período.
+          </p>
         </div>
-      </Card>
-    </div>
+        
+        <div class="space-y-3">
+          <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Mês de Referência</label>
+          <input 
+            type="text" 
+            v-model="nomeNovoPeriodo" 
+            class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all" 
+            placeholder="Ex: Junho 2026"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <Button variant="secondary" @click="showModalNovoPeriodo = false">Cancelar</Button>
+          <Button variant="primary" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">Confirmar</Button>
+        </div>
+      </div>
+    </NonModalBottomSheet>
 
     <!-- Modal de Netting Otimizado (Senior v19) -->
     <ModalAcertoCompensacao 

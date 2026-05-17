@@ -6,6 +6,7 @@ import Card from '../../ui/Card.vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'
 import { X, Info } from 'lucide-vue-next'
+import NonModalBottomSheet from '../../ui/NonModalBottomSheet.vue'
 
 interface Props {
   show: boolean
@@ -36,18 +37,8 @@ const confirmar = () => {
 </script>
 
 <template>
-  <div 
-    v-if="show && props.fatura" 
-    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
-  >
-    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
-    <div 
-      class="w-full sm:max-w-md overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards shadow-lg flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
-    >
-      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
-      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
-
-      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+  <NonModalBottomSheet :visible="show && props.fatura !== null" width-class="md:w-[440px]">
+    <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <!-- Header -->
         <div class="flex justify-between items-start">
           <div class="space-y-2">
@@ -81,9 +72,8 @@ const confirmar = () => {
           <Button variant="secondary" @click="emit('close')">Cancelar</Button>
           <Button variant="primary" @click="confirmar" :disabled="!responsavelId">Confirmar</Button>
         </div>
-      </div>
     </div>
-  </div>
+  </NonModalBottomSheet>
 </template>
 
 <style scoped>
