@@ -42,9 +42,18 @@ const handleConfirmar = () => {
 </script>
 
 <template>
-  <div v-if="visible" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-6">
-    <Card class="w-full max-w-md p-0 overflow-hidden bg-card shadow-lg border border-stone-surface rounded-cards">
-      <div class="p-8 space-y-6">
+  <div 
+    v-if="visible" 
+    class="fixed inset-0 bg-midnight/80 backdrop-blur-sm flex justify-center sm:items-center items-end z-[9999] sm:p-6 p-0 animate-in fade-in duration-200"
+  >
+    <!-- Modal Card Container: Bottom-sheet no Mobile, Modal Centralizado no Desktop -->
+    <div 
+      class="w-full sm:max-w-md overflow-hidden bg-card border-t sm:border border-stone-surface rounded-t-cardsLarge sm:rounded-cards shadow-lg flex flex-col max-h-[92vh] text-graphite animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-250"
+    >
+      <!-- Pull-to-dismiss handle (mobile-only grabber bar) -->
+      <div class="sm:hidden w-12 h-1 bg-stone-surface rounded-full mx-auto my-3 shrink-0"></div>
+
+      <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Liquidação</SectionLabel>
           <h3 class="text-3xl font-display text-charcoal">Registrar <span class="text-ember">Acerto</span></h3>
@@ -88,11 +97,11 @@ const handleConfirmar = () => {
                 :key="m.id"
                 type="button"
                 @click="method = m.id as any"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border border-stone-surface transition-all duration-200"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
                 :class="[
                   method === m.id 
-                    ? 'bg-ember border-stone-surface text-white font-bold shadow-sm' 
-                    : 'bg-stone text-charcoal hover:bg-[#eae7e2]'
+                    ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' 
+                    : 'bg-[#f6f4ef] border border-stone-surface text-charcoal hover:bg-stone-surface'
                 ]"
               >
                 <component :is="m.icon" class="w-4 h-4" />
@@ -108,6 +117,19 @@ const handleConfirmar = () => {
           <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0">Confirmar</Button>
         </div>
       </div>
-    </Card>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-surface);
+  border-radius: 9999px;
+}
+</style>
