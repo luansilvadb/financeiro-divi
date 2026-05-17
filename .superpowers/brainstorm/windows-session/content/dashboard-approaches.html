@@ -1,0 +1,85 @@
+<h2>Como estruturar os Saldos de Cartão no Dashboard?</h2>
+<p class="subtitle">Precisamos expor a separação de saldos imediatos (Pix/Dinheiro) e saldos de cartão (faturas). Selecione a abordagem de design que melhor se alinha com a sua experiência ideal.</p>
+
+<div class="cards">
+  <!-- Abordagem A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <div class="label" style="background: var(--blue-900); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem;">Abordagem A</div>
+      <h3>🗂️ Abas Separadas (Tabs)</h3>
+      <p>Uma barra de alternância no topo do Dashboard permite trocar entre duas visões:</p>
+      
+      <div class="mockup" style="margin: 0.8rem 0; padding: 0.5rem; background: var(--bg-hover); border-radius: 8px;">
+        <div style="display: flex; gap: 0.2rem; background: var(--bg-secondary); padding: 0.2rem; border-radius: 6px; font-size: 0.8rem; font-weight: bold; text-align: center; margin-bottom: 0.5rem;">
+          <div style="flex: 1; background: white; padding: 0.3rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">Saldos Imediatos</div>
+          <div style="flex: 1; padding: 0.3rem; color: var(--text-secondary);">Cartões & Faturas</div>
+        </div>
+        <div class="mock-nav" style="padding: 0.5rem; font-size: 0.8rem; text-align: left; background: white; border-radius: 4px;">
+          🟢 João: +R$ 150,00 (Pix)<br>
+          🔴 Maria: -R$ 150,00 (Pix)
+        </div>
+      </div>
+      
+      <div class="pros-cons" style="font-size: 0.85rem;">
+        <div class="pros"><strong>Prós:</strong> Extremamente limpo; sem misturar conceitos.</div>
+        <div class="cons"><strong>Contras:</strong> Esconde as faturas atrás de um clique.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abordagem B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <div class="label" style="background: var(--blue-900); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem;">Abordagem B (Recomendada)</div>
+      <h3>🥞 Seções Empilhadas (Single View)</h3>
+      <p>Tudo visível em uma única tela estruturada de cima para baixo:</p>
+      
+      <div class="mockup" style="margin: 0.8rem 0; padding: 0.5rem; background: var(--bg-hover); border-radius: 8px; font-size: 0.8rem; text-align: left;">
+        <div style="font-weight: bold; color: var(--text-secondary); margin-bottom: 0.3rem; font-size: 0.75rem; text-transform: uppercase;">1. Saldos Imediatos (Pix/Dinheiro)</div>
+        <div style="background: white; padding: 0.4rem; border-radius: 4px; margin-bottom: 0.5rem;">
+          🟢 João: +R$ 150,00 | 🔴 Maria: -R$ 150,00
+        </div>
+        
+        <div style="font-weight: bold; color: #b45309; margin-bottom: 0.3rem; font-size: 0.75rem; text-transform: uppercase;">2. Faturas Fechadas (Acertos Ativos)</div>
+        <div style="background: #fffbeb; border: 1px solid #fef3c7; padding: 0.4rem; border-radius: 4px; margin-bottom: 0.5rem;">
+          ⚠️ <strong>Fatura Nubank (Maio/26):</strong><br>
+          Maria deve R$ 80,00 para João (responsável)
+        </div>
+
+        <div style="font-weight: bold; color: var(--text-secondary); margin-bottom: 0.3rem; font-size: 0.75rem; text-transform: uppercase;">3. Previsão de Faturas Abertas</div>
+        <div style="background: white; padding: 0.4rem; border-radius: 4px; color: var(--text-secondary);">
+          🔍 Nubank Aberto (Acúmulo atual): Maria (R$ 45,00)
+        </div>
+      </div>
+      
+      <div class="pros-cons" style="font-size: 0.85rem;">
+        <div class="pros"><strong>Prós:</strong> Visibilidade total imediata; estimula cobrança rápida e justa.</div>
+        <div class="cons"><strong>Contras:</strong> Tela ligeiramente maior (resolvido com accordions).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abordagem C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <div class="label" style="background: var(--blue-900); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem;">Abordagem C</div>
+      <h3>⚖️ Dinâmico Consolidado</h3>
+      <p>Exibe apenas um único saldo principal somado, com detalhamento ao expandir:</p>
+      
+      <div class="mockup" style="margin: 0.8rem 0; padding: 0.5rem; background: var(--bg-hover); border-radius: 8px; font-size: 0.8rem; text-align: left;">
+        <div style="background: white; padding: 0.4rem; border-radius: 4px; border-left: 4px solid #b91c1c;">
+          <strong>🔴 Maria: -R$ 230,00 (Total)</strong>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem; padding-left: 0.5rem;">
+            • R$ 150,00 Imediato (Pix)<br>
+            • R$ 80,00 Fatura Nubank Fechada (Maio/26)
+          </div>
+        </div>
+      </div>
+      
+      <div class="pros-cons" style="font-size: 0.85rem;">
+        <div class="pros"><strong>Prós:</strong> Simplicidade máxima; um único número de dívida/crédito total.</div>
+        <div class="cons"><strong>Contras:</strong> Pode ocultar a complexidade do que precisa ser pago primeiro.</div>
+      </div>
+    </div>
+  </div>
+</div>
