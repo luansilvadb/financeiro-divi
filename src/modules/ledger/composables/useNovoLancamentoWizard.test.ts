@@ -44,4 +44,16 @@ describe('useNovoLancamentoWizard - Fluxo de Cartão', () => {
     toggleBeneficiario('m1')
     expect(beneficiarios_selecionados.value).not.toContain('m1')
   })
+
+  it('deve alternar o fluxo entre Gasto e Adiantamento corretamente', () => {
+    const [{ tipo, step, canAdvance }] = withSetup(() => useNovoLancamentoWizard([]))
+    expect(tipo.value).toBe('GASTO')
+    expect(step.value).toBe(1)
+    
+    // No passo 1 (escolha de ação), sempre podemos avançar
+    expect(canAdvance.value).toBe(true)
+
+    tipo.value = 'ADIANTAMENTO'
+    expect(tipo.value).toBe('ADIANTAMENTO')
+  })
 })
