@@ -65,6 +65,12 @@ describe('Dinheiro Value Object', () => {
   })
 
   describe('Allocation', () => {
+    it('deve lançar erro ao tentar distribuir por zero ou negativo', () => {
+      const d = Dinheiro.deReais(10)
+      expect(() => d.distribuir(0)).toThrow('Número de partes deve ser maior que zero')
+      expect(() => d.distribuir(-1)).toThrow('Número de partes deve ser maior que zero')
+    })
+
     it('deve distribuir o valor proporcionalmente sem perder centavos', () => {
       // R$ 0,05 distribuído em 3 partes iguais
       // 5 centavos / 3 = 1.666...
