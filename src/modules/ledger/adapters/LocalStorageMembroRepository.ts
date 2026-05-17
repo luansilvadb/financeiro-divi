@@ -1,4 +1,4 @@
-import { IMembroRepository } from '../core/ports/IMembroRepository'
+import type { IMembroRepository } from '../core/ports/IMembroRepository'
 import { Membro } from '../core/domain/Membro'
 
 export class LocalStorageMembroRepository implements IMembroRepository {

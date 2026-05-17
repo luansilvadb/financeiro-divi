@@ -29,10 +29,6 @@ const formatarDinheiro = (valor: Dinheiro) => {
   return valor.formatar()
 }
 
-const getMembroNome = (id: string) => {
-  return props.membros.find(m => m.id === id)?.nome || id
-}
-
 const toggleDetails = () => {
   isExpanded.value = !isExpanded.value
 }
