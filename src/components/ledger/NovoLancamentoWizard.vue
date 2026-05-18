@@ -307,9 +307,23 @@ const handleGravar = async () => {
               </button>
             </div>
 
-            <div class="rounded-[10px] bg-[#f8f7f4] p-4 shadow-[inset_0_0_0_1px_#f2f0ed]">
-              <p class="text-xs font-semibold text-[#343433]">{{ splitSummaryTitle }}</p>
-              <p class="text-xs text-[#848281] mt-1">{{ splitSummaryDesc }}</p>
+            <div class="p-5 rounded-xl bg-meadow/5 border border-meadow/20 flex gap-4 items-center">
+              <!-- Mascote Ilustrado: Moedinha Feliz Meadow Green -->
+              <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0 animate-bounce" style="animation-duration: 5s;">
+                <circle cx="50" cy="50" r="40" fill="var(--color-meadow-green)" />
+                <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="3" />
+                <!-- Olhinhos Felizes -->
+                <circle cx="40" cy="45" r="4.5" fill="#000" />
+                <circle cx="60" cy="45" r="4.5" fill="#000" />
+                <!-- Sorriso -->
+                <path d="M42,56 Q50,64 58,56" stroke="#000" stroke-width="3.5" stroke-linecap="round" fill="none" />
+                <!-- Brilho Estrela -->
+                <path d="M78,22 L80,26 L85,27 L81,31 L82,36 L78,33 L74,36 L75,31 L71,27 L76,26 Z" fill="var(--color-sunburst-yellow)" />
+              </svg>
+              <div class="space-y-1 min-w-0">
+                <p class="text-[10px] font-bold text-meadow uppercase tracking-widest">{{ splitSummaryTitle }}</p>
+                <p class="text-xs font-semibold text-meadow leading-relaxed">{{ splitSummaryDesc }}</p>
+              </div>
             </div>
           </div>
         </div>
