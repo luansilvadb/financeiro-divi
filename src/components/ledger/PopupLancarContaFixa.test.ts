@@ -57,4 +57,48 @@ describe('PopupLancarContaFixa', () => {
       },
     ])
   })
+
+  it('seleciona apenas os IDs compatíveis do template quando existem na casa', async () => {
+    const billWithMixedIds: ContaFixa = {
+      ...bill,
+      defaultSplit: ['luan', 'id-inexistente']
+    }
+    
+    const wrapper = mount(PopupLancarContaFixa, {
+      props: {
+        visible: true,
+        bill: billWithMixedIds,
+        membros,
+      },
+    })
+
+    const splitLuan = wrapper.find('[data-testid="split-luan"]')
+    const splitMaria = wrapper.find('[data-testid="split-maria"]')
+    
+    expect(splitLuan.classes()).toContain('bg-white') // Selecionado
+    expect(splitMaria.classes()).not.toContain('bg-white') // Não selecionado
+  })
+
+  it('seleciona TODOS os moradores se nenhum ID do template for encontrado na casa', async () => {
+    const billWithInvalidIds: ContaFixa = {
+      ...bill,
+      defaultSplit: ['id-1', 'id-2']
+    }
+    
+    const wrapper = mount(PopupLancarContaFixa, {
+      props: {
+        visible: true,
+        bill: billWithInvalidIds,
+        membros,
+      },
+    })
+
+    const splitLuan = wrapper.find('[data-testid="split-luan"]')
+    const splitMaria = wrapper.find('[data-testid="split-maria"]')
+    const splitJoao = wrapper.find('[data-testid="split-joao"]')
+    
+    expect(splitLuan.classes()).toContain('bg-white')
+    expect(splitMaria.classes()).toContain('bg-white')
+    expect(splitJoao.classes()).toContain('bg-white')
+  })
 })
