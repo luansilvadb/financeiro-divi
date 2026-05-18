@@ -114,7 +114,18 @@ watch(() => props.bill, (newBill) => {
   if (newBill) {
     valorReal.value = newBill.fixedValue || 0
     compradorId.value = props.membros[0]?.id || ''
-    splitIds.value = [...newBill.defaultSplit]
+    
+    // Filtra apenas os IDs que realmente existem na lista de membros atual
+    const validSplitIds = newBill.defaultSplit.filter(id => 
+      props.membros.some(m => m.id === id)
+    )
+    
+    if (validSplitIds.length > 0) {
+      splitIds.value = [...validSplitIds]
+    } else {
+      // Fallback: Se o template estiver vazio ou com IDs antigos, seleciona todo mundo
+      splitIds.value = props.membros.map(m => m.id)
+    }
   }
 }, { immediate: true })
 
