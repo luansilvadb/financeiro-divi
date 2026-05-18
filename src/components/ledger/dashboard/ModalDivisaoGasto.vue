@@ -108,21 +108,21 @@ const salvar = () => {
   <BottomSheet :model-value="show && props.gasto !== null" @update:model-value="val => { if (!val) emit('close') }" width-class="md:w-[460px]">
     <div v-if="props.gasto" class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow flex flex-col">
         <!-- Header -->
-        <div class="flex justify-between items-center border-b border-stone-surface pb-4 shrink-0">
+        <div class="flex justify-between items-center border-b border-stone pb-4 shrink-0">
           <div>
             <h3 class="text-lg font-bold text-charcoal">Rateio & Comprador</h3>
             <span class="text-xs text-ash font-bold block mt-1">Ajuste de rateio de forma simples</span>
           </div>
           <button 
             @click="emit('close')"
-            class="w-8 h-8 rounded-full bg-stone-surface hover:bg-stone text-ash hover:text-charcoal font-bold flex items-center justify-center transition-all"
+            class="w-8 h-8 rounded-full bg-stone hover:bg-stone text-ash hover:text-charcoal font-bold flex items-center justify-center transition-all"
           >
             ✕
           </button>
         </div>
 
         <!-- Info Gasto -->
-        <div class="bg-stone-surface border border-stone-surface rounded-cards p-4 flex justify-between items-center shrink-0">
+        <div class="bg-stone border border-stone rounded-card p-4 flex justify-between items-center shrink-0">
           <div>
             <span class="text-[10px] uppercase font-bold tracking-widest text-ember">Gasto sob Revisão</span>
             <strong class="block text-charcoal text-sm mt-0.5">{{ props.gasto.descricao }}</strong>
@@ -144,10 +144,10 @@ const salvar = () => {
           </div>
 
           <!-- 2. Rateio e Divisão -->
-          <div class="bg-stone-surface/30 border border-stone-surface rounded-cards p-4 space-y-4">
-            <div class="flex justify-between items-center pb-2 border-b border-stone-surface">
+          <div class="bg-stone/30 border border-stone rounded-card p-4 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-stone">
               <span class="text-xs font-bold uppercase text-ash tracking-wider">Configurar Rateio</span>
-              <div class="flex bg-stone-surface p-0.5 rounded-lg border border-stone-surface">
+              <div class="flex bg-stone p-0.5 rounded-lg border border-stone">
                 <button 
                   type="button"
                   @click="setModo('IGUAL')"
@@ -183,9 +183,9 @@ const salvar = () => {
             </div>
 
             <!-- Valores Detalhados -->
-            <div v-if="participantes.length > 0" class="pt-3 border-t border-stone-surface">
+            <div v-if="participantes.length > 0" class="pt-3 border-t border-stone">
               <!-- Modo IGUAL -->
-              <div v-if="modo === 'IGUAL'" class="bg-[#fbfaf9] border border-stone-surface p-4 rounded-cards text-center">
+              <div v-if="modo === 'IGUAL'" class="bg-canvas border border-stone p-4 rounded-card text-center">
                 <span class="text-[10px] text-ash font-bold block mb-1">Cada pessoa paga</span>
                 <strong class="text-xl font-bold text-charcoal">R$ {{ valorSugeridoIgual.toFixed(2).replace('.', ',') }}</strong>
               </div>
@@ -200,13 +200,13 @@ const salvar = () => {
                       type="number"
                       step="0.01"
                       v-model.number="valores[id]"
-                      class="w-24 px-2 py-1.5 text-center font-bold text-charcoal rounded-lg border border-stone-surface bg-[#fbfaf9] focus:border-ember outline-none"
+                      class="w-24 px-2 py-1.5 text-center font-bold text-charcoal rounded-lg border border-stone bg-canvas focus:border-ember outline-none"
                     />
                   </div>
                 </div>
 
                 <!-- Erro de Soma Manual -->
-                <div v-if="erroSoma" class="text-[10px] font-bold text-coral-red leading-normal bg-coral-red/5 border border-coral-red/25 p-2 rounded-cards text-center animate-pulse">
+                <div v-if="erroSoma" class="text-[10px] font-bold text-coral leading-normal bg-coral/5 border border-coral/25 p-2 rounded-card text-center animate-pulse">
                   ⚠️ A soma dos valores (R$ {{ somaManual.toFixed(2).replace('.', ',') }}) deve fechar exatamente R$ {{ (props.gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}.
                 </div>
               </div>
@@ -215,10 +215,10 @@ const salvar = () => {
         </div>
 
         <!-- Footer Buttons -->
-        <div class="border-t border-stone-surface pt-4 mt-6 flex gap-3 shrink-0">
+        <div class="border-t border-stone pt-4 mt-6 flex gap-3 shrink-0">
           <button 
             @click="emit('close')"
-            class="flex-1 py-3 border border-stone-surface bg-[#f6f4ef] hover:bg-stone-surface rounded-buttonspill text-xs font-semibold text-charcoal transition-all active:scale-[0.98]"
+            class="flex-1 py-3 border border-stone bg-stone hover:bg-stone rounded-pill text-xs font-semibold text-charcoal transition-all active:scale-[0.98]"
           >
             Cancelar
           </button>
@@ -226,8 +226,8 @@ const salvar = () => {
             @click="salvar"
             :disabled="!podeSalvar"
             :class="[
-              'flex-1 py-3 rounded-buttonspill text-xs font-semibold text-white transition-all',
-              podeSalvar ? 'bg-midnight hover:bg-charcoal-primary shadow-sm' : 'bg-[#e2dfd9] text-smoke cursor-not-allowed shadow-none'
+              'flex-1 py-3 rounded-pill text-xs font-semibold text-white transition-all',
+              podeSalvar ? 'bg-midnight hover:bg-charcoal shadow-sm' : 'bg-[#e2dfd9] text-smoke cursor-not-allowed shadow-none'
             ]"
           >
             Salvar Rateio
@@ -245,7 +245,7 @@ const salvar = () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone-surface);
+  background-color: var(--color-stone);
   border-radius: 9999px;
 }
 </style>

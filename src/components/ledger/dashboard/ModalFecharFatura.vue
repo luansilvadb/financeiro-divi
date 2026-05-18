@@ -44,13 +44,13 @@ const confirmar = () => {
             <SectionLabel>Processamento</SectionLabel>
             <h3 class="text-3xl font-display text-charcoal">Fechar <span class="text-ember">Fatura</span></h3>
           </div>
-          <Button variant="secondary" size="icon" @click="emit('close')" class="rounded-full border border-stone-surface">
+          <Button variant="secondary" size="icon" @click="emit('close')" class="rounded-full border border-stone">
             <X class="w-4 h-4 text-graphite" />
           </Button>
         </div>
 
         <!-- Info Box (Meadow Green) -->
-        <div class="flex gap-4 p-4 rounded-xl bg-meadow-green/5 border border-meadow-green/20 text-meadow-green text-xs font-semibold leading-relaxed">
+        <div class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow text-xs font-semibold leading-relaxed">
           <Info class="w-5 h-5 shrink-0 mt-0.5" />
           <p>
             O membro escolhido será o responsável por quitar a fatura junto ao banco e receberá os repasses dos outros membros.
@@ -67,7 +67,7 @@ const confirmar = () => {
         </div>
 
         <!-- Footer Buttons -->
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone-surface">
+        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
           <Button variant="secondary" @click="emit('close')">Cancelar</Button>
           <Button variant="primary" @click="confirmar" :disabled="!responsavelId">Confirmar</Button>
         </div>
@@ -83,7 +83,7 @@ const confirmar = () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone-surface);
+  background-color: var(--color-stone);
   border-radius: 9999px;
 }
 </style>

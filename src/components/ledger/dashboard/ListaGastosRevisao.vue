@@ -28,12 +28,12 @@ const formatarDivisao = (g: Gasto) => {
 
 <template>
   <div class="space-y-3">
-    <div class="flex justify-between items-center border-b border-stone-surface pb-2">
+    <div class="flex justify-between items-center border-b border-stone pb-2">
       <span class="text-xs font-bold uppercase text-ash tracking-wider">Itens da Fatura (Extrato)</span>
-      <span class="text-[10px] text-charcoal font-bold bg-stone-surface border border-stone-surface px-2.5 py-0.5 rounded-full">{{ props.gastos.length }} compras</span>
+      <span class="text-[10px] text-charcoal font-bold bg-stone border border-stone px-2.5 py-0.5 rounded-full">{{ props.gastos.length }} compras</span>
     </div>
 
-    <div v-if="props.gastos.length === 0" class="text-center py-8 bg-stone-surface/30 rounded-cards border border-dashed border-stone-surface">
+    <div v-if="props.gastos.length === 0" class="text-center py-8 bg-stone/30 rounded-card border border-dashed border-stone">
       <span class="text-2xl block mb-1">🛒</span>
       <strong class="text-xs text-ash block">Nenhuma compra registrada nesta fatura.</strong>
     </div>
@@ -42,12 +42,12 @@ const formatarDivisao = (g: Gasto) => {
       <div 
         v-for="g in props.gastos" 
         :key="g.id"
-        class="flex justify-between items-center bg-[#fbfaf9] border border-stone-surface hover:border-ember/30 p-3 rounded-cards transition-all group hover:bg-white duration-150"
+        class="flex justify-between items-center bg-canvas border border-stone hover:border-ember/30 p-3 rounded-card transition-all group hover:bg-white duration-150"
       >
         <div class="flex items-center gap-2.5 flex-1 min-w-0">
           <!-- Avatar Compacto -->
           <div 
-            class="w-8 h-8 rounded-full bg-stone-surface text-charcoal font-bold text-xs flex items-center justify-center border border-stone-surface shrink-0"
+            class="w-8 h-8 rounded-full bg-stone text-charcoal font-bold text-xs flex items-center justify-center border border-stone shrink-0"
           >
             {{ getCompradorNome(g.compradorId)[0].toUpperCase() }}
           </div>
@@ -70,7 +70,7 @@ const formatarDivisao = (g: Gasto) => {
           <button 
             type="button"
             @click="emit('editarRateio', g)"
-            class="px-3 py-1.5 bg-[#f6f4ef] hover:bg-stone-surface border border-stone-surface rounded-buttonspill text-[9px] font-semibold text-midnight transition-all active:scale-95 duration-150"
+            class="px-3 py-1.5 bg-stone hover:bg-stone border border-stone rounded-pill text-[9px] font-semibold text-midnight transition-all active:scale-95 duration-150"
           >
             ✂️ Ratear
           </button>

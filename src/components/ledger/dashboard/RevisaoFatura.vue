@@ -86,11 +86,11 @@ const totalFatura = computed(() => {
 <template>
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
     <!-- Top Header -->
-    <div class="bg-card shadow-subtle border border-stone-surface p-6 rounded-cards flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-graphite relative overflow-hidden">
+    <div class="bg-card shadow-subtle border border-stone p-6 rounded-card flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-graphite relative overflow-hidden">
       <div class="flex items-center gap-4">
         <button 
           @click="emit('voltar')"
-          class="w-10 h-10 rounded-full bg-[#f6f4ef] hover:bg-stone-surface text-graphite font-bold flex items-center justify-center border border-stone-surface transition-all active:scale-95"
+          class="w-10 h-10 rounded-full bg-stone hover:bg-stone text-graphite font-bold flex items-center justify-center border border-stone transition-all active:scale-95"
         >
           <ChevronLeft class="w-4 h-4" />
         </button>
@@ -108,14 +108,14 @@ const totalFatura = computed(() => {
       <div class="flex gap-2">
         <button 
           @click="reabrirFatura"
-          class="px-4 py-2.5 border border-coral-red/25 bg-coral-red/5 hover:bg-coral-red/10 text-coral-red rounded-buttonspill text-xs font-semibold transition-all active:scale-95"
+          class="px-4 py-2.5 border border-coral/25 bg-coral/5 hover:bg-coral/10 text-coral rounded-pill text-xs font-semibold transition-all active:scale-95"
         >
           🔓 Reabrir Fatura
         </button>
         <button 
           @click="confirmarAcertos"
           :disabled="processandoConfirmacao"
-          class="px-5 py-2.5 bg-midnight hover:bg-charcoal-primary disabled:bg-stone-surface disabled:text-ash text-white rounded-buttonspill text-xs font-semibold transition-all active:scale-95 flex items-center gap-2"
+          class="px-5 py-2.5 bg-midnight hover:bg-charcoal disabled:bg-stone disabled:text-ash text-white rounded-pill text-xs font-semibold transition-all active:scale-95 flex items-center gap-2"
         >
           <span v-if="processandoConfirmacao">Processando...</span>
           <span v-else>✅ Confirmar Acertos Pix</span>
@@ -126,7 +126,7 @@ const totalFatura = computed(() => {
     <!-- Main Content Split (2 Colunas) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Coluna da Esquerda: Extrato -->
-      <div class="lg:col-span-7 bg-card shadow-subtle border border-stone-surface rounded-cards p-5 md:p-6 space-y-4 text-graphite">
+      <div class="lg:col-span-7 bg-card shadow-subtle border border-stone rounded-card p-5 md:p-6 space-y-4 text-graphite">
         <ListaGastosRevisao 
           :gastos="gastosFatura" 
           :membros="props.membros" 

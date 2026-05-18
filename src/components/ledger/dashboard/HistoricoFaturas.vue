@@ -55,13 +55,13 @@ const toggleFatura = (faturaId: string) => {
       <Card 
         v-for="f in faturasAcertadas" 
         :key="f.id"
-        class="p-0 overflow-hidden bg-card border border-stone-surface shadow-subtle rounded-cards"
+        class="p-0 overflow-hidden bg-card border border-stone shadow-subtle rounded-card"
       >
         <!-- Header Accordion -->
         <button 
           type="button"
           @click="toggleFatura(f.id)"
-          class="w-full flex items-center justify-between p-6 text-left transition-all hover:bg-stone-surface/30 gap-6"
+          class="w-full flex items-center justify-between p-6 text-left transition-all hover:bg-stone/30 gap-6"
         >
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-full bg-meadow/5 text-meadow flex items-center justify-center border border-meadow/20">
@@ -96,7 +96,7 @@ const toggleFatura = (faturaId: string) => {
         <!-- Detalhes Expandidos -->
         <div 
           v-if="faturaExpandidaId === f.id"
-          class="border-t border-stone-surface p-6 bg-[#fbfaf9] space-y-8 animate-in fade-in slide-in-from-top-2"
+          class="border-t border-stone p-6 bg-canvas space-y-8 animate-in fade-in slide-in-from-top-2"
         >
           <!-- Extrato Simplificado -->
           <div class="space-y-4">
@@ -108,10 +108,10 @@ const toggleFatura = (faturaId: string) => {
               <div 
                 v-for="g in getGastosFatura(f.id)" 
                 :key="g.id"
-                class="flex justify-between items-center bg-card border border-stone-surface p-3 rounded-xl text-xs"
+                class="flex justify-between items-center bg-card border border-stone p-3 rounded-xl text-xs"
               >
                 <div class="flex items-center gap-3">
-                  <div class="w-7 h-7 rounded-full bg-stone border border-stone-surface font-display text-[10px] flex items-center justify-center text-charcoal">
+                  <div class="w-7 h-7 rounded-full bg-stone border border-stone font-display text-[10px] flex items-center justify-center text-charcoal">
                     {{ getMembroNome(g.compradorId)[0] }}
                   </div>
                   <div>
@@ -134,7 +134,7 @@ const toggleFatura = (faturaId: string) => {
               <div 
                 v-for="a in getAcertosFatura(f.id)" 
                 :key="a.id"
-                class="flex justify-between items-center bg-card border border-stone-surface p-4 rounded-xl text-xs"
+                class="flex justify-between items-center bg-card border border-stone p-4 rounded-xl text-xs"
               >
                 <div class="flex items-center gap-4">
                   <div class="w-8 h-8 rounded-full bg-meadow text-white flex items-center justify-center">

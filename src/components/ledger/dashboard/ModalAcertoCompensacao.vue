@@ -62,7 +62,7 @@ const handleConfirmar = () => {
                 v-model.number="valorReal"
                 type="number"
                 step="0.01"
-                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
                 placeholder="0,00"
               />
             </div>
@@ -74,7 +74,7 @@ const handleConfirmar = () => {
             <input 
               v-model="descricao"
               type="text"
-              class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
             />
           </div>
 
@@ -90,8 +90,8 @@ const handleConfirmar = () => {
                 class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
                 :class="[
                   method === m.id 
-                    ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' 
-                    : 'bg-[#f6f4ef] border border-stone-surface text-charcoal hover:bg-stone-surface'
+                    ? 'bg-midnight text-white font-bold border-stone shadow-sm' 
+                    : 'bg-stone border border-stone text-charcoal hover:bg-stone'
                 ]"
               >
                 <component :is="m.icon" class="w-4 h-4" />
@@ -102,7 +102,7 @@ const handleConfirmar = () => {
         </div>
 
         <!-- Rodapé Ações -->
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone-surface">
+        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
           <Button variant="secondary" @click="emit('cancel')">Cancelar</Button>
           <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0">Confirmar</Button>
         </div>
@@ -118,7 +118,7 @@ const handleConfirmar = () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone-surface);
+  background-color: var(--color-stone);
   border-radius: 9999px;
 }
 </style>

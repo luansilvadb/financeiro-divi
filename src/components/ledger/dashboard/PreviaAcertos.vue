@@ -97,7 +97,7 @@ const transferenciasPix = computed(() => {
 
 <template>
   <div class="space-y-4">
-    <div class="flex justify-between items-center border-b border-stone-surface pb-1.5">
+    <div class="flex justify-between items-center border-b border-stone pb-1.5">
       <span class="text-xs font-bold uppercase text-ash tracking-wider">Prévia de Acertos (Saldos Coletivos)</span>
       <span class="text-[9px] text-ember font-bold bg-ember/15 border border-ember/20 px-2 py-0.5 rounded">Reativo</span>
     </div>
@@ -108,13 +108,13 @@ const transferenciasPix = computed(() => {
         v-for="s in saldosLiquidos" 
         :key="s.id"
         :class="[
-          'p-3.5 rounded-cards border transition-all flex flex-col justify-between space-y-2.5 bg-card shadow-subtle',
-          s.id === props.responsavelId ? 'border-ember/40 bg-ember/5' : 'border-stone-surface'
+          'p-3.5 rounded-card border transition-all flex flex-col justify-between space-y-2.5 bg-card shadow-subtle',
+          s.id === props.responsavelId ? 'border-ember/40 bg-ember/5' : 'border-stone'
         ]"
       >
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-stone-surface border border-stone-surface font-bold text-[9px] flex items-center justify-center text-charcoal">
+            <div class="w-6 h-6 rounded-full bg-stone border border-stone font-bold text-[9px] flex items-center justify-center text-charcoal">
               {{ s.nome[0].toUpperCase() }}
             </div>
             <strong class="text-xs text-charcoal font-bold">{{ s.nome }}</strong>
@@ -138,12 +138,12 @@ const transferenciasPix = computed(() => {
           </div>
         </div>
 
-        <div class="pt-1.5 border-t border-stone-surface flex justify-between items-center text-[10px]">
+        <div class="pt-1.5 border-t border-stone flex justify-between items-center text-[10px]">
           <span class="text-ash font-bold">Líquido:</span>
           <strong 
             :class="[
               'font-semibold',
-              s.balanco > 0 ? 'text-coral-red' : s.balanco < 0 ? 'text-meadow-green' : 'text-smoke'
+              s.balanco > 0 ? 'text-coral' : s.balanco < 0 ? 'text-meadow' : 'text-smoke'
             ]"
           >
             {{ s.balanco > 0 ? `Deve R$ ${s.balanco.toFixed(2).replace('.', ',')}` : s.balanco < 0 ? `Crédito R$ ${Math.abs(s.balanco).toFixed(2).replace('.', ',')}` : 'Zerado' }}
@@ -153,7 +153,7 @@ const transferenciasPix = computed(() => {
     </div>
 
     <!-- Fluxo Pix Recomendado (Quem Paga Quem) -->
-    <div class="bg-card shadow-subtle border border-stone-surface text-graphite rounded-cards p-4 space-y-3">
+    <div class="bg-card shadow-subtle border border-stone text-graphite rounded-card p-4 space-y-3">
       <div class="flex items-center gap-2">
         <span class="text-base">💸</span>
         <div>
@@ -170,11 +170,11 @@ const transferenciasPix = computed(() => {
         <div 
           v-for="(t, idx) in transferenciasPix" 
           :key="idx"
-          class="flex items-center justify-between bg-stone-surface/30 border border-stone-surface p-3 rounded-cards"
+          class="flex items-center justify-between bg-stone/30 border border-stone p-3 rounded-card"
         >
           <!-- Remetente -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
-            <div class="w-8 h-8 rounded-full bg-stone-surface border border-stone-surface font-bold text-xs text-charcoal flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-full bg-stone border border-stone font-bold text-xs text-charcoal flex items-center justify-center shrink-0">
               {{ t.deNome[0].toUpperCase() }}
             </div>
             <div class="min-w-0">
@@ -195,7 +195,7 @@ const transferenciasPix = computed(() => {
               <strong class="text-xs font-bold block truncate leading-tight">{{ t.paraNome }}</strong>
               <span class="text-[8px] text-ash font-medium">recebe Pix</span>
             </div>
-            <div class="w-8 h-8 rounded-full bg-stone-surface border border-stone-surface font-bold text-xs text-charcoal flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-full bg-stone border border-stone font-bold text-xs text-charcoal flex items-center justify-center shrink-0">
               {{ t.paraNome[0].toUpperCase() }}
             </div>
           </div>

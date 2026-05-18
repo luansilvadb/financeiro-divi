@@ -130,7 +130,7 @@ const handleConfirm = () => {
             <input 
               type="text" 
               v-model="descInput" 
-              class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-sm text-charcoal focus:border-ember transition-all" 
+              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all" 
               placeholder="Ex: Supermercado"
             />
           </div>
@@ -144,7 +144,7 @@ const handleConfirm = () => {
                 v-model.number="valorInput"
                 type="number"
                 step="0.01"
-                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
                 placeholder="0,00"
               />
             </div>
@@ -157,7 +157,7 @@ const handleConfirm = () => {
               <button 
                 @click="selectMethod('pix', null)"
                 class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'pix' ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
+                :class="activeMethod === 'pix' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
               >
                 <Wallet class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">Pix</span>
@@ -165,7 +165,7 @@ const handleConfirm = () => {
               <button 
                 @click="selectMethod('card', 'luan')"
                 class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
+                :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
               >
                 <CreditCard class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">Nubank</span>
@@ -173,7 +173,7 @@ const handleConfirm = () => {
               <button 
                 @click="selectMethod('card', 'joao')"
                 class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
+                :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
               >
                 <CreditCard class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">C6</span>
@@ -192,7 +192,7 @@ const handleConfirm = () => {
                 :key="m.id"
                 @click="quemPaga = m.id"
                 class="py-3 rounded-xl border font-bold text-xs transition-all duration-200"
-                :class="quemPaga === m.id ? 'bg-midnight text-white font-bold border-stone-surface shadow-sm' : 'bg-[#f6f4ef] hover:bg-stone-surface text-charcoal border border-stone-surface'"
+                :class="quemPaga === m.id ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
               >
                 {{ m.nome }}
               </button>
@@ -208,19 +208,19 @@ const handleConfirm = () => {
                 :key="m.id"
                 @click="toggleSplit(m.id)"
                 class="relative py-4 rounded-xl border font-bold text-xs transition-all duration-200 flex flex-col items-center gap-2"
-                :class="selectedSplit.includes(m.id) ? 'bg-[#ff3e00]/5 border-[#ff3e00] text-[#ff3e00] font-bold' : 'bg-[#f6f4ef] border-stone-surface text-ash hover:bg-stone-surface'"
+                :class="selectedSplit.includes(m.id) ? 'bg-ember/5 border-ember text-ember font-bold' : 'bg-stone border-stone text-ash hover:bg-stone'"
               >
                 <Users class="w-4 h-4" />
                 <span>{{ m.nome }}</span>
                 <div v-if="selectedSplit.includes(m.id)" class="absolute top-1.5 right-1.5">
-                  <Check class="w-3 h-3 text-[#ff3e00]" />
+                  <Check class="w-3 h-3 text-ember" />
                 </div>
               </button>
             </div>
           </div>
 
           <!-- Quadro Final / Prévia do Rateio -->
-          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow-green/5 border border-meadow-green/20 text-meadow-green">
+          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
             <Info class="w-5 h-5 shrink-0 mt-0.5" />
             <div class="space-y-1">
               <p class="text-[10px] font-bold uppercase tracking-widest">Resumo do Rateio</p>
@@ -229,7 +229,7 @@ const handleConfirm = () => {
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone-surface">
+        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
           <Button variant="secondary" @click="emit('cancel')">Voltar</Button>
           <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
         </div>
@@ -245,7 +245,7 @@ const handleConfirm = () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone-surface);
+  background-color: var(--color-stone);
   border-radius: 9999px;
 }
 </style>
