@@ -177,7 +177,7 @@ const handleSalvarTransacao = async () => {
       </div>
     </BottomSheet>
 
-    <BottomTabBar v-model="activeTab" />
+    <BottomTabBar v-if="!isAnyBottomSheetOpen" v-model="activeTab" />
   </div>
 </template>
 
