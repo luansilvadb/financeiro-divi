@@ -73,7 +73,7 @@ const detailedBreakdown = computed(() => {
 </script>
 
 <template>
-  <Card class="p-8 shadow-subtle bg-card rounded-cards space-y-8">
+  <Card class="p-8 shadow-subtle bg-card rounded-card space-y-8">
     <div class="space-y-2">
       <SectionLabel>Auditoria</SectionLabel>
       <h3 class="text-2xl font-display text-charcoal">Detalhamento <span class="text-ember">Granular</span></h3>
@@ -86,7 +86,7 @@ const detailedBreakdown = computed(() => {
         :key="m.id" 
         class="space-y-4"
       >
-        <div class="flex justify-between items-center pb-2 border-b border-stone-surface">
+        <div class="flex justify-between items-center pb-2 border-b border-stone">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full bg-stone text-charcoal flex items-center justify-center font-display text-sm">
               {{ m.nome[0] }}
@@ -95,7 +95,7 @@ const detailedBreakdown = computed(() => {
           </div>
           <span 
             class="text-[10px] font-mono font-bold px-3 py-1 rounded-full uppercase tracking-widest border"
-            :class="props.saldosUnificados[m.id] > 0.005 ? 'bg-meadow/5 border-meadow/20 text-meadow' : props.saldosUnificados[m.id] < -0.005 ? 'bg-coral-red/5 border-coral-red/20 text-coral-red' : 'bg-stone border-stone-surface text-ash'"
+            :class="props.saldosUnificados[m.id] > 0.005 ? 'bg-meadow/5 border-meadow/20 text-meadow' : props.saldosUnificados[m.id] < -0.005 ? 'bg-coral/5 border-coral/20 text-coral' : 'bg-stone border-stone text-ash'"
           >
             Saldo: {{ props.saldosUnificados[m.id] > 0.005 ? '+' : '' }}R$ {{ props.saldosUnificados[m.id]?.toFixed(2).replace('.', ',') }}
           </span>
@@ -103,7 +103,7 @@ const detailedBreakdown = computed(() => {
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <!-- PIX -->
-          <Card class="p-4 bg-[#f8f7f4] border border-stone-surface shadow-none rounded-cards space-y-3">
+          <Card class="p-4 bg-parchment border border-stone shadow-none rounded-card space-y-3">
             <div class="flex items-center gap-2">
               <Wallet class="w-3 h-3 text-ember" />
               <span class="text-[9px] font-bold uppercase tracking-widest text-ash">PIX / Cash</span>
@@ -115,13 +115,13 @@ const detailedBreakdown = computed(() => {
               </div>
               <div class="flex justify-between text-xs">
                 <span class="text-ash font-semibold">Usou:</span>
-                <span class="text-coral-red font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.pixConsumo || 0) }}</span>
+                <span class="text-coral font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.pixConsumo || 0) }}</span>
               </div>
             </div>
           </Card>
 
           <!-- Cartão -->
-          <Card class="p-4 bg-[#f8f7f4] border border-stone-surface shadow-none rounded-cards space-y-3">
+          <Card class="p-4 bg-parchment border border-stone shadow-none rounded-card space-y-3">
             <div class="flex items-center gap-2">
               <CreditCard class="w-3 h-3 text-ember" />
               <span class="text-[9px] font-bold uppercase tracking-widest text-ash">Cartão</span>
@@ -133,13 +133,13 @@ const detailedBreakdown = computed(() => {
               </div>
               <div class="flex justify-between text-xs">
                 <span class="text-ash font-semibold">Usou:</span>
-                <span class="text-coral-red font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.cardConsumo || 0) }}</span>
+                <span class="text-coral font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.cardConsumo || 0) }}</span>
               </div>
             </div>
           </Card>
 
           <!-- Empréstimo -->
-          <Card class="p-4 bg-[#f8f7f4] border border-stone-surface shadow-none rounded-cards space-y-3">
+          <Card class="p-4 bg-parchment border border-stone shadow-none rounded-card space-y-3">
             <div class="flex items-center gap-2">
               <Handshake class="w-3 h-3 text-ember" />
               <span class="text-[9px] font-bold uppercase tracking-widest text-ash">Empréstimos</span>
@@ -151,7 +151,7 @@ const detailedBreakdown = computed(() => {
               </div>
               <div class="flex justify-between text-xs">
                 <span class="text-ash font-semibold">Tomou:</span>
-                <span class="text-coral-red font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
+                <span class="text-coral font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
               </div>
             </div>
           </Card>

@@ -41,7 +41,7 @@ const obterNomeMembro = (id?: string) => {
 </script>
 
 <template>
-  <div class="contas-fixas-card bg-white p-[18px] rounded-[10px] shadow-subtle text-graphite">
+  <div class="contas-fixas-card bg-white p-[18px] rounded-card shadow-subtle text-graphite">
     <div class="flex justify-between items-start gap-3 mb-3.5">
       <div class="min-w-0">
         <h3 class="text-[15px] leading-tight font-semibold text-charcoal tracking-[-0.2px]">
@@ -88,10 +88,10 @@ const obterNomeMembro = (id?: string) => {
           v-for="bill in contasFixas" 
           :key="bill.id" 
           class="group flex items-center justify-between p-4 rounded-xl border transition-all duration-300"
-          :class="verificarPaga(bill) ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone-surface hover:border-ember/30'"
+          :class="verificarPaga(bill) ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone hover:border-ember/30'"
         >
           <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="w-10 h-10 rounded-lg bg-card border border-stone-surface flex items-center justify-center text-xl shadow-subtle">
+            <div class="w-10 h-10 rounded-lg bg-card border border-stone flex items-center justify-center text-xl shadow-subtle">
               {{ bill.icon }}
             </div>
             <div class="min-w-0 flex-1">
@@ -125,7 +125,7 @@ const obterNomeMembro = (id?: string) => {
               variant="secondary" 
               size="icon"
               @click="$emit('configurar', bill)" 
-              class="w-8 h-8 rounded-lg border border-stone-surface"
+              class="w-8 h-8 rounded-lg border border-stone"
               :data-testid="`configurar-conta-${bill.id}`"
               :aria-label="`Configurar ${bill.name}`"
               :title="`Configurar ${bill.name}`"

@@ -35,7 +35,7 @@ const handleDelete = (id: string) => {
 </script>
 
 <template>
-  <Card class="p-8 shadow-subtle bg-card rounded-cards">
+  <Card class="p-8 shadow-subtle bg-card rounded-card">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-ember/5 flex items-center justify-center">
@@ -54,7 +54,7 @@ const handleDelete = (id: string) => {
       <!-- Mascote Azul Celeste com Lupa -->
       <svg viewBox="0 0 100 100" class="w-20 h-20 mx-auto animate-pulse" style="animation-duration: 4s;">
         <!-- Corpo Blob Celeste -->
-        <path d="M20,40 Q30,10 60,15 Q90,20 80,60 Q70,90 40,80 Q10,70 20,40 Z" fill="var(--color-sky-blue)" />
+        <path d="M20,40 Q30,10 60,15 Q90,20 80,60 Q70,90 40,80 Q10,70 20,40 Z" fill="var(--color-sky)" />
         <!-- Olhinhos -->
         <circle cx="45" cy="45" r="4.5" fill="#000" />
         <circle cx="65" cy="45" r="4.5" fill="#000" />
@@ -106,7 +106,7 @@ const handleDelete = (id: string) => {
             v-if="!g.isSettlement"
             variant="secondary"
             size="sm"
-            class="h-8 px-3 text-[10px] border border-stone-surface"
+            class="h-8 px-3 text-[10px] border border-stone"
             @click="emit('ajustarGasto', g.id)"
             :disabled="props.isMonthLocked"
           >
@@ -116,7 +116,7 @@ const handleDelete = (id: string) => {
           <Button 
             variant="secondary"
             size="sm"
-            class="h-8 px-3 text-[10px] text-coral-red hover:bg-[#fff0f0] border border-transparent"
+            class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
             @click="handleDelete(g.id)"
             :disabled="props.isMonthLocked"
           >
