@@ -104,4 +104,8 @@
     line-height: 1.09;
     letter-spacing: -2.11px;
   }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
