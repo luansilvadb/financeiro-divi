@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, toRef } from 'vue'
+import type { Tab } from '../ui/BottomTabBar.vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
@@ -46,6 +47,7 @@ interface Props {
   calcularConsumo: (faturaId: string, membroId: string) => number
   calcularAdiantamento?: (faturaId: string, membroId: string) => number
   gastos?: any[]
+  activeTab?: Tab
 }
 
 const props = defineProps<Props>()
@@ -96,6 +98,10 @@ const getCartaoNome = (cartaoId: string) => getCartaoNomeBase(props.cartoes, car
 
 // Estado de revisão imersiva (Gap 2)
 const faturaSobRevisao = ref<any | null>(null)
+
+const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
+const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
+const isHistorico = computed(() => !props.activeTab || props.activeTab === 'historico')
 
 // Estado do modal de fechamento (Gap 6)
 const showModalFechar = ref(false)
@@ -324,6 +330,8 @@ const excluirGasto = async (id: string) => {
   />
 
   <div v-else class="space-y-12">
+    <!-- GROUP: HOJE -->
+    <div v-show="isHoje" class="space-y-12">
     <!-- BARRA DE TRANCAMENTO (Design System Family) -->
     <div 
       class="flex justify-between items-center p-4 rounded-xl border transition-all duration-300 shadow-subtle bg-parchment-card"
@@ -408,6 +416,83 @@ const excluirGasto = async (id: string) => {
       </Card>
     </section>
 
+    <!-- Painel de Compensação Otimizada (Design System Family) -->
+    <section v-if="nettingTransferencias.length > 0" class="space-y-6">
+      <div class="space-y-2">
+        <SectionLabel>Eficiência</SectionLabel>
+        <h2 class="text-3xl font-display text-charcoal">Acertos <span class="text-ember">Otimizados</span></h2>
+      </div>
+      
+      <div class="grid gap-4">
+        <Card 
+          v-for="t in nettingTransferencias" 
+          :key="t.from + '-' + t.to" 
+          class="p-5 border-l-4 border-l-ember bg-card shadow-subtle rounded-cards"
+        >
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-ember/10 flex items-center justify-center shrink-0">
+                <ArrowUpRight class="w-5 h-5 text-ember" />
+              </div>
+              <div>
+                <p class="text-sm leading-relaxed">
+                  <span class="font-bold text-charcoal">{{ getMembroNome(t.from) }}</span> 
+                  deve enviar para 
+                  <span class="font-bold text-charcoal">{{ getMembroNome(t.to) }}</span>
+                </p>
+                <p class="font-display text-2xl text-ember mt-1">
+                  R$ {{ t.val.toFixed(2).replace('.', ',') }}
+                </p>
+              </div>
+            </div>
+            <Button 
+              @click="abrirModalNetting(t)"
+              :disabled="isMonthLocked"
+              variant="primary"
+              class="w-full md:w-auto"
+            >
+              Confirmar Pix
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </section>
+
+    <!-- Checklist de Contas Fixas (Design System Family) -->
+    <section class="space-y-6">
+      <div class="space-y-2">
+        <SectionLabel>Recorrência</SectionLabel>
+        <h2 class="text-3xl font-display text-charcoal">Contas <span class="text-ember">Fixas</span></h2>
+      </div>
+      <ContasFixasPanel 
+        :contasFixas="contasFixas"
+        :gastos="globalGastos"
+        :membros="props.membros"
+        :isMonthLocked="isMonthLocked"
+        @lancar="abrirLancarBill"
+        @configurar="abrirConfigurarBill"
+        @novo="abrirNovoBill"
+      />
+    </section>
+
+    <!-- Feed de Lançamentos Recentes (Design System Family) -->
+    <section class="space-y-6">
+      <div class="space-y-2">
+        <SectionLabel>Atividade</SectionLabel>
+        <h2 class="text-3xl font-display text-charcoal">Últimos <span class="text-ember">Lançamentos</span></h2>
+      </div>
+      <ActivityFeed 
+        :gastos="globalGastos"
+        :membros="props.membros"
+        :is-month-locked="isMonthLocked"
+        @desfazerGasto="excluirGasto"
+        @ajustarGasto="abrirAjustarGasto"
+      />
+    </section>
+    </div><!-- /isHoje -->
+
+    <!-- GROUP: FATURAS -->
+    <div v-show="isFaturas" class="space-y-12">
     <!-- Detalhamento Granular de Saldos por Coluna (Senior v19) -->
     <div class="mt-6">
       <DetalhamentoSaldosCard 
@@ -569,48 +654,6 @@ const excluirGasto = async (id: string) => {
       </div>
     </section>
 
-    <!-- Painel de Compensação Otimizada (Design System Family) -->
-    <section v-if="nettingTransferencias.length > 0" class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Eficiência</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Acertos <span class="text-ember">Otimizados</span></h2>
-      </div>
-      
-      <div class="grid gap-4">
-        <Card 
-          v-for="t in nettingTransferencias" 
-          :key="t.from + '-' + t.to" 
-          class="p-5 border-l-4 border-l-ember bg-card shadow-subtle rounded-cards"
-        >
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="flex items-start gap-4">
-              <div class="w-10 h-10 rounded-full bg-ember/10 flex items-center justify-center shrink-0">
-                <ArrowUpRight class="w-5 h-5 text-ember" />
-              </div>
-              <div>
-                <p class="text-sm leading-relaxed">
-                  <span class="font-bold text-charcoal">{{ getMembroNome(t.from) }}</span> 
-                  deve enviar para 
-                  <span class="font-bold text-charcoal">{{ getMembroNome(t.to) }}</span>
-                </p>
-                <p class="font-display text-2xl text-ember mt-1">
-                  R$ {{ t.val.toFixed(2).replace('.', ',') }}
-                </p>
-              </div>
-            </div>
-            <Button 
-              @click="abrirModalNetting(t)"
-              :disabled="isMonthLocked"
-              variant="primary"
-              class="w-full md:w-auto"
-            >
-              Confirmar Pix
-            </Button>
-          </div>
-        </Card>
-      </div>
-    </section>
-
     <!-- Seção 2: Faturas Abertas (Design System Family) -->
     <section class="space-y-6">
       <div class="space-y-2">
@@ -744,24 +787,10 @@ const excluirGasto = async (id: string) => {
         </div>
       </Card>
     </section>
+    </div><!-- /isFaturas -->
 
-    <!-- Checklist de Contas Fixas (Design System Family) -->
-    <section class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Recorrência</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Contas <span class="text-ember">Fixas</span></h2>
-      </div>
-      <ContasFixasPanel 
-        :contasFixas="contasFixas"
-        :gastos="globalGastos"
-        :membros="props.membros"
-        :isMonthLocked="isMonthLocked"
-        @lancar="abrirLancarBill"
-        @configurar="abrirConfigurarBill"
-        @novo="abrirNovoBill"
-      />
-    </section>
-
+    <!-- GROUP: HISTORICO -->
+    <div v-show="isHistorico" class="space-y-12">
     <!-- Histórico de Faturas Acertadas (Design System Family) -->
     <section class="space-y-6">
       <div class="space-y-2">
@@ -770,21 +799,7 @@ const excluirGasto = async (id: string) => {
       </div>
       <HistoricoFaturas :membros="props.membros" />
     </section>
-
-    <!-- Feed de Lançamentos Recentes (Design System Family) -->
-    <section class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Atividade</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Últimos <span class="text-ember">Lançamentos</span></h2>
-      </div>
-      <ActivityFeed 
-        :gastos="globalGastos"
-        :membros="props.membros"
-        :is-month-locked="isMonthLocked"
-        @desfazerGasto="excluirGasto"
-        @ajustarGasto="abrirAjustarGasto"
-      />
-    </section>
+    </div><!-- /isHistorico -->
 
     <!-- Modal de Fechamento de Fatura com Dono Variável (Gap 6) -->
     <ModalFecharFatura 
