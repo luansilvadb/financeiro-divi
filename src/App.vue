@@ -11,8 +11,10 @@ import { useMembros } from './modules/ledger/composables/useMembros'
 import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
 import { useBottomSheetState } from './composables/useBottomSheetState'
+import BottomTabBar, { type Tab } from './components/ui/BottomTabBar.vue'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
+const activeTab = ref<Tab>('hoje')
 const { isAnyBottomSheetOpen } = useBottomSheetState()
 const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
 const {
@@ -45,7 +47,7 @@ const handleSalvarTransacao = async () => {
 
 <template>
   <div class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
-    <div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-16 pb-28 relative">
+    <div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-16 pb-36 md:pb-16 relative">
       <!-- Header Lúdico e Centralizado -->
       <header class="mb-8 md:mb-10 space-y-4 md:space-y-8 relative">
         <!-- Mascote Ilustrado 1: Ember Orange (Esquerda) -->
@@ -75,7 +77,7 @@ const handleSalvarTransacao = async () => {
         <div class="flex justify-between items-start">
           <div class="space-y-2 md:space-y-4">
             <SectionLabel>Finanças Residenciais</SectionLabel>
-            <h1 class="text-4xl md:text-display font-display leading-[1.09] tracking-[-1.5px] md:tracking-[-2.11px] text-charcoal">
+            <h1 class="text-heading md:text-display font-display leading-[1.09] tracking-[-0.44px] md:tracking-[-2.11px] text-charcoal">
               DIVI<span class="text-ember">.</span>
             </h1>
             <p class="text-sm md:text-body text-graphite max-w-[480px] leading-[1.47] tracking-[-0.2px]">
@@ -118,6 +120,7 @@ const handleSalvarTransacao = async () => {
           :cartoes="cartoes"
           :calcular-consumo="calcularConsumoMembro"
           :calcular-adiantamento="calcularAdiantamentoMembro"
+          :active-tab="activeTab"
           @quitarAcerto="quitarAcertoMembro"
           @fecharFatura="fecharFaturaManual"
           @reabrirFatura="reabrirFaturaManual"
@@ -139,7 +142,7 @@ const handleSalvarTransacao = async () => {
       <Button
         v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
         variant="primary"
-        class="fab-rounded fixed bottom-8 right-8 w-14 h-14 p-0 rounded-full shadow-[0_1px_6px_rgba(0,0,0,0.08),0_0_24px_rgba(0,0,0,0.08)] z-[100] active:scale-95"
+        class="fab-rounded fixed bottom-20 md:bottom-8 right-8 w-14 h-14 p-0 rounded-full shadow-[0_1px_6px_rgba(0,0,0,0.08),0_0_24px_rgba(0,0,0,0.08)] z-[100] active:scale-95"
         @click="currentView = 'wizard'"
         data-testid="novo-lancamento-fab"
         aria-label="Novo lancamento"
@@ -173,6 +176,8 @@ const handleSalvarTransacao = async () => {
         <ConfiguracoesMembros />
       </div>
     </BottomSheet>
+
+    <BottomTabBar v-model="activeTab" />
   </div>
 </template>
 
