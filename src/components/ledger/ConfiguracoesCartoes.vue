@@ -31,7 +31,7 @@ const adicionarCard = async () => {
 <template>
   <div class="space-y-10">
     <!-- Adicionar Novo -->
-    <Card class="p-8 shadow-subtle bg-card rounded-cards space-y-6">
+    <Card class="p-8 shadow-subtle bg-card rounded-card space-y-6">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-ember/5 text-ember flex items-center justify-center">
           <Plus class="w-4 h-4" />
@@ -46,7 +46,7 @@ const adicionarCard = async () => {
             v-model="nome" 
             type="text" 
             placeholder="Ex: Nubank, C6, etc." 
-            class="w-full px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
+            class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
           />
         </div>
 
@@ -60,7 +60,7 @@ const adicionarCard = async () => {
                 type="number" 
                 min="1" 
                 max="28" 
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
               />
             </div>
           </div>
@@ -70,7 +70,7 @@ const adicionarCard = async () => {
               <User class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash" />
               <select 
                 v-model="responsavelId" 
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember appearance-none transition-all text-sm"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember appearance-none transition-all text-sm"
               >
                 <option value="" disabled>Escolha...</option>
                 <option v-for="m in ativos" :key="m.id" :value="m.id">{{ m.nome }}</option>
@@ -101,7 +101,7 @@ const adicionarCard = async () => {
         <Card 
           v-for="c in cartoes" 
           :key="c.id" 
-          class="p-4 flex justify-between items-center bg-card border border-stone-surface shadow-subtle hover:border-ember/30 transition-all rounded-cards"
+          class="p-4 flex justify-between items-center bg-card border border-stone shadow-subtle hover:border-ember/30 transition-all rounded-card"
         >
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-xl bg-stone flex items-center justify-center">
@@ -119,7 +119,7 @@ const adicionarCard = async () => {
             variant="secondary"
             size="icon"
             @click="excluirCartaoManual(c.id)" 
-            class="bg-coral-red/10 text-coral-red hover:bg-coral-red/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
+            class="bg-coral/10 text-coral hover:bg-coral/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <Trash2 class="w-4 h-4" />
           </Button>

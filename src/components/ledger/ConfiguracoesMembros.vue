@@ -31,7 +31,7 @@ const handleAdicionar = async () => {
     </div>
 
     <!-- Abas -->
-    <div class="flex gap-8 border-b border-stone-surface">
+    <div class="flex gap-8 border-b border-stone">
       <button 
         @click="activeTab = 'membros'"
         :class="[
@@ -61,14 +61,14 @@ const handleAdicionar = async () => {
     <!-- Conteúdo Aba 1: Moradores -->
     <div v-if="activeTab === 'membros'" class="space-y-8 animate-in fade-in slide-in-from-bottom-4">
       <!-- Adicionar Novo -->
-      <Card class="p-8 shadow-subtle bg-card rounded-cards space-y-4">
+      <Card class="p-8 shadow-subtle bg-card rounded-card space-y-4">
         <h3 class="text-[10px] font-bold text-ash uppercase tracking-widest ml-1">Novo Morador</h3>
         <div class="flex gap-3">
           <input 
             v-model="novoNome"
             type="text" 
             placeholder="Nome do morador..."
-            class="flex-1 px-4 py-3 rounded-xl border border-stone bg-[#fbfaf9] outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+            class="flex-1 px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
             @keyup.enter="handleAdicionar"
           />
           <Button 
@@ -78,7 +78,7 @@ const handleAdicionar = async () => {
             class="h-12 w-12 shrink-0 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center"
             :class="novoNome.trim() 
               ? 'bg-ember/10 text-ember hover:bg-ember/20 shadow-sm border border-transparent' 
-              : 'bg-stone/40 text-ash/40 border border-stone-surface/20 opacity-50'"
+              : 'bg-stone/40 text-ash/40 border border-stone/20 opacity-50'"
           >
             <UserPlus class="w-5 h-5" />
           </Button>
@@ -90,7 +90,7 @@ const handleAdicionar = async () => {
         <Card 
           v-for="membro in membros" 
           :key="membro.id"
-          class="p-4 flex justify-between items-center transition-all bg-card border border-stone-surface shadow-subtle rounded-cards"
+          class="p-4 flex justify-between items-center transition-all bg-card border border-stone shadow-subtle rounded-card"
           :class="{ 'opacity-50 grayscale border-dashed': !membro.ativo }"
         >
           <div class="flex items-center gap-4">
@@ -108,7 +108,7 @@ const handleAdicionar = async () => {
             variant="secondary"
             size="icon"
             @click="desativarMembro(membro.id)"
-            class="bg-coral-red/10 text-coral-red hover:bg-coral-red/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
+            class="bg-coral/10 text-coral hover:bg-coral/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
             title="Desativar morador"
           >
             <UserMinus class="w-4 h-4" />
