@@ -14,7 +14,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
 
 <template>
   <nav
-    class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-stone-surface pb-safe"
+    class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-stone pb-safe"
     aria-label="Navegação principal"
   >
     <div class="flex">

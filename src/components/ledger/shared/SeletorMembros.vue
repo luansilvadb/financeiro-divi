@@ -47,7 +47,7 @@ const toggle = (id: string) => {
       :class="[
         isSelected(m.id) 
           ? 'border-ember bg-ember/5 text-ember shadow-sm' 
-          : 'border-stone-surface bg-[#fbfaf9] text-ash hover:border-ember/30'
+          : 'border-stone bg-canvas text-ash hover:border-ember/30'
       ]"
     >
       <div 
