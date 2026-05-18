@@ -30,9 +30,10 @@ vi.mock('./modules/ledger/composables/useStorageSync', () => ({
   useStorageSync: vi.fn(),
 }))
 
+const isAnyBottomSheetOpenMock = ref(false)
 vi.mock('./composables/useBottomSheetState', () => ({
   useBottomSheetState: () => ({
-    isAnyBottomSheetOpen: ref(false),
+    isAnyBottomSheetOpen: isAnyBottomSheetOpenMock,
   }),
 }))
 
@@ -61,5 +62,29 @@ describe('App FAB', () => {
     expect(fab.classes()).toContain('fab-rounded')
     expect(fab.classes()).toContain('w-14')
     expect(fab.classes()).toContain('h-14')
+  })
+})
+
+describe('App Navigation', () => {
+  it('esconde a BottomTabBar quando um BottomSheet está aberto', async () => {
+    isAnyBottomSheetOpenMock.value = false
+    const wrapper = mount(App, {
+      global: {
+        stubs: {
+          DashboardSaldos: true,
+          NovoLancamentoWizard: true,
+          ConfiguracoesMembros: true,
+          BottomSheet: true,
+          BottomTabBar: true,
+        },
+      },
+    })
+
+    expect(wrapper.findComponent({ name: 'BottomTabBar' }).exists()).toBe(true)
+
+    isAnyBottomSheetOpenMock.value = true
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findComponent({ name: 'BottomTabBar' }).exists()).toBe(false)
   })
 })
