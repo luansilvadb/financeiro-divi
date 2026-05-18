@@ -25,4 +25,8 @@
   body {
     @apply bg-canvas text-graphite font-sans antialiased;
   }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
