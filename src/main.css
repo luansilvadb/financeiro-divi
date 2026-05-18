@@ -1,24 +1,77 @@
 @import "tailwindcss";
 
 @theme {
+  /* Colors - Semantic from DESIGN.md */
   --color-canvas: #fbfaf9;
   --color-stone: #f2f0ed;
   --color-card: #ffffff;
   --color-graphite: #474645;
   --color-charcoal: #343433;
   --color-midnight: #121212;
+  --color-obsidian: #000000;
+  --color-ash: #848281;
   --color-ember: #ff3e00;
   --color-meadow: #00ca48;
   --color-sky: #0090ff;
+  --color-parchment: #f8f7f4;
+  --color-flamingo: #ff58ae;
   --color-sunburst: #ffbb26;
+  --color-coral: #ff2b3a;
 
+  /* Fonts */
   --font-display: "Fraunces", "Georgia", serif;
   --font-sans: "Inter", system-ui, sans-serif;
 
+  /* Radii */
   --radius-pill: 32px;
   --radius-card: 10px;
+  --radius-card-lg: 24px;
+  --radius-icon: 40px;
 
+  /* Shadows */
   --shadow-subtle: var(--color-stone) 0px 0px 0px 1px inset;
+  --shadow-lg: rgba(0, 0, 0, 0.15) 0px 0px 24px 0px;
+  --shadow-sm: rgba(0, 0, 0, 0.04) 0px 1px 6px 0px, rgba(0, 0, 0, 0.05) 0px 0px 24px 0px;
+}
+
+@layer components {
+  .text-display {
+    font-family: var(--font-display);
+    font-size: 68px;
+    font-weight: 500;
+    line-height: 1.09;
+    letter-spacing: -2.11px;
+  }
+  .text-heading-lg {
+    font-size: 44px;
+    font-weight: 600;
+    line-height: 1.09;
+    letter-spacing: -1.14px;
+  }
+  .text-heading {
+    font-size: 23px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.44px;
+  }
+  .text-heading-sm {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.38;
+    letter-spacing: -0.25px;
+  }
+  .text-body {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.47;
+    letter-spacing: -0.2px;
+  }
+  .text-caption {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.58;
+    letter-spacing: -0.14px;
+  }
 }
 
 @layer base {
