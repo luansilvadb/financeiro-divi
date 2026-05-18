@@ -5,9 +5,8 @@ import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
 import Button from './components/ui/Button.vue'
 import SectionLabel from './components/ui/SectionLabel.vue'
-import InvertedSection from './components/ui/InvertedSection.vue'
 import BottomSheet from './components/ui/BottomSheet.vue'
-import { Plus, Settings, X, ShieldCheck, Heart } from 'lucide-vue-next'
+import { Plus, Settings, X } from 'lucide-vue-next'
 import { useMembros } from './modules/ledger/composables/useMembros'
 import { useCartoesEFaturas } from './modules/ledger/composables/useCartoesEFaturas'
 import { useStorageSync } from './modules/ledger/composables/useStorageSync'
@@ -126,30 +125,7 @@ const handleSalvarTransacao = async () => {
       </main>
     </div>
 
-    <!-- Footer Inverted Section -->
-    <div class="max-w-[1200px] mx-auto px-6">
-      <InvertedSection>
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-          <div class="space-y-4">
-            <div class="flex items-center gap-2 text-ember">
-              <ShieldCheck class="w-5 h-5" />
-              <span class="font-bold tracking-wider uppercase text-[10px]">Privacidade Garantida</span>
-            </div>
-            <h3 class="text-heading font-display">Seus dados não saem daqui.</h3>
-            <p class="text-white/60 text-sm max-w-sm leading-relaxed">
-              O DIVI utiliza persistência local e sincronização atômica entre abas. 
-              Nada é enviado para servidores externos.
-            </p>
-          </div>
-          
-          <div class="flex flex-col gap-4">
-            <div class="text-white/40 text-xs flex items-center gap-1.5">
-              Feito com <Heart class="w-3 h-3 fill-current text-ember" /> para finanças reais.
-            </div>
-          </div>
-        </div>
-      </InvertedSection>
-    </div>
+
 
     <!-- Floating Action Button (FAB) -->
     <transition

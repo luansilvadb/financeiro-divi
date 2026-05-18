@@ -101,7 +101,7 @@ const handleDelete = (id: string) => {
         </div>
 
         <!-- Ações do Feed -->
-        <div class="flex justify-end gap-2 pt-3 border-t border-stone opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="flex justify-end gap-2 pt-3 border-t border-stone transition-opacity">
           <Button 
             v-if="!g.isSettlement"
             variant="secondary"
