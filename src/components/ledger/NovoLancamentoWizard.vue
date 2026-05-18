@@ -134,15 +134,15 @@ const handleGravar = async () => {
 <template>
   <div
     data-testid="novo-lancamento-wizard"
-    class="wizard-family min-h-[600px] flex flex-col overflow-hidden bg-white rounded-[10px] shadow-[inset_0_0_0_1px_#f2f0ed] text-[#474645]"
+    class="wizard-family min-h-[600px] flex flex-col overflow-hidden bg-white rounded-card shadow-subtle text-graphite"
   >
-    <header class="p-5 sm:p-6 border-b border-[#f2f0ed] bg-white">
+    <header class="p-5 sm:p-6 border-b border-stone bg-white">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div class="min-w-0">
-          <p class="inline-flex text-xs font-semibold text-[#848281] bg-[#f6f4ef] rounded-full px-2.5 py-1">
+          <p class="inline-flex text-xs font-semibold text-ash bg-stone rounded-full px-2.5 py-1">
             Passo {{ step }} de {{ totalSteps }}
           </p>
-          <h2 class="mt-3 text-[23px] leading-[1.2] font-semibold text-[#343433] tracking-[-0.44px]">
+          <h2 class="mt-3 text-[23px] leading-[1.2] font-semibold text-charcoal tracking-[-0.44px]">
             <template v-if="step === 1">Como você pagou?</template>
             <template v-else-if="step === 2">{{ wizFlow === 'loan' ? 'Quem está emprestando?' : 'Quem foi que pagou?' }}</template>
             <template v-else-if="step === 3 && wizFlow === 'loan'">Quem pegou emprestado?</template>
@@ -151,14 +151,14 @@ const handleGravar = async () => {
             <template v-else-if="step === 5 && wizFlow === 'expense'">Com quem dividir?</template>
           </h2>
         </div>
-        <div class="w-10 h-10 rounded-full bg-[#f8f7f4] shadow-[inset_0_0_0_1px_#f2f0ed] flex items-center justify-center shrink-0">
-          <Zap class="w-4 h-4 text-[#474645]" />
+        <div class="w-10 h-10 rounded-full bg-parchment shadow-subtle flex items-center justify-center shrink-0">
+          <Zap class="w-4 h-4 text-graphite" />
         </div>
       </div>
 
-      <div class="h-1.5 rounded-full bg-[#f2f0ed] overflow-hidden">
+      <div class="h-1.5 rounded-full bg-stone overflow-hidden">
         <div
-          class="h-full rounded-full bg-[#121212] transition-all duration-300"
+          class="h-full rounded-full bg-midnight transition-all duration-300"
           :style="{ width: `${(step / totalSteps) * 100}%` }"
         />
       </div>
@@ -169,14 +169,14 @@ const handleGravar = async () => {
           <div v-if="step === 1" class="grid gap-3">
             <button
               @click="selecionarFluxo('expense', 'pix', null)"
-              class="group w-full flex items-center gap-3 p-4 rounded-[10px] bg-[#f8f7f4] hover:bg-[#f2f0ed] transition-colors text-left"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
             >
-              <div class="w-10 h-10 rounded-full bg-white shadow-[inset_0_0_0_1px_#f2f0ed] text-[#474645] flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
                 <Wallet class="w-5 h-5" />
               </div>
               <div class="min-w-0">
-                <strong class="block text-[15px] font-semibold text-[#343433] tracking-[-0.2px]">PIX ou Dinheiro</strong>
-                <span class="text-xs text-[#848281]">Gasto à vista do caixa</span>
+                <strong class="block text-[15px] font-semibold text-charcoal tracking-[-0.2px]">PIX ou Dinheiro</strong>
+                <span class="text-xs text-ash">Gasto à vista do caixa</span>
               </div>
             </button>
 
@@ -184,27 +184,27 @@ const handleGravar = async () => {
               v-for="c in cartoes"
               :key="c.id"
               @click="selecionarFluxo('expense', 'card', c.responsavelPadraoId)"
-              class="group w-full flex items-center gap-3 p-4 rounded-[10px] bg-[#f8f7f4] hover:bg-[#f2f0ed] transition-colors text-left"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
             >
-              <div class="w-10 h-10 rounded-full bg-white shadow-[inset_0_0_0_1px_#f2f0ed] text-[#474645] flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
                 <CreditCard class="w-5 h-5" />
               </div>
               <div class="min-w-0">
-                <strong class="block text-[15px] font-semibold text-[#343433] tracking-[-0.2px]">Cartão {{ c.nome }}</strong>
-                <span class="text-xs text-[#848281]">Despesa sob fatura</span>
+                <strong class="block text-[15px] font-semibold text-charcoal tracking-[-0.2px]">Cartão {{ c.nome }}</strong>
+                <span class="text-xs text-ash">Despesa sob fatura</span>
               </div>
             </button>
 
             <button
               @click="selecionarFluxo('loan', 'pix', null)"
-              class="group w-full flex items-center gap-3 p-4 rounded-[10px] bg-[#f8f7f4] hover:bg-[#f2f0ed] transition-colors text-left"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
             >
-              <div class="w-10 h-10 rounded-full bg-white shadow-[inset_0_0_0_1px_#f2f0ed] text-[#474645] flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
                 <Handshake class="w-5 h-5" />
               </div>
               <div class="min-w-0">
-                <strong class="block text-[15px] font-semibold text-[#343433] tracking-[-0.2px]">Empréstimo pessoal</strong>
-                <span class="text-xs text-[#848281]">Direto entre moradores</span>
+                <strong class="block text-[15px] font-semibold text-charcoal tracking-[-0.2px]">Empréstimo pessoal</strong>
+                <span class="text-xs text-ash">Direto entre moradores</span>
               </div>
             </button>
           </div>
@@ -214,48 +214,49 @@ const handleGravar = async () => {
               v-for="m in (step === 3 ? props.membros.filter(m => m.id !== compradorSelecionadoId) : props.membros)"
               :key="m.id"
               @click="step === 2 ? (compradorSelecionadoId = m.id, next()) : (borrowerId = m.id, next())"
-              class="flex flex-col items-center gap-3 p-4 rounded-[10px] bg-[#f8f7f4] hover:bg-[#f2f0ed] transition-colors"
+              class="flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors"
             >
-              <div class="w-12 h-12 rounded-full bg-white shadow-[inset_0_0_0_1px_#f2f0ed] flex items-center justify-center font-semibold text-[#343433]">
+              <div class="w-12 h-12 rounded-full bg-white shadow-subtle flex items-center justify-center font-semibold text-charcoal">
                 {{ m.nome[0] }}
               </div>
-              <span class="font-semibold text-xs text-[#343433]">{{ m.nome }}</span>
+              <span class="font-semibold text-xs text-charcoal">{{ m.nome }}</span>
             </button>
           </div>
 
           <div v-else-if="isValorStep" class="space-y-5">
             <div
-              class="rounded-[10px] bg-[#f8f7f4] p-5 shadow-[inset_0_0_0_1px_#f2f0ed] transition-all duration-300"
+              class="rounded-card bg-parchment p-5 shadow-subtle transition-all duration-300"
               :class="[inputShake && 'animate-shake']"
             >
-              <label class="block text-xs font-semibold text-[#848281] mb-2">Valor total</label>
+              <label class="block text-xs font-semibold text-ash mb-2">Valor total</label>
               <div class="flex items-center gap-2">
-                <span class="text-[23px] font-semibold text-[#343433] tracking-[-0.44px]">R$</span>
+                <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">R$</span>
                 <input
                   v-model.number="valor"
                   type="number"
                   step="0.01"
-                  class="w-full bg-transparent outline-none text-[40px] leading-none font-semibold text-[#121212] tracking-[-1px] placeholder:text-[#a7a7a7]"
+                  min="0"
+                  class="w-full bg-transparent outline-none text-[40px] leading-none font-semibold text-midnight tracking-[-1px] placeholder:text-smoke"
                   placeholder="0,00"
                   autofocus
                 />
               </div>
-              <p v-if="showInputWarning && hasValorError" class="text-xs text-[#ff2b3a] font-semibold mt-3">
+              <p v-if="showInputWarning && hasValorError" class="text-xs text-coral font-semibold mt-3">
                 Valor inválido
               </p>
             </div>
 
-            <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="rounded-[10px] bg-white shadow-[inset_0_0_0_1px_#f2f0ed] p-4 space-y-3">
-              <label class="block text-xs font-semibold text-[#848281]">Parcelamento</label>
+            <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="rounded-card bg-white shadow-subtle p-4 space-y-3">
+              <label class="block text-xs font-semibold text-ash">Parcelamento</label>
               <div class="flex items-center justify-between gap-3">
-                <button type="button" @click="ajustarParcelas(-1)" class="w-10 h-10 rounded-full bg-[#f6f4ef] hover:bg-[#f2f0ed] flex items-center justify-center">
+                <button type="button" @click="ajustarParcelas(-1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
                   <Minus class="w-4 h-4" />
                 </button>
                 <div class="text-center">
-                  <span class="text-[23px] font-semibold text-[#343433] tracking-[-0.44px]">{{ installments }}x</span>
-                  <p class="text-xs text-[#848281]">{{ infoParcelamento }}</p>
+                  <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">{{ installments }}x</span>
+                  <p class="text-xs text-ash">{{ infoParcelamento }}</p>
                 </div>
-                <button type="button" @click="ajustarParcelas(1)" class="w-10 h-10 rounded-full bg-[#f6f4ef] hover:bg-[#f2f0ed] flex items-center justify-center">
+                <button type="button" @click="ajustarParcelas(1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
                   <Plus class="w-4 h-4" />
                 </button>
               </div>
@@ -263,12 +264,12 @@ const handleGravar = async () => {
           </div>
 
           <div v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')" class="space-y-5">
-            <div class="rounded-[10px] bg-[#f8f7f4] p-4 shadow-[inset_0_0_0_1px_#f2f0ed]">
-              <label class="block text-xs font-semibold text-[#848281] mb-2">Descrição</label>
+            <div class="rounded-card bg-parchment p-4 shadow-subtle">
+              <label class="block text-xs font-semibold text-ash mb-2">Descrição</label>
               <input
                 v-model="descricao"
                 type="text"
-                class="w-full bg-transparent outline-none text-[23px] font-semibold text-[#343433] tracking-[-0.44px] placeholder:text-[#a7a7a7]"
+                class="w-full bg-transparent outline-none text-[23px] font-semibold text-charcoal tracking-[-0.44px] placeholder:text-smoke"
                 placeholder="Descreva aqui..."
                 autofocus
               />
@@ -278,7 +279,7 @@ const handleGravar = async () => {
                 v-for="chip in quickChips"
                 :key="chip"
                 @click="selecionarChip(chip)"
-                class="px-3.5 py-2 rounded-full bg-[#f6f4ef] hover:bg-[#f2f0ed] text-xs font-semibold text-[#474645] transition-colors"
+                class="px-3.5 py-2 rounded-full bg-stone hover:bg-stone text-xs font-semibold text-graphite transition-colors"
               >
                 {{ chip }}
               </button>
@@ -287,8 +288,8 @@ const handleGravar = async () => {
 
           <div v-else-if="step === 5 && wizFlow === 'expense'" class="space-y-4">
             <div class="flex gap-2">
-              <button @click="dividirComTodos" class="px-3.5 py-2 rounded-full bg-[#121212] text-white text-xs font-semibold">Todos</button>
-              <button @click="dividirApenasEu" class="px-3.5 py-2 rounded-full bg-[#f6f4ef] text-[#121212] text-xs font-semibold">Apenas eu</button>
+              <button @click="dividirComTodos" class="px-3.5 py-2 rounded-full bg-midnight text-white text-xs font-semibold">Todos</button>
+              <button @click="dividirApenasEu" class="px-3.5 py-2 rounded-full bg-stone text-midnight text-xs font-semibold">Apenas eu</button>
             </div>
 
             <div class="grid grid-cols-3 gap-2">
@@ -296,21 +297,21 @@ const handleGravar = async () => {
                 v-for="m in props.membros"
                 :key="m.id"
                 @click="toggleSplitMember(m.id)"
-                class="relative flex flex-col items-center gap-2 p-3 rounded-[10px] transition-colors"
-                :class="[participantesDivisao.includes(m.id) ? 'bg-white shadow-[inset_0_0_0_1px_#f2f0ed]' : 'bg-[#f8f7f4]']"
+                class="relative flex flex-col items-center gap-2 p-3 rounded-card transition-colors"
+                :class="[participantesDivisao.includes(m.id) ? 'bg-white shadow-subtle' : 'bg-parchment']"
               >
-                <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold" :class="[participantesDivisao.includes(m.id) ? 'bg-[#121212] text-white' : 'bg-white text-[#343433] shadow-[inset_0_0_0_1px_#f2f0ed]']">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold" :class="[participantesDivisao.includes(m.id) ? 'bg-midnight text-white' : 'bg-white text-charcoal shadow-subtle']">
                   {{ m.nome[0] }}
                 </div>
-                <span class="text-[11px] font-semibold text-[#474645] truncate max-w-full">{{ m.nome }}</span>
-                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-[#00ca48]" />
+                <span class="text-[11px] font-semibold text-graphite truncate max-w-full">{{ m.nome }}</span>
+                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow" />
               </button>
             </div>
 
             <div class="p-5 rounded-xl bg-meadow/5 border border-meadow/20 flex gap-4 items-center">
               <!-- Mascote Ilustrado: Moedinha Feliz Meadow Green -->
               <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0 animate-bounce" style="animation-duration: 5s;">
-                <circle cx="50" cy="50" r="40" fill="var(--color-meadow-green)" />
+                <circle cx="50" cy="50" r="40" fill="var(--color-meadow)" />
                 <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="3" />
                 <!-- Olhinhos Felizes -->
                 <circle cx="40" cy="45" r="4.5" fill="#000" />
@@ -318,7 +319,7 @@ const handleGravar = async () => {
                 <!-- Sorriso -->
                 <path d="M42,56 Q50,64 58,56" stroke="#000" stroke-width="3.5" stroke-linecap="round" fill="none" />
                 <!-- Brilho Estrela -->
-                <path d="M78,22 L80,26 L85,27 L81,31 L82,36 L78,33 L74,36 L75,31 L71,27 L76,26 Z" fill="var(--color-sunburst-yellow)" />
+                <path d="M78,22 L80,26 L85,27 L81,31 L82,36 L78,33 L74,36 L75,31 L71,27 L76,26 Z" fill="var(--color-sunburst)" />
               </svg>
               <div class="space-y-1 min-w-0">
                 <p class="text-[10px] font-bold text-meadow uppercase tracking-widest">{{ splitSummaryTitle }}</p>
@@ -329,15 +330,15 @@ const handleGravar = async () => {
         </div>
       </div>
 
-    <footer class="p-5 sm:p-6 border-t border-[#f2f0ed] bg-white flex gap-3">
+    <footer class="p-5 sm:p-6 border-t border-stone bg-white flex gap-3">
       <button
-        class="flex-1 h-12 rounded-full bg-[#f6f4ef] hover:bg-[#f2f0ed] text-[#121212] text-sm font-semibold transition-colors"
+        class="flex-1 h-12 rounded-full bg-stone hover:bg-stone text-midnight text-sm font-semibold transition-colors"
         @click="step === 1 ? emit('cancelar') : prev()"
       >
         {{ step === 1 ? 'Cancelar' : 'Voltar' }}
       </button>
       <button
-        class="flex-[2] h-12 rounded-full bg-[#121212] hover:bg-[#343433] text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        class="flex-[2] h-12 rounded-full bg-midnight hover:bg-charcoal text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         :disabled="!canAdvance && !isValorStep"
         @click="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? handleGravar() : handleNext()"
       >
@@ -372,7 +373,7 @@ const handleGravar = async () => {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #f2f0ed;
+  background-color: var(--color-stone);
   border-radius: 9999px;
 }
 </style>

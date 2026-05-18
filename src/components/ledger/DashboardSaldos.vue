@@ -334,10 +334,10 @@ const excluirGasto = async (id: string) => {
     <div v-show="isHoje" class="space-y-12">
     <!-- BARRA DE TRANCAMENTO (Design System Family) -->
     <div 
-      class="flex justify-between items-center p-4 rounded-xl border transition-all duration-300 shadow-subtle bg-parchment-card"
+      class="flex justify-between items-center p-4 rounded-xl border transition-all duration-300 shadow-subtle bg-parchment"
       :class="isMonthLocked 
         ? 'border-ember/20 bg-ember/5 text-charcoal' 
-        : 'border-stone-surface text-graphite'"
+        : 'border-stone text-graphite'"
     >
       <div class="flex items-center gap-4">
         <div>
@@ -361,7 +361,7 @@ const excluirGasto = async (id: string) => {
           variant="secondary"
           @click="setMonthLocked(!isMonthLocked)"
           size="sm"
-          class="h-9 px-4 text-[11px] border border-stone-surface"
+          class="h-9 px-4 text-[11px] border border-stone"
         >
           {{ isMonthLocked ? 'Destrancar' : 'Trancar' }}
         </Button>
@@ -375,7 +375,7 @@ const excluirGasto = async (id: string) => {
           <SectionLabel>Visão Geral</SectionLabel>
           <h2 class="text-heading font-display text-charcoal">Saldo <span class="text-ember">Unificado</span></h2>
         </div>
-        <div class="flex items-center gap-1 bg-stone border border-stone-surface rounded-full p-1">
+        <div class="flex items-center gap-1 bg-stone border border-stone rounded-full p-1">
           <button class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-ash hover:text-charcoal transition-all">
             <ChevronLeft class="w-3.5 h-3.5" />
           </button>
@@ -388,7 +388,7 @@ const excluirGasto = async (id: string) => {
         </div>
       </div>
 
-      <Card class="overflow-hidden relative bg-card shadow-subtle p-8 rounded-cards">
+      <Card class="overflow-hidden relative bg-card shadow-subtle p-8 rounded-card">
         <div class="space-y-4 relative z-10">
           <div 
             v-for="m in props.membros" 
@@ -407,7 +407,7 @@ const excluirGasto = async (id: string) => {
               </div>
             </div>
             <div class="text-right">
-              <span :class="['font-display text-xl block', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral-red' : 'text-ash']">
+              <span :class="['font-display text-xl block', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-ash']">
                 {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id]?.toFixed(2).replace('.', ',') }}
               </span>
             </div>
@@ -427,7 +427,7 @@ const excluirGasto = async (id: string) => {
         <Card 
           v-for="t in nettingTransferencias" 
           :key="t.from + '-' + t.to" 
-          class="p-5 border-l-4 border-l-ember bg-card shadow-subtle rounded-cards"
+          class="p-5 border-l-4 border-l-ember bg-card shadow-subtle rounded-card"
         >
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="flex items-start gap-4">
@@ -516,9 +516,9 @@ const excluirGasto = async (id: string) => {
           class="p-0 overflow-hidden"
         >
           <!-- Cabeçalho -->
-          <div class="p-6 border-b border-border bg-muted/30 flex justify-between items-center">
+          <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center">
+              <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
                 <History class="w-5 h-5" />
               </div>
               <div>
@@ -530,7 +530,7 @@ const excluirGasto = async (id: string) => {
             </div>
             <div class="flex items-center gap-3">
               <span v-if="todosOsAcertosQuitados(fatura.id) && fatura.dataPagamentoBanco" class="text-[9px] font-bold text-meadow bg-meadow/10 px-3 py-1 rounded-full border border-meadow/20">QUITADA</span>
-              <Button variant="secondary" size="sm" @click="emit('reabrirFatura', fatura.id)" class="text-[10px] h-8 border border-stone-surface">
+              <Button variant="secondary" size="sm" @click="emit('reabrirFatura', fatura.id)" class="text-[10px] h-8 border border-stone">
                 Reabrir
               </Button>
             </div>
@@ -564,16 +564,16 @@ const excluirGasto = async (id: string) => {
                     <span class="text-[10px] opacity-80">Reembolse o responsável via Pix.</span>
                   </p>
                 </div>
-                <Button variant="secondary" size="sm" @click="removerPagamentoBancoManual(fatura.id)" class="text-coral-red hover:text-red-600 hover:bg-[#fff0f0] border border-transparent">
+                <Button variant="secondary" size="sm" @click="removerPagamentoBancoManual(fatura.id)" class="text-coral hover:text-red-600 hover:bg-[#fff0f0] border border-transparent">
                   Estornar
                 </Button>
               </div>
 
-              <div v-else class="flex flex-col items-center gap-4 p-6 rounded-xl bg-stone-surface/30 border border-stone-surface text-center">
+              <div v-else class="flex flex-col items-center gap-4 p-6 rounded-xl bg-stone/30 border border-stone text-center">
                 <p class="text-xs text-ash font-medium">
                   Aguardando pagamento ao banco pelo responsável.
                 </p>
-                <Button variant="secondary" size="sm" @click="registrarPagamentoBancoManual(fatura.id)" class="border border-stone-surface">
+                <Button variant="secondary" size="sm" @click="registrarPagamentoBancoManual(fatura.id)" class="border border-stone">
                   Já paguei o banco
                 </Button>
               </div>
@@ -584,7 +584,7 @@ const excluirGasto = async (id: string) => {
                   <SectionLabel :pulse="false" class="px-3 py-1">Reembolsos</SectionLabel>
                 </div>
 
-                <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="p-4 rounded-xl border border-stone-surface bg-canvas space-y-4">
+                <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="p-4 rounded-xl border border-stone bg-canvas space-y-4">
                   <div class="flex justify-between items-start">
                     <div class="flex items-center gap-3">
                       <div class="w-8 h-8 rounded-full bg-stone flex items-center justify-center font-display text-xs text-charcoal">
@@ -600,7 +600,7 @@ const excluirGasto = async (id: string) => {
                       </div>
                     </div>
                     <div class="text-right">
-                      <p :class="['text-sm font-bold', acerto.pago ? 'text-meadow' : 'text-coral-red']">
+                      <p :class="['text-sm font-bold', acerto.pago ? 'text-meadow' : 'text-coral']">
                         {{ acerto.pago ? '✓ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') }}
                       </p>
                       <button v-if="!acerto.pago" @click="iniciarPix(acerto)" class="text-[10px] font-bold text-ember hover:underline mt-1">
@@ -618,7 +618,7 @@ const excluirGasto = async (id: string) => {
                   </div>
 
                   <!-- Input de Pix Parcial -->
-                  <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-stone-surface space-y-4 animate-in fade-in slide-in-from-top-2">
+                  <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-stone space-y-4 animate-in fade-in slide-in-from-top-2">
                     <div class="flex items-center gap-3">
                       <div class="relative flex-1">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xs font-bold">R$</span>
@@ -644,7 +644,7 @@ const excluirGasto = async (id: string) => {
                   <p class="font-display text-xl font-bold">Tudo Coletado!</p>
                   <p class="text-xs opacity-90">Todos os moradores já reembolsaram. Hora de pagar o banco.</p>
                 </div>
-                <Button variant="secondary" class="w-full bg-canvas text-charcoal hover:bg-white border border-stone-surface" @click="registrarPagamentoBancoManual(fatura.id)">
+                <Button variant="secondary" class="w-full bg-canvas text-charcoal hover:bg-white border border-stone" @click="registrarPagamentoBancoManual(fatura.id)">
                   Registrar Pagamento ao Banco
                 </Button>
               </div>
@@ -665,12 +665,12 @@ const excluirGasto = async (id: string) => {
         <div
           v-for="fatura in faturasAbertas"
           :key="fatura.id"
-          class="proximas-faturas-card overflow-hidden relative bg-white shadow-subtle p-0 rounded-cards text-graphite"
+          class="proximas-faturas-card overflow-hidden relative bg-white shadow-subtle p-0 rounded-card text-graphite"
           :data-testid="`proximas-faturas-card-${fatura.id}`"
         >
-          <div class="p-5 border-b border-stone-surface bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div class="p-5 border-b border-stone bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-full bg-parchment-card shadow-subtle text-graphite flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-parchment shadow-subtle text-graphite flex items-center justify-center shrink-0">
                 <CreditCard class="w-5 h-5" />
               </div>
               <div class="min-w-0">
@@ -695,7 +695,7 @@ const excluirGasto = async (id: string) => {
               <div 
                 v-for="membro in membros" 
                 :key="membro.id" 
-                class="flex justify-between items-center gap-3 rounded-cards bg-parchment-card p-3"
+                class="flex justify-between items-center gap-3 rounded-card bg-parchment p-3"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
                   <div class="w-2 h-2 rounded-full shrink-0" :class="membro.id === fatura.responsavelId ? 'bg-sunburst' : 'bg-ash/30'" />
@@ -714,7 +714,7 @@ const excluirGasto = async (id: string) => {
             <!-- Toggle Detalhes -->
             <button 
               @click="toggleFaturaExpandida(fatura.id)"
-              class="w-full flex items-center justify-center gap-2 pt-4 text-xs font-semibold text-graphite hover:text-midnight transition-colors border-t border-stone-surface"
+              class="w-full flex items-center justify-center gap-2 pt-4 text-xs font-semibold text-graphite hover:text-midnight transition-colors border-t border-stone"
             >
               <Activity class="w-3.5 h-3.5" />
               {{ faturasExpandidas[fatura.id] ? 'Ocultar itens' : 'Ver detalhes' }}
@@ -725,7 +725,7 @@ const excluirGasto = async (id: string) => {
               <div 
                 v-for="g in gastosDaFatura(fatura.id)" 
                 :key="g.id"
-                class="flex justify-between items-center gap-3 p-3 rounded-cards bg-parchment-card shadow-subtle transition-colors text-xs"
+                class="flex justify-between items-center gap-3 p-3 rounded-card bg-parchment shadow-subtle transition-colors text-xs"
               >
                 <div class="min-w-0">
                   <span class="font-semibold text-charcoal block text-sm truncate">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>

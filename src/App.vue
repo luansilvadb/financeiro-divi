@@ -91,7 +91,7 @@ const handleSalvarTransacao = async () => {
               variant="secondary" 
               size="icon"
               @click="currentView = 'settings'"
-              class="rounded-full border border-stone-surface"
+              class="rounded-full border border-stone"
             >
               <Settings class="w-4 h-4 text-graphite" />
             </Button>
@@ -100,7 +100,7 @@ const handleSalvarTransacao = async () => {
               variant="secondary"
               size="icon"
               @click="currentView = 'dashboard'"
-              class="rounded-full border border-stone-surface"
+              class="rounded-full border border-stone"
             >
               <X class="w-4 h-4 text-graphite" />
             </Button>
