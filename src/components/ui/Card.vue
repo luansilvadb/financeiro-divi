@@ -12,33 +12,33 @@ const props = withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-  <!-- Card Padrão (White) com borda stone tátil interna (subtle inset) -->
+  <!-- Card Padrão (White) -->
   <div 
     v-if="props.variant === 'default' || props.variant === 'featured'"
     :class="cn(
-      'rounded-cards bg-card shadow-subtle transition-all duration-300 p-8',
+      'rounded-card bg-card shadow-subtle transition-all duration-300 p-8',
       props.class
     )"
   >
     <slot />
   </div>
 
-  <!-- Card Recessed (Warm Cream) afundado no layout sem sombras -->
+  <!-- Card Recessed (Parchment) -->
   <div 
     v-else-if="props.variant === 'recessed'"
     :class="cn(
-      'rounded-cardslarge bg-recessed p-[22.8px] transition-all duration-300',
+      'rounded-card-lg bg-parchment p-[22.8px] transition-all duration-300',
       props.class
     )"
   >
     <slot />
   </div>
 
-  <!-- Card Escuro / Mockup de Celular (Obsidian) -->
+  <!-- Card Escuro / Phone Mockup (Obsidian) -->
   <div 
     v-else-if="props.variant === 'dark'"
     :class="cn(
-      'rounded-cardslarge bg-obsidian shadow-lg text-white p-6',
+      'rounded-card-lg bg-obsidian shadow-lg text-white p-6',
       props.class
     )"
   >
