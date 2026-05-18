@@ -1,0 +1,94 @@
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+
+const frameTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @theme {
+            --color-canvas: #fbfaf9;
+            --color-stone: #f2f0ed;
+            --color-card: #ffffff;
+            --color-graphite: #474645;
+            --color-charcoal: #343433;
+            --color-midnight: #121212;
+            --color-obsidian: #000000;
+            --color-ash: #848281;
+            --color-ember: #ff3e00;
+            --color-meadow: #00ca48;
+
+            --font-display: "Fraunces", "Georgia", serif;
+            --font-sans: "Inter", system-ui, sans-serif;
+
+            --radius-pill: 32px;
+            --radius-card: 10px;
+            --radius-card-lg: 24px;
+
+            --shadow-subtle: var(--color-stone) 0px 0px 0px 1px inset;
+        }
+
+        @layer base {
+            body { background: var(--color-canvas); color: var(--color-graphite); font-family: var(--font-sans); }
+        }
+
+        /* Custom Typography Utilities based on DESIGN.md */
+        .text-display { font-family: var(--font-display); font-size: 68px; font-weight: 500; line-height: 1.09; letter-spacing: -2.11px; }
+        .text-heading-lg { font-size: 44px; font-weight: 600; line-height: 1.09; letter-spacing: -1.14px; }
+        .text-heading { font-size: 23px; font-weight: 600; line-height: 1.2; letter-spacing: -0.44px; }
+        .text-body { font-size: 15px; line-height: 1.47; letter-spacing: -0.2px; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-2xl mx-auto space-y-12">
+        <header>
+            <h1 class="text-display text-charcoal">Family</h1>
+            <p class="text-body mt-4">Uma prévia de como os tokens semânticos serão aplicados.</p>
+        </header>
+
+        <section class="space-y-6">
+            <h2 class="text-heading-lg text-midnight">Cores & Superfícies</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-6 bg-card shadow-subtle rounded-card">
+                    <span class="text-heading text-charcoal">Canvas Card</span>
+                    <p class="text-body text-ash mt-2">Borda stone inset (shadow-subtle)</p>
+                </div>
+                <div class="p-6 bg-stone rounded-card">
+                    <span class="text-heading text-charcoal">Stone Surface</span>
+                    <p class="text-body text-ash mt-2">Usado em botões secundários</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-6">
+            <h2 class="text-heading-lg text-midnight">Tipografia</h2>
+            <div class="space-y-4">
+                <div>
+                    <span class="text-xs font-bold text-ember uppercase">text-display (68px)</span>
+                    <p class="text-display text-charcoal leading-tight">Your money is magic.</p>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-ember uppercase">text-heading-lg (44px)</span>
+                    <p class="text-heading-lg text-charcoal">Fintech feels like an adventure.</p>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-ember uppercase">text-heading (23px)</span>
+                    <p class="text-heading text-charcoal">Cards use an inset warm-stone border.</p>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-ember uppercase">text-body (15px)</span>
+                    <p class="text-body">The custom 'Family' typeface at 68px with tight -0.031em tracking carries the hero weight.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
+`;
+
+writeFileSync(join(process.cwd(), '.agents/skills/brainstorming/scripts/frame.html'), frameTemplate);
+console.log('Visual companion updated.');
