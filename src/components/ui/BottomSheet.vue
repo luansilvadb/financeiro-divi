@@ -15,8 +15,8 @@
       class="fixed inset-0 z-50 flex justify-center items-end p-0 pointer-events-none"
     >
       <div
-        class="pointer-events-auto relative flex flex-col bg-card border-t border-x border-stone-surface shadow-2xl transition-all duration-300 text-graphite
-               rounded-t-cardsLarge md:rounded-t-cards rounded-b-none max-h-[90dvh] w-full"
+        class="pointer-events-auto relative flex flex-col bg-card border-t border-x border-stone shadow-lg transition-all duration-300 text-graphite
+               rounded-t-card-lg md:rounded-t-card rounded-b-none max-h-[90dvh] w-full"
         :class="widthClass"
         :style="{ maxHeight }"
         @touchstart="onTouchStart"
@@ -26,17 +26,17 @@
       >
         <!-- Drag handle -->
         <div class="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0">
-          <div class="h-1 w-10 rounded-full bg-stone-surface" />
+          <div class="h-1 w-10 rounded-full bg-stone" />
         </div>
 
         <!-- Header -->
         <div v-if="title || $slots.header" class="flex items-center justify-between px-5 pb-3 shrink-0">
           <slot name="header">
-            <h2 class="text-lg font-semibold text-charcoal">{{ title }}</h2>
+            <h2 class="text-heading text-charcoal">{{ title }}</h2>
           </slot>
           <button
             v-if="showClose"
-            class="rounded-full p-1.5 text-ash transition hover:bg-stone-surface hover:text-charcoal cursor-pointer"
+            class="rounded-full p-1.5 text-ash transition hover:bg-stone hover:text-charcoal cursor-pointer"
             @click="close"
           >
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,7 +46,7 @@
         </div>
 
         <!-- Divider -->
-        <div v-if="title || $slots.header" class="h-px bg-stone-surface shrink-0" />
+        <div v-if="title || $slots.header" class="h-px bg-stone shrink-0" />
 
         <!-- Content -->
         <slot />
