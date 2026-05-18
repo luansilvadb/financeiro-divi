@@ -74,7 +74,8 @@ const handleConfirmar = () => {
             <input 
               v-model="descricao"
               type="text"
-              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
+              readonly
+              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal cursor-default transition-all"
             />
           </div>
 
