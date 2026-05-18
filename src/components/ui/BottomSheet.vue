@@ -1,12 +1,21 @@
 <template>
+  <!-- Backdrop overlay - fixed, doesn't move with bottom sheet -->
+  <Transition name="fade">
+    <div
+      v-if="modelValue"
+      class="fixed inset-0 z-40 bg-black/40 transition-opacity duration-300"
+      @click="close"
+    />
+  </Transition>
+
   <!-- Wrapper centradora do BottomSheet para alinhamento horizontal no desktop -->
   <Transition name="slide-up">
     <div
       v-if="modelValue"
-      class="fixed inset-0 z-50 pointer-events-none flex justify-center items-end p-0"
+      class="fixed inset-0 z-50 flex justify-center items-end p-0 pointer-events-none"
     >
       <div
-        class="pointer-events-auto flex flex-col bg-card border-t border-x border-stone-surface shadow-2xl transition-all duration-300 text-graphite
+        class="pointer-events-auto relative flex flex-col bg-card border-t border-x border-stone-surface shadow-2xl transition-all duration-300 text-graphite
                rounded-t-cardsLarge md:rounded-t-cards rounded-b-none max-h-[90dvh] w-full"
         :class="widthClass"
         :style="{ maxHeight }"
@@ -64,17 +73,21 @@ const close = () => emit('update:modelValue', false)
 
 const { registerOpen, registerClose } = useBottomSheetState()
 
+// Lock body scroll when bottom sheet is open
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     registerOpen()
+    document.body.style.overflow = 'hidden'
   } else {
     registerClose()
+    document.body.style.overflow = ''
   }
 }, { immediate: true })
 
 onUnmounted(() => {
   if (props.modelValue) {
     registerClose()
+    document.body.style.overflow = ''
   }
 })
 
@@ -195,5 +208,15 @@ const onMouseDown = (e: MouseEvent) => {
 .slide-up-enter-from,
 .slide-up-leave-to {
   transform: translateY(100%);
+}
+
+/* Fade transition for backdrop */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease-out;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

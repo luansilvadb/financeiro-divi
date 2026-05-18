@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
@@ -64,7 +64,7 @@ const {
 
 // Extract calculation logic to dedicated composable
 const calculations = useDashboardCalculations(
-  props.membros,
+  toRef(props, 'membros'),
   props.faturasAbertas,
   props.faturasFechadas,
   props.acertosPendentes,

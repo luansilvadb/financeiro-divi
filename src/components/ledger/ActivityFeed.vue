@@ -19,7 +19,12 @@ const sortedGastos = computed(() => {
 })
 
 const getMembroNome = (id: string) => {
-  return props.membros.find(m => m.id === id)?.nome || id
+  if (!id) return 'Desconhecido'
+  const membro = props.membros.find(m => m.id === id)
+  if (!membro) {
+    console.warn(`Member ID not found in ActivityFeed: ${id}. Available members:`, props.membros.map(m => ({ id: m.id, nome: m.nome })))
+  }
+  return membro?.nome || 'Membro desconhecido'
 }
 
 const handleDelete = (id: string) => {

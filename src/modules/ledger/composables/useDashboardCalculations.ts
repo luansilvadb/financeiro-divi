@@ -1,9 +1,9 @@
-import { computed } from 'vue'
+import { computed, type Ref } from 'vue'
 import { Gasto } from '../core/domain/Gasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
 export function useDashboardCalculations(
-  membros: { id: string; nome: string }[],
+  membrosRef: Ref<{ id: string; nome: string }[]> | { id: string; nome: string }[],
   faturasAbertas: any[],
   _faturasFechadas: any[],
   acertosPendentes: any[],
@@ -12,8 +12,18 @@ export function useDashboardCalculations(
   calcularConsumo: (faturaId: string, membroId: string) => number,
   calcularAdiantamento?: (faturaId: string, membroId: string) => number
 ) {
+  const getMembrosList = () => {
+    return 'value' in membrosRef ? membrosRef.value : membrosRef
+  }
+
   const getMembroNome = (id: string) => {
-    return membros.find(m => m.id === id)?.nome || id
+    if (!id) return 'Desconhecido'
+    const membros = getMembrosList()
+    const membro = membros.find(m => m.id === id)
+    if (!membro && membros.length > 0) {
+      console.warn(`Member ID not found: ${id}. Available members:`, membros.map(m => ({ id: m.id, nome: m.nome })))
+    }
+    return membro?.nome || 'Membro desconhecido'
   }
 
   const getCartaoNome = (cartoes: any[], cartaoId: string) => {
@@ -33,7 +43,8 @@ export function useDashboardCalculations(
   }
 
   const calcularTotalFatura = (faturaId: string) => {
-    return membros.reduce((sum, m) => sum + getConsumo(faturaId, m.id), 0)
+    const membros = getMembrosList()
+    return membros.reduce((sum: number, m: { id: string }) => sum + getConsumo(faturaId, m.id), 0)
   }
 
   const acertosDaFatura = (faturaId: string) => {
