@@ -34,8 +34,7 @@ import {
   ChevronRight,
   Sparkles, 
   CreditCard,
-  History,
-  Activity
+  History
 } from 'lucide-vue-next'
 
 interface Props {
@@ -89,8 +88,7 @@ const {
   todosOsAcertosQuitados,
   currentMonthName,
   sugerirProximoPeriodo,
-  parcelasFuturasDetalhadas,
-  gastosDaFatura
+  parcelasFuturasDetalhadas
 } = calculations
 
 // Wrapper for getCartaoNome to inject props.cartoes
@@ -265,8 +263,8 @@ const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: n
     faturaId: activeFaturaId,
     descricao: dados.descricao,
     valorTotal: Dinheiro.deReais(dados.valor),
-    compradorId: dados.to, // Credor recebe
-    divisoes: [new DivisaoDeGasto(dados.from, Dinheiro.deReais(dados.valor))], // Devedor assume 100%
+    compradorId: dados.from, // Devedor paga (quem faz o Pix)
+    divisoes: [new DivisaoDeGasto(dados.to, Dinheiro.deReais(dados.valor))], // Credor recebe (quem recebe o Pix, abatendo seu saldo positivo)
     isSettlement: true,
     settlementDetails: {
       fromMemberId: dados.from,
@@ -284,10 +282,6 @@ const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: n
 }
 
 // --- INTEGRAÇÃO SENIOR V19: ACCORDIONS DE FATURAS E PARCELAS FUTURAS ---
-const faturasExpandidas = ref<Record<string, boolean>>({})
-const toggleFaturaExpandida = (faturaId: string) => {
-  faturasExpandidas.value[faturaId] = !faturasExpandidas.value[faturaId]
-}
 
 const totalFuturasVencer = computed(() => {
   return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)
@@ -708,30 +702,6 @@ const excluirGasto = async (id: string) => {
                     R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
                   </span>
                 </div>
-              </div>
-            </div>
-
-            <!-- Toggle Detalhes -->
-            <button 
-              @click="toggleFaturaExpandida(fatura.id)"
-              class="w-full flex items-center justify-center gap-2 pt-4 text-xs font-semibold text-graphite hover:text-midnight transition-colors border-t border-stone"
-            >
-              <Activity class="w-3.5 h-3.5" />
-              {{ faturasExpandidas[fatura.id] ? 'Ocultar itens' : 'Ver detalhes' }}
-            </button>
-
-            <!-- Lista de Gastos (Expandida) -->
-            <div v-if="faturasExpandidas[fatura.id]" class="space-y-3 pt-4">
-              <div 
-                v-for="g in gastosDaFatura(fatura.id)" 
-                :key="g.id"
-                class="flex justify-between items-center gap-3 p-3 rounded-card bg-parchment shadow-subtle transition-colors text-xs"
-              >
-                <div class="min-w-0">
-                  <span class="font-semibold text-charcoal block text-sm truncate">{{ g.descricao }} {{ g.installments > 1 ? `(${g.installments}x)` : '' }}</span>
-                  <span class="text-[11px] text-ash mt-0.5 block">Por {{ getMembroNome(g.compradorId) }}</span>
-                </div>
-                <span class="font-semibold text-sm text-charcoal shrink-0">R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}</span>
               </div>
             </div>
           </div>
