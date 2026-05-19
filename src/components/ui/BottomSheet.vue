@@ -10,7 +10,7 @@
     </Transition>
 
     <!-- Wrapper centradora do BottomSheet para alinhamento horizontal no desktop -->
-    <Transition name="slide-up">
+    <Transition name="slide-up" @after-leave="onTransitionLeave">
       <div
         v-if="modelValue"
         class="fixed inset-0 z-[999] flex justify-center items-end p-0 pointer-events-none"
@@ -80,39 +80,55 @@ const getScrollbarWidth = () => {
   return window.innerWidth - document.documentElement.clientWidth
 }
 
-watch(() => props.modelValue, (isOpen) => {
-  if (isOpen) {
-    registerOpen()
-    const scrollbarWidth = getScrollbarWidth()
-    document.body.style.overflow = 'hidden'
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`
-      // Compensar a barra de navegação inferior fixa (BottomTabBar)
-      const nav = document.querySelector('nav')
-      if (nav) {
-        nav.style.paddingRight = `${scrollbarWidth}px`
-      }
+const lockScroll = () => {
+  registerOpen()
+  const scrollbarWidth = getScrollbarWidth()
+  document.body.style.overflow = 'hidden'
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`
+    // Compensar a barra de navegação inferior fixa (BottomTabBar)
+    const nav = document.querySelector('nav')
+    if (nav) {
+      nav.style.paddingRight = `${scrollbarWidth}px`
     }
-  } else {
-    registerClose()
+    // Compensar wrappers com elementos centralizados (FAB)
+    const wrappers = document.querySelectorAll('[data-fixed-wrapper]')
+    wrappers.forEach(el => {
+      (el as HTMLElement).style.paddingRight = `${scrollbarWidth}px`
+    })
+  }
+}
+
+const unlockScroll = () => {
+  registerClose()
+  // Só remove a trava se não houver outros bottomsheets ativos
+  if (!isAnyBottomSheetOpen.value) {
     document.body.style.overflow = ''
     document.body.style.paddingRight = ''
     const nav = document.querySelector('nav')
     if (nav) {
       nav.style.paddingRight = ''
     }
+    const wrappers = document.querySelectorAll('[data-fixed-wrapper]')
+    wrappers.forEach(el => {
+      (el as HTMLElement).style.paddingRight = ''
+    })
+  }
+}
+
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen) {
+    lockScroll()
   }
 }, { immediate: true })
 
+const onTransitionLeave = () => {
+  unlockScroll()
+}
+
 onUnmounted(() => {
   if (props.modelValue) {
-    registerClose()
-    document.body.style.overflow = ''
-    document.body.style.paddingRight = ''
-    const nav = document.querySelector('nav')
-    if (nav) {
-      nav.style.paddingRight = ''
-    }
+    unlockScroll()
   }
 })
 
