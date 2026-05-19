@@ -36,6 +36,8 @@ describe('useFaturaRollover', () => {
     
     expect(novosGastos.length).toBe(1)
     expect(novosGastos[0].installments).toBe(2) // Decrementou!
+    expect(novosGastos[0].totalInstallments).toBe(3) // Manteve o total original!
+    expect(novosGastos[0].id).not.toBe('gp1') // ID é único/novo!
     expect(novosGastos[0].faturaId).toBe('fat_nova')
     expect(novosGastos[0].descricao).toBe('Geladeira')
   })

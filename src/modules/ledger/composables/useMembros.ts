@@ -41,6 +41,15 @@ export function useMembros() {
     }
   }
 
+  const ativarMembro = async (id: string) => {
+    const membro = await repository.buscarPorId(id)
+    if (membro) {
+      const atualizado = new Membro({ ...membro, ativo: true })
+      await repository.salvar(atualizado)
+      await carregar()
+    }
+  }
+
   // Garantir carregamento inicial lazy
   if (!inicializado.value) {
     inicializar()
@@ -51,6 +60,7 @@ export function useMembros() {
     ativos,
     adicionarMembro,
     desativarMembro,
+    ativarMembro,
     inicializar,
     carregar
   }

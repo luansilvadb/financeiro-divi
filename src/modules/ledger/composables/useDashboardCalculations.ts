@@ -4,7 +4,7 @@ import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
 export function useDashboardCalculations(
   membrosRef: Ref<{ id: string; nome: string }[]> | { id: string; nome: string }[],
-  faturasAbertas: any[],
+  faturasAbertas: any[] | Ref<any[]>,
   _faturasFechadas: any[],
   acertosPendentes: any[],
   globalGastos: any[],
@@ -14,6 +14,10 @@ export function useDashboardCalculations(
 ) {
   const getMembrosList = () => {
     return 'value' in membrosRef ? membrosRef.value : membrosRef
+  }
+
+  const getFaturasAbertas = () => {
+    return faturasAbertas && 'value' in faturasAbertas ? (faturasAbertas as Ref<any[]>).value : (faturasAbertas as any[])
   }
 
   const getMembroNome = (id: string) => {
@@ -71,21 +75,21 @@ export function useDashboardCalculations(
   }
 
   const currentMonthName = computed(() => {
-    const fat = faturasAbertas[0]
+    const fat = getFaturasAbertas()[0]
     if (!fat) return 'Mês'
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     return meses[fat.periodo.mes - 1]
   })
 
   const currentYear = computed(() => {
-    const fat = faturasAbertas[0]
+    const fat = getFaturasAbertas()[0]
     if (!fat) return 'Atual'
     return fat.periodo.ano.toString()
   })
 
   const sugerirProximoPeriodo = () => {
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    const fat = faturasAbertas[0]
+    const fat = getFaturasAbertas()[0]
     if (!fat) return ''
     const mIdx = fat.periodo.mes - 1 // 0-indexed
     const proximoMIdx = (mIdx + 1) % 12
@@ -95,7 +99,12 @@ export function useDashboardCalculations(
 
   const parcelasFuturasDetalhadas = computed(() => {
     const list: any[] = []
-    globalGastos.forEach((g: Gasto) => {
+    const fatAtiva = getFaturasAbertas()[0]
+    if (!fatAtiva) return list
+
+    const gastosDaFaturaAtiva = gastosDaFatura(fatAtiva.id)
+
+    gastosDaFaturaAtiva.forEach((g: Gasto) => {
       if (g.installments > 1) {
         const valorParcela = g.valorTotal.centavos / g.installments
         const parcelasRestantes = g.installments - 1

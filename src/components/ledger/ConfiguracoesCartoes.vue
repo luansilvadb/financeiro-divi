@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { Cartao } from '../../modules/ledger/core/domain/Cartao'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { useMembros } from '../../modules/ledger/composables/useMembros'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
-import { Plus, Trash2, CreditCard, Calendar, User } from 'lucide-vue-next'
+import { Trash2, CreditCard, Calendar, User, ChevronDown } from 'lucide-vue-next'
 
 const { ativos } = useMembros()
 const { cartoes, salvarCartaoManual, excluirCartaoManual } = useCartoesEFaturas()
@@ -13,6 +13,37 @@ const { cartoes, salvarCartaoManual, excluirCartaoManual } = useCartoesEFaturas(
 const nome = ref('')
 const diaFechamento = ref<number>(10)
 const responsavelId = ref('')
+
+const isDiaDropdownOpen = ref(false)
+const isResponsavelDropdownOpen = ref(false)
+
+const diaDropdownRef = ref<HTMLElement | null>(null)
+const toggleDiaDropdown = async () => {
+  isDiaDropdownOpen.value = !isDiaDropdownOpen.value
+  if (isDiaDropdownOpen.value) {
+    await nextTick()
+    if (diaDropdownRef.value) {
+      const selected = diaDropdownRef.value.querySelector('.is-selected') as HTMLElement
+      if (selected) {
+        selected.scrollIntoView({ block: 'center' })
+      }
+    }
+  }
+}
+
+const responsavelDropdownRef = ref<HTMLElement | null>(null)
+const toggleResponsavelDropdown = async () => {
+  isResponsavelDropdownOpen.value = !isResponsavelDropdownOpen.value
+  if (isResponsavelDropdownOpen.value) {
+    await nextTick()
+    if (responsavelDropdownRef.value) {
+      const selected = responsavelDropdownRef.value.querySelector('.is-selected') as HTMLElement
+      if (selected) {
+        selected.scrollIntoView({ block: 'center' })
+      }
+    }
+  }
+}
 
 const adicionarCard = async () => {
   if (!nome.value || !responsavelId.value) return
@@ -32,13 +63,6 @@ const adicionarCard = async () => {
   <div class="space-y-10">
     <!-- Adicionar Novo -->
     <Card class="p-8 shadow-subtle bg-card rounded-card space-y-6">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full bg-ember/5 text-ember flex items-center justify-center">
-          <Plus class="w-4 h-4" />
-        </div>
-        <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Novo Cartão</h4>
-      </div>
-
       <div class="space-y-4">
         <div class="space-y-2">
           <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Nome do Cartão</label>
@@ -50,31 +74,73 @@ const adicionarCard = async () => {
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-4">
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Dia Fechamento</label>
-            <div class="relative">
-              <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash" />
-              <input 
-                v-model.number="diaFechamento" 
-                type="number" 
-                min="1" 
-                max="28" 
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
+            <div class="relative" tabindex="0" @blur="isDiaDropdownOpen = false">
+              <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none z-10" />
+              <div 
+                @click="toggleDiaDropdown"
+                class="w-full pl-11 pr-10 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none"
+                :class="isDiaDropdownOpen ? 'border-ember ring-2 ring-ember/20' : ''"
+              >
+                <span class="block truncate">{{ diaFechamento ? 'Dia ' + diaFechamento : 'Selecione...' }}</span>
+              </div>
+              <ChevronDown 
+                class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none transition-transform duration-200" 
+                :class="isDiaDropdownOpen ? 'rotate-180' : ''"
               />
+              
+              <!-- Dropdown Dia -->
+              <div 
+                v-if="isDiaDropdownOpen" 
+                ref="diaDropdownRef"
+                class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
+              >
+                <div 
+                  v-for="d in 28" 
+                  :key="d" 
+                  @mousedown.prevent="diaFechamento = d; isDiaDropdownOpen = false" 
+                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors"
+                  :class="diaFechamento === d ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
+                >
+                  Dia {{ d }}
+                </div>
+              </div>
             </div>
           </div>
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Responsável</label>
-            <div class="relative">
-              <User class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash" />
-              <select 
-                v-model="responsavelId" 
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember appearance-none transition-all text-sm"
+            <div class="relative" tabindex="0" @blur="isResponsavelDropdownOpen = false">
+              <User class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none z-10" />
+              <div 
+                @click="toggleResponsavelDropdown"
+                class="w-full pl-11 pr-10 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none"
+                :class="isResponsavelDropdownOpen ? 'border-ember ring-2 ring-ember/20' : ''"
               >
-                <option value="" disabled>Escolha...</option>
-                <option v-for="m in ativos" :key="m.id" :value="m.id">{{ m.nome }}</option>
-              </select>
+                <span class="block truncate">{{ responsavelId ? ativos.find(m => m.id === responsavelId)?.nome : 'Escolha...' }}</span>
+              </div>
+              <ChevronDown 
+                class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none transition-transform duration-200"
+                :class="isResponsavelDropdownOpen ? 'rotate-180' : ''"
+              />
+              
+              <!-- Dropdown Responsável -->
+              <div 
+                v-if="isResponsavelDropdownOpen" 
+                ref="responsavelDropdownRef"
+                class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
+              >
+                <div 
+                  v-for="m in ativos" 
+                  :key="m.id" 
+                  @mousedown.prevent="responsavelId = m.id; isResponsavelDropdownOpen = false" 
+                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors truncate"
+                  :class="responsavelId === m.id ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
+                >
+                  {{ m.nome }}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -85,7 +85,12 @@ const handleDelete = (id: string) => {
         >
           <div class="flex justify-between items-start gap-4">
             <div class="space-y-1">
-              <span class="font-bold text-sm text-charcoal block">{{ g.descricao }}</span>
+              <span class="font-bold text-sm text-charcoal block">
+                {{ g.descricao }}
+                <span v-if="g.totalInstallments > 1" class="text-xs text-ash font-medium">
+                  ({{ g.totalInstallments - g.installments + 1 }}/{{ g.totalInstallments }})
+                </span>
+              </span>
               <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span class="text-[10px] font-bold text-ember uppercase tracking-wider">
                   {{ g.isLoan ? '🤝 Empréstimo' : g.isSettlement ? '🔄 Acerto' : g.method === 'card' ? '💳 Cartão' : '⚡ Pix' }}
@@ -95,9 +100,12 @@ const handleDelete = (id: string) => {
                 </span>
               </div>
             </div>
-            <div class="text-right">
+            <div class="text-right flex flex-col items-end">
               <span class="font-display text-lg text-charcoal">
-                R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}
+                R$ {{ ((g.totalInstallments > 1 ? (g.valorTotal.centavos / g.totalInstallments) : g.valorTotal.centavos) / 100).toFixed(2).replace('.', ',') }}
+              </span>
+              <span v-if="g.totalInstallments > 1" class="text-[9px] text-ash block">
+                Total: R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}
               </span>
             </div>
           </div>

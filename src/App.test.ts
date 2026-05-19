@@ -66,7 +66,7 @@ describe('App FAB', () => {
     expect(fab.classes()).toContain('w-14')
     expect(fab.classes()).toContain('h-14')
     expect(fab.classes()).toContain('rounded-full')
-    expect(fab.classes()).toContain('border-card')
+    expect(fab.classes()).toContain('bg-gradient-to-br')
   })
 })
 

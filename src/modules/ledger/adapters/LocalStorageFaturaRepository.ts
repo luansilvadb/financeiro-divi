@@ -13,7 +13,13 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
       if (index >= 0) {
         todas[index] = fatura
       } else {
-        todas.push(fatura)
+        const dupIdx = todas.findIndex(f => f.cartaoId === fatura.cartaoId && f.periodo.mes === fatura.periodo.mes && f.periodo.ano === fatura.periodo.ano)
+        if (dupIdx >= 0) {
+          // Atualiza a fatura existente com os novos dados (mesmo ID ou novo ID)
+          todas[dupIdx] = fatura
+        } else {
+          todas.push(fatura)
+        }
       }
       const dtos = todas.map(f => ({
         id: f.id,

@@ -21,16 +21,18 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         faturaId: g.faturaId,
         descricao: g.descricao,
         valorTotalCentavos: g.valorTotal.centavos,
-        compradorId: g.compradorId, // <- NOVO
+        compradorId: g.compradorId,
         divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
         installments: g.installments,
+        totalInstallments: g.totalInstallments,
         isLoan: g.isLoan,
         borrowerId: g.borrowerId,
         recurringBillId: g.recurringBillId,
         isSettlement: g.isSettlement,
         settlementDetails: g.settlementDetails,
         method: g.method,
-        cardOwner: g.cardOwner
+        cardOwner: g.cardOwner,
+        grupoParcelasId: g.grupoParcelasId // <- NOVO
       }))
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
     })
@@ -53,19 +55,21 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         compradorId: g.compradorId,
         divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
         installments: g.installments,
+        totalInstallments: g.totalInstallments,
         isLoan: g.isLoan,
         borrowerId: g.borrowerId,
         recurringBillId: g.recurringBillId,
         isSettlement: g.isSettlement,
         settlementDetails: g.settlementDetails,
         method: g.method,
-        cardOwner: g.cardOwner
+        cardOwner: g.cardOwner,
+        grupoParcelasId: g.grupoParcelasId // <- NOVO
       }))
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
     })
   }
 
-  private async listarTodos(): Promise<Gasto[]> {
+  async listarTodos(): Promise<Gasto[]> {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
     try {
@@ -81,16 +85,18 @@ export class LocalStorageGastoRepository implements IGastoRepository {
           faturaId: g.faturaId,
           descricao: g.descricao,
           valorTotal: Dinheiro.deCentavos(g.valorTotalCentavos),
-          compradorId, // <- NOVO
+          compradorId,
           divisoes,
           installments: g.installments || 1,
+          totalInstallments: g.totalInstallments || g.installments || 1,
           isLoan: g.isLoan || false,
           borrowerId: g.borrowerId || null,
           recurringBillId: g.recurringBillId || null,
           isSettlement: g.isSettlement || false,
           settlementDetails: g.settlementDetails || null,
           method: g.method || 'pix',
-          cardOwner: g.cardOwner || null
+          cardOwner: g.cardOwner || null,
+          grupoParcelasId: g.grupoParcelasId || null // <- NOVO
         })
       })
     } catch (e) {

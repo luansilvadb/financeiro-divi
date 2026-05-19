@@ -11,6 +11,7 @@ export interface GastoProps {
   
   // Novos campos (Fase 1)
   installments?: number
+  totalInstallments?: number // <- NOVO
   isLoan?: boolean
   borrowerId?: string | null
 
@@ -26,6 +27,7 @@ export interface GastoProps {
   // --- ADIÇÃO SENIOR V19 ---
   method?: 'pix' | 'card'
   cardOwner?: string | null
+  grupoParcelasId?: string | null // <- NOVO
 }
 
 export class Gasto {
@@ -38,6 +40,7 @@ export class Gasto {
   
   // Novos campos (Fase 1)
   public readonly installments: number
+  public readonly totalInstallments: number // <- NOVO
   public readonly isLoan: boolean
   public readonly borrowerId: string | null
 
@@ -53,6 +56,7 @@ export class Gasto {
   // --- ADIÇÃO SENIOR V19 ---
   public readonly method: 'pix' | 'card'
   public readonly cardOwner: string | null
+  public readonly grupoParcelasId: string | null // <- NOVO
 
   constructor(props: GastoProps) {
     if (props.divisoes.length === 0) {
@@ -73,6 +77,7 @@ export class Gasto {
 
     // Inicialização retrocompatível (Fase 1)
     this.installments = props.installments || 1
+    this.totalInstallments = props.totalInstallments || props.installments || 1
     this.isLoan = props.isLoan || false
     this.borrowerId = props.borrowerId || null
 
@@ -84,5 +89,6 @@ export class Gasto {
     // --- ADIÇÃO SENIOR V19 ---
     this.method = props.method || 'pix'
     this.cardOwner = props.cardOwner || null
+    this.grupoParcelasId = props.grupoParcelasId || null // <- NOVO
   }
 }

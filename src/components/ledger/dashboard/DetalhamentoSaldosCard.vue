@@ -49,7 +49,7 @@ const detailedBreakdown = computed(() => {
         }
         g.divisoes.forEach(d => {
           if (breakdown[d.membroId]) {
-            breakdown[d.membroId].pixConsumo += valorParcela / g.divisoes.length
+            breakdown[d.membroId].pixConsumo += d.valor.centavos / g.installments
           }
         })
       } else {
@@ -60,7 +60,7 @@ const detailedBreakdown = computed(() => {
         }
         g.divisoes.forEach(d => {
           if (breakdown[d.membroId]) {
-            breakdown[d.membroId].cardConsumo += valorParcela / g.divisoes.length
+            breakdown[d.membroId].cardConsumo += d.valor.centavos / g.installments
           }
         })
       }
@@ -88,81 +88,93 @@ const detailedBreakdown = computed(() => {
       </div>
     </div>
 
-    <div class="p-8 space-y-10">
+    <div class="p-6 sm:p-8 space-y-12">
       <div 
         v-for="m in props.membros" 
         :key="m.id" 
-        class="space-y-4"
+        class="space-y-5"
       >
-        <div class="flex justify-between items-center pb-2 border-b border-stone">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-stone text-charcoal flex items-center justify-center font-display text-sm">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-3 sm:gap-4">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-parchment shadow-subtle text-charcoal flex items-center justify-center text-base sm:text-lg font-semibold shrink-0">
               {{ m.nome[0] }}
             </div>
-            <span class="font-bold text-base text-charcoal">{{ m.nome }}</span>
+            <span class="font-semibold text-[19px] sm:text-[23px] tracking-[-0.25px] sm:tracking-[-0.44px] text-charcoal truncate">{{ m.nome }}</span>
           </div>
           <span 
-            class="text-[10px] font-mono font-bold px-3 py-1 rounded-full uppercase tracking-widest border"
-            :class="props.saldosUnificados[m.id] > 0.005 ? 'bg-meadow/5 border-meadow/20 text-meadow' : props.saldosUnificados[m.id] < -0.005 ? 'bg-coral/5 border-coral/20 text-coral' : 'bg-stone border-stone text-ash'"
+            class="text-[11px] sm:text-[13px] font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shrink-0"
+            :class="props.saldosUnificados[m.id] > 0.005 ? 'bg-meadow/10 text-meadow' : props.saldosUnificados[m.id] < -0.005 ? 'bg-coral/10 text-coral' : 'bg-stone text-ash'"
           >
-            Saldo: {{ props.saldosUnificados[m.id] > 0.005 ? '+' : '' }}R$ {{ props.saldosUnificados[m.id]?.toFixed(2).replace('.', ',') }}
+            Saldo: {{ props.saldosUnificados[m.id] > 0.005 ? '+' : '' }}R$ {{ Math.abs(props.saldosUnificados[m.id] || 0).toFixed(2).replace('.', ',') }}
           </span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- PIX -->
-          <Card class="p-4 bg-parchment border border-stone shadow-none rounded-card space-y-3">
-            <div class="flex items-center gap-2">
-              <Wallet class="w-3 h-3 text-ember" />
-              <span class="text-[9px] font-bold uppercase tracking-widest text-ash">PIX / Cash</span>
-            </div>
-            <div class="space-y-1.5">
-              <div class="flex justify-between text-xs">
-                <span class="text-ash font-semibold">Fez:</span>
-                <span class="text-meadow font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.pixFez || 0) }}</span>
+          <div class="rounded-[16px] bg-parchment p-5 flex flex-col justify-between">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-8 h-8 rounded-full bg-white shadow-subtle flex items-center justify-center shrink-0">
+                <Wallet class="w-4 h-4 text-ember" />
               </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-ash font-semibold">Usou:</span>
-                <span class="text-coral font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.pixConsumo || 0) }}</span>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-ash">PIX / Cash</span>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex justify-between items-baseline">
+                <span class="text-[13px] font-medium text-graphite">Pagou</span>
+                <span class="text-[15px] font-semibold tracking-[-0.2px] text-meadow">+R$ {{ formatarBRL(detailedBreakdown[m.id]?.pixFez || 0) }}</span>
+              </div>
+              <div class="h-[1px] w-full bg-stone" />
+              <div class="flex justify-between items-baseline">
+                <span class="text-[13px] font-medium text-graphite">Consumiu</span>
+                <span class="text-[15px] font-semibold tracking-[-0.2px] text-coral">-R$ {{ formatarBRL(detailedBreakdown[m.id]?.pixConsumo || 0) }}</span>
               </div>
             </div>
-          </Card>
+          </div>
 
           <!-- Cartão -->
-          <Card class="p-4 bg-parchment border border-stone shadow-none rounded-card space-y-3">
-            <div class="flex items-center gap-2">
-              <CreditCard class="w-3 h-3 text-ember" />
-              <span class="text-[9px] font-bold uppercase tracking-widest text-ash">Cartão</span>
-            </div>
-            <div class="space-y-1.5">
-              <div class="flex justify-between text-xs">
-                <span class="text-ash font-semibold">Fez:</span>
-                <span class="text-meadow font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.cardFez || 0) }}</span>
+          <div class="rounded-[16px] bg-parchment p-5 flex flex-col justify-between">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-8 h-8 rounded-full bg-white shadow-subtle flex items-center justify-center shrink-0">
+                <CreditCard class="w-4 h-4 text-ember" />
               </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-ash font-semibold">Usou:</span>
-                <span class="text-coral font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.cardConsumo || 0) }}</span>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-ash">Cartão</span>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex justify-between items-baseline">
+                <span class="text-[13px] font-medium text-graphite">Passou</span>
+                <span class="text-[15px] font-semibold tracking-[-0.2px] text-meadow">+R$ {{ formatarBRL(detailedBreakdown[m.id]?.cardFez || 0) }}</span>
+              </div>
+              <div class="h-[1px] w-full bg-stone" />
+              <div class="flex justify-between items-baseline">
+                <span class="text-[13px] font-medium text-graphite">Consumiu</span>
+                <span class="text-[15px] font-semibold tracking-[-0.2px] text-coral">-R$ {{ formatarBRL(detailedBreakdown[m.id]?.cardConsumo || 0) }}</span>
               </div>
             </div>
-          </Card>
+          </div>
 
           <!-- Empréstimo -->
-          <Card class="p-4 bg-parchment border border-stone shadow-none rounded-card space-y-3">
-            <div class="flex items-center gap-2">
-              <Handshake class="w-3 h-3 text-ember" />
-              <span class="text-[9px] font-bold uppercase tracking-widest text-ash">Empréstimos</span>
-            </div>
-            <div class="space-y-1.5">
-              <div class="flex justify-between text-xs">
-                <span class="text-ash font-semibold">Fez:</span>
-                <span class="text-meadow font-semibold">+{{ formatarBRL(detailedBreakdown[m.id]?.loanFez || 0) }}</span>
+          <div class="rounded-[16px] bg-parchment p-5 flex flex-col justify-between">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-8 h-8 rounded-full bg-white shadow-subtle flex items-center justify-center shrink-0">
+                <Handshake class="w-4 h-4 text-ember" />
               </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-ash font-semibold">Tomou:</span>
-                <span class="text-coral font-semibold">-{{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-ash">Empréstimos</span>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex justify-between items-baseline">
+                <span class="text-[13px] font-medium text-graphite">Emprestou</span>
+                <span class="text-[15px] font-semibold tracking-[-0.2px] text-meadow">+R$ {{ formatarBRL(detailedBreakdown[m.id]?.loanFez || 0) }}</span>
+              </div>
+              <div class="h-[1px] w-full bg-stone" />
+              <div class="flex justify-between items-baseline">
+                <span class="text-[13px] font-medium text-graphite">Pegou</span>
+                <span class="text-[15px] font-semibold tracking-[-0.2px] text-coral">-R$ {{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

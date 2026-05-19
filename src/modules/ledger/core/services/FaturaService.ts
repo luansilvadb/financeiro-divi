@@ -43,7 +43,7 @@ export class FaturaService {
     const consumoMap = new Map<string, number>()
     gastos.forEach(g => {
       g.divisoes.forEach(d => {
-        consumoMap.set(d.membroId, (consumoMap.get(d.membroId) || 0) + d.valor.centavos)
+        consumoMap.set(d.membroId, (consumoMap.get(d.membroId) || 0) + (d.valor.centavos / g.installments))
       })
     })
 

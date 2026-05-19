@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../modules/ledger/composables/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import {
@@ -39,8 +39,13 @@ const {
   canAdvance,
   next,
   prev,
+  reset,
   finalizarGastoOuEmprestimo
 } = useNovoLancamentoWizard(props.membros)
+
+onUnmounted(() => {
+  reset()
+})
 
 const quickChips = computed(() => {
   if (wizFlow.value === 'loan') {
@@ -120,6 +125,13 @@ const splitSummaryDesc = computed(() => {
   const count = participantesDivisao.value.length
   if (count === 0) return 'Selecione quem vai dividir'
   const valReais = Number(valor.value) || 0
+  
+  if (installments.value > 1) {
+    const cadaUmTotal = (valReais / count).toFixed(2).replace('.', ',')
+    const cadaUmParcela = (valReais / installments.value / count).toFixed(2).replace('.', ',')
+    return `Cada um paga R$ ${cadaUmParcela}/mês (R$ ${cadaUmTotal} no total em ${installments.value}x)`
+  }
+  
   const cadaUm = (valReais / count).toFixed(2).replace('.', ',')
   return `Cada um paga R$ ${cadaUm}`
 })
@@ -232,7 +244,7 @@ const handleGravar = async () => {
                   type="number"
                   step="0.01"
                   min="0"
-                  class="w-full bg-transparent outline-none text-[40px] leading-none font-semibold text-midnight tracking-[-1px] placeholder:text-smoke"
+                  class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent outline-none text-[40px] leading-none font-semibold text-midnight tracking-[-1px] placeholder:text-smoke"
                   placeholder="0,00"
                   autofocus
                 />

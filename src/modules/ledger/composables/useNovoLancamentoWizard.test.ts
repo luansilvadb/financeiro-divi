@@ -102,4 +102,47 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     participantesDivisao.value = []
     expect(canAdvance.value).toBe(false) // Se ninguém, não pode avançar
   })
+
+  it('deve projetar parcelas futuras imediatamente ao salvar um gasto parcelado no cartão', async () => {
+    const [{ wizFlow, wizPayment, wizCardOwner, compradorSelecionadoId, valor, descricao, installments, finalizarGastoOuEmprestimo }] = withSetup(() => 
+      useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id })))
+    )
+
+    // Configura o wizard para gasto parcelado no cartão
+    wizFlow.value = 'expense'
+    wizPayment.value = 'card'
+    wizCardOwner.value = 'c1' // ID do cartão
+    compradorSelecionadoId.value = 'luan'
+    valor.value = 300
+    descricao.value = 'Geladeira'
+    installments.value = 3 // 3 parcelas de R$ 100,00
+
+    await finalizarGastoOuEmprestimo()
+
+    const { LocalStorageGastoRepository } = await import('../adapters/LocalStorageGastoRepository')
+    const gRepo = new LocalStorageGastoRepository()
+    const todosGastos = await gRepo.listarTodos()
+
+    // Como o repositório é limpo em cada teste, devemos ter exatamente 3 parcelas projetadas
+    expect(todosGastos.length).toBe(3)
+
+    // Todas as parcelas devem compartilhar o mesmo grupoParcelasId
+    const g1 = todosGastos[0]
+    const g2 = todosGastos[1]
+    const g3 = todosGastos[2]
+
+    expect(g1.grupoParcelasId).not.toBeNull()
+    expect(g2.grupoParcelasId).toBe(g1.grupoParcelasId)
+    expect(g3.grupoParcelasId).toBe(g1.grupoParcelasId)
+
+    // Verificar installments decrescentes (3, 2, 1)
+    expect(g1.installments).toBe(3)
+    expect(g2.installments).toBe(2)
+    expect(g3.installments).toBe(1)
+
+    // Verificar totalInstallments constante (3)
+    expect(g1.totalInstallments).toBe(3)
+    expect(g2.totalInstallments).toBe(3)
+    expect(g3.totalInstallments).toBe(3)
+  })
 })

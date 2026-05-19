@@ -16,16 +16,17 @@ export function useFaturaRollover() {
 
   const processarRolloverParcelas = (novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] => {
     return gastosAnteriores
-      .filter(g => g.installments > 1)
+      .filter(g => g.installments > 1 && !g.grupoParcelasId)
       .map(g => {
         return new Gasto({
-          id: g.id, // Mantém o ID de origem do parcelamento
+          id: crypto.randomUUID(), // Gera um ID único para a nova parcela
           faturaId: novaFaturaId,
           descricao: g.descricao,
           valorTotal: g.valorTotal,
           compradorId: g.compradorId,
           divisoes: [...g.divisoes],
           installments: g.installments - 1, // Decrementa a contagem de parcelas
+          totalInstallments: g.totalInstallments || g.installments, // <- NOVO
           isLoan: g.isLoan,
           borrowerId: g.borrowerId,
           recurringBillId: g.recurringBillId
@@ -91,14 +92,16 @@ export function useFaturaRollover() {
     faturasAbertas: Fatura[],
     cartoes: any[],
     saldosAcumulados: Record<string, number>,
-    nomePeriodoAnterior: string,
-    fecharFaturaManual: (faturaId: string) => Promise<void>
+    nomePeriodoAnterior: string
   ) => {
     if (faturasAbertas.length === 0) return
 
-    // 1. Fechar as faturas abertas do período
+    const fRepo = new LocalStorageFaturaRepository()
+
+    // 1. Fechar as faturas abertas do período diretamente via repositório
     for (const f of faturasAbertas) {
-      await fecharFaturaManual(f.id)
+      f.fechar(f.responsavelId, new Date())
+      await fRepo.salvar(f)
     }
 
     // 2. Criar faturas e período no novo mês
@@ -108,7 +111,6 @@ export function useFaturaRollover() {
     const anoNum = parseInt(anoStr) || new Date().getFullYear()
 
     const novasFaturas: Fatura[] = []
-    const fRepo = new LocalStorageFaturaRepository()
 
     for (const card of cartoes) {
       const novaFatura = new Fatura({

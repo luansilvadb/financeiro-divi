@@ -68,31 +68,79 @@ function buildDivisoes(
   }
 }
 
+async function obterOuCriarFaturaParaPeriodo(
+  cartaoId: string,
+  mes: number,
+  ano: number,
+  responsavelId: string
+): Promise<any> {
+  const todasFaturas = await faturaRepo.listarTodas()
+  let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+  if (!fatura) {
+    const { Fatura } = await import('../core/domain/Fatura')
+    fatura = new Fatura({
+      id: crypto.randomUUID(),
+      cartaoId,
+      periodo: { mes, ano },
+      responsavelId,
+      status: 'ABERTA'
+    })
+    await faturaRepo.salvar(fatura)
+  }
+  return fatura
+}
+
 // Helper: Find active invoice for transaction
 async function findActiveFatura(
   paymentMethod: 'pix' | 'card',
   cardOwnerId: string | null,
   compradorId: string
 ): Promise<any> {
-  const todasFaturas = await faturaRepo.listarTodas()
-  let faturaAtiva = todasFaturas.find(f => f.status === 'ABERTA')
+  const periodoSalvoRaw = localStorage.getItem('divi_periodo_selecionado')
+  let mes = new Date().getMonth() + 1
+  let ano = new Date().getFullYear()
+  if (periodoSalvoRaw) {
+    try {
+      const parsed = JSON.parse(periodoSalvoRaw)
+      mes = parsed.mes
+      ano = parsed.ano
+    } catch(e) {}
+  }
 
-  // If card payment, try to find the card's invoice
+  const todasFaturas = await faturaRepo.listarTodas()
+  
+  let cartaoId = ''
   if (paymentMethod === 'card' && cardOwnerId) {
     const todosCartoes = await cartaoRepo.listarTodos()
     const cartao = todosCartoes.find(c => c.responsavelPadraoId === compradorId || c.id === cardOwnerId)
     if (cartao) {
-      faturaAtiva = todasFaturas.find(f => f.cartaoId === cartao.id && f.status === 'ABERTA') || faturaAtiva
+      cartaoId = cartao.id
     }
   }
 
-  // Fallback if no open invoice found
-  if (!faturaAtiva) {
-    faturaAtiva = todasFaturas[0]
+  if (!cartaoId) {
+    const todosCartoes = await cartaoRepo.listarTodos()
+    if (todosCartoes.length > 0) {
+      cartaoId = todosCartoes[0].id
+    } else {
+      cartaoId = 'PIX_DEFAULT_ID'
+    }
   }
 
-  if (!faturaAtiva) throw new Error('Nenhuma fatura encontrada para registrar o lançamento')
-  return faturaAtiva
+  let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+  if (!fatura) {
+    const { Fatura } = await import('../core/domain/Fatura')
+    fatura = new Fatura({
+      id: crypto.randomUUID(),
+      cartaoId,
+      periodo: { mes, ano },
+      responsavelId: compradorId,
+      status: 'ABERTA'
+    })
+    await faturaRepo.salvar(fatura)
+  }
+
+  return fatura
 }
 
 export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] = []) {
@@ -165,19 +213,77 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
 
     const faturaAtiva = await findActiveFatura(wizPayment.value, wizCardOwner.value, compradorSelecionadoId.value)
 
-    const novoGasto = new Gasto({
-      id: crypto.randomUUID(),
-      faturaId: faturaAtiva.id,
-      descricao: wizFlow.value === 'loan' ? (descricao.value.trim() || 'Empréstimo Pessoal') : descricao.value,
-      valorTotal: total,
-      compradorId: compradorSelecionadoId.value,
-      divisoes,
-      installments: installments.value,
-      isLoan: wizFlow.value === 'loan',
-      borrowerId: borrowerId.value
-    })
+    if (wizPayment.value === 'card' && installments.value > 1) {
+      const grupoParcelasId = crypto.randomUUID()
+      
+      // 1. Salvar o gasto da primeira parcela na fatura do mês atual
+      const primeiroGasto = new Gasto({
+        id: crypto.randomUUID(),
+        faturaId: faturaAtiva.id,
+        descricao: descricao.value,
+        valorTotal: total,
+        compradorId: compradorSelecionadoId.value,
+        divisoes,
+        installments: installments.value,
+        totalInstallments: installments.value,
+        isLoan: false,
+        borrowerId: null,
+        method: 'card',
+        cardOwner: wizCardOwner.value,
+        grupoParcelasId
+      })
+      await gastoRepo.salvar(primeiroGasto)
 
-    await gastoRepo.salvar(novoGasto)
+      // 2. Projetar as próximas parcelas nos meses subsequentes
+      let currentMes = faturaAtiva.periodo.mes
+      let currentAno = faturaAtiva.periodo.ano
+      const cartaoId = faturaAtiva.cartaoId
+      
+      for (let i = 2; i <= installments.value; i++) {
+        currentMes++
+        if (currentMes > 12) {
+          currentMes = 1
+          currentAno++
+        }
+        
+        const faturaFutura = await obterOuCriarFaturaParaPeriodo(cartaoId, currentMes, currentAno, compradorSelecionadoId.value)
+        
+        const gastoFuturo = new Gasto({
+          id: crypto.randomUUID(),
+          faturaId: faturaFutura.id,
+          descricao: descricao.value,
+          valorTotal: total,
+          compradorId: compradorSelecionadoId.value,
+          divisoes: [...divisoes],
+          installments: installments.value - i + 1,
+          totalInstallments: installments.value,
+          isLoan: false,
+          borrowerId: null,
+          method: 'card',
+          cardOwner: wizCardOwner.value,
+          grupoParcelasId
+        })
+        await gastoRepo.salvar(gastoFuturo)
+      }
+    } else {
+      const novoGasto = new Gasto({
+        id: crypto.randomUUID(),
+        faturaId: faturaAtiva.id,
+        descricao: wizFlow.value === 'loan' ? (descricao.value.trim() || 'Empréstimo Pessoal') : descricao.value,
+        valorTotal: total,
+        compradorId: compradorSelecionadoId.value,
+        divisoes,
+        installments: installments.value,
+        totalInstallments: installments.value,
+        isLoan: wizFlow.value === 'loan',
+        borrowerId: borrowerId.value,
+        method: wizPayment.value,
+        cardOwner: wizCardOwner.value,
+        grupoParcelasId: null
+      })
+      await gastoRepo.salvar(novoGasto)
+    }
+
     reset()
   }
 

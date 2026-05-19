@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DashboardSaldos from './DashboardSaldos.vue'
 
 describe('DashboardSaldos - Cartões & Faturas', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   it('deve exibir as faturas fechadas aguardando acerto', () => {
     const wrapper = mount(DashboardSaldos, {
       props: {
