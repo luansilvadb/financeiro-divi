@@ -75,12 +75,21 @@
 }
 
 @layer base {
+  :root {
+    --scrollbar-compensate: 0px;
+  }
+
   body {
     @apply bg-canvas text-graphite font-sans antialiased;
+    padding-right: var(--scrollbar-compensate);
   }
 
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .fixed-compensate {
+    padding-right: var(--scrollbar-compensate) !important;
   }
 
   /* Custom Scrollbar Global integrada ao Design System do DIVI */

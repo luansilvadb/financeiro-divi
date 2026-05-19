@@ -71,7 +71,7 @@ const isPeriodLocked = ref(false)
     <Transition name="fab-zoom">
       <div 
         v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-        class="fixed bottom-6 left-0 right-0 z-[100] flex justify-center pointer-events-none"
+        class="fixed bottom-6 left-0 right-0 z-[100] flex justify-center pointer-events-none fixed-compensate"
         data-fixed-wrapper
       >
         <button

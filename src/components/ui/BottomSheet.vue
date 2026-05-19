@@ -85,17 +85,7 @@ const lockScroll = () => {
   const scrollbarWidth = getScrollbarWidth()
   document.body.style.overflow = 'hidden'
   if (scrollbarWidth > 0) {
-    document.body.style.paddingRight = `${scrollbarWidth}px`
-    // Compensar a barra de navegação inferior fixa (BottomTabBar)
-    const nav = document.querySelector('nav')
-    if (nav) {
-      nav.style.paddingRight = `${scrollbarWidth}px`
-    }
-    // Compensar wrappers com elementos centralizados (FAB)
-    const wrappers = document.querySelectorAll('[data-fixed-wrapper]')
-    wrappers.forEach(el => {
-      (el as HTMLElement).style.paddingRight = `${scrollbarWidth}px`
-    })
+    document.documentElement.style.setProperty('--scrollbar-compensate', `${scrollbarWidth}px`)
   }
 }
 
@@ -103,15 +93,7 @@ const unlockScroll = () => {
   // Só remove a trava se não houver outros bottomsheets ativos
   if (!isAnyBottomSheetOpen.value) {
     document.body.style.overflow = ''
-    document.body.style.paddingRight = ''
-    const nav = document.querySelector('nav')
-    if (nav) {
-      nav.style.paddingRight = ''
-    }
-    const wrappers = document.querySelectorAll('[data-fixed-wrapper]')
-    wrappers.forEach(el => {
-      (el as HTMLElement).style.paddingRight = ''
-    })
+    document.documentElement.style.setProperty('--scrollbar-compensate', '0px')
   }
 }
 
@@ -132,15 +114,7 @@ onUnmounted(() => {
   if (props.modelValue) {
     registerClose()
     document.body.style.overflow = ''
-    document.body.style.paddingRight = ''
-    const nav = document.querySelector('nav')
-    if (nav) {
-      nav.style.paddingRight = ''
-    }
-    const wrappers = document.querySelectorAll('[data-fixed-wrapper]')
-    wrappers.forEach(el => {
-      (el as HTMLElement).style.paddingRight = ''
-    })
+    document.documentElement.style.setProperty('--scrollbar-compensate', '0px')
   }
 })
 

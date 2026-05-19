@@ -15,7 +15,7 @@ const tabs = [
 </script>
 
 <template>
-  <nav class="fixed bottom-0 left-0 right-0 z-30 bg-card shadow-[0_-1px_0_var(--color-stone)] pb-safe">
+  <nav class="fixed bottom-0 left-0 right-0 z-30 bg-card shadow-[0_-1px_0_var(--color-stone)] pb-safe fixed-compensate">
     <div class="flex items-center justify-around h-16">
       <template v-for="(tab, index) in tabs" :key="tab.id">
         <!-- Divisor/Espaço para o FAB no centro -->
