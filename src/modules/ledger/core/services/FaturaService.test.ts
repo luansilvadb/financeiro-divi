@@ -16,7 +16,7 @@ describe('FaturaService', () => {
     const acertoRepo = { excluirPorFatura: vi.fn(), salvar: vi.fn() }
 
     const service = new FaturaService(faturaRepo as any, gastoRepo as any, antRepo as any, acertoRepo as any)
-    await service.fecharFatura('f1', new Date())
+    await service.fecharFatura('f1', undefined, new Date())
 
     expect(fatura.status).toBe('FECHADA')
     expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
