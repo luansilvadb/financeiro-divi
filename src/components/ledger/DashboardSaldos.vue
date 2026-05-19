@@ -347,21 +347,18 @@ const excluirGasto = async (id: string) => {
     <section class="space-y-4">
       <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
         <!-- Cabeçalho Padronizado -->
-        <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
-          <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+        <div class="py-7 px-6 border-b border-stone bg-parchment flex items-center">
+          <div class="flex items-center gap-5">
+            <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
               <TrendingUp class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="font-bold text-lg leading-tight text-charcoal">Saldos Unificados</h3>
-              <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+              <h3 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Saldos Unificados</h3>
+              <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5 font-medium">
                 Créditos e débitos da casa
               </p>
             </div>
           </div>
-          <span class="shrink-0 text-[10px] font-black text-meadow bg-meadow/10 px-3 py-1 rounded-full border border-meadow/20 uppercase tracking-widest">
-            LIVE
-          </span>
         </div>
 
         <div class="p-6 space-y-4 relative z-10">
