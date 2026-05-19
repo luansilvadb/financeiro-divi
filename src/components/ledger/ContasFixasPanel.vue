@@ -37,11 +37,11 @@ const obterNomeMembro = (id?: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
 
-const triggerRipple = (event: MouseEvent) => {
+const startRipple = (event: PointerEvent) => {
   const card = event.currentTarget as HTMLElement
   if (!card) return
 
-  const existingRipples = card.getElementsByClassName('ripple')
+  const existingRipples = card.getElementsByClassName('ripple-effect')
   for (const r of existingRipples) {
     r.remove()
   }
@@ -54,15 +54,34 @@ const triggerRipple = (event: MouseEvent) => {
   circle.style.width = circle.style.height = `${diameter}px`
   circle.style.left = `${event.clientX - rect.left - radius}px`
   circle.style.top = `${event.clientY - rect.top - radius}px`
-  circle.classList.add('ripple')
+  circle.classList.add('ripple-effect')
 
   card.appendChild(circle)
+  ;(card as any)._activeRipple = circle
+
+  // Forçar reflow
+  circle.offsetWidth
+
+  circle.classList.add('is-held')
 }
 
-const handleCardClick = (event: MouseEvent, bill: ContaFixa) => {
+const endRipple = (event: PointerEvent) => {
+  const card = event.currentTarget as HTMLElement
+  if (!card) return
+
+  const circle = (card as any)._activeRipple as HTMLElement
+  if (!circle) return
+
+  circle.classList.add('is-fading')
+  delete (card as any)._activeRipple
+
+  setTimeout(() => {
+    circle.remove()
+  }, 400)
+}
+
+const handleCardClick = (bill: ContaFixa) => {
   if (props.isMonthLocked) return
-  triggerRipple(event)
-  
   if (verificarPaga(bill)) {
     emit('estornar', bill)
   } else {
@@ -119,7 +138,11 @@ const handleCardClick = (event: MouseEvent, bill: ContaFixa) => {
         <div 
           v-for="bill in contasFixas" 
           :key="bill.id" 
-          @click="handleCardClick($event, bill)"
+          @click="handleCardClick(bill)"
+          @pointerdown="startRipple"
+          @pointerup="endRipple"
+          @pointerleave="endRipple"
+          @pointercancel="endRipple"
           class="group relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none ripple-container active:scale-[0.98] md:active:scale-100 transform overflow-hidden"
           :class="[
             verificarPaga(bill) 
@@ -177,18 +200,19 @@ const handleCardClick = (event: MouseEvent, bill: ContaFixa) => {
   position: relative;
   overflow: hidden;
 }
-:deep(.ripple) {
+:deep(.ripple-effect) {
   position: absolute;
   border-radius: 50%;
-  transform: scale(0);
-  animation: ripple-animation 600ms linear;
   background-color: rgba(0, 0, 0, 0.08);
   pointer-events: none;
+  transform: scale(0);
+  opacity: 0.15;
+  transition: transform 450ms cubic-bezier(0.1, 0.8, 0.3, 1), opacity 350ms ease-out;
 }
-@keyframes ripple-animation {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
+:deep(.ripple-effect.is-held) {
+  transform: scale(2.5);
+}
+:deep(.ripple-effect.is-fading) {
+  opacity: 0;
 }
 </style>
