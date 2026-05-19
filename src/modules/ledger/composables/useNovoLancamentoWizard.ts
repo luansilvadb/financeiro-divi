@@ -71,7 +71,33 @@ function buildDivisoes(
   }
 }
 
-async function obterOuCriarFaturaParaPeriodo(
+function obterPeriodoCorrente(): { mes: number; ano: number } {
+  const periodoSalvoRaw = localStorage.getItem('divi_periodo_selecionado')
+  if (periodoSalvoRaw) {
+    try {
+      const parsed = JSON.parse(periodoSalvoRaw)
+      if (parsed.mes && parsed.ano) {
+        return { mes: Number(parsed.mes), ano: Number(parsed.ano) }
+      }
+    } catch (e) {}
+  }
+  return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
+}
+
+async function determinarCartaoId(
+  paymentMethod: 'pix' | 'card',
+  cardOwnerId: string | null,
+  compradorId: string
+): Promise<string> {
+  const todosCartoes = await cartaoRepo.listarTodos()
+  if (paymentMethod === 'card' && cardOwnerId) {
+    const cartao = todosCartoes.find(c => c.responsavelPadraoId === compradorId || c.id === cardOwnerId)
+    if (cartao) return cartao.id
+  }
+  return todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'
+}
+
+async function obterOuCriarFatura(
   cartaoId: string,
   mes: number,
   ano: number,
@@ -93,57 +119,24 @@ async function obterOuCriarFaturaParaPeriodo(
   return fatura
 }
 
+async function obterOuCriarFaturaParaPeriodo(
+  cartaoId: string,
+  mes: number,
+  ano: number,
+  responsavelId: string
+): Promise<any> {
+  return obterOuCriarFatura(cartaoId, mes, ano, responsavelId)
+}
+
 // Helper: Find active invoice for transaction
 async function findActiveFatura(
   paymentMethod: 'pix' | 'card',
   cardOwnerId: string | null,
   compradorId: string
 ): Promise<any> {
-  const periodoSalvoRaw = localStorage.getItem('divi_periodo_selecionado')
-  let mes = new Date().getMonth() + 1
-  let ano = new Date().getFullYear()
-  if (periodoSalvoRaw) {
-    try {
-      const parsed = JSON.parse(periodoSalvoRaw)
-      mes = parsed.mes
-      ano = parsed.ano
-    } catch(e) {}
-  }
-
-  const todasFaturas = await faturaRepo.listarTodas()
-  
-  let cartaoId = ''
-  if (paymentMethod === 'card' && cardOwnerId) {
-    const todosCartoes = await cartaoRepo.listarTodos()
-    const cartao = todosCartoes.find(c => c.responsavelPadraoId === compradorId || c.id === cardOwnerId)
-    if (cartao) {
-      cartaoId = cartao.id
-    }
-  }
-
-  if (!cartaoId) {
-    const todosCartoes = await cartaoRepo.listarTodos()
-    if (todosCartoes.length > 0) {
-      cartaoId = todosCartoes[0].id
-    } else {
-      cartaoId = 'PIX_DEFAULT_ID'
-    }
-  }
-
-  let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
-  if (!fatura) {
-    const { Fatura } = await import('../core/domain/Fatura')
-    fatura = new Fatura({
-      id: crypto.randomUUID(),
-      cartaoId,
-      periodo: { mes, ano },
-      responsavelId: compradorId,
-      status: 'ABERTA'
-    })
-    await faturaRepo.salvar(fatura)
-  }
-
-  return fatura
+  const { mes, ano } = obterPeriodoCorrente()
+  const cartaoId = await determinarCartaoId(paymentMethod, cardOwnerId, compradorId)
+  return obterOuCriarFatura(cartaoId, mes, ano, compradorId)
 }
 
 export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] = []) {
