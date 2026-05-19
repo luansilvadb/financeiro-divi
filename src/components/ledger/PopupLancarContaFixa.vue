@@ -1,6 +1,6 @@
 <template>
   <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) $emit('cancel') }" width-class="md:w-[420px]">
-    <div class="p-5 sm:p-6 relative text-graphite space-y-5 flex flex-col flex-grow">
+    <div class="p-6 sm:p-8 space-y-5 flex flex-col flex-grow overflow-y-auto custom-scrollbar">
       <div class="flex items-start gap-3">
         <div class="w-10 h-10 rounded-full bg-parchment shadow-subtle flex items-center justify-center text-base shrink-0">
           {{ bill?.icon }}
