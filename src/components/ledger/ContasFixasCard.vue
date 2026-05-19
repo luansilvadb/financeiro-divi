@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
-import { Settings } from 'lucide-vue-next'
-import Button from '../ui/Button.vue'
 
 const props = defineProps<{
   bill: ContaFixa
