@@ -127,7 +127,7 @@ const listaMesesSeletor = computed(() => {
   const hoje = new Date()
   const list = []
 
-  for (let i = -24; i <= 24; i++) {
+  for (let i = -12; i <= 12; i++) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
     const mesIdx = d.getMonth() + 1
     const anoIdx = d.getFullYear()
