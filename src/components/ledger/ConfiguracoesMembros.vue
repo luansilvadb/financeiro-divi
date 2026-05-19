@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMembros } from '../../modules/ledger/composables/useMembros'
-import { UserPlus, UserMinus, Users, CreditCard } from 'lucide-vue-next'
+import { UserMinus, UserCheck, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from './ConfiguracoesCartoes.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import SectionLabel from '../ui/SectionLabel.vue'
 
-const { membros, adicionarMembro, desativarMembro } = useMembros()
+const { membros, adicionarMembro, desativarMembro, ativarMembro } = useMembros()
 const novoNome = ref('')
 const activeTab = ref<'membros' | 'cartoes'>('membros')
 
@@ -22,71 +22,91 @@ const handleAdicionar = async () => {
 </script>
 
 <template>
-  <div class="space-y-12">
-    <div class="flex items-center justify-between">
-      <div class="space-y-2">
-        <SectionLabel>Gerenciamento</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Ajustes <span class="text-ember">Gerais</span></h2>
+  <div class="flex flex-col">
+    <!-- Header e Abas fixas no topo do fluxo -->
+    <div class="shrink-0 space-y-8 mb-8">
+      <div class="flex items-center justify-between">
+        <div class="space-y-2">
+          <SectionLabel>Gerenciamento</SectionLabel>
+          <h2 class="text-3xl font-display text-charcoal">Ajustes <span class="text-ember">Gerais</span></h2>
+        </div>
       </div>
-    </div>
 
-    <!-- Abas -->
-    <div class="flex gap-8 border-b border-stone">
+    <!-- Abas Estilo Pílula -->
+    <div class="flex p-1.5 bg-parchment rounded-full w-full sm:w-fit border border-stone">
       <button 
         @click="activeTab = 'membros'"
-        :class="[
-          'pb-4 text-xs font-bold uppercase tracking-widest transition-all duration-200 flex items-center gap-2 border-b-2 mb-[-1px]',
-          activeTab === 'membros' 
-            ? 'border-ember text-ember' 
-            : 'border-transparent text-ash hover:text-charcoal'
-        ]"
+        class="flex-1 sm:flex-none relative px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
+        :class="activeTab === 'membros' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
       >
-        <Users class="w-4 h-4" />
-        Moradores
+        <div 
+          class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
+          :class="activeTab === 'membros' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'"
+        />
+        <Users 
+          class="w-4 h-4 relative z-10 transition-colors duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]" 
+          :class="activeTab === 'membros' ? 'text-ember scale-110' : 'scale-100 group-hover:text-ember/50'" 
+        />
+        <span class="relative z-10">Moradores</span>
       </button>
+
       <button 
         @click="activeTab = 'cartoes'"
-        :class="[
-          'pb-4 text-xs font-bold uppercase tracking-widest transition-all duration-200 flex items-center gap-2 border-b-2 mb-[-1px]',
-          activeTab === 'cartoes' 
-            ? 'border-ember text-ember' 
-            : 'border-transparent text-ash hover:text-charcoal'
-        ]"
+        class="flex-1 sm:flex-none relative px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
+        :class="activeTab === 'cartoes' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
       >
-        <CreditCard class="w-4 h-4" />
-        Cartões
+        <div 
+          class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
+          :class="activeTab === 'cartoes' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'"
+        />
+        <CreditCard 
+          class="w-4 h-4 relative z-10 transition-colors duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]" 
+          :class="activeTab === 'cartoes' ? 'text-ember scale-110' : 'scale-100 group-hover:text-ember/50'" 
+        />
+        <span class="relative z-10">Cartões</span>
       </button>
     </div>
+    </div>
 
-    <!-- Conteúdo Aba 1: Moradores -->
-    <div v-if="activeTab === 'membros'" class="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+    <!-- Conteúdo das Abas: Grid Stacking para estabilizar a altura -->
+    <div class="grid relative items-start">
+      <!-- Conteúdo Aba 1: Moradores -->
+      <div 
+        class="col-start-1 row-start-1 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] space-y-8"
+        :class="activeTab === 'membros' ? 'opacity-100 translate-y-0 z-10 delay-100' : 'opacity-0 translate-y-4 pointer-events-none z-0'"
+      >
       <!-- Adicionar Novo -->
-      <Card class="p-8 shadow-subtle bg-card rounded-card space-y-4">
-        <h3 class="text-[10px] font-bold text-ash uppercase tracking-widest ml-1">Novo Morador</h3>
-        <div class="flex gap-3">
-          <input 
-            v-model="novoNome"
-            type="text" 
-            placeholder="Nome do morador..."
-            class="flex-1 px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
-            @keyup.enter="handleAdicionar"
-          />
+      <Card class="p-8 shadow-subtle bg-card rounded-card space-y-6">
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Nome do Morador</label>
+            <input 
+              v-model="novoNome"
+              type="text" 
+              placeholder="Ex: Luan, João, etc."
+              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+              @keyup.enter="handleAdicionar"
+            />
+          </div>
           <Button 
             @click="handleAdicionar"
             :disabled="!novoNome.trim()"
-            size="icon"
-            class="h-12 w-12 shrink-0 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center"
-            :class="novoNome.trim() 
-              ? 'bg-ember/10 text-ember hover:bg-ember/20 shadow-sm border border-transparent' 
-              : 'bg-stone/40 text-ash/40 border border-stone/20 opacity-50'"
+            class="w-full h-12"
+            variant="primary"
           >
-            <UserPlus class="w-5 h-5" />
+            Adicionar Morador
           </Button>
         </div>
       </Card>
 
       <!-- Lista de Membros -->
-      <div class="grid gap-3">
+      <div class="space-y-4">
+        <div class="flex items-center gap-2 mb-2">
+          <Users class="w-4 h-4 text-ash" />
+          <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Moradores Ativos</h4>
+        </div>
+        
+        <div class="grid gap-3">
         <Card 
           v-for="membro in membros" 
           :key="membro.id"
@@ -113,13 +133,33 @@ const handleAdicionar = async () => {
           >
             <UserMinus class="w-4 h-4" />
           </Button>
-        </Card>
-      </div>
-    </div>
 
-    <!-- Conteúdo Aba 2: Cartões -->
-    <div v-else-if="activeTab === 'cartoes'" class="animate-in fade-in slide-in-from-bottom-4">
-      <ConfiguracoesCartoes />
+          <Button 
+            v-else
+            variant="secondary"
+            size="icon"
+            @click="ativarMembro(membro.id)"
+            class="bg-meadow/10 text-meadow hover:bg-meadow/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
+            title="Reativar morador"
+          >
+            <UserCheck class="w-4 h-4" />
+          </Button>
+        </Card>
+        
+        <div v-if="membros.length === 0" class="text-center py-10 border border-dashed border-stone rounded-xl">
+          <p class="text-sm text-ash italic">Nenhum morador cadastrado.</p>
+        </div>
+        </div>
+      </div>
+      </div> <!-- Fecha Aba 1 -->
+
+      <!-- Conteúdo Aba 2: Cartões -->
+      <div 
+        class="col-start-1 row-start-1 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
+        :class="activeTab === 'cartoes' ? 'opacity-100 translate-y-0 z-10 delay-100' : 'opacity-0 translate-y-4 pointer-events-none z-0'"
+      >
+        <ConfiguracoesCartoes />
+      </div>
     </div>
   </div>
 </template>

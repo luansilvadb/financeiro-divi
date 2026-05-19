@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue'
 import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
 import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
 import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
-import Button from './components/ui/Button.vue'
 import BottomSheet from './components/ui/BottomSheet.vue'
 import { Plus } from 'lucide-vue-next'
 import { useMembros } from './modules/ledger/composables/useMembros'
@@ -42,6 +41,7 @@ const handleSalvarTransacao = async () => {
   await inicializarCartoes()
   currentView.value = 'dashboard'
 }
+const isPeriodLocked = ref(false)
 </script>
 
 <template>
@@ -62,6 +62,7 @@ const handleSalvarTransacao = async () => {
           @fecharFatura="fecharFaturaManual"
           @reabrirFatura="reabrirFaturaManual"
           @openSettings="currentView = 'settings'"
+          @periodoStatusChanged="(locked) => isPeriodLocked = locked"
         />
       </main>
     </div>
@@ -70,15 +71,15 @@ const handleSalvarTransacao = async () => {
 
     <!-- Floating Action Button (FAB) -->
     <Transition name="fab-zoom">
-      <Button
+      <button
         v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-        variant="primary"
-        class="fixed bottom-6 left-0 right-0 mx-auto w-14 h-14 p-0 rounded-full shadow-lg z-[100] active:scale-95 border-4 border-card"
+        :disabled="isPeriodLocked"
+        class="fixed bottom-6 left-0 right-0 mx-auto w-14 h-14 rounded-full shadow-xl z-[100] active:scale-95 flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-zinc-800 to-black hover:from-zinc-700 hover:to-zinc-950 text-white border border-zinc-700/50 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:from-zinc-900 disabled:to-zinc-950 disabled:text-zinc-600 disabled:border-zinc-850 disabled:scale-100 disabled:shadow-none"
         @click="currentView = 'wizard'"
         data-testid="novo-lancamento-fab"
       >
         <Plus class="w-7 h-7 stroke-[3px]" />
-      </Button>
+      </button>
     </Transition>
 
     <!-- BottomSheet do Wizard de Novo Lançamento -->
@@ -89,6 +90,7 @@ const handleSalvarTransacao = async () => {
       max-height="95dvh"
     >
       <NovoLancamentoWizard 
+        v-if="currentView === 'wizard'"
         :membros="ativos"
         @salvar="handleSalvarTransacao"
         @cancelar="currentView = 'dashboard'"
@@ -126,13 +128,13 @@ const handleSalvarTransacao = async () => {
 /* Zoom effect for FAB */
 .fab-zoom-enter-active,
 .fab-zoom-leave-active {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+  transition: transform 0.25s ease-out, opacity 0.2s ease;
   transform-origin: center center;
 }
 
 .fab-zoom-enter-from,
 .fab-zoom-leave-to {
   opacity: 0;
-  transform: scale(0);
+  transform: scale(0.8);
 }
 </style>

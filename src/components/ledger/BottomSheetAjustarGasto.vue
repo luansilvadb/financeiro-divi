@@ -4,7 +4,6 @@ import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import Button from '../ui/Button.vue'
-import SectionLabel from '../ui/SectionLabel.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
 import { Check, CreditCard, Wallet, Users, Info } from 'lucide-vue-next'
 
@@ -116,10 +115,9 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <BottomSheet :model-value="props.visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[460px]">
-    <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
-        <div class="space-y-2 text-center">
-          <SectionLabel class="mx-auto">Ajuste</SectionLabel>
+  <BottomSheet :model-value="props.visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[460px]" max-height="95dvh">
+    <div class="p-6 sm:p-8 pb-10 sm:pb-12 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
+        <div class="text-center">
           <h3 class="text-3xl font-display text-charcoal">Corrigir <span class="text-ember">Lançamento</span></h3>
         </div>
 
