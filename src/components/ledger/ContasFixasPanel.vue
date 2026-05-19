@@ -19,10 +19,6 @@ const emit = defineEmits<{
   (e: 'novo'): void
 }>()
 
-const pagasCount = computed(() => {
-  return props.contasFixas.filter(c => verificarPaga(c)).length
-})
-
 const verificarPaga = (conta: ContaFixa) => {
   return props.gastos.some(g => g.recurringBillId === conta.id)
 }
