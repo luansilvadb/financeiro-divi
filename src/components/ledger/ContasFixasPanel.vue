@@ -3,7 +3,6 @@ import { } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { Repeat, Plus } from 'lucide-vue-next'
-import Button from '../ui/Button.vue'
 import Card from '../ui/Card.vue'
 import ContasFixasCard from './ContasFixasCard.vue'
 
@@ -84,20 +83,17 @@ const obterNomeMembro = (id?: string) => {
 
       <!-- Widgets de Contas Fixas (Se existirem) -->
       <template v-else>
-        <ContasFixasCard
-          v-for="bill in contasFixas"
-          :key="bill.id"
+        <ContasFixasCard 
+          v-for="bill in contasFixas" 
+          :key="bill.id" 
           :bill="bill"
           :paga="verificarPaga(bill)"
-          :valorReal="obterStatusGasto(bill)?.valorReal ?? null"
-          :pagoPorNome="obterNomeMembro(obterStatusGasto(bill)?.pagoPor)"
-          :isMonthLocked="isMonthLocked"
-          tapColor="rgba(235, 94, 40, 0.15)"
-          holdColor="rgba(235, 94, 40, 0.3)"
-          @lancar="$emit('lancar', $event)"
-          @estornar="$emit('estornar', $event)"
-          @configurar="$emit('configurar', $event)"
-          :data-testid="`conta-fixa-card-${bill.id}`"
+          :status-gasto="obterStatusGasto(bill)"
+          :obter-nome-membro="obterNomeMembro"
+          :is-month-locked="isMonthLocked"
+          @lancar="$emit('lancar', bill)"
+          @estornar="$emit('estornar', bill)"
+          @configurar="$emit('configurar', bill)"
         />
       </template>
 

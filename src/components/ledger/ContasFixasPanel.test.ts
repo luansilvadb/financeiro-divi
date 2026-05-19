@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import ContasFixasCard from './ContasFixasCard.vue'
 
 const contasFixas: ContaFixa[] = [
   {
@@ -67,6 +66,8 @@ describe('ContasFixasPanel', () => {
   })
 
   it('mantem os eventos de lancar, estornar, configurar e novo', async () => {
+    vi.useFakeTimers()
+
     const wrapper = mount(ContasFixasPanel, {
       props: {
         contasFixas,
@@ -76,24 +77,26 @@ describe('ContasFixasPanel', () => {
       },
     })
 
-    // Toque simples (pointerdown -> pointerup) no card não pago lança o pagamento
+    // Simula tap rápido no card da conta energia (não paga) -> deve emitir 'lancar'
     const cardEnergia = wrapper.find('[data-testid="conta-fixa-card-energia"]')
     await cardEnergia.trigger('pointerdown')
     await cardEnergia.trigger('pointerup')
 
-    // Estorno (hold) simulado via emissão do evento do card pago
+    // Simula long press no card da conta aluguel (paga) -> deve emitir 'estornar'
     const cardAluguel = wrapper.find('[data-testid="conta-fixa-card-aluguel"]')
-    await cardAluguel.findComponent(ContasFixasCard).vm.$emit('estornar', contasFixas[0])
+    await cardAluguel.trigger('pointerdown')
+    
+    // Avança o tempo simulado para acionar o long press (1000ms)
+    await vi.advanceTimersByTimeAsync(1000)
 
-    // Clique na engrenagem de configuração
     await wrapper.find('[data-testid="configurar-conta-aluguel"]').trigger('click')
-
-    // Clique no botão de adicionar conta fixa
     await wrapper.find('[data-testid="nova-conta-fixa"]').trigger('click')
 
     expect(wrapper.emitted('lancar')?.[0]).toEqual([contasFixas[1]])
     expect(wrapper.emitted('estornar')?.[0]).toEqual([contasFixas[0]])
     expect(wrapper.emitted('configurar')?.[0]).toEqual([contasFixas[0]])
     expect(wrapper.emitted('novo')).toHaveLength(1)
+
+    vi.useRealTimers()
   })
 })
