@@ -190,7 +190,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     // Ativa dropdown via Enter
     await trigger.trigger('keydown.enter')
     await wrapper.vm.$nextTick()
-    expect(wrapper.vm.isDropdownAbertosOpen).toBe(true)
+    expect((wrapper.vm as any).isDropdownAbertosOpen).toBe(true)
     expect(trigger.attributes('aria-expanded')).toBe('true')
 
     // 2. Testa itens do dropdown de meses abertos
@@ -208,9 +208,9 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     // Seleciona período arquivado via Teclado (Space)
     await archivedItem.trigger('keydown.space')
     await wrapper.vm.$nextTick()
-    expect(wrapper.vm.periodoSelecionado.mes).toBe(4)
-    expect(wrapper.vm.periodoSelecionado.ano).toBe(2026)
-    expect(wrapper.vm.showBottomSheetHistorico).toBe(false)
+    expect((wrapper.vm as any).periodoSelecionado.mes).toBe(4)
+    expect((wrapper.vm as any).periodoSelecionado.ano).toBe(2026)
+    expect((wrapper.vm as any).showBottomSheetHistorico).toBe(false)
   })
 
   it('deve disparar openSettings ao clicar no botão de configurações e possuir atributos de acessibilidade', async () => {
