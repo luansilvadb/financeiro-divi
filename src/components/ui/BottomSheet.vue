@@ -87,11 +87,20 @@ watch(() => props.modelValue, (isOpen) => {
     document.body.style.overflow = 'hidden'
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`
+      // Compensar a barra de navegação inferior fixa (BottomTabBar)
+      const nav = document.querySelector('nav')
+      if (nav) {
+        nav.style.paddingRight = `${scrollbarWidth}px`
+      }
     }
   } else {
     registerClose()
     document.body.style.overflow = ''
     document.body.style.paddingRight = ''
+    const nav = document.querySelector('nav')
+    if (nav) {
+      nav.style.paddingRight = ''
+    }
   }
 }, { immediate: true })
 
@@ -100,6 +109,10 @@ onUnmounted(() => {
     registerClose()
     document.body.style.overflow = ''
     document.body.style.paddingRight = ''
+    const nav = document.querySelector('nav')
+    if (nav) {
+      nav.style.paddingRight = ''
+    }
   }
 })
 
