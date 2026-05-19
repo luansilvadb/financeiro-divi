@@ -13,11 +13,13 @@ const cartaoRepo = new LocalStorageCartaoRepository()
 
 // Helper: Validate loan flow advancement
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
-  if (step === 2) return !!compradorId
-  if (step === 3) return !!borrowerId
-  if (step === 4) return valor > 0
-  if (step === 5) return descricao.trim().length > 0
-  return false
+  const rules: Record<number, () => boolean> = {
+    2: () => !!compradorId,
+    3: () => !!borrowerId,
+    4: () => valor > 0,
+    5: () => descricao.trim().length > 0
+  }
+  return rules[step]?.() ?? false
 }
 
 // Helper: Validate expense flow advancement
@@ -30,18 +32,19 @@ function canAdvanceExpense(
   participantes: string[],
   valoresDivisao: Record<string, number>
 ): boolean {
-  if (step === 2) return !!compradorId
-  if (step === 3) return valor > 0
-  if (step === 4) return descricao.trim().length > 0
-  if (step === 5) {
-    if (modoDivisao === 'IGUAL') {
-      return participantes.length > 0
-    } else {
+  const rules: Record<number, () => boolean> = {
+    2: () => !!compradorId,
+    3: () => valor > 0,
+    4: () => descricao.trim().length > 0,
+    5: () => {
+      if (modoDivisao === 'IGUAL') {
+        return participantes.length > 0
+      }
       const soma = participantes.reduce((acc, id) => acc + (valoresDivisao[id] || 0), 0)
       return Math.abs(soma - valor) < 0.01
     }
   }
-  return false
+  return rules[step]?.() ?? false
 }
 
 // Helper: Build divisoes based on flow type
