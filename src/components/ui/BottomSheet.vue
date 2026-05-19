@@ -182,12 +182,21 @@ const onTouchEnd = (e: TouchEvent) => {
   const delta = e.changedTouches[0].clientY - touchStartY.value
   const currentTarget = e.currentTarget as HTMLElement
   
-  // Limpa estilos de arrasto inline para permitir que a transição padrão do CSS atue
-  currentTarget.style.transition = ''
-  currentTarget.style.transform = ''
-  
   if (delta > 100) {
+    // Desliza suavemente a partir do ponto atual até o final
+    currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    currentTarget.style.transform = 'translateY(100%)'
     close()
+  } else {
+    // Volta suavemente para o topo
+    currentTarget.style.transition = 'transform 0.25s cubic-bezier(0.19, 1, 0.22, 1)'
+    currentTarget.style.transform = 'translateY(0px)'
+    setTimeout(() => {
+      if (props.modelValue) {
+        currentTarget.style.transition = ''
+        currentTarget.style.transform = ''
+      }
+    }, 250)
   }
 }
 
@@ -210,13 +219,22 @@ const onMouseDown = (e: MouseEvent) => {
 
   const onUp = (ev: MouseEvent) => {
     const delta = ev.clientY - startY
-    // Limpa estilos de arrasto inline para permitir que a transição padrão do CSS atue
-    currentTarget.style.transition = ''
-    currentTarget.style.transform = ''
     
     if (delta > 100) {
+      currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      currentTarget.style.transform = 'translateY(100%)'
       close()
+    } else {
+      currentTarget.style.transition = 'transform 0.25s cubic-bezier(0.19, 1, 0.22, 1)'
+      currentTarget.style.transform = 'translateY(0px)'
+      setTimeout(() => {
+        if (props.modelValue) {
+          currentTarget.style.transition = ''
+          currentTarget.style.transform = ''
+        }
+      }, 250)
     }
+    
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
   }
