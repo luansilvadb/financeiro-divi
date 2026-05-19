@@ -242,6 +242,7 @@ const confirmarAjusteGasto = async (dados: {
 // Estado de Pix Parcial por acerto
 const acertoPixId = ref<string | null>(null)
 const valorPixInput = ref<number>(0)
+const isSubmittingPix = ref(false)
 
 // Inicia Pix
 const iniciarPix = (acerto: any) => {
@@ -252,15 +253,25 @@ const iniciarPix = (acerto: any) => {
 // Envia reembolso Pix parcial/total
 const enviarReembolsoPix = async (acertoId: string) => {
   if (valorPixInput.value <= 0) return
-  await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
-  acertoPixId.value = null
-  await useCartoesEFaturas().inicializar()
+  isSubmittingPix.value = true
+  try {
+    await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
+    acertoPixId.value = null
+    await useCartoesEFaturas().inicializar()
+  } finally {
+    isSubmittingPix.value = false
+  }
 }
 
 const quitarComAjuste = async (acertoId: string) => {
-  await quitarAcertoMembro(acertoId)
-  acertoPixId.value = null
-  await useCartoesEFaturas().inicializar()
+  isSubmittingPix.value = true
+  try {
+    await quitarAcertoMembro(acertoId)
+    acertoPixId.value = null
+    await useCartoesEFaturas().inicializar()
+  } finally {
+    isSubmittingPix.value = false
+  }
 }
 
 // --- INTEGRAÇÃO SENIOR V18 (FASES 2-5) ---
@@ -430,8 +441,14 @@ const excluirGasto = async (id: string) => {
       <!-- Coluna Esquerda: Mês Selector -->
       <div class="flex-1">
         <div 
-          class="flex flex-col cursor-pointer group inline-block"
+          class="flex flex-col cursor-pointer group inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-md p-1 -ml-1 transition-all"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+          aria-label="Selecionar período"
           @click="showBottomSheetHistorico = true"
+          @keydown.enter.prevent="showBottomSheetHistorico = true"
+          @keydown.space.prevent="showBottomSheetHistorico = true"
         >
           <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1 flex items-center gap-1 group-hover:text-ember transition-colors">
             {{ currentYear }}
@@ -455,7 +472,9 @@ const excluirGasto = async (id: string) => {
       <div class="flex-1 flex justify-end">
         <button 
           @click="$emit('openSettings')" 
-          class="w-11 h-11 bg-stone/30 hover:bg-stone/50 rounded-2xl flex items-center justify-center transition-colors border border-stone/20"
+          class="w-11 h-11 bg-stone/30 hover:bg-stone/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-2xl flex items-center justify-center transition-colors border border-stone/20"
+          aria-label="Configurações"
+          title="Configurações"
         >
           <Settings class="w-5 h-5 text-graphite" />
         </button>
@@ -549,14 +568,21 @@ const excluirGasto = async (id: string) => {
                   </p>
                 </div>
               </div>
-              <Button 
-                @click="abrirBottomSheetNetting(t)"
-                :disabled="faturaSelecionadaTrancada"
-                variant="primary"
-                class="w-full md:w-auto"
-              >
-                Confirmar Pix
-              </Button>
+              <div class="w-full md:w-auto flex flex-col items-center">
+                <Button 
+                  @click="abrirBottomSheetNetting(t)"
+                  :disabled="faturaSelecionadaTrancada"
+                  :aria-disabled="faturaSelecionadaTrancada"
+                  :aria-describedby="faturaSelecionadaTrancada ? 'netting-disabled-reason-' + t.from + '-' + t.to : undefined"
+                  variant="primary"
+                  class="w-full"
+                >
+                  Confirmar Pix
+                </Button>
+                <p v-if="faturaSelecionadaTrancada" :id="'netting-disabled-reason-' + t.from + '-' + t.to" class="text-[10px] text-ash mt-1.5 text-center max-w-[150px] leading-tight animate-in fade-in">
+                  Reabra o mês para confirmar
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -668,14 +694,21 @@ const excluirGasto = async (id: string) => {
                         <p :class="['text-sm font-bold', acerto.pago ? 'text-meadow' : 'text-coral']">
                           {{ acerto.pago ? '✓ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') }}
                         </p>
-                        <button v-if="!acerto.pago" @click="iniciarPix(acerto)" class="text-[10px] font-bold text-ember hover:underline mt-1">
-                          Registrar Pix
+                        <button v-if="!acerto.pago" @click="acertoPixId === acerto.id ? acertoPixId = null : iniciarPix(acerto)" class="text-[10px] font-bold text-ember hover:underline mt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember rounded px-1 -ml-1 transition-shadow" :aria-expanded="acertoPixId === acerto.id" :aria-controls="'pix-form-' + acerto.id">
+                          {{ acertoPixId === acerto.id ? 'Cancelar' : 'Registrar Pix' }}
                         </button>
                       </div>
                     </div>
 
                     <!-- Barra de Progresso Minimalist -->
-                    <div class="h-1.5 w-full bg-stone rounded-full overflow-hidden">
+                    <div 
+                      class="h-1.5 w-full bg-stone rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-label="Progresso do pagamento"
+                      :aria-valuenow="Math.round(((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100)"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    >
                       <div 
                         class="h-full bg-ember transition-all duration-500"
                         :style="{ width: `${((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100}%` }"
@@ -683,21 +716,29 @@ const excluirGasto = async (id: string) => {
                     </div>
 
                     <!-- Input de Pix Parcial -->
-                    <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-stone space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div v-if="acertoPixId === acerto.id" :id="'pix-form-' + acerto.id" class="pt-4 border-t border-stone space-y-4 animate-in fade-in slide-in-from-top-2">
                       <div class="flex items-center gap-3">
                         <div class="relative flex-1">
-                          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xs font-bold">R$</span>
+                          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xs font-bold" aria-hidden="true">R$</span>
                           <input 
                             v-model.number="valorPixInput"
                             type="number"
                             step="0.01"
-                            class="w-full pl-9 pr-4 py-2 rounded-lg border border-stone bg-canvas focus:border-ember outline-none text-sm font-bold text-charcoal"
+                            min="0.01"
+                            placeholder="0.00"
+                            :disabled="isSubmittingPix"
+                            @keyup.enter="enviarReembolsoPix(acerto.id)"
+                            aria-label="Valor do reembolso parcial"
+                            class="w-full pl-9 pr-4 py-2 rounded-lg border border-stone bg-canvas focus:border-ember outline-none text-sm font-bold text-charcoal transition-all focus-visible:ring-2 focus-visible:ring-ember focus-visible:border-transparent disabled:opacity-50"
                           />
                         </div>
-                        <Button size="sm" @click="enviarReembolsoPix(acerto.id)">Registrar</Button>
+                        <Button size="sm" @click="enviarReembolsoPix(acerto.id)" :disabled="isSubmittingPix || valorPixInput <= 0">
+                          <span v-if="isSubmittingPix" class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1.5" aria-hidden="true" />
+                          {{ isSubmittingPix ? 'Salvando...' : 'Registrar' }}
+                        </Button>
                       </div>
                       <p class="text-[10px] text-ash">
-                        Ou <button @click="quitarComAjuste(acerto.id)" class="text-ember font-bold underline">Quitar Valor Total</button>
+                        Ou <button @click="quitarComAjuste(acerto.id)" :disabled="isSubmittingPix" class="text-ember font-bold underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ember rounded px-1 -mx-1 transition-shadow disabled:opacity-50 disabled:cursor-not-allowed">Quitar Valor Total</button>
                       </p>
                     </div>
                   </div>
@@ -715,8 +756,14 @@ const excluirGasto = async (id: string) => {
     <section v-if="totalFuturasVencer > 0" class="space-y-4">
       <Card class="overflow-hidden">
         <div 
-          class="p-6 flex justify-between items-center cursor-pointer hover:bg-muted/30 transition-colors"
+          class="p-6 flex justify-between items-center cursor-pointer hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-inset"
+          role="button"
+          tabindex="0"
+          :aria-expanded="showParcelasFuturas"
+          aria-controls="parcelas-futuras-content"
           @click="showParcelasFuturas = !showParcelasFuturas"
+          @keydown.enter.prevent="showParcelasFuturas = !showParcelasFuturas"
+          @keydown.space.prevent="showParcelasFuturas = !showParcelasFuturas"
         >
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
@@ -736,7 +783,7 @@ const excluirGasto = async (id: string) => {
           </div>
         </div>
 
-        <div v-if="showParcelasFuturas" class="border-t border-border p-6 space-y-3 bg-muted/20">
+        <div v-if="showParcelasFuturas" id="parcelas-futuras-content" class="border-t border-border p-6 space-y-3 bg-muted/20">
           <div 
             v-for="p in parcelasFuturasDetalhadas" 
             :key="p.id"
@@ -871,10 +918,17 @@ const excluirGasto = async (id: string) => {
         <!-- Seção: Meses em Aberto (Seletor Premium) -->
         <div class="space-y-3">
           <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Gerenciar Período Aberto</h4>
-          <div class="relative" tabindex="0" @blur="isDropdownAbertosOpen = false">
+          <div class="relative" @blur="isDropdownAbertosOpen = false">
             <div 
               @click="isDropdownAbertosOpen = !isDropdownAbertosOpen"
-              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none flex justify-between items-center"
+              @keydown.enter.prevent="isDropdownAbertosOpen = !isDropdownAbertosOpen"
+              @keydown.space.prevent="isDropdownAbertosOpen = !isDropdownAbertosOpen"
+              role="button"
+              tabindex="0"
+              :aria-expanded="isDropdownAbertosOpen.toString()"
+              aria-haspopup="listbox"
+              aria-label="Gerenciar período aberto"
+              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none flex justify-between items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2"
               :class="isDropdownAbertosOpen ? 'border-ember ring-2 ring-ember/20' : ''"
             >
               <span class="flex items-center gap-2.5">
