@@ -35,22 +35,27 @@ const handleDelete = (id: string) => {
 </script>
 
 <template>
-  <Card class="p-8 shadow-subtle bg-card rounded-card">
-    <div class="flex justify-between items-center mb-6">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-ember/5 flex items-center justify-center">
-          <Clock class="w-5 h-5 text-ember" />
+  <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
+    <!-- Cabeçalho Padronizado -->
+    <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+          <Clock class="w-5 h-5" />
         </div>
         <div>
-          <h3 class="text-sm font-bold text-charcoal uppercase tracking-widest">Registros Recentes</h3>
-          <p class="text-[10px] text-ash font-semibold uppercase tracking-wider mt-0.5">
-            {{ sortedGastos.length }} movimentações
+          <h3 class="font-bold text-lg leading-tight text-charcoal">Últimos Lançamentos</h3>
+          <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+            Atividade recente no período
           </p>
         </div>
       </div>
+      <span class="shrink-0 text-[10px] font-black text-midnight bg-stone px-4 py-1.5 rounded-full uppercase tracking-widest border border-stone/50">
+        {{ sortedGastos.length }} movimentações
+      </span>
     </div>
 
-    <div v-if="sortedGastos.length === 0" class="text-center py-16 border border-dashed border-stone rounded-xl space-y-4 bg-canvas/30">
+    <div class="p-6">
+      <div v-if="sortedGastos.length === 0" class="text-center py-16 border border-dashed border-stone rounded-xl space-y-4 bg-canvas/30">
       <!-- Mascote Azul Celeste com Lupa -->
       <svg viewBox="0 0 100 100" class="w-20 h-20 mx-auto animate-pulse" style="animation-duration: 4s;">
         <!-- Corpo Blob Celeste -->

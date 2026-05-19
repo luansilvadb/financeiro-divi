@@ -13,7 +13,6 @@ import { LocalStorageGastoRepository } from '../../modules/ledger/adapters/Local
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from './BottomSheetConfigurarContaFixa.vue'
-import RevisaoFatura from './dashboard/RevisaoFatura.vue'
 import BottomSheetFecharFatura from './dashboard/BottomSheetFecharFatura.vue'
 import BottomSheetAcertoCompensacao from './dashboard/BottomSheetAcertoCompensacao.vue'
 import ActivityFeed from './ActivityFeed.vue'
@@ -21,7 +20,6 @@ import BottomSheetAjustarGasto from './BottomSheetAjustarGasto.vue'
 import DetalhamentoSaldosCard from './dashboard/DetalhamentoSaldosCard.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
-import SectionLabel from '../ui/SectionLabel.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
 import { 
   Check,
@@ -29,7 +27,6 @@ import {
   TrendingUp, 
   ChevronDown, 
   ChevronUp, 
-  Sparkles, 
   History,
   Settings
 } from 'lucide-vue-next'
@@ -91,9 +88,6 @@ const {
 
 // Wrapper for getCartaoNome to inject props.cartoes
 const getCartaoNome = (cartaoId: string) => getCartaoNomeBase(props.cartoes, cartaoId)
-
-// Estado de revisão imersiva (Gap 2)
-const faturaSobRevisao = ref<any | null>(null)
 
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
@@ -311,16 +305,7 @@ const excluirGasto = async (id: string) => {
 </script>
 
 <template>
-  <!-- Modo de Revisão Imersiva (Gap 2) -->
-  <RevisaoFatura 
-    v-if="faturaSobRevisao"
-    :fatura="faturaSobRevisao"
-    :membros="props.membros"
-    @voltar="faturaSobRevisao = null"
-    @acertoConfirmado="faturaSobRevisao = null"
-  />
-
-  <div v-else class="space-y-12">
+  <div class="space-y-12">
     <!-- NOVO HEADER TRIPARTITE (Aesthetic v2026) -->
     <header class="flex items-center justify-between pb-6 pt-3 mb-8 border-b border-stone/50">
       <!-- Coluna Esquerda: Mês Selector -->
@@ -329,17 +314,17 @@ const excluirGasto = async (id: string) => {
           class="flex flex-col cursor-pointer group active:opacity-70 transition-opacity"
           @click="abrirNovoPeriodoBottomSheet"
         >
-          <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1">Período</span>
+          <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1">{{ currentMonthName }}</span>
           <div class="flex items-center gap-2">
-            <span class="text-2xl font-black text-charcoal tracking-tighter">{{ currentMonthName }}</span>
+            <span class="text-2xl font-black text-charcoal tracking-tighter">{{ currentYear }}</span>
             <ChevronDown class="w-4 h-4 text-ember mt-1 group-hover:translate-y-0.5 transition-transform" />
           </div>
         </div>
       </div>
 
       <!-- Coluna Central: Brand -->
-      <div class="flex-1 flex flex-col items-center">
-        <span class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] mb-1">Finanças Residenciais</span>
+      <div class="flex-1 flex flex-col items-center justify-center text-center">
+        <span class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] block leading-none mb-1.5">Finanças Residenciais</span>
         <h1 class="text-3xl font-black text-charcoal tracking-[-0.05em] leading-none">
           DIVI<span class="text-ember">.</span>
         </h1>
@@ -359,9 +344,27 @@ const excluirGasto = async (id: string) => {
     <!-- GROUP: HOJE -->
     <div v-show="isHoje" class="space-y-12">
     <!-- Painel de Saldo Real Unificado (Design System Family) -->
-    <section class="space-y-6">
-      <Card class="overflow-hidden relative bg-card shadow-subtle p-8 rounded-card">
-        <div class="space-y-4 relative z-10">
+    <section class="space-y-4">
+      <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
+        <!-- Cabeçalho Padronizado -->
+        <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+              <TrendingUp class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="font-bold text-lg leading-tight text-charcoal">Saldos Unificados</h3>
+              <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+                Créditos e débitos da casa
+              </p>
+            </div>
+          </div>
+          <span class="shrink-0 text-[10px] font-black text-meadow bg-meadow/10 px-3 py-1 rounded-full border border-meadow/20 uppercase tracking-widest">
+            LIVE
+          </span>
+        </div>
+
+        <div class="p-6 space-y-4 relative z-10">
           <div 
             v-for="m in props.membros" 
             :key="m.id" 
@@ -389,53 +392,61 @@ const excluirGasto = async (id: string) => {
     </section>
 
     <!-- Painel de Compensação Otimizada (Design System Family) -->
-    <section v-if="nettingTransferencias.length > 0" class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Eficiência</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Acertos <span class="text-ember">Otimizados</span></h2>
-      </div>
-      
-      <div class="grid gap-4">
-        <Card 
-          v-for="t in nettingTransferencias" 
-          :key="t.from + '-' + t.to" 
-          class="p-5 border-l-4 border-l-ember bg-card shadow-subtle rounded-card"
-        >
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="flex items-start gap-4">
-              <div class="w-10 h-10 rounded-full bg-ember/10 flex items-center justify-center shrink-0">
-                <ArrowUpRight class="w-5 h-5 text-ember" />
-              </div>
-              <div>
-                <p class="text-sm leading-relaxed">
-                  <span class="font-bold text-charcoal">{{ getMembroNome(t.from) }}</span> 
-                  deve enviar para 
-                  <span class="font-bold text-charcoal">{{ getMembroNome(t.to) }}</span>
-                </p>
-                <p class="font-display text-2xl text-ember mt-1">
-                  R$ {{ t.val.toFixed(2).replace('.', ',') }}
-                </p>
-              </div>
+    <section v-if="nettingTransferencias.length > 0" class="space-y-4">
+      <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite border-l-4 border-l-ember">
+        <!-- Cabeçalho Padronizado -->
+        <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+              <Sparkles class="w-5 h-5" />
             </div>
-            <Button 
-              @click="abrirBottomSheetNetting(t)"
-              :disabled="isMonthLocked"
-              variant="primary"
-              class="w-full md:w-auto"
-            >
-              Confirmar Pix
-            </Button>
+            <div>
+              <h3 class="font-bold text-lg leading-tight text-charcoal">Acertos Otimizados</h3>
+              <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+                Compensação inteligente de dívidas
+              </p>
+            </div>
           </div>
-        </Card>
-      </div>
+        </div>
+
+        <div class="p-6 grid gap-4">
+          <div 
+            v-for="t in nettingTransferencias" 
+            :key="t.from + '-' + t.to" 
+            class="p-5 border border-stone bg-canvas shadow-none rounded-xl"
+          >
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full bg-ember/10 flex items-center justify-center shrink-0">
+                  <ArrowUpRight class="w-5 h-5 text-ember" />
+                </div>
+                <div>
+                  <p class="text-sm leading-relaxed">
+                    <span class="font-bold text-charcoal">{{ getMembroNome(t.from) }}</span> 
+                    deve enviar para 
+                    <span class="font-bold text-charcoal">{{ getMembroNome(t.to) }}</span>
+                  </p>
+                  <p class="font-display text-2xl text-ember mt-1">
+                    R$ {{ t.val.toFixed(2).replace('.', ',') }}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                @click="abrirBottomSheetNetting(t)"
+                :disabled="isMonthLocked"
+                variant="primary"
+                class="w-full md:w-auto"
+              >
+                Confirmar Pix
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
     </section>
 
     <!-- Checklist de Contas Fixas (Design System Family) -->
-    <section class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Recorrência</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Contas <span class="text-ember">Fixas</span></h2>
-      </div>
+    <section class="space-y-4">
       <ContasFixasPanel 
         :contasFixas="contasFixas"
         :gastos="globalGastos"
@@ -448,11 +459,7 @@ const excluirGasto = async (id: string) => {
     </section>
 
     <!-- Feed de Lançamentos Recentes (Design System Family) -->
-    <section class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Atividade</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Últimos <span class="text-ember">Lançamentos</span></h2>
-      </div>
+    <section class="space-y-4">
       <ActivityFeed 
         :gastos="globalGastos"
         :membros="props.membros"
@@ -475,12 +482,7 @@ const excluirGasto = async (id: string) => {
     </div>
 
     <!-- Seção 3: Faturas Fechadas (Acertos & Reembolsos) (Minimalist Modern) -->
-    <section v-if="faturasFechadas.length > 0" class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Liquidação</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Faturas <span class="text-ember">Fechadas</span></h2>
-      </div>
-
+    <section v-if="faturasFechadas.length > 0" class="space-y-4">
       <div class="grid gap-6">
         <Card 
           v-for="fatura in faturasFechadas" 
@@ -509,22 +511,8 @@ const excluirGasto = async (id: string) => {
           </div>
 
           <div class="p-6 space-y-6">
-            <!-- SUB-ESTADO A: EM REVISÃO -->
-            <div v-if="!faturaTemAcertosAtivos(fatura.id)" class="text-center space-y-4 py-4">
-              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-ember/5 text-ember mb-2">
-                <Sparkles class="w-6 h-6" />
-              </div>
-              <div class="space-y-1">
-                <p class="font-bold text-charcoal">Fatura em Revisão Coletiva</p>
-                <p class="text-xs text-ash">Total: R$ {{ formatarDinheiro(calcularTotalFatura(fatura.id)).toFixed(2).replace('.', ',') }}</p>
-              </div>
-              <Button variant="primary" class="w-full" @click="faturaSobRevisao = fatura">
-                Revisar e Ratear
-              </Button>
-            </div>
-
-            <!-- SUB-ESTADO B: ACERTOS ATIVOS -->
-            <div v-else class="space-y-8">
+            <!-- ACERTOS ATIVOS -->
+            <div class="space-y-8">
               <!-- Banner de Status de Pagamento ao Banco -->
               <div v-if="fatura.dataPagamentoBanco" class="flex items-center justify-between p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
                 <div class="flex items-center gap-3">
@@ -552,10 +540,6 @@ const excluirGasto = async (id: string) => {
 
               <!-- Lista de Acertos -->
               <div class="space-y-4">
-                <div class="flex items-center gap-2 mb-2">
-                  <SectionLabel :pulse="false" class="px-3 py-1">Reembolsos</SectionLabel>
-                </div>
-
                 <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="p-4 rounded-xl border border-stone bg-canvas space-y-4">
                   <div class="flex justify-between items-start">
                     <div class="flex items-center gap-3">
@@ -629,15 +613,7 @@ const excluirGasto = async (id: string) => {
 
 
     <!-- Painel de Parcelas Futuras (Minimalist Modern) -->
-    <section v-if="totalFuturasVencer > 0" class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel :pulse="false" class="border-amber-500/30 bg-amber-500/5 text-amber-600">
-          <span class="bg-amber-500"></span>
-          Projeção
-        </SectionLabel>
-        <h2 class="text-3xl font-display">Parcelas <span class="text-amber-500">Futuras</span></h2>
-      </div>
-
+    <section v-if="totalFuturasVencer > 0" class="space-y-4">
       <Card class="overflow-hidden">
         <div 
           class="p-6 flex justify-between items-center cursor-pointer hover:bg-muted/30 transition-colors"
@@ -709,7 +685,6 @@ const excluirGasto = async (id: string) => {
     <BottomSheet :model-value="showBottomSheetNovoPeriodo" @update:model-value="val => { if (!val) showBottomSheetNovoPeriodo = false }" width-class="md:w-[420px]">
       <div class="p-6 sm:p-8 space-y-6 flex-grow">
         <div class="space-y-2 text-center">
-          <SectionLabel class="mx-auto">Transição</SectionLabel>
           <h3 class="text-3xl font-display text-charcoal">Novo <span class="text-ember">Período</span></h3>
           <p class="text-xs text-ash leading-relaxed">
             O mês anterior será trancado permanentemente. O saldo será transportado automaticamente para o novo período.

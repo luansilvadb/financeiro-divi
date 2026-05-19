@@ -45,7 +45,6 @@ const handleConfirmar = () => {
   <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[440px]">
     <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <div class="space-y-2 text-center">
-          <SectionLabel class="mx-auto">Liquidação</SectionLabel>
           <h3 class="text-3xl font-display text-charcoal">Registrar <span class="text-ember">Acerto</span></h3>
           <p class="text-xs text-ash leading-relaxed">
             Confirmar a transferência entre moradores para equilibrar os saldos da casa.

@@ -2,8 +2,9 @@
 import { computed } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
-import { Plus, Settings } from 'lucide-vue-next'
+import { Repeat, Plus, Settings } from 'lucide-vue-next'
 import Button from '../ui/Button.vue'
+import Card from '../ui/Card.vue'
 
 const props = defineProps<{
   contasFixas: ContaFixa[]
@@ -41,22 +42,26 @@ const obterNomeMembro = (id?: string) => {
 </script>
 
 <template>
-  <div class="contas-fixas-card bg-white p-[18px] rounded-card shadow-subtle text-graphite">
-    <div class="flex justify-between items-start gap-3 mb-3.5">
-      <div class="min-w-0">
-        <h3 class="text-[15px] leading-tight font-semibold text-charcoal tracking-[-0.2px]">
-          Contas fixas
-        </h3>
-        <p class="text-xs leading-snug text-ash mt-1">
-          Recorrentes do mes.
-        </p>
+  <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
+    <!-- Cabeçalho Padronizado -->
+    <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+          <Repeat class="w-5 h-5" />
+        </div>
+        <div>
+          <h3 class="font-bold text-lg leading-tight text-charcoal">Contas Fixas</h3>
+          <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+            Recorrentes do mês
+          </p>
+        </div>
       </div>
-      <span class="shrink-0 text-xs font-semibold text-midnight bg-stone px-3 py-1.5 rounded-full">
+      <span class="shrink-0 text-[10px] font-black text-midnight bg-stone px-4 py-1.5 rounded-full uppercase tracking-widest border border-stone/50">
         {{ pagasCount }}/{{ contasFixas.length }} pagas
       </span>
     </div>
 
-    <div class="grid gap-3">
+    <div class="p-6 grid gap-3">
       <!-- Estado Vazio Ilustrado se não houver contas fixas cadastradas -->
       <div v-if="contasFixas.length === 0" class="text-center py-12 border border-dashed border-stone rounded-xl space-y-4 bg-canvas/30">
         <!-- Mascote Verde Meadow com Talão de Notas -->
@@ -104,7 +109,7 @@ const obterNomeMembro = (id?: string) => {
               </div>
               <span v-else class="text-[10px] text-ash flex items-center gap-1.5 mt-1 font-semibold uppercase tracking-wider">
                 <div class="w-2 h-2 rounded-full bg-sunburst"></div>
-                Aguardando talao
+                Aguardando talão
               </span>
             </div>
           </div>
@@ -119,7 +124,7 @@ const obterNomeMembro = (id?: string) => {
               :disabled="isMonthLocked"
               :data-testid="`lancar-conta-${bill.id}`"
             >
-              Lancar
+              Lançar
             </Button>
             <Button 
               variant="secondary" 
@@ -146,5 +151,5 @@ const obterNomeMembro = (id?: string) => {
         <span>Adicionar conta fixa</span>
       </button>
     </div>
-  </div>
+  </Card>
 </template>

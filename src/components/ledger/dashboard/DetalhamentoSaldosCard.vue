@@ -2,8 +2,7 @@
 import { computed } from 'vue'
 import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
 import Card from '../../ui/Card.vue'
-import SectionLabel from '../../ui/SectionLabel.vue'
-import { Wallet, CreditCard, Handshake } from 'lucide-vue-next'
+import { Wallet, CreditCard, Handshake, Search } from 'lucide-vue-next'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -73,14 +72,23 @@ const detailedBreakdown = computed(() => {
 </script>
 
 <template>
-  <Card class="p-8 shadow-subtle bg-card rounded-card space-y-8">
-    <div class="space-y-2">
-      <SectionLabel>Auditoria</SectionLabel>
-      <h3 class="text-2xl font-display text-charcoal">Detalhamento <span class="text-ember">Granular</span></h3>
-      <p class="text-xs text-ash">Fluxos de caixa de PIX, Cartão e Empréstimos por morador.</p>
+  <Card class="p-0 overflow-hidden shadow-subtle bg-card rounded-card">
+    <!-- Cabeçalho Padronizado -->
+    <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+          <Search class="w-5 h-5" />
+        </div>
+        <div>
+          <h3 class="font-bold text-lg leading-tight text-charcoal">Detalhamento Granular</h3>
+          <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+            Fluxos de PIX, Cartão e Empréstimos
+          </p>
+        </div>
+      </div>
     </div>
 
-    <div class="space-y-10">
+    <div class="p-8 space-y-10">
       <div 
         v-for="m in props.membros" 
         :key="m.id" 
