@@ -30,11 +30,10 @@ import {
   TrendingUp, 
   ChevronDown, 
   ChevronUp, 
-  ChevronLeft,
-  ChevronRight,
   Sparkles, 
   CreditCard,
-  History
+  History,
+  Settings
 } from 'lucide-vue-next'
 
 interface Props {
@@ -50,7 +49,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura'])
+const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura', 'openSettings'])
 
 const {
   registrarReembolsoParcialManual,
@@ -326,62 +325,40 @@ const excluirGasto = async (id: string) => {
   <div v-else class="space-y-12">
     <!-- GROUP: HOJE -->
     <div v-show="isHoje" class="space-y-12">
-    <!-- BARRA DE TRANCAMENTO (Design System Family) -->
-    <div 
-      class="flex justify-between items-center p-4 rounded-xl border transition-all duration-300 shadow-subtle bg-parchment"
-      :class="isMonthLocked 
-        ? 'border-ember/20 bg-ember/5 text-charcoal' 
-        : 'border-stone text-graphite'"
-    >
-      <div class="flex items-center gap-4">
-        <div>
-          <span class="font-bold block text-sm leading-tight text-charcoal">{{ isMonthLocked ? 'Período Trancado' : 'Período Aberto' }}</span>
-          <span class="text-[11px] text-ash block mt-0.5 leading-normal">
-            {{ isMonthLocked ? 'Lançamentos congelados.' : 'Lançamentos liberados.' }}
-          </span>
+    <!-- NOVO HEADER TRIPARTITE (Aesthetic v2026) -->
+    <header class="flex items-center justify-between py-6 mb-8 border-b border-stone/50">
+      <!-- Coluna Esquerda: Mês Selector -->
+      <div class="flex-1">
+        <div class="flex flex-col cursor-pointer group active:opacity-70 transition-opacity">
+          <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1">Período</span>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl font-black text-charcoal tracking-tighter">{{ currentMonthName }}</span>
+            <ChevronDown class="w-4 h-4 text-ember mt-1 group-hover:translate-y-0.5 transition-transform" />
+          </div>
         </div>
       </div>
-      <div class="flex gap-2">
-        <Button 
-          v-if="isMonthLocked"
-          @click="abrirNovoPeriodoModal"
-          size="sm"
-          variant="primary"
-          class="h-9 px-4 text-[11px]"
-        >
-          🚀 Novo Período
-        </Button>
-        <Button 
-          variant="secondary"
-          @click="setMonthLocked(!isMonthLocked)"
-          size="sm"
-          class="h-9 px-4 text-[11px] border border-stone"
-        >
-          {{ isMonthLocked ? 'Destrancar' : 'Trancar' }}
-        </Button>
+
+      <!-- Coluna Central: Brand -->
+      <div class="flex-1 flex flex-col items-center">
+        <span class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] mb-1">Finanças Residenciais</span>
+        <h1 class="text-3xl font-black text-charcoal tracking-[-0.05em] leading-none">
+          DIVI<span class="text-ember">.</span>
+        </h1>
       </div>
-    </div>
+
+      <!-- Coluna Direita: Ações (Settings) -->
+      <div class="flex-1 flex justify-end">
+        <button 
+          @click="$emit('openSettings')" 
+          class="w-11 h-11 bg-stone/30 hover:bg-stone/50 rounded-2xl flex items-center justify-center transition-colors border border-stone/20"
+        >
+          <Settings class="w-5 h-5 text-graphite" />
+        </button>
+      </div>
+    </header>
 
     <!-- Painel de Saldo Real Unificado (Design System Family) -->
     <section class="space-y-6">
-      <div class="flex justify-between items-end">
-        <div class="space-y-2">
-          <SectionLabel>Visão Geral</SectionLabel>
-          <h2 class="text-heading font-display text-charcoal">Saldo <span class="text-ember">Unificado</span></h2>
-        </div>
-        <div class="flex items-center gap-1 bg-stone border border-stone rounded-full p-1">
-          <button class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-ash hover:text-charcoal transition-all">
-            <ChevronLeft class="w-3.5 h-3.5" />
-          </button>
-          <span class="text-[10px] font-mono uppercase tracking-widest text-charcoal px-2">
-            {{ currentMonthName }}
-          </span>
-          <button class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-ash hover:text-charcoal transition-all">
-            <ChevronRight class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
       <Card class="overflow-hidden relative bg-card shadow-subtle p-8 rounded-card">
         <div class="space-y-4 relative z-10">
           <div 
