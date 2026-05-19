@@ -44,7 +44,6 @@ export function useCartoesEFaturas() {
       const mesAtual = hoje.getMonth() + 1
       const anoAtual = hoje.getFullYear()
       let todasFaturas = await faturaRepo.listarTodas()
-      todasFaturas = await desduplicarEMigrarFaturas(todasFaturas, gastoRepo)
 
       for (const card of todosCartoes) {
         const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
@@ -233,99 +232,3 @@ export function useCartoesEFaturas() {
   }
 }
 
-async function desduplicarEMigrarFaturas(
-  todasFaturas: Fatura[],
-  gastoRepo: LocalStorageGastoRepository
-): Promise<Fatura[]> {
-  let maisRecenteAno = 0
-  let maisRecenteMes = 0
-  for (const f of todasFaturas) {
-    if (f.status === 'ABERTA') {
-      if (f.periodo.ano > maisRecenteAno || (f.periodo.ano === maisRecenteAno && f.periodo.mes > maisRecenteMes)) {
-        maisRecenteAno = f.periodo.ano
-        maisRecenteMes = f.periodo.mes
-      }
-    }
-  }
-
-  if (maisRecenteAno === 0) {
-    const hoje = new Date()
-    maisRecenteMes = hoje.getMonth() + 1
-    maisRecenteAno = hoje.getFullYear()
-  }
-
-  const faturasUnicas = new Map<string, Fatura>()
-  const faturasParaRemover: Fatura[] = []
-  
-  for (const f of todasFaturas) {
-    const chave = `${f.cartaoId}-${f.periodo.mes}-${f.periodo.ano}`
-    const existente = faturasUnicas.get(chave)
-    if (existente) {
-      const isPassado = f.periodo.ano < maisRecenteAno || (f.periodo.ano === maisRecenteAno && f.periodo.mes < maisRecenteMes)
-      
-      let manter = existente
-      let remover = f
-      
-      if (!isPassado) {
-        if (f.status === 'ABERTA' && existente.status !== 'ABERTA') {
-          manter = f
-          remover = existente
-        }
-      } else {
-        if (f.status !== 'ABERTA' && existente.status === 'ABERTA') {
-          manter = f
-          remover = existente
-        }
-      }
-      
-      faturasUnicas.set(chave, manter)
-      faturasParaRemover.push(remover)
-    } else {
-      faturasUnicas.set(chave, f)
-    }
-  }
-
-  if (faturasParaRemover.length > 0) {
-    console.warn(`[Divi Migration] Detectadas ${faturasParaRemover.length} faturas duplicadas. Iniciando migração...`)
-    const todosGastos = await gastoRepo.listarTodos()
-    
-    for (const fRem of faturasParaRemover) {
-      const chave = `${fRem.cartaoId}-${fRem.periodo.mes}-${fRem.periodo.ano}`
-      const fMant = faturasUnicas.get(chave)!
-      
-      const gastosMigrar = todosGastos.filter(g => g.faturaId === fRem.id)
-      for (const g of gastosMigrar) {
-        const novoGasto = new Gasto({
-          id: g.id,
-          faturaId: fMant.id,
-          descricao: g.descricao,
-          valorTotal: g.valorTotal,
-          compradorId: g.compradorId,
-          divisoes: g.divisoes,
-          installments: g.installments,
-          isLoan: g.isLoan,
-          borrowerId: g.borrowerId,
-          recurringBillId: g.recurringBillId,
-          isSettlement: g.isSettlement,
-          settlementDetails: g.settlementDetails,
-          method: g.method,
-          cardOwner: g.cardOwner
-        })
-        await gastoRepo.salvar(novoGasto)
-      }
-    }
-    
-    const listaLimpa = Array.from(faturasUnicas.values())
-    localStorage.setItem('divi_faturas', JSON.stringify(listaLimpa.map(f => ({
-      id: f.id,
-      cartaoId: f.cartaoId,
-      periodo: f.periodo,
-      responsavelId: f.responsavelId,
-      status: f.status,
-      dataPagamentoBanco: f.dataPagamentoBanco ? f.dataPagamentoBanco.toISOString() : undefined
-    }))))
-    return listaLimpa
-  }
-
-  return todasFaturas
-}
