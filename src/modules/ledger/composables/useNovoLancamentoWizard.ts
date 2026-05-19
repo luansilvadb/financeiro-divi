@@ -119,14 +119,6 @@ async function obterOuCriarFatura(
   return fatura
 }
 
-async function obterOuCriarFaturaParaPeriodo(
-  cartaoId: string,
-  mes: number,
-  ano: number,
-  responsavelId: string
-): Promise<any> {
-  return obterOuCriarFatura(cartaoId, mes, ano, responsavelId)
-}
 
 // Helper: Find active invoice for transaction
 async function findActiveFatura(
