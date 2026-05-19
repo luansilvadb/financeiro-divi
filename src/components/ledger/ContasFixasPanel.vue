@@ -36,6 +36,39 @@ const obterStatusGasto = (conta: ContaFixa) => {
 const obterNomeMembro = (id?: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
+
+const triggerRipple = (event: MouseEvent) => {
+  const card = event.currentTarget as HTMLElement
+  if (!card) return
+
+  const existingRipples = card.getElementsByClassName('ripple')
+  for (const r of existingRipples) {
+    r.remove()
+  }
+
+  const rect = card.getBoundingClientRect()
+  const circle = document.createElement('span')
+  const diameter = Math.max(rect.width, rect.height)
+  const radius = diameter / 2
+
+  circle.style.width = circle.style.height = `${diameter}px`
+  circle.style.left = `${event.clientX - rect.left - radius}px`
+  circle.style.top = `${event.clientY - rect.top - radius}px`
+  circle.classList.add('ripple')
+
+  card.appendChild(circle)
+}
+
+const handleCardClick = (event: MouseEvent, bill: ContaFixa) => {
+  if (props.isMonthLocked) return
+  triggerRipple(event)
+  
+  if (verificarPaga(bill)) {
+    emit('estornar', bill)
+  } else {
+    emit('lancar', bill)
+  }
+}
 </script>
 
 <template>
@@ -86,14 +119,21 @@ const obterNomeMembro = (id?: string) => {
         <div 
           v-for="bill in contasFixas" 
           :key="bill.id" 
-          class="group flex items-center justify-between p-4 rounded-xl border transition-all duration-300"
-          :class="verificarPaga(bill) ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone hover:border-ember/30'"
+          @click="handleCardClick($event, bill)"
+          class="group relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none ripple-container active:scale-[0.98] md:active:scale-100 transform overflow-hidden"
+          :class="[
+            verificarPaga(bill) 
+              ? 'bg-meadow/5 border-meadow/20 hover:bg-meadow/10 hover:border-meadow/30' 
+              : 'bg-canvas border-stone hover:border-ember/30 hover:bg-white',
+            isMonthLocked ? 'opacity-80 pointer-events-none' : ''
+          ]"
+          :data-testid="verificarPaga(bill) ? `estornar-conta-${bill.id}` : `lancar-conta-${bill.id}`"
         >
           <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="w-10 h-10 rounded-lg bg-card border border-stone flex items-center justify-center text-xl shadow-subtle">
+            <div class="w-10 h-10 rounded-lg bg-card border border-stone flex items-center justify-center text-xl shadow-subtle relative z-10">
               {{ bill.icon }}
             </div>
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 flex-1 relative z-10">
               <span class="font-bold text-sm block text-charcoal truncate tracking-[-0.17px]">{{ bill.name }}</span>
               <div v-if="verificarPaga(bill)" class="flex items-center mt-1">
                 <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
@@ -103,34 +143,12 @@ const obterNomeMembro = (id?: string) => {
             </div>
           </div>
 
-          <div class="flex items-center gap-2 shrink-0 ml-4">
-            <Button 
-              v-if="!verificarPaga(bill)" 
-              @click="$emit('lancar', bill)" 
-              variant="primary"
-              size="sm"
-              class="h-8 px-3 text-[10px]"
-              :disabled="isMonthLocked"
-              :data-testid="`lancar-conta-${bill.id}`"
-            >
-              Lançar
-            </Button>
-            <Button 
-              v-else 
-              @click="$emit('estornar', bill)" 
-              variant="secondary"
-              size="sm"
-              class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border-coral/30 hover:border-coral"
-              :disabled="isMonthLocked"
-              :data-testid="`estornar-conta-${bill.id}`"
-            >
-              Estornar
-            </Button>
+          <div class="flex items-center gap-2 shrink-0 ml-4 relative z-10">
             <Button 
               variant="secondary" 
               size="icon"
-              @click="$emit('configurar', bill)" 
-              class="w-8 h-8 rounded-lg border border-stone"
+              @click.stop="$emit('configurar', bill)" 
+              class="w-8 h-8 rounded-lg border border-stone bg-white hover:bg-canvas transition-colors duration-200"
               :data-testid="`configurar-conta-${bill.id}`"
               :aria-label="`Configurar ${bill.name}`"
               :title="`Configurar ${bill.name}`"
@@ -153,3 +171,24 @@ const obterNomeMembro = (id?: string) => {
     </div>
   </Card>
 </template>
+
+<style scoped>
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+:deep(.ripple) {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple-animation 600ms linear;
+  background-color: rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+</style>
