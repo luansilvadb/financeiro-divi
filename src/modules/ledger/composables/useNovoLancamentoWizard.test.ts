@@ -24,8 +24,8 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     const [{ step, totalSteps, wizFlow, wizPayment, installments, borrowerId }] = withSetup(() => useNovoLancamentoWizard([]))
     expect(step.value).toBe(1)
     expect(totalSteps.value).toBe(5)
-    expect(wizFlow.value).toBe('expense')
-    expect(wizPayment.value).toBe('pix')
+    expect(wizFlow.value).toBeNull()
+    expect(wizPayment.value).toBeNull()
     expect(installments.value).toBe(1)
     expect(borrowerId.value).toBeNull()
   })
@@ -43,8 +43,9 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     const [{ wizFlow, compradorSelecionadoId, borrowerId, valor, descricao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard([]))
     
     // Passo 1: Escolha do fluxo
+    expect(canAdvance.value).toBe(false) // Sem fluxo, não avança
     wizFlow.value = 'loan'
-    expect(canAdvance.value).toBe(true)
+    expect(canAdvance.value).toBe(true) // Com fluxo, avança
     next()
 
     // Passo 2: Lender
@@ -75,8 +76,9 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     const [{ wizFlow, compradorSelecionadoId, valor, descricao, participantesDivisao, canAdvance, next }] = withSetup(() => useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id }))))
     
     // Passo 1: Escolha do fluxo (Gasto)
+    expect(canAdvance.value).toBe(false) // Sem fluxo, não avança
     wizFlow.value = 'expense'
-    expect(canAdvance.value).toBe(true)
+    expect(canAdvance.value).toBe(true) // Com fluxo, avança
     next()
 
     // Passo 2: Quem pagou?

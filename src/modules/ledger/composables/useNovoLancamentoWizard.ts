@@ -196,8 +196,8 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
   const step = ref(1)
 
   // Controle de Fluxo v18
-  const wizFlow = ref<'expense' | 'loan'>('expense')
-  const wizPayment = ref<'pix' | 'card'>('pix')
+  const wizFlow = ref<'expense' | 'loan' | null>(null)
+  const wizPayment = ref<'pix' | 'card' | null>(null)
   const wizCardOwner = ref<string | null>(null)
 
   // Dados do Lançamento
@@ -228,7 +228,7 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
   }
 
   const canAdvance = computed(() => {
-    if (step.value === 1) return true
+    if (step.value === 1) return wizFlow.value !== null
     
     if (wizFlow.value === 'loan') {
       return canAdvanceLoan(step.value, compradorSelecionadoId.value, borrowerId.value, valor.value, descricao.value)
@@ -246,12 +246,16 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
   })
 
   const finalizarGastoOuEmprestimo = async () => {
+    if (!wizFlow.value || !wizPayment.value) throw new Error('Fluxo de pagamento não selecionado')
     if (!compradorSelecionadoId.value) throw new Error('Selecione quem pagou/emprestou')
     if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
 
+    const flow = wizFlow.value as 'expense' | 'loan'
+    const payment = wizPayment.value as 'pix' | 'card'
+
     const total = Dinheiro.deReais(Number(valor.value))
     const divisoes = buildDivisoes(
-      wizFlow.value,
+      flow,
       total,
       borrowerId.value,
       participantesDivisao.value,
@@ -259,9 +263,9 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
       valoresDivisaoWizard.value
     )
 
-    const faturaAtiva = await findActiveFatura(wizPayment.value, wizCardOwner.value, compradorSelecionadoId.value)
+    const faturaAtiva = await findActiveFatura(payment, wizCardOwner.value, compradorSelecionadoId.value)
 
-    if (wizPayment.value === 'card' && installments.value > 1) {
+    if (payment === 'card' && installments.value > 1) {
       await projetarGastosParcelados({
         total,
         divisoes,
@@ -275,15 +279,15 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
       const novoGasto = new Gasto({
         id: crypto.randomUUID(),
         faturaId: faturaAtiva.id,
-        descricao: wizFlow.value === 'loan' ? (descricao.value.trim() || 'Empréstimo Pessoal') : descricao.value,
+        descricao: flow === 'loan' ? (descricao.value.trim() || 'Empréstimo Pessoal') : descricao.value,
         valorTotal: total,
         compradorId: compradorSelecionadoId.value,
         divisoes,
         installments: installments.value,
         totalInstallments: installments.value,
-        isLoan: wizFlow.value === 'loan',
+        isLoan: flow === 'loan',
         borrowerId: borrowerId.value,
-        method: wizPayment.value,
+        method: payment,
         cardOwner: wizCardOwner.value,
         grupoParcelasId: null
       })
@@ -295,8 +299,8 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
 
   const reset = () => {
     step.value = 1
-    wizFlow.value = 'expense'
-    wizPayment.value = 'pix'
+    wizFlow.value = null
+    wizPayment.value = null
     wizCardOwner.value = null
     valor.value = 0
     descricao.value = ''
