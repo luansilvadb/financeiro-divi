@@ -100,7 +100,6 @@ const lockScroll = () => {
 }
 
 const unlockScroll = () => {
-  registerClose()
   // Só remove a trava se não houver outros bottomsheets ativos
   if (!isAnyBottomSheetOpen.value) {
     document.body.style.overflow = ''
@@ -119,6 +118,9 @@ const unlockScroll = () => {
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     lockScroll()
+  } else {
+    // Registra o fechamento lógico no início da transição para liberar o FAB sem delay
+    registerClose()
   }
 }, { immediate: true })
 
@@ -128,7 +130,17 @@ const onTransitionLeave = () => {
 
 onUnmounted(() => {
   if (props.modelValue) {
-    unlockScroll()
+    registerClose()
+    document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+    const nav = document.querySelector('nav')
+    if (nav) {
+      nav.style.paddingRight = ''
+    }
+    const wrappers = document.querySelectorAll('[data-fixed-wrapper]')
+    wrappers.forEach(el => {
+      (el as HTMLElement).style.paddingRight = ''
+    })
   }
 })
 
