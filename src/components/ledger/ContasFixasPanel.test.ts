@@ -62,7 +62,6 @@ describe('ContasFixasPanel', () => {
     expect(wrapper.text()).toContain('R$ 1200,00 por Luan')
     expect(wrapper.text()).toContain('Energia')
     expect(wrapper.text()).not.toContain('Aguardando talão')
-    expect(wrapper.find('[data-testid="configurar-conta-aluguel"]').attributes('aria-label')).toBe('Configurar Aluguel')
   })
 
   it('mantem os eventos de lancar, estornar, configurar e novo', async () => {
@@ -77,21 +76,26 @@ describe('ContasFixasPanel', () => {
       },
     })
 
-    // Simula tap rápido no card da conta energia (não paga) -> deve emitir 'lancar'
+    // 1. Simula tap rápido no card da conta energia (não paga) -> deve emitir 'lancar'
     const cardEnergia = wrapper.find('[data-testid="conta-fixa-card-energia"]')
     await cardEnergia.trigger('pointerdown')
     await cardEnergia.trigger('pointerup')
     // Avança o tempo para completar a animação do tap rápido (300ms)
     await vi.advanceTimersByTimeAsync(300)
 
-    // Simula long press no card da conta aluguel (paga) -> deve emitir 'estornar'
+    // 2. Simula tap rápido no card da conta aluguel (já paga) -> deve emitir 'estornar'
     const cardAluguel = wrapper.find('[data-testid="conta-fixa-card-aluguel"]')
     await cardAluguel.trigger('pointerdown')
-    
+    await cardAluguel.trigger('pointerup')
+    // Avança o tempo para completar o tap rápido (300ms)
+    await vi.advanceTimersByTimeAsync(300)
+
+    // 3. Simula long press no card da conta aluguel -> deve emitir 'configurar'
+    await cardAluguel.trigger('pointerdown')
     // Avança o tempo simulado para acionar o long press (1000ms)
     await vi.advanceTimersByTimeAsync(1000)
 
-    await wrapper.find('[data-testid="configurar-conta-aluguel"]').trigger('click')
+    // 4. Clica no botão de adicionar nova conta
     await wrapper.find('[data-testid="nova-conta-fixa"]').trigger('click')
 
     expect(wrapper.emitted('lancar')?.[0]).toEqual([contasFixas[1]])
