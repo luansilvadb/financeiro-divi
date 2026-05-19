@@ -8,6 +8,11 @@ describe('BottomSheet', () => {
       props: { modelValue: true },
       slots: {
         default: '<div id="test-content">Conteudo de Teste</div>'
+      },
+      global: {
+        stubs: {
+          Teleport: true
+        }
       }
     })
     expect(wrapper.find('#test-content').exists()).toBe(true)

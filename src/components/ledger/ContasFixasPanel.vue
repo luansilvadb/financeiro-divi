@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { Repeat, Plus, Settings } from 'lucide-vue-next'

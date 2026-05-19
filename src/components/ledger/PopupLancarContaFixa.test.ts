@@ -25,6 +25,7 @@ describe('PopupLancarContaFixa', () => {
         bill,
         membros,
       },
+      global: { stubs: { Teleport: true } }
     })
 
     expect(wrapper.text()).toContain('Lancar Energia')
@@ -42,6 +43,7 @@ describe('PopupLancarContaFixa', () => {
         bill,
         membros,
       },
+      global: { stubs: { Teleport: true } }
     })
 
     await wrapper.find('[data-testid="valor-conta-fixa"]').setValue(300)
@@ -70,6 +72,7 @@ describe('PopupLancarContaFixa', () => {
         bill: billWithMixedIds,
         membros,
       },
+      global: { stubs: { Teleport: true } }
     })
 
     const splitLuan = wrapper.find('[data-testid="split-luan"]')
@@ -91,6 +94,7 @@ describe('PopupLancarContaFixa', () => {
         bill: billWithInvalidIds,
         membros,
       },
+      global: { stubs: { Teleport: true } }
     })
 
     const splitLuan = wrapper.find('[data-testid="split-luan"]')

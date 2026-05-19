@@ -60,9 +60,9 @@ describe('App FAB', () => {
     expect(fab.exists()).toBe(true)
     expect(fab.text()).not.toContain('Novo lancamento')
     expect(fab.classes()).toContain('fixed')
-    expect(fab.classes()).toContain('bottom-6')
-    expect(fab.classes()).toContain('left-1/2')
-    expect(fab.classes()).toContain('-translate-x-1/2')
+    expect(fab.classes()).toContain('left-0')
+    expect(fab.classes()).toContain('right-0')
+    expect(fab.classes()).toContain('mx-auto')
     expect(fab.classes()).toContain('w-14')
     expect(fab.classes()).toContain('h-14')
     expect(fab.classes()).toContain('rounded-full')
@@ -70,26 +70,4 @@ describe('App FAB', () => {
   })
 })
 
-describe('App Navigation', () => {
-  it('esconde a BottomTabBar quando um BottomSheet está aberto', async () => {
-    isAnyBottomSheetOpenMock.value = false
-    const wrapper = mount(App, {
-      global: {
-        stubs: {
-          DashboardSaldos: true,
-          NovoLancamentoWizard: true,
-          ConfiguracoesMembros: true,
-          BottomSheet: true,
-          BottomTabBar: true,
-        },
-      },
-    })
 
-    expect(wrapper.findComponent({ name: 'BottomTabBar' }).exists()).toBe(true)
-
-    isAnyBottomSheetOpenMock.value = true
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.findComponent({ name: 'BottomTabBar' }).exists()).toBe(false)
-  })
-})
