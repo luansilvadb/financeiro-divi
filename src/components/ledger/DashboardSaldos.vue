@@ -166,7 +166,7 @@ const setItemSelecionadoRef = (el: any, op: { mes: number; ano: number }) => {
 watch(isDropdownAbertosOpen, async (aberto) => {
   if (aberto) {
     await nextTick()
-    if (itemSelecionadoRef.value) {
+    if (itemSelecionadoRef.value && typeof itemSelecionadoRef.value.scrollIntoView === 'function') {
       itemSelecionadoRef.value.scrollIntoView({ block: 'nearest' })
     }
   }

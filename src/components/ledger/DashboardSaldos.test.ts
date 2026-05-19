@@ -150,4 +150,66 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('DIVI.')
     expect(wrapper.text()).toContain('Finanças Residenciais')
   })
+
+  it('deve possuir atributos de acessibilidade e suportar eventos de teclado no seletor de períodos', async () => {
+    const faturasFechadasMock = [
+      { id: 'f2', cartaoId: 'c1', responsavelId: 'm1', status: 'FECHADA', periodo: { mes: 4, ano: 2026 } }
+    ] as any
+
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: faturasFechadasMock,
+        acertosPendentes: [],
+        faturasAbertas: [
+          { id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 5, ano: 2026 } }
+        ] as any,
+        cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
+        calcularConsumo: () => 0
+      },
+      global: {
+        stubs: {
+          BottomSheet: {
+            template: '<div><slot /></div>'
+          }
+        }
+      }
+    })
+
+    // Abre o BottomSheet de historico para renderizar os seletores
+    await wrapper.setData({ showBottomSheetHistorico: true })
+    await wrapper.vm.$nextTick()
+
+    // 1. Testa acionador do dropdown de abertos
+    const trigger = wrapper.find('[aria-label="Gerenciar período aberto"]')
+    expect(trigger.exists()).toBe(true)
+    expect(trigger.attributes('role')).toBe('button')
+    expect(trigger.attributes('tabindex')).toBe('0')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+
+    // Ativa dropdown via Enter
+    await trigger.trigger('keydown.enter')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.vm.isDropdownAbertosOpen).toBe(true)
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+
+    // 2. Testa itens do dropdown de meses abertos
+    const openItems = wrapper.findAll('[role="button"]')
+    const openPeriodOption = openItems.find(item => item.text().includes('Maio 2026'))
+    expect(openPeriodOption?.exists()).toBe(true)
+    expect(openPeriodOption?.attributes('tabindex')).toBe('0')
+
+    // 3. Testa itens de meses arquivados
+    const archivedItem = wrapper.find('[aria-label="Selecionar período arquivado Abril 2026"]')
+    expect(archivedItem.exists()).toBe(true)
+    expect(archivedItem.attributes('role')).toBe('button')
+    expect(archivedItem.attributes('tabindex')).toBe('0')
+
+    // Seleciona período arquivado via Teclado (Space)
+    await archivedItem.trigger('keydown.space')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.vm.periodoSelecionado.mes).toBe(4)
+    expect(wrapper.vm.periodoSelecionado.ano).toBe(2026)
+    expect(wrapper.vm.showBottomSheetHistorico).toBe(false)
+  })
 })
