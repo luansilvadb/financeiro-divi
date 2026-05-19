@@ -73,7 +73,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const close = () => emit('update:modelValue', false)
 
-const { registerOpen, registerClose } = useBottomSheetState()
+const { registerOpen, registerClose, isAnyBottomSheetOpen } = useBottomSheetState()
 
 // Lock body scroll and compensate scrollbar width to prevent layout shifts
 const getScrollbarWidth = () => {
