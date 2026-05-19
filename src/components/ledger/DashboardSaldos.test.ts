@@ -212,4 +212,24 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.vm.periodoSelecionado.ano).toBe(2026)
     expect(wrapper.vm.showBottomSheetHistorico).toBe(false)
   })
+
+  it('deve disparar openSettings ao clicar no botão de configurações e possuir atributos de acessibilidade', async () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [],
+        faturasAbertas: [],
+        faturasFechadas: [],
+        acertosPendentes: [],
+        cartoes: [],
+        calcularConsumo: () => 0
+      }
+    })
+
+    const configButton = wrapper.find('[aria-label="Configurações"]')
+    expect(configButton.exists()).toBe(true)
+    expect(configButton.attributes('title')).toBe('Configurações')
+    
+    await configButton.trigger('click')
+    expect(wrapper.emitted('openSettings')).toBeTruthy()
+  })
 })
