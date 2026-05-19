@@ -159,7 +159,6 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
   const installments = ref(1)
 
   // Divisão Imediata
-  const querDividirAgora = ref(true)
   const participantesDivisao = ref<string[]>(membros.map(m => m.id))
   const modoDivisaoWizard = ref<'IGUAL' | 'MANUAL'>('IGUAL')
   const valoresDivisaoWizard = ref<Record<string, number>>({})
@@ -361,7 +360,6 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
     compradorSelecionadoId,
     borrowerId,
     installments,
-    querDividirAgora,
     participantesDivisao,
     modoDivisaoWizard,
     valoresDivisaoWizard,

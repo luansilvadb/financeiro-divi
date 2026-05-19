@@ -30,16 +30,8 @@ export function useDashboardCalculations(
     return membro?.nome || 'Membro desconhecido'
   }
 
-  const getCartaoNome = (cartoes: any[], cartaoId: string) => {
-    return cartoes.find(c => c.id === cartaoId)?.nome || 'Cartão'
-  }
-
   const getConsumo = (faturaId: string, membroId: string) => {
     return calcularConsumo(faturaId, membroId)
-  }
-
-  const getAdiantamento = (faturaId: string, membroId: string) => {
-    return calcularAdiantamento ? calcularAdiantamento(faturaId, membroId) : 0
   }
 
   const formatarDinheiro = (centavos: number) => {
@@ -56,10 +48,6 @@ export function useDashboardCalculations(
       ? acertosPendentes
       : globalAcertos
     return list.filter(a => a.faturaId === faturaId)
-  }
-
-  const faturaTemAcertosAtivos = (faturaId: string) => {
-    return acertosDaFatura(faturaId).length > 0
   }
 
   const gastosDaFatura = (faturaId: string) => {
@@ -87,16 +75,6 @@ export function useDashboardCalculations(
     return fat.periodo.ano.toString()
   })
 
-  const sugerirProximoPeriodo = () => {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    const fat = getFaturasAbertas()[0]
-    if (!fat) return ''
-    const mIdx = fat.periodo.mes - 1 // 0-indexed
-    const proximoMIdx = (mIdx + 1) % 12
-    const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
-    return `${meses[proximoMIdx]} ${proximoAno}`
-  }
-
   const parcelasFuturasDetalhadas = computed(() => {
     const list: any[] = []
     const fatAtiva = getFaturasAbertas()[0]
@@ -122,25 +100,16 @@ export function useDashboardCalculations(
     return list
   })
 
-  const totalFuturasVencer = computed(() => {
-    return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)
-  })
-
   return {
     getMembroNome,
-    getCartaoNome,
     getConsumo,
-    getAdiantamento,
     formatarDinheiro,
     calcularTotalFatura,
     acertosDaFatura,
-    faturaTemAcertosAtivos,
     gastosDaFatura,
     todosOsAcertosQuitados,
     currentMonthName,
     currentYear,
-    sugerirProximoPeriodo,
-    parcelasFuturasDetalhadas,
-    totalFuturasVencer
+    parcelasFuturasDetalhadas
   }
 }

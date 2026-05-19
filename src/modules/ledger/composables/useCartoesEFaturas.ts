@@ -239,44 +239,6 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
-  const atualizarGastoDivisoesManual = async (gastoId: string, divisoes: DivisaoDeGasto[]) => {
-    const listGastos = gastos.value
-    const idx = listGastos.findIndex(g => g.id === gastoId)
-    if (idx < 0) return
-
-    const original = listGastos[idx]
-    const novoGasto = new Gasto({
-      id: original.id,
-      faturaId: original.faturaId,
-      descricao: original.descricao,
-      valorTotal: original.valorTotal,
-      compradorId: original.compradorId,
-      divisoes
-    })
-
-    await gastoRepo.salvar(novoGasto)
-    await inicializar()
-  }
-
-  const atualizarGastoCompradorManual = async (gastoId: string, compradorId: string) => {
-    const listGastos = gastos.value
-    const idx = listGastos.findIndex(g => g.id === gastoId)
-    if (idx < 0) return
-
-    const original = listGastos[idx]
-    const novoGasto = new Gasto({
-      id: original.id,
-      faturaId: original.faturaId,
-      descricao: original.descricao,
-      valorTotal: original.valorTotal,
-      compradorId: compradorId,
-      divisoes: original.divisoes
-    })
-
-    await gastoRepo.salvar(novoGasto)
-    await inicializar()
-  }
-
   const atualizarGastoCompletoManual = async (
     gastoId: string,
     dados: {
@@ -363,8 +325,6 @@ export function useCartoesEFaturas() {
     registrarReembolsoParcialManual,
     registrarPagamentoBancoManual,
     removerPagamentoBancoManual,
-    atualizarGastoDivisoesManual,
-    atualizarGastoCompradorManual,
     atualizarGastoCompletoManual,
     faturasAbertas,
     faturasFechadas,
