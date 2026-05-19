@@ -14,7 +14,6 @@ import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import ModalConfigurarContaFixa from './ModalConfigurarContaFixa.vue'
 import RevisaoFatura from './dashboard/RevisaoFatura.vue'
-import HistoricoFaturas from './dashboard/HistoricoFaturas.vue'
 import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
 import ModalAcertoCompensacao from './dashboard/ModalAcertoCompensacao.vue'
 import ActivityFeed from './ActivityFeed.vue'
@@ -31,7 +30,6 @@ import {
   ChevronDown, 
   ChevronUp, 
   Sparkles, 
-  CreditCard,
   History,
   Settings
 } from 'lucide-vue-next'
@@ -98,7 +96,6 @@ const faturaSobRevisao = ref<any | null>(null)
 
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
-const isHistorico = computed(() => !props.activeTab || props.activeTab === 'historico')
 
 // Estado do modal de fechamento (Gap 6)
 const showModalFechar = ref(false)
@@ -323,8 +320,6 @@ const excluirGasto = async (id: string) => {
   />
 
   <div v-else class="space-y-12">
-    <!-- GROUP: HOJE -->
-    <div v-show="isHoje" class="space-y-12">
     <!-- NOVO HEADER TRIPARTITE (Aesthetic v2026) -->
     <header class="flex items-center justify-between py-6 mb-8 border-b border-stone/50">
       <!-- Coluna Esquerda: Mês Selector -->
@@ -357,6 +352,8 @@ const excluirGasto = async (id: string) => {
       </div>
     </header>
 
+    <!-- GROUP: HOJE -->
+    <div v-show="isHoje" class="space-y-12">
     <!-- Painel de Saldo Real Unificado (Design System Family) -->
     <section class="space-y-6">
       <Card class="overflow-hidden relative bg-card shadow-subtle p-8 rounded-card">
@@ -676,18 +673,6 @@ const excluirGasto = async (id: string) => {
       </Card>
     </section>
     </div><!-- /isFaturas -->
-
-    <!-- GROUP: HISTORICO -->
-    <div v-show="isHistorico" class="space-y-12">
-    <!-- Histórico de Faturas Acertadas (Design System Family) -->
-    <section class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Arquivo</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Histórico de <span class="text-ember">Faturas</span></h2>
-      </div>
-      <HistoricoFaturas :membros="props.membros" />
-    </section>
-    </div><!-- /isHistorico -->
 
     <!-- Modal de Fechamento de Fatura com Dono Variável (Gap 6) -->
     <ModalFecharFatura 

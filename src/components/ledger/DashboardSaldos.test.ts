@@ -131,4 +131,20 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('Cartão')
     expect(wrapper.text()).toContain('Empréstimo')
   })
+
+  it('deve renderizar o novo Brand centralizado no header', () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [],
+        faturasAbertas: [],
+        faturasFechadas: [],
+        acertosPendentes: [],
+        cartoes: [],
+        calcularConsumo: () => 0
+      }
+    })
+
+    expect(wrapper.text()).toContain('DIVI.')
+    expect(wrapper.text()).toContain('Finanças Residenciais')
+  })
 })
