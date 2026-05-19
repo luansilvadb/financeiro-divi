@@ -59,9 +59,14 @@ describe('App FAB', () => {
 
     expect(fab.exists()).toBe(true)
     expect(fab.text()).not.toContain('Novo lancamento')
-    expect(fab.classes()).toContain('fab-rounded')
+    expect(fab.classes()).toContain('fixed')
+    expect(fab.classes()).toContain('bottom-6')
+    expect(fab.classes()).toContain('left-1/2')
+    expect(fab.classes()).toContain('-translate-x-1/2')
     expect(fab.classes()).toContain('w-14')
     expect(fab.classes()).toContain('h-14')
+    expect(fab.classes()).toContain('rounded-full')
+    expect(fab.classes()).toContain('border-card')
   })
 })
 
