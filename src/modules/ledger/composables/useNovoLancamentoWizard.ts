@@ -139,6 +139,67 @@ async function findActiveFatura(
   return obterOuCriarFatura(cartaoId, mes, ano, compradorId)
 }
 
+async function projetarGastosParcelados(dados: {
+  total: any
+  divisoes: any[]
+  faturaAtiva: any
+  descricao: string
+  compradorId: string
+  installments: number
+  cardOwner: string | null
+}): Promise<void> {
+  const { total, divisoes, faturaAtiva, descricao, compradorId, installments, cardOwner } = dados
+  const grupoParcelasId = crypto.randomUUID()
+  
+  // Salvar primeira parcela
+  const primeiroGasto = new Gasto({
+    id: crypto.randomUUID(),
+    faturaId: faturaAtiva.id,
+    descricao,
+    valorTotal: total,
+    compradorId,
+    divisoes,
+    installments,
+    totalInstallments: installments,
+    isLoan: false,
+    borrowerId: null,
+    method: 'card',
+    cardOwner,
+    grupoParcelasId
+  })
+  await gastoRepo.salvar(primeiroGasto)
+
+  // Salvar parcelas futuras
+  let currentMes = faturaAtiva.periodo.mes
+  let currentAno = faturaAtiva.periodo.ano
+  
+  for (let i = 2; i <= installments; i++) {
+    currentMes++
+    if (currentMes > 12) {
+      currentMes = 1
+      currentAno++
+    }
+    
+    const faturaFutura = await obterOuCriarFatura(faturaAtiva.cartaoId, currentMes, currentAno, compradorId)
+    const gastoFuturo = new Gasto({
+      id: crypto.randomUUID(),
+      faturaId: faturaFutura.id,
+      descricao,
+      valorTotal: total,
+      compradorId,
+      divisoes: [...divisoes],
+      installments: installments - i + 1,
+      totalInstallments: installments,
+      isLoan: false,
+      borrowerId: null,
+      method: 'card',
+      cardOwner,
+      grupoParcelasId
+    })
+    await gastoRepo.salvar(gastoFuturo)
+  }
+}
+
 export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] = []) {
   const step = ref(1)
 
@@ -209,57 +270,15 @@ export function useNovoLancamentoWizard(membros: { id: string; nome: string }[] 
     const faturaAtiva = await findActiveFatura(wizPayment.value, wizCardOwner.value, compradorSelecionadoId.value)
 
     if (wizPayment.value === 'card' && installments.value > 1) {
-      const grupoParcelasId = crypto.randomUUID()
-      
-      // 1. Salvar o gasto da primeira parcela na fatura do mês atual
-      const primeiroGasto = new Gasto({
-        id: crypto.randomUUID(),
-        faturaId: faturaAtiva.id,
-        descricao: descricao.value,
-        valorTotal: total,
-        compradorId: compradorSelecionadoId.value,
+      await projetarGastosParcelados({
+        total,
         divisoes,
+        faturaAtiva,
+        descricao: descricao.value,
+        compradorId: compradorSelecionadoId.value,
         installments: installments.value,
-        totalInstallments: installments.value,
-        isLoan: false,
-        borrowerId: null,
-        method: 'card',
-        cardOwner: wizCardOwner.value,
-        grupoParcelasId
+        cardOwner: wizCardOwner.value
       })
-      await gastoRepo.salvar(primeiroGasto)
-
-      // 2. Projetar as próximas parcelas nos meses subsequentes
-      let currentMes = faturaAtiva.periodo.mes
-      let currentAno = faturaAtiva.periodo.ano
-      const cartaoId = faturaAtiva.cartaoId
-      
-      for (let i = 2; i <= installments.value; i++) {
-        currentMes++
-        if (currentMes > 12) {
-          currentMes = 1
-          currentAno++
-        }
-        
-        const faturaFutura = await obterOuCriarFaturaParaPeriodo(cartaoId, currentMes, currentAno, compradorSelecionadoId.value)
-        
-        const gastoFuturo = new Gasto({
-          id: crypto.randomUUID(),
-          faturaId: faturaFutura.id,
-          descricao: descricao.value,
-          valorTotal: total,
-          compradorId: compradorSelecionadoId.value,
-          divisoes: [...divisoes],
-          installments: installments.value - i + 1,
-          totalInstallments: installments.value,
-          isLoan: false,
-          borrowerId: null,
-          method: 'card',
-          cardOwner: wizCardOwner.value,
-          grupoParcelasId
-        })
-        await gastoRepo.salvar(gastoFuturo)
-      }
     } else {
       const novoGasto = new Gasto({
         id: crypto.randomUUID(),
