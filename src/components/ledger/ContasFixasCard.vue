@@ -40,8 +40,8 @@ const ripple = ref<RippleState>({
 
 let startTime = 0
 let isHolding = false
-let longPressTimeout: NodeJS.Timeout | null = null
-let longPressActionTimeout: NodeJS.Timeout | null = null
+let longPressTimeout: any | null = null
+let longPressActionTimeout: any | null = null
 let animationFrameId: number | null = null
 
 const DURATION_LONG_PRESS = 700 // ms
