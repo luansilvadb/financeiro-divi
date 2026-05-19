@@ -936,7 +936,7 @@ const estornarContaFixa = async (bill: any) => {
               @keydown.space.prevent="isDropdownAbertosOpen = !isDropdownAbertosOpen"
               role="button"
               tabindex="0"
-              :aria-expanded="isDropdownAbertosOpen.toString()"
+              :aria-expanded="isDropdownAbertosOpen"
               aria-haspopup="listbox"
               aria-label="Gerenciar período aberto"
               class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none flex justify-between items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2"
