@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BottomSheetAcertoCompensacao from './BottomSheetAcertoCompensacao.vue'
 
@@ -23,6 +23,6 @@ describe('BottomSheetAcertoCompensacao', () => {
 
     // Como o BottomSheet foi stubado ou renderizado no body, 
     // verificamos se o componente está reagindo corretamente aos dados internos
-    expect(wrapper.vm.valorReal).toBe(150.50)
+    expect((wrapper.vm as any).valorReal).toBe(150.50)
   })
 })

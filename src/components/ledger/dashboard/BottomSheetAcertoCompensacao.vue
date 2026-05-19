@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import Button from '../../ui/Button.vue'
-import SectionLabel from '../../ui/SectionLabel.vue'
 import { Wallet, Banknote, RefreshCcw } from 'lucide-vue-next'
 import BottomSheet from '../../ui/BottomSheet.vue'
 
@@ -39,6 +38,10 @@ const handleConfirmar = () => {
     descricao: descricao.value
   })
 }
+
+defineExpose({
+  valorReal
+})
 </script>
 
 <template>
