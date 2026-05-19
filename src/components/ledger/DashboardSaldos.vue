@@ -648,66 +648,7 @@ const excluirGasto = async (id: string) => {
       </div>
     </section>
 
-    <!-- Seção 2: Faturas Abertas (Design System Family) -->
-    <section class="space-y-6">
-      <div class="space-y-2">
-        <SectionLabel>Gastos Ativos</SectionLabel>
-        <h2 class="text-3xl font-display text-charcoal">Próximas <span class="text-ember">Faturas</span></h2>
-      </div>
-      
-      <div class="grid gap-4">
-        <div
-          v-for="fatura in faturasAbertas"
-          :key="fatura.id"
-          class="proximas-faturas-card overflow-hidden relative bg-white shadow-subtle p-0 rounded-card text-graphite"
-          :data-testid="`proximas-faturas-card-${fatura.id}`"
-        >
-          <div class="p-5 border-b border-stone bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-full bg-parchment shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <CreditCard class="w-5 h-5" />
-              </div>
-              <div class="min-w-0">
-                <h3 class="font-semibold text-[19px] text-charcoal leading-tight tracking-[-0.25px] truncate">{{ getCartaoNome(fatura.cartaoId) }}</h3>
-                <p class="inline-flex mt-1 text-xs text-ash bg-stone rounded-full px-2.5 py-1">
-                  Vence em {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
-                </p>
-              </div>
-            </div>
-            <button
-              @click="abrirFecharFatura(fatura.id)"
-              :disabled="isMonthLocked"
-              class="shrink-0 px-4 py-2.5 text-xs font-semibold bg-midnight hover:bg-charcoal text-white rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Fechar fatura
-            </button>
-          </div>
 
-          <div class="p-5 space-y-4 bg-white">
-            <!-- Resumo por membro -->
-            <div class="grid gap-2">
-              <div 
-                v-for="membro in membros" 
-                :key="membro.id" 
-                class="flex justify-between items-center gap-3 rounded-card bg-parchment p-3"
-              >
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-2 h-2 rounded-full shrink-0" :class="membro.id === fatura.responsavelId ? 'bg-sunburst' : 'bg-ash/30'" />
-                  <span class="font-semibold text-[13px] leading-tight truncate" :class="membro.id === fatura.responsavelId ? 'text-charcoal' : 'text-ash'">
-                    {{ membro.nome }}
-                  </span>
-                </div>
-                <div class="text-right">
-                  <span class="font-semibold text-[15px] text-charcoal tracking-[-0.2px] block">
-                    R$ {{ formatarDinheiro(getConsumo(fatura.id, membro.id) - getAdiantamento(fatura.id, membro.id)).toFixed(2).replace('.', ',') }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- Painel de Parcelas Futuras (Minimalist Modern) -->
     <section v-if="totalFuturasVencer > 0" class="space-y-6">
