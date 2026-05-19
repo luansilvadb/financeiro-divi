@@ -2,9 +2,10 @@
 import { } from 'vue'
 import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
-import { Repeat, Plus, Settings } from 'lucide-vue-next'
+import { Repeat, Plus } from 'lucide-vue-next'
 import Button from '../ui/Button.vue'
 import Card from '../ui/Card.vue'
+import ContasFixasCard from './ContasFixasCard.vue'
 
 const props = defineProps<{
   contasFixas: ContaFixa[]
@@ -35,58 +36,6 @@ const obterStatusGasto = (conta: ContaFixa) => {
 
 const obterNomeMembro = (id?: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
-}
-
-const startRipple = (event: PointerEvent) => {
-  const card = event.currentTarget as HTMLElement
-  if (!card) return
-
-  const existingRipples = card.getElementsByClassName('ripple-effect')
-  for (const r of existingRipples) {
-    r.remove()
-  }
-
-  const rect = card.getBoundingClientRect()
-  const circle = document.createElement('span')
-  const diameter = Math.max(rect.width, rect.height)
-  const radius = diameter / 2
-
-  circle.style.width = circle.style.height = `${diameter}px`
-  circle.style.left = `${event.clientX - rect.left - radius}px`
-  circle.style.top = `${event.clientY - rect.top - radius}px`
-  circle.classList.add('ripple-effect')
-
-  card.appendChild(circle)
-  ;(card as any)._activeRipple = circle
-
-  // Forçar reflow
-  circle.offsetWidth
-
-  circle.classList.add('is-held')
-}
-
-const endRipple = (event: PointerEvent) => {
-  const card = event.currentTarget as HTMLElement
-  if (!card) return
-
-  const circle = (card as any)._activeRipple as HTMLElement
-  if (!circle) return
-
-  circle.classList.add('is-fading')
-  delete (card as any)._activeRipple
-
-  setTimeout(() => {
-    circle.remove()
-  }, 400)
-}
-
-const handleCardClick = (bill: ContaFixa) => {
-  if (props.isMonthLocked) return
-  if (verificarPaga(bill)) {
-    emit('estornar', bill)
-  } else {
-    emit('lancar', bill)
-  }
 }
 </script>
 
@@ -135,51 +84,21 @@ const handleCardClick = (bill: ContaFixa) => {
 
       <!-- Widgets de Contas Fixas (Se existirem) -->
       <template v-else>
-        <div 
-          v-for="bill in contasFixas" 
-          :key="bill.id" 
-          @click="handleCardClick(bill)"
-          @pointerdown="startRipple"
-          @pointerup="endRipple"
-          @pointerleave="endRipple"
-          @pointercancel="endRipple"
-          class="group relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none ripple-container active:scale-[0.98] md:active:scale-100 transform overflow-hidden"
-          :class="[
-            verificarPaga(bill) 
-              ? 'bg-meadow/5 border-meadow/20 hover:bg-meadow/10 hover:border-meadow/30' 
-              : 'bg-canvas border-stone hover:border-ember/30 hover:bg-white',
-            isMonthLocked ? 'opacity-80 pointer-events-none' : ''
-          ]"
-          :data-testid="verificarPaga(bill) ? `estornar-conta-${bill.id}` : `lancar-conta-${bill.id}`"
-        >
-          <div class="flex items-center gap-4 min-w-0 flex-1">
-            <div class="w-10 h-10 rounded-lg bg-card border border-stone flex items-center justify-center text-xl shadow-subtle relative z-10">
-              {{ bill.icon }}
-            </div>
-            <div class="min-w-0 flex-1 relative z-10">
-              <span class="font-bold text-sm block text-charcoal truncate tracking-[-0.17px]">{{ bill.name }}</span>
-              <div v-if="verificarPaga(bill)" class="flex items-center mt-1">
-                <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
-                  R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 shrink-0 ml-4 relative z-10">
-            <Button 
-              variant="secondary" 
-              size="icon"
-              @click.stop="$emit('configurar', bill)" 
-              class="w-8 h-8 rounded-lg border border-stone bg-white hover:bg-canvas transition-colors duration-200"
-              :data-testid="`configurar-conta-${bill.id}`"
-              :aria-label="`Configurar ${bill.name}`"
-              :title="`Configurar ${bill.name}`"
-            >
-              <Settings class="w-4 h-4 text-ash" />
-            </Button>
-          </div>
-        </div>
+        <ContasFixasCard
+          v-for="bill in contasFixas"
+          :key="bill.id"
+          :bill="bill"
+          :paga="verificarPaga(bill)"
+          :valorReal="obterStatusGasto(bill)?.valorReal ?? null"
+          :pagoPorNome="obterNomeMembro(obterStatusGasto(bill)?.pagoPor)"
+          :isMonthLocked="isMonthLocked"
+          tapColor="rgba(235, 94, 40, 0.15)"
+          holdColor="rgba(235, 94, 40, 0.3)"
+          @lancar="$emit('lancar', $event)"
+          @estornar="$emit('estornar', $event)"
+          @configurar="$emit('configurar', $event)"
+          :data-testid="`conta-fixa-card-${bill.id}`"
+        />
       </template>
 
       <!-- Adicionar Nova Conta -->
@@ -194,25 +113,3 @@ const handleCardClick = (bill: ContaFixa) => {
     </div>
   </Card>
 </template>
-
-<style scoped>
-.ripple-container {
-  position: relative;
-  overflow: hidden;
-}
-:deep(.ripple-effect) {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.08);
-  pointer-events: none;
-  transform: scale(0);
-  opacity: 0.15;
-  transition: transform 450ms cubic-bezier(0.1, 0.8, 0.3, 1), opacity 350ms ease-out;
-}
-:deep(.ripple-effect.is-held) {
-  transform: scale(2.5);
-}
-:deep(.ripple-effect.is-fading) {
-  opacity: 0;
-}
-</style>

@@ -5,6 +5,7 @@ import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
+import ContasFixasCard from './ContasFixasCard.vue'
 
 const contasFixas: ContaFixa[] = [
   {
@@ -75,9 +76,19 @@ describe('ContasFixasPanel', () => {
       },
     })
 
-    await wrapper.find('[data-testid="lancar-conta-energia"]').trigger('click')
-    await wrapper.find('[data-testid="estornar-conta-aluguel"]').trigger('click')
+    // Toque simples (pointerdown -> pointerup) no card não pago lança o pagamento
+    const cardEnergia = wrapper.find('[data-testid="conta-fixa-card-energia"]')
+    await cardEnergia.trigger('pointerdown')
+    await cardEnergia.trigger('pointerup')
+
+    // Estorno (hold) simulado via emissão do evento do card pago
+    const cardAluguel = wrapper.find('[data-testid="conta-fixa-card-aluguel"]')
+    await cardAluguel.findComponent(ContasFixasCard).vm.$emit('estornar', contasFixas[0])
+
+    // Clique na engrenagem de configuração
     await wrapper.find('[data-testid="configurar-conta-aluguel"]').trigger('click')
+
+    // Clique no botão de adicionar conta fixa
     await wrapper.find('[data-testid="nova-conta-fixa"]').trigger('click')
 
     expect(wrapper.emitted('lancar')?.[0]).toEqual([contasFixas[1]])
