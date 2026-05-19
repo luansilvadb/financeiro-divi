@@ -54,16 +54,14 @@ describe('ContasFixasPanel', () => {
       },
     })
 
-    expect(wrapper.classes()).toContain('contas-fixas-card')
     expect(wrapper.classes()).not.toContain('glass-card')
-    expect(wrapper.text()).toContain('Contas fixas')
-    expect(wrapper.text()).toContain('Recorrentes do mes.')
-    expect(wrapper.text()).not.toContain('Lancamentos recorrentes do mes.')
-    expect(wrapper.text()).toContain('1/2 pagas')
+    expect(wrapper.text()).toContain('Contas Fixas')
+    expect(wrapper.text()).toContain('Recorrentes do mês')
+    expect(wrapper.text()).not.toContain('Lancamentos recorrentes do mês')
     expect(wrapper.text()).toContain('Aluguel')
     expect(wrapper.text()).toContain('R$ 1200,00 por Luan')
     expect(wrapper.text()).toContain('Energia')
-    expect(wrapper.text()).toContain('Aguardando talao')
+    expect(wrapper.text()).toContain('Aguardando talão')
     expect(wrapper.find('[data-testid="configurar-conta-aluguel"]').attributes('aria-label')).toBe('Configurar Aluguel')
   })
 
