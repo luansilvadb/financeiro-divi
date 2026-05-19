@@ -192,20 +192,14 @@ const handleConfirm = () => {
                 <span class="text-[9px] font-bold uppercase tracking-wider">Pix</span>
               </button>
               <button 
-                @click="selectMethod('card', 'luan')"
+                v-for="c in props.cartoes"
+                :key="c.id"
+                @click="selectMethod('card', c.responsavelPadraoId)"
                 class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === 'luan' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
+                :class="activeMethod === 'card' && activeCardOwner === c.responsavelPadraoId ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
               >
                 <CreditCard class="w-4 h-4" />
-                <span class="text-[9px] font-bold uppercase tracking-wider">Nubank</span>
-              </button>
-              <button 
-                @click="selectMethod('card', 'joao')"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === 'joao' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
-              >
-                <CreditCard class="w-4 h-4" />
-                <span class="text-[9px] font-bold uppercase tracking-wider">C6</span>
+                <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.nome }}</span>
               </button>
             </div>
           </div>
