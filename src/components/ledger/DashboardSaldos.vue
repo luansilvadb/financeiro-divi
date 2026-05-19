@@ -983,7 +983,12 @@ const excluirGasto = async (id: string) => {
               v-for="item in mesesTrancadosOpcoes" 
               :key="item.nome"
               @click="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
-              class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
+              @keydown.enter.prevent="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
+              @keydown.space.prevent="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
+              role="button"
+              tabindex="0"
+              :aria-label="`Selecionar período arquivado ${item.nome}`"
+              class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2"
               :class="periodoSelecionado.mes === item.mes && periodoSelecionado.ano === item.ano ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas hover:border-ember/30 text-charcoal'"
             >
               <div class="flex items-center gap-3">
