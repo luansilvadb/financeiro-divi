@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Fatura } from '../../../modules/ledger/core/domain/Fatura'
-import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
-import { useCartoesEFaturas } from '../../../modules/ledger/composables/useCartoesEFaturas'
+import { ref } from 'vue'
+import type { Fatura } from '../../../modules/ledger/core/domain/Fatura'
+import type { Gasto } from '../../../modules/ledger/core/domain/Gasto'
 import ListaGastosRevisao from './ListaGastosRevisao.vue'
 import PreviaAcertos from './PreviaAcertos.vue'
-import ModalDivisaoGasto from './ModalDivisaoGasto.vue'
+import BottomSheetDivisaoGasto from './BottomSheetDivisaoGasto.vue'
 import { ChevronLeft } from 'lucide-vue-next'
 
 interface Props {
@@ -14,145 +13,84 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['acertoConfirmado', 'voltar'])
+const emit = defineEmits(['voltar', 'acertoConfirmado'])
 
-const { 
-  gastos, 
-  antecipacoes, 
-  atualizarGastoDivisoesManual, 
-  atualizarGastoCompradorManual,
-  confirmarAcertosManual,
-  reabrirFaturaManual 
-} = useCartoesEFaturas()
+const showBottomSheetRateio = ref(false)
+const gastoSendoEditado = ref<Gasto | null>(null)
 
-// Filtra apenas gastos e antecipações pertencentes a esta fatura
-const gastosFatura = computed(() => {
-  return gastos.value.filter(g => g.faturaId === props.fatura.id)
-})
-
-const antecipacoesFatura = computed(() => {
-  return antecipacoes.value.filter(a => a.faturaId === props.fatura.id)
-})
-
-// Controle de modal de edição de rateio
-const showModalRateio = ref(false)
-const gastoSelecionado = ref<Gasto | null>(null)
-
-const abrirModalRateio = (g: Gasto) => {
-  gastoSelecionado.value = g
-  showModalRateio.value = true
+const abrirBottomSheetRateio = (g: Gasto) => {
+  gastoSendoEditado.value = g
+  showBottomSheetRateio.value = true
 }
 
-const fecharModalRateio = () => {
-  gastoSelecionado.value = null
-  showModalRateio.value = false
+const fecharBottomSheetRateio = () => {
+  showBottomSheetRateio.value = false
+  gastoSendoEditado.value = null
 }
 
-const salvarRateio = async (gastoId: string, compradorId: string, divisoes: any[]) => {
-  // Salva no repositório local e recarrega
-  await atualizarGastoCompradorManual(gastoId, compradorId)
-  await atualizarGastoDivisoesManual(gastoId, divisoes)
-  fecharModalRateio()
+const handleSalvarRateio = () => {
+  // O componente interno já manipula a instância do Gasto
+  fecharBottomSheetRateio()
 }
-
-// Confirmação definitiva de acertos
-const processandoConfirmacao = ref(false)
-const confirmarAcertos = async () => {
-  processandoConfirmacao.value = true
-  try {
-    await confirmarAcertosManual(props.fatura.id)
-    emit('acertoConfirmado')
-  } catch (err) {
-    console.error(err)
-    alert('Erro ao confirmar acertos. Tente novamente.')
-  } finally {
-    processandoConfirmacao.value = false
-  }
-}
-
-// Reabrir fatura sob revisão
-const reabrirFatura = async () => {
-  if (confirm('Tem certeza de que deseja reabrir esta fatura? Todos os gastos sob revisão voltarão a ser editáveis no lançamento.')) {
-    await reabrirFaturaManual(props.fatura.id)
-    emit('voltar')
-  }
-}
-
-const totalFatura = computed(() => {
-  return gastosFatura.value.reduce((sum, g) => sum + g.valorTotal.centavos, 0) / 100
-})
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-    <!-- Top Header -->
-    <div class="bg-card shadow-subtle border border-stone p-6 rounded-card flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-graphite relative overflow-hidden">
-      <div class="flex items-center gap-4">
+  <div class="min-h-screen bg-canvas pb-20 animate-in fade-in duration-500">
+    <!-- Header Fixo de Revisão -->
+    <header class="bg-white border-b border-stone sticky top-0 z-30 px-4 py-4 sm:px-6">
+      <div class="max-w-4xl mx-auto flex items-center justify-between">
         <button 
           @click="emit('voltar')"
-          class="w-10 h-10 rounded-full bg-stone hover:bg-stone text-graphite font-bold flex items-center justify-center border border-stone transition-all active:scale-95"
+          class="flex items-center gap-2 text-ash hover:text-charcoal transition-colors font-bold uppercase text-[10px] tracking-widest"
         >
           <ChevronLeft class="w-4 h-4" />
+          Voltar ao Dashboard
         </button>
-        <div>
-          <h2 class="text-xl font-semibold text-charcoal flex items-center gap-2">
-            Revisão da Fatura
-            <span class="text-[10px] bg-ember/15 text-ember border border-ember/20 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Fechada</span>
-          </h2>
-          <span class="text-xs text-ash font-medium block mt-1">
-            Fatura do mês {{ props.fatura.periodo.mes }}/{{ props.fatura.periodo.ano }} • Total de R$ {{ totalFatura.toFixed(2).replace('.', ',') }}
-          </span>
+        <div class="text-right">
+          <h2 class="text-sm font-bold text-charcoal">Revisão de Fatura</h2>
+          <p class="text-[10px] text-ash uppercase tracking-wider">{{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}</p>
         </div>
       </div>
+    </header>
 
-      <div class="flex gap-2">
-        <button 
-          @click="reabrirFatura"
-          class="px-4 py-2.5 border border-coral/25 bg-coral/5 hover:bg-coral/10 text-coral rounded-pill text-xs font-semibold transition-all active:scale-95"
-        >
-          🔓 Reabrir Fatura
-        </button>
-        <button 
-          @click="confirmarAcertos"
-          :disabled="processandoConfirmacao"
-          class="px-5 py-2.5 bg-midnight hover:bg-charcoal disabled:bg-stone disabled:text-ash text-white rounded-pill text-xs font-semibold transition-all active:scale-95 flex items-center gap-2"
-        >
-          <span v-if="processandoConfirmacao">Processando...</span>
-          <span v-else>✅ Confirmar Acertos Pix</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Content Split (2 Colunas) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Coluna da Esquerda: Extrato -->
-      <div class="lg:col-span-7 bg-card shadow-subtle border border-stone rounded-card p-5 md:p-6 space-y-4 text-graphite">
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 space-y-12 mt-4">
+      <!-- 1. Lista de Gastos -->
+      <section class="space-y-6">
+        <div class="space-y-1">
+          <h3 class="text-2xl font-black text-charcoal tracking-tight">1. Conferir Lançamentos</h3>
+          <p class="text-xs text-ash">Revise se todos os gastos e divisões estão corretos para esta fatura.</p>
+        </div>
+        
         <ListaGastosRevisao 
-          :gastos="gastosFatura" 
-          :membros="props.membros" 
-          @editarRateio="abrirModalRateio"
-        />
-      </div>
-
-      <!-- Coluna da Direita: Saldos e Pix -->
-      <div class="lg:col-span-5 space-y-6">
-        <PreviaAcertos 
-          :fatura-id="props.fatura.id"
-          :responsavel-id="props.fatura.responsavelId"
-          :gastos="gastosFatura"
-          :antecipacoes="antecipacoesFatura"
+          :fatura-id="fatura.id"
           :membros="props.membros"
+          @editarRateio="abrirBottomSheetRateio"
         />
-      </div>
-    </div>
+      </section>
 
-    <!-- Modal de Edição de Rateio -->
-    <ModalDivisaoGasto 
-      :show="showModalRateio"
-      :gasto="gastoSelecionado"
+      <!-- 2. Prévia de Acertos (Cálculo Final) -->
+      <section class="space-y-6">
+        <div class="space-y-1">
+          <h3 class="text-2xl font-black text-charcoal tracking-tight">2. Resultado do Rateio</h3>
+          <p class="text-xs text-ash">Veja quanto cada morador deve enviar para o responsável pela fatura.</p>
+        </div>
+
+        <PreviaAcertos 
+          :fatura="fatura"
+          :membros="props.membros"
+          @confirmado="emit('acertoConfirmado')"
+        />
+      </section>
+    </main>
+
+    <!-- BottomSheet de Edição de Rateio -->
+    <BottomSheetDivisaoGasto
+      v-if="gastoSendoEditado"
+      :show="showBottomSheetRateio"
+      :gasto="gastoSendoEditado"
       :membros="props.membros"
-      @close="fecharModalRateio"
-      @salvar="salvarRateio"
+      @close="fecharBottomSheetRateio"
+      @save="handleSalvarRateio"
     />
   </div>
 </template>
