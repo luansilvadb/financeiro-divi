@@ -81,6 +81,8 @@ describe('ContasFixasPanel', () => {
     const cardEnergia = wrapper.find('[data-testid="conta-fixa-card-energia"]')
     await cardEnergia.trigger('pointerdown')
     await cardEnergia.trigger('pointerup')
+    // Avança o tempo para completar a animação do tap rápido (300ms)
+    await vi.advanceTimersByTimeAsync(300)
 
     // Simula long press no card da conta aluguel (paga) -> deve emitir 'estornar'
     const cardAluguel = wrapper.find('[data-testid="conta-fixa-card-aluguel"]')

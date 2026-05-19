@@ -39,49 +39,15 @@ const ripple = ref<RippleState>({
 })
 
 let startTime = 0
+let startTimeTap = 0
+let startRadius = 0
+let maxRadiusGlobal = 0
 let isHolding = false
-let lastMaxRadius = 0
-let longPressTimeout: any | null = null
-let longPressActionTimeout: any | null = null
+let hasTriggered = false
 let animationFrameId: number | null = null
 
-const DURATION_LONG_PRESS = 700 // ms
-
-const startLongPressAnimation = (startX: number, startY: number, maxRadius: number) => {
-  ripple.value.active = true
-  ripple.value.type = 'long'
-  ripple.value.x = startX
-  ripple.value.y = startY
-  ripple.value.radius = 0
-  ripple.value.opacity = 0.35
-
-  const startTimeLong = performance.now()
-
-  const tick = (now: number) => {
-    if (!isHolding) return
-
-    const elapsed = now - startTimeLong
-    const progress = Math.min(elapsed / DURATION_LONG_PRESS, 1)
-    
-    // Ease-out cúbico
-    const easeProgress = 1 - Math.pow(1 - progress, 3)
-    ripple.value.radius = easeProgress * maxRadius
-
-    if (progress < 1) {
-      animationFrameId = requestAnimationFrame(tick)
-    }
-  }
-
-  animationFrameId = requestAnimationFrame(tick)
-
-  // Timeout para acionamento da ação física real do long press
-  longPressActionTimeout = setTimeout(() => {
-    if (isHolding) {
-      triggerAction()
-      cancelInteraction()
-    }
-  }, DURATION_LONG_PRESS)
-}
+const DURATION_LONG = 800 // ms para segurar completo (long press)
+const DURATION_TAP = 200 // ms para animar e cobrir no tap rapido
 
 const triggerAction = () => {
   if (props.isMonthLocked) return
@@ -94,7 +60,6 @@ const triggerAction = () => {
 
 const triggerTapAction = () => {
   if (props.isMonthLocked) return
-  // Tap rápido só lança se não estiver paga. Se estiver paga, o tap rápido não faz nada (o estorno exige segurar/long-press)
   if (!props.paga) {
     emit('lancar', props.bill)
   }
@@ -102,20 +67,12 @@ const triggerTapAction = () => {
 
 const cancelInteraction = () => {
   isHolding = false
-  if (longPressTimeout) {
-    clearTimeout(longPressTimeout)
-    longPressTimeout = null
-  }
-  if (longPressActionTimeout) {
-    clearTimeout(longPressActionTimeout)
-    longPressActionTimeout = null
-  }
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId)
     animationFrameId = null
   }
   
-  // Fade out suave do ripple apenas para o long press
+  // Se for cancelado o long-press antes de completar ou virar tap, faz um fade out visual do raio atual
   if (ripple.value.active && ripple.value.type === 'long') {
     const fadeTick = () => {
       if (ripple.value.opacity > 0) {
@@ -139,60 +96,77 @@ const onPointerDown = (e: PointerEvent) => {
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
 
-  startTime = performance.now()
   isHolding = true
+  hasTriggered = false
+  startTime = performance.now()
 
-  // Calcula raio máximo (distância até o canto mais distante do card)
+  // Calcula raio máximo a partir do ponto de toque
   const dx = Math.max(x, rect.width - x)
   const dy = Math.max(y, rect.height - y)
-  lastMaxRadius = Math.sqrt(dx * dx + dy * dy)
+  maxRadiusGlobal = Math.sqrt(dx * dx + dy * dy)
 
-  // Inicia timeout para distinguir tap de long press
-  longPressTimeout = setTimeout(() => {
-    if (isHolding) {
-      startLongPressAnimation(x, y, lastMaxRadius)
-    }
-  }, 180)
-}
+  // Inicia ripple no modo 'long' (crescimento inicial lento de espera)
+  ripple.value.active = true
+  ripple.value.type = 'long'
+  ripple.value.x = x
+  ripple.value.y = y
+  ripple.value.radius = 0
+  ripple.value.opacity = 0.35
 
-const onPointerUp = (e: PointerEvent) => {
-  const elapsed = performance.now() - startTime
+  if (animationFrameId) cancelAnimationFrame(animationFrameId)
+  
+  const tick = (now: number) => {
+    if (!ripple.value.active) return
 
-  if (isHolding) {
-    if (elapsed < 180) {
-      // Tap Rápido
-      if (longPressTimeout) {
-        clearTimeout(longPressTimeout)
-        longPressTimeout = null
-      }
+    if (ripple.value.type === 'long') {
+      if (!isHolding) return
       
-      const card = cardRef.value
-      if (card) {
-        const rect = card.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / DURATION_LONG, 1)
+      const easeProgress = 1 - Math.pow(1 - progress, 3) // ease-out cubic
+      ripple.value.radius = easeProgress * maxRadiusGlobal
 
-        // Dispara animação de tap rápido (CSS keyframe)
-        ripple.value.active = true
-        ripple.value.type = 'tap'
-        ripple.value.x = x
-        ripple.value.y = y
-        ripple.value.radius = lastMaxRadius
-        ripple.value.opacity = 0.55
+      if (progress >= 1) {
+        hasTriggered = true
+        triggerAction()
+        cancelInteraction()
+        return
+      }
+    } else if (ripple.value.type === 'tap') {
+      const elapsed = now - startTimeTap
+      const progress = Math.min(elapsed / DURATION_TAP, 1)
+      const easeProgress = 1 - Math.pow(1 - progress, 3)
+      ripple.value.radius = startRadius + easeProgress * (maxRadiusGlobal - startRadius)
+      ripple.value.opacity = 0.35 * (1 - progress)
 
+      if (progress >= 1) {
         triggerTapAction()
-
-        // Remove o ripple após a animação CSS completar (400ms)
-        setTimeout(() => {
-          if (ripple.value.type === 'tap') {
-            ripple.value.active = false
-          }
-        }, 400)
+        ripple.value.active = false
+        return
       }
     }
+
+    animationFrameId = requestAnimationFrame(tick)
   }
 
-  cancelInteraction()
+  animationFrameId = requestAnimationFrame(tick)
+}
+
+const onPointerUp = () => {
+  if (!isHolding || hasTriggered) return
+
+  const elapsed = performance.now() - startTime
+
+  if (elapsed < 220) {
+    // Foi um Toque Rápido (Tap) -> Acelera o ripple no modo 'tap' para cobrir o card rapidamente
+    ripple.value.type = 'tap'
+    startTimeTap = performance.now()
+    startRadius = ripple.value.radius
+  } else {
+    // Soltou no meio do long press -> Cancela e some
+    cancelInteraction()
+  }
+  isHolding = false
 }
 
 const onPointerLeave = () => {
@@ -200,8 +174,6 @@ const onPointerLeave = () => {
 }
 
 onUnmounted(() => {
-  if (longPressTimeout) clearTimeout(longPressTimeout)
-  if (longPressActionTimeout) clearTimeout(longPressActionTimeout)
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
 })
 </script>
@@ -220,12 +192,11 @@ onUnmounted(() => {
     ]"
     :data-testid="`conta-fixa-card-${bill.id}`"
   >
-    <!-- Ripple Canvas overlay -->
+    <!-- Ripple overlay controlado 100% via JS de forma nativa e sem estilos obstrutivos -->
     <div 
       v-if="ripple.active"
-      class="absolute rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 transition-opacity duration-200"
+      class="absolute rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2"
       :class="[
-        ripple.type === 'tap' ? 'animate-ripple-tap' : '',
         paga ? 'bg-coral/25' : 'bg-meadow/25'
       ]"
       :style="{
@@ -269,19 +240,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes ripple-tap {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0.55;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.05);
-    opacity: 0;
-  }
-}
-.animate-ripple-tap {
-  animation: ripple-tap 400ms cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
-}
-</style>
