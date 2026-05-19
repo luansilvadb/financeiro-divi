@@ -147,12 +147,15 @@ const handleConfirm = () => {
 
 <template>
   <BottomSheet :model-value="props.visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[460px]" max-height="95dvh">
-    <div class="p-6 sm:p-8 pb-10 sm:pb-12 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
-        <div class="text-center">
+    <div class="flex flex-col h-full overflow-hidden flex-grow">
+        <!-- Header -->
+        <div class="p-6 pb-4 sm:p-8 sm:pb-4 border-b border-stone shrink-0 text-center">
           <h3 class="text-3xl font-display text-charcoal">Corrigir <span class="text-ember">Lançamento</span></h3>
         </div>
 
-        <div class="space-y-6">
+        <!-- Conteúdo Scrollable -->
+        <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+          <div class="space-y-6">
           <!-- Descrição -->
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Descrição</label>
@@ -267,9 +270,11 @@ const handleConfirm = () => {
               <p class="text-xs font-semibold leading-relaxed">{{ calculatedSharesDesc }}</p>
             </div>
           </div>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
+        <!-- Rodapé -->
+        <div class="p-6 sm:p-8 pt-4 border-t border-stone shrink-0 bg-white grid grid-cols-2 gap-3">
           <Button variant="secondary" @click="emit('cancel')">Voltar</Button>
           <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
         </div>
