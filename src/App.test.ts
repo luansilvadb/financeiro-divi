@@ -48,9 +48,6 @@ describe('App FAB', () => {
           BottomSheet: {
             template: '<div><slot /></div>',
           },
-          InvertedSection: {
-            template: '<section><slot /></section>',
-          },
         },
       },
     })
