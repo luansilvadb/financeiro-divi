@@ -5,7 +5,6 @@ import { UserMinus, UserCheck, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from './ConfiguracoesCartoes.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
-import SectionLabel from '../ui/SectionLabel.vue'
 
 const { membros, adicionarMembro, desativarMembro, ativarMembro } = useMembros()
 const novoNome = ref('')
@@ -27,16 +26,15 @@ const handleAdicionar = async () => {
     <div class="shrink-0 space-y-8 mb-8">
       <div class="flex items-center justify-between">
         <div class="space-y-2">
-          <SectionLabel>Gerenciamento</SectionLabel>
           <h2 class="text-3xl font-display text-charcoal">Ajustes <span class="text-ember">Gerais</span></h2>
         </div>
       </div>
 
     <!-- Abas Estilo Pílula -->
-    <div class="flex p-1.5 bg-parchment rounded-full w-full sm:w-fit border border-stone">
+    <div class="flex p-1.5 bg-parchment rounded-full w-full border border-stone">
       <button 
         @click="activeTab = 'membros'"
-        class="flex-1 sm:flex-none relative px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
+        class="flex-1 relative px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
         :class="activeTab === 'membros' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
       >
         <div 
@@ -52,7 +50,7 @@ const handleAdicionar = async () => {
 
       <button 
         @click="activeTab = 'cartoes'"
-        class="flex-1 sm:flex-none relative px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
+        class="flex-1 relative px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
         :class="activeTab === 'cartoes' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
       >
         <div 
