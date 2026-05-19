@@ -26,6 +26,7 @@ interface RippleState {
   y: number
   radius: number
   opacity: number
+  scale: number
   type: 'tap' | 'long'
 }
 
@@ -35,19 +36,17 @@ const ripple = ref<RippleState>({
   y: 0,
   radius: 0,
   opacity: 0,
+  scale: 0,
   type: 'tap'
 })
 
 let startTime = 0
-let startTimeTap = 0
-let startRadius = 0
 let maxRadiusGlobal = 0
 let isHolding = false
 let hasTriggered = false
 let animationFrameId: number | null = null
 
 const DURATION_LONG = 800 // ms para segurar completo (long press)
-const DURATION_TAP = 200 // ms para animar e cobrir no tap rapido
 
 const triggerAction = () => {
   if (props.isMonthLocked) return
@@ -110,7 +109,8 @@ const onPointerDown = (e: PointerEvent) => {
   ripple.value.type = 'long'
   ripple.value.x = x
   ripple.value.y = y
-  ripple.value.radius = 0
+  ripple.value.radius = maxRadiusGlobal
+  ripple.value.scale = 0
   ripple.value.opacity = 0.35
 
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
@@ -124,24 +124,12 @@ const onPointerDown = (e: PointerEvent) => {
       const elapsed = now - startTime
       const progress = Math.min(elapsed / DURATION_LONG, 1)
       const easeProgress = 1 - Math.pow(1 - progress, 3) // ease-out cubic
-      ripple.value.radius = easeProgress * maxRadiusGlobal
+      ripple.value.scale = easeProgress
 
       if (progress >= 1) {
         hasTriggered = true
         triggerAction()
         cancelInteraction()
-        return
-      }
-    } else if (ripple.value.type === 'tap') {
-      const elapsed = now - startTimeTap
-      const progress = Math.min(elapsed / DURATION_TAP, 1)
-      const easeProgress = 1 - Math.pow(1 - progress, 3)
-      ripple.value.radius = startRadius + easeProgress * (maxRadiusGlobal - startRadius)
-      ripple.value.opacity = 0.35 * (1 - progress)
-
-      if (progress >= 1) {
-        triggerTapAction()
-        ripple.value.active = false
         return
       }
     }
@@ -158,10 +146,24 @@ const onPointerUp = () => {
   const elapsed = performance.now() - startTime
 
   if (elapsed < 220) {
-    // Foi um Toque Rápido (Tap) -> Acelera o ripple no modo 'tap' para cobrir o card rapidamente
+    // Foi um Toque Rápido (Tap) -> Ativa transição de GPU (CSS) para espalhar e sumir instantaneamente
     ripple.value.type = 'tap'
-    startTimeTap = performance.now()
-    startRadius = ripple.value.radius
+    
+    // Dispara a ação lógica de lançamento imediatamente no clique! Zero latência!
+    triggerTapAction()
+
+    // Agenda a meta visual de escala e opacidade no mesmo frame para o CSS transicionar
+    requestAnimationFrame(() => {
+      ripple.value.scale = 1
+      ripple.value.opacity = 0
+    })
+
+    // Remove do DOM após completar a transição de 300ms do CSS
+    setTimeout(() => {
+      if (ripple.value.type === 'tap') {
+        ripple.value.active = false
+      }
+    }, 300)
   } else {
     // Soltou no meio do long press -> Cancela e some
     cancelInteraction()
@@ -192,18 +194,20 @@ onUnmounted(() => {
     ]"
     :data-testid="`conta-fixa-card-${bill.id}`"
   >
-    <!-- Ripple overlay controlado 100% via JS de forma nativa e sem estilos obstrutivos -->
+    <!-- Ripple overlay controlado com aceleração por hardware nativa da GPU para o tap -->
     <div 
       v-if="ripple.active"
-      class="absolute rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2"
+      class="absolute rounded-full pointer-events-none"
       :class="[
-        paga ? 'bg-coral/25' : 'bg-ember/20'
+        paga ? 'bg-coral/25' : 'bg-ember/20',
+        ripple.type === 'tap' ? 'ripple-transition' : ''
       ]"
       :style="{
         left: ripple.x + 'px',
         top: ripple.y + 'px',
         width: ripple.radius * 2 + 'px',
         height: ripple.radius * 2 + 'px',
+        transform: `translate(-50%, -50%) scale(${ripple.scale})`,
         opacity: ripple.opacity
       }"
     ></div>
@@ -240,3 +244,9 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.ripple-transition {
+  transition: transform 300ms cubic-bezier(0.1, 0.8, 0.3, 1), opacity 250ms ease-out;
+}
+</style>
