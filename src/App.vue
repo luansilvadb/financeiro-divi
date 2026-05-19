@@ -69,15 +69,20 @@ const isPeriodLocked = ref(false)
 
     <!-- Floating Action Button (FAB) -->
     <Transition name="fab-zoom">
-      <button
+      <div 
         v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-        :disabled="isPeriodLocked"
-        class="fixed bottom-6 left-0 right-0 mx-auto w-14 h-14 rounded-full shadow-xl z-[100] active:scale-95 flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-zinc-800 to-black hover:from-zinc-700 hover:to-zinc-950 text-white border border-zinc-700/50 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:from-zinc-900 disabled:to-zinc-950 disabled:text-zinc-600 disabled:border-zinc-850 disabled:scale-100 disabled:shadow-none"
-        @click="currentView = 'wizard'"
-        data-testid="novo-lancamento-fab"
+        class="fixed bottom-6 left-0 right-0 z-[100] flex justify-center pointer-events-none"
+        data-fixed-wrapper
       >
-        <Plus class="w-7 h-7 stroke-[3px]" />
-      </button>
+        <button
+          :disabled="isPeriodLocked"
+          class="w-14 h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-zinc-800 to-black hover:from-zinc-700 hover:to-zinc-950 text-white border border-zinc-700/50 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:from-zinc-900 disabled:to-zinc-950 disabled:text-zinc-600 disabled:border-zinc-850 disabled:scale-100 disabled:shadow-none pointer-events-auto"
+          @click="currentView = 'wizard'"
+          data-testid="novo-lancamento-fab"
+        >
+          <Plus class="w-7 h-7 stroke-[3px]" />
+        </button>
+      </div>
     </Transition>
 
     <!-- BottomSheet do Wizard de Novo Lançamento -->

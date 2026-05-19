@@ -52,18 +52,20 @@ describe('App FAB', () => {
       },
     })
 
-    const fab = wrapper.find('[data-testid="novo-lancamento-fab"]')
+    const fabWrapper = wrapper.find('[data-fixed-wrapper]')
+    const fabButton = wrapper.find('[data-testid="novo-lancamento-fab"]')
 
-    expect(fab.exists()).toBe(true)
-    expect(fab.text()).not.toContain('Novo lancamento')
-    expect(fab.classes()).toContain('fixed')
-    expect(fab.classes()).toContain('left-0')
-    expect(fab.classes()).toContain('right-0')
-    expect(fab.classes()).toContain('mx-auto')
-    expect(fab.classes()).toContain('w-14')
-    expect(fab.classes()).toContain('h-14')
-    expect(fab.classes()).toContain('rounded-full')
-    expect(fab.classes()).toContain('bg-gradient-to-br')
+    expect(fabWrapper.exists()).toBe(true)
+    expect(fabWrapper.classes()).toContain('fixed')
+    expect(fabWrapper.classes()).toContain('left-0')
+    expect(fabWrapper.classes()).toContain('right-0')
+
+    expect(fabButton.exists()).toBe(true)
+    expect(fabButton.text()).not.toContain('Novo lancamento')
+    expect(fabButton.classes()).toContain('w-14')
+    expect(fabButton.classes()).toContain('h-14')
+    expect(fabButton.classes()).toContain('rounded-full')
+    expect(fabButton.classes()).toContain('bg-gradient-to-br')
   })
 })
 
