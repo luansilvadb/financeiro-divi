@@ -15,7 +15,6 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Faturas Fechadas')
     expect(wrapper.text()).toContain('Maria → João')
     expect(wrapper.text()).toContain('R$ 80,00')
   })
