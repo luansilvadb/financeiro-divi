@@ -72,9 +72,15 @@ export function useDashboardCalculations(
 
   const currentMonthName = computed(() => {
     const fat = faturasAbertas[0]
-    if (!fat) return 'Período Atual'
+    if (!fat) return 'Mês'
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    return `${meses[fat.periodo.mes - 1]} ${fat.periodo.ano}`
+    return meses[fat.periodo.mes - 1]
+  })
+
+  const currentYear = computed(() => {
+    const fat = faturasAbertas[0]
+    if (!fat) return 'Atual'
+    return fat.periodo.ano.toString()
   })
 
   const sugerirProximoPeriodo = () => {
@@ -123,6 +129,7 @@ export function useDashboardCalculations(
     gastosDaFatura,
     todosOsAcertosQuitados,
     currentMonthName,
+    currentYear,
     sugerirProximoPeriodo,
     parcelasFuturasDetalhadas,
     totalFuturasVencer

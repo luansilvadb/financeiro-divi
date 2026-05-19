@@ -84,6 +84,7 @@ const {
   faturaTemAcertosAtivos,
   todosOsAcertosQuitados,
   currentMonthName,
+  currentYear,
   sugerirProximoPeriodo,
   parcelasFuturasDetalhadas
 } = calculations
