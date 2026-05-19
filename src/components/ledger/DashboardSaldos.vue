@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, toRef } from 'vue'
+import { ref, computed, toRef, nextTick, watch } from 'vue'
 import type { Tab } from '../ui/BottomTabBar.vue'
 import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
 import { Gasto } from '../../modules/ledger/core/domain/Gasto'
+import { Fatura } from '../../modules/ledger/core/domain/Fatura'
 import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
 import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
 import { useSaldosUnificados } from '../../modules/ledger/composables/useSaldosUnificados'
@@ -22,17 +23,19 @@ import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
 import { 
-  Check,
   ArrowUpRight, 
   TrendingUp, 
   ChevronDown, 
   ChevronUp, 
   History,
-  Settings
+  Settings,
+  Sparkles,
+  AlertTriangle,
+  Lock
 } from 'lucide-vue-next'
 
 interface Props {
-  membros: { id: string; nome: string }[]
+  membros: { id: string; nome: string; ativo?: boolean }[]
   faturasAbertas: any[]
   faturasFechadas: any[]
   acertosPendentes: any[]
@@ -44,12 +47,10 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura', 'openSettings'])
+const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura', 'openSettings', 'periodoStatusChanged'])
 
 const {
   registrarReembolsoParcialManual,
-  registrarPagamentoBancoManual,
-  removerPagamentoBancoManual,
   fecharFaturaManual,
   quitarAcertoMembro,
   atualizarGastoCompletoManual,
@@ -57,10 +58,125 @@ const {
   acertos: globalAcertos
 } = useCartoesEFaturas()
 
+// Lógica de navegação de períodos por calendário / seletor de meses
+const showBottomSheetHistorico = ref(false)
+
+const obterPeriodoInicial = () => {
+  const salvo = localStorage.getItem('divi_periodo_selecionado')
+  if (salvo) {
+    try {
+      const parsed = JSON.parse(salvo)
+      if (parsed.mes && parsed.ano) return parsed
+    } catch (e) {}
+  }
+  const faturaReferencia = props.faturasAbertas?.[0] || props.faturasFechadas?.[0]
+  if (faturaReferencia?.periodo) {
+    return { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
+  }
+  return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
+}
+
+const periodoSelecionado = ref<{ mes: number, ano: number }>(obterPeriodoInicial())
+
+watch(periodoSelecionado, (novos) => {
+  localStorage.setItem('divi_periodo_selecionado', JSON.stringify(novos))
+}, { deep: true, immediate: true })
+
+const faturaAtivaVisualizada = computed(() => {
+  const p = periodoSelecionado.value
+  const faturaEncontrada = props.faturasAbertas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano) ||
+                           props.faturasFechadas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+  if (faturaEncontrada) return faturaEncontrada
+
+  return new Fatura({
+    id: `virtual-${p.mes}-${p.ano}`,
+    cartaoId: props.cartoes[0]?.id || 'virtual-card',
+    periodo: { mes: p.mes, ano: p.ano },
+    responsavelId: props.membros[0]?.id || 'virtual-member',
+    status: 'ABERTA'
+  })
+})
+
+const faturaSelecionadaTrancada = computed(() => {
+  const p = periodoSelecionado.value
+  return props.faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+})
+
+watch(faturaSelecionadaTrancada, (isLocked) => {
+  emit('periodoStatusChanged', isLocked)
+}, { immediate: true })
+
+const faturasFiltradasCalculations = computed(() => {
+  const ativa = faturaAtivaVisualizada.value
+  if (!ativa) return []
+  return [ativa]
+})
+
+const formatarMesAno = (mes: number, ano: number) => {
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  return `${meses[mes - 1]} ${ano}`
+}
+
+const gastosFaturaSelecionada = computed(() => {
+  const fatId = faturaAtivaVisualizada.value?.id
+  if (!fatId) return []
+  return globalGastos.value.filter(g => g.faturaId === fatId)
+})
+
+const listaMesesSeletor = computed(() => {
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  const hoje = new Date()
+  const list = []
+
+  for (let i = -24; i <= 24; i++) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
+    const mesIdx = d.getMonth() + 1
+    const anoIdx = d.getFullYear()
+    
+    const estaFechada = props.faturasFechadas.some(
+      f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx
+    )
+
+    list.push({
+      mes: mesIdx,
+      ano: anoIdx,
+      nome: `${meses[mesIdx - 1]} ${anoIdx}`,
+      status: estaFechada ? 'FECHADA' : 'ABERTA'
+    })
+  }
+
+  return list
+})
+
+const mesesAbertosOpcoes = computed(() => {
+  return listaMesesSeletor.value.filter(item => item.status === 'ABERTA')
+})
+
+const mesesTrancadosOpcoes = computed(() => {
+  return listaMesesSeletor.value.filter(item => item.status === 'FECHADA')
+})
+
+const isDropdownAbertosOpen = ref(false)
+const itemSelecionadoRef = ref<any>(null)
+const setItemSelecionadoRef = (el: any, op: { mes: number; ano: number }) => {
+  if (el && periodoSelecionado.value.mes === op.mes && periodoSelecionado.value.ano === op.ano) {
+    itemSelecionadoRef.value = el
+  }
+}
+
+watch(isDropdownAbertosOpen, async (aberto) => {
+  if (aberto) {
+    await nextTick()
+    if (itemSelecionadoRef.value) {
+      itemSelecionadoRef.value.scrollIntoView({ block: 'nearest' })
+    }
+  }
+})
+
 // Extract calculation logic to dedicated composable
 const calculations = useDashboardCalculations(
   toRef(props, 'membros'),
-  props.faturasAbertas,
+  faturasFiltradasCalculations, // pass computed wrapper instead of static prop array
   props.faturasFechadas,
   props.acertosPendentes,
   globalGastos.value,
@@ -72,22 +188,15 @@ const calculations = useDashboardCalculations(
 // Destructure for template access
 const {
   getMembroNome,
-  getCartaoNome: getCartaoNomeBase,
-  getConsumo,
-  getAdiantamento,
   formatarDinheiro,
   calcularTotalFatura,
   acertosDaFatura,
-  faturaTemAcertosAtivos,
+  gastosDaFatura,
   todosOsAcertosQuitados,
   currentMonthName,
   currentYear,
-  sugerirProximoPeriodo,
   parcelasFuturasDetalhadas
 } = calculations
-
-// Wrapper for getCartaoNome to inject props.cartoes
-const getCartaoNome = (cartaoId: string) => getCartaoNomeBase(props.cartoes, cartaoId)
 
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
@@ -96,13 +205,6 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
 const showBottomSheetFechar = ref(false)
 const faturaParaFechar = ref<any | null>(null)
 
-const abrirFecharFatura = (faturaId: string) => {
-  const fatura = props.faturasAbertas.find(f => f.id === faturaId)
-  if (fatura) {
-    faturaParaFechar.value = fatura
-    showBottomSheetFechar.value = true
-  }
-}
 
 const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
   await fecharFaturaManual(faturaId, responsavelId)
@@ -165,7 +267,6 @@ const quitarComAjuste = async (acertoId: string) => {
 
 // --- INTEGRAÇÃO SENIOR V18 (FASES 2-5) ---
 const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
-const { isMonthLocked, setMonthLocked } = useFaturaRollover()
 
 // BottomSheets Contas Fixas
 const showPopupLancar = ref(false)
@@ -188,7 +289,7 @@ const abrirNovoBill = () => {
 }
 
 const confirmarLancarBill = async (dados: { valorReal: number, compradorId: string, splitIds: string[] }) => {
-  const activeFaturaId = props.faturasAbertas[0]?.id
+  const activeFaturaId = faturaAtivaVisualizada.value?.id
   if (!activeFaturaId) return
   await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
   showPopupLancar.value = false
@@ -209,8 +310,17 @@ const confirmarDeletarTemplate = (id: string) => {
 const showBottomSheetNovoPeriodo = ref(false)
 const nomeNovoPeriodo = ref('')
 
+const sugerirProximoPeriodoLocal = (fat: any) => {
+  if (!fat) return ''
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  const mIdx = fat.periodo.mes - 1 // 0-indexed
+  const proximoMIdx = (mIdx + 1) % 12
+  const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
+  return `${meses[proximoMIdx]} ${proximoAno}`
+}
+
 const abrirNovoPeriodoBottomSheet = () => {
-  nomeNovoPeriodo.value = sugerirProximoPeriodo()
+  nomeNovoPeriodo.value = sugerirProximoPeriodoLocal(faturaAtivaVisualizada.value)
   showBottomSheetNovoPeriodo.value = true
 }
 
@@ -225,7 +335,7 @@ const confirmarNovoPeriodo = async () => {
 const { calcularSaldosUnificados, calcularTransacoesNetting } = useSaldosUnificados()
 
 const saldosUnificadosAtivos = computed(() => {
-  const activeFaturaId = props.faturasAbertas[0]?.id
+  const activeFaturaId = faturaAtivaVisualizada.value?.id
   if (!activeFaturaId) return {}
   const gastosPeriodo = globalGastos.value.filter(g => g.faturaId === activeFaturaId)
   return calcularSaldosUnificados(props.membros, gastosPeriodo)
@@ -233,6 +343,14 @@ const saldosUnificadosAtivos = computed(() => {
 
 const nettingTransferencias = computed(() => {
   return calcularTransacoesNetting(saldosUnificadosAtivos.value)
+})
+
+const membrosVisiveis = computed(() => {
+  return props.membros.filter(m => {
+    if (m.ativo !== false) return true // Moradores ativos aparecem sempre
+    const saldo = saldosUnificadosAtivos.value[m.id] || 0
+    return Math.abs(saldo) > 0.005 // Moradores desativados só aparecem se tiverem saldo residual
+  })
 })
 
 const showBottomSheetNetting = ref(false)
@@ -244,7 +362,7 @@ const abrirBottomSheetNetting = (transferencia: any) => {
 }
 
 const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
-  const activeFaturaId = props.faturasAbertas[0]?.id
+  const activeFaturaId = faturaAtivaVisualizada.value?.id
   if (!activeFaturaId) return
 
   const gRepo = new LocalStorageGastoRepository()
@@ -289,8 +407,7 @@ const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
     props.faturasAbertas,
     props.cartoes,
     saldosUnificadosAtivos.value,
-    currentMonthName.value,
-    fecharFaturaManual
+    currentMonthName.value
   )
 
   await useCartoesEFaturas().inicializar()
@@ -311,13 +428,15 @@ const excluirGasto = async (id: string) => {
       <!-- Coluna Esquerda: Mês Selector -->
       <div class="flex-1">
         <div 
-          class="flex flex-col cursor-pointer group active:opacity-70 transition-opacity"
-          @click="abrirNovoPeriodoBottomSheet"
+          class="flex flex-col cursor-pointer group inline-block"
+          @click="showBottomSheetHistorico = true"
         >
-          <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1">{{ currentMonthName }}</span>
+          <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1 flex items-center gap-1 group-hover:text-ember transition-colors">
+            {{ currentYear }}
+            <ChevronDown class="w-3 h-3 text-ash group-hover:text-ember transition-colors" />
+          </span>
           <div class="flex items-center gap-2">
-            <span class="text-2xl font-black text-charcoal tracking-tighter">{{ currentYear }}</span>
-            <ChevronDown class="w-4 h-4 text-ember mt-1 group-hover:translate-y-0.5 transition-transform" />
+            <span class="text-2xl font-black text-charcoal tracking-tighter group-hover:text-ember transition-colors">{{ currentMonthName }}</span>
           </div>
         </div>
       </div>
@@ -363,7 +482,7 @@ const excluirGasto = async (id: string) => {
 
         <div class="p-6 space-y-4 relative z-10">
           <div 
-            v-for="m in props.membros" 
+            v-for="m in membrosVisiveis" 
             :key="m.id" 
             class="group flex justify-between items-center p-4 rounded-xl border border-stone bg-canvas hover:border-ember/30 hover:bg-white transition-all duration-300"
           >
@@ -430,7 +549,7 @@ const excluirGasto = async (id: string) => {
               </div>
               <Button 
                 @click="abrirBottomSheetNetting(t)"
-                :disabled="isMonthLocked"
+                :disabled="faturaSelecionadaTrancada"
                 variant="primary"
                 class="w-full md:w-auto"
               >
@@ -446,9 +565,9 @@ const excluirGasto = async (id: string) => {
     <section class="space-y-4">
       <ContasFixasPanel 
         :contasFixas="contasFixas"
-        :gastos="globalGastos"
+        :gastos="gastosFaturaSelecionada"
         :membros="props.membros"
-        :isMonthLocked="isMonthLocked"
+        :isMonthLocked="faturaSelecionadaTrancada"
         @lancar="abrirLancarBill"
         @configurar="abrirConfigurarBill"
         @novo="abrirNovoBill"
@@ -458,9 +577,9 @@ const excluirGasto = async (id: string) => {
     <!-- Feed de Lançamentos Recentes (Design System Family) -->
     <section class="space-y-4">
       <ActivityFeed 
-        :gastos="globalGastos"
+        :gastos="gastosFaturaSelecionada"
         :membros="props.membros"
-        :is-month-locked="isMonthLocked"
+        :is-month-locked="faturaSelecionadaTrancada"
         @desfazerGasto="excluirGasto"
         @ajustarGasto="abrirAjustarGasto"
       />
@@ -469,143 +588,124 @@ const excluirGasto = async (id: string) => {
 
     <!-- GROUP: FATURAS -->
     <div v-show="isFaturas" class="space-y-12">
-    <!-- Detalhamento Granular de Saldos por Coluna (Senior v19) -->
-    <div class="mt-6">
-      <DetalhamentoSaldosCard 
-        :membros="props.membros"
-        :gastos="globalGastos"
-        :saldosUnificados="saldosUnificadosAtivos"
-      />
-    </div>
-
-    <!-- Seção 3: Faturas Fechadas (Acertos & Reembolsos) (Minimalist Modern) -->
-    <section v-if="faturasFechadas.length > 0" class="space-y-4">
-      <div class="grid gap-6">
-        <Card 
-          v-for="fatura in faturasFechadas" 
-          :key="fatura.id" 
-          class="p-0 overflow-hidden"
+      <!-- Banner de Gerenciamento do Período Dinâmico -->
+      <Card class="mt-6 p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-midnight text-white border-none shadow-lg">
+        <div>
+          <h3 class="font-bold text-lg leading-tight">Mês de Referência: {{ currentMonthName }}</h3>
+          <p class="text-xs text-stone-300 mt-1">
+            {{ faturaSelecionadaTrancada ? 'Este mês está arquivado. Para fazer novos lançamentos, reabra o período.' : 'Encerre este mês para gerar as faturas e iniciar o próximo período.' }}
+          </p>
+        </div>
+        <Button 
+          v-if="faturaSelecionadaTrancada"
+          variant="secondary" 
+          class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent"
+          @click="$emit('reabrirFatura', faturaAtivaVisualizada.id)"
         >
-          <!-- Cabeçalho -->
-          <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
-                <History class="w-5 h-5" />
-              </div>
-              <div>
-                <h3 class="font-bold text-lg leading-tight">{{ getCartaoNome(fatura.cartaoId) }}</h3>
-                <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
-                  Período: {{ fatura.periodo.mes }}/{{ fatura.periodo.ano }}
-                </p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span v-if="todosOsAcertosQuitados(fatura.id) && fatura.dataPagamentoBanco" class="text-[9px] font-bold text-meadow bg-meadow/10 px-3 py-1 rounded-full border border-meadow/20">QUITADA</span>
-              <Button variant="secondary" size="sm" @click="emit('reabrirFatura', fatura.id)" class="text-[10px] h-8 border border-stone">
-                Reabrir
-              </Button>
-            </div>
-          </div>
+          Reabrir Mês
+        </Button>
+        <Button 
+          v-else
+          variant="primary" 
+          class="w-full md:w-auto bg-ember hover:bg-ember/90 border-transparent text-white" 
+          @click="abrirNovoPeriodoBottomSheet"
+        >
+          Encerrar Mês
+        </Button>
+      </Card>
 
-          <div class="p-6 space-y-6">
-            <!-- ACERTOS ATIVOS -->
-            <div class="space-y-8">
-              <!-- Banner de Status de Pagamento ao Banco -->
-              <div v-if="fatura.dataPagamentoBanco" class="flex items-center justify-between p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-meadow text-white flex items-center justify-center">
-                    <Check class="w-4 h-4" />
-                  </div>
-                  <p class="text-xs font-semibold leading-tight">
-                    Fatura paga ao banco!<br>
-                    <span class="text-[10px] opacity-80">Reembolse o responsável via Pix.</span>
+      <!-- Detalhamento Granular de Saldos por Coluna (Senior v19) -->
+      <div class="mt-2">
+        <DetalhamentoSaldosCard 
+          :membros="membrosVisiveis"
+          :gastos="gastosFaturaSelecionada"
+          :saldosUnificados="saldosUnificadosAtivos"
+        />
+      </div>
+
+      <!-- Acertos e Reembolsos do Mês Selecionado (Exibido apenas se o mês visualizado estiver arquivado e contiver acertos) -->
+      <section v-if="faturaSelecionadaTrancada && faturaAtivaVisualizada && acertosDaFatura(faturaAtivaVisualizada.id).length > 0" class="space-y-4">
+        <div class="grid gap-6">
+          <Card class="p-0 overflow-hidden">
+            <!-- Cabeçalho -->
+            <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
+                  <History class="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 class="font-bold text-lg leading-tight">Acertos do Período</h3>
+                  <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
+                    Mês {{ faturaAtivaVisualizada.periodo.mes }}/{{ faturaAtivaVisualizada.periodo.ano }}
                   </p>
                 </div>
-                <Button variant="secondary" size="sm" @click="removerPagamentoBancoManual(fatura.id)" class="text-coral hover:text-red-600 hover:bg-[#fff0f0] border border-transparent">
-                  Estornar
-                </Button>
               </div>
+              <span v-if="todosOsAcertosQuitados(faturaAtivaVisualizada.id)" class="text-[9px] font-bold text-meadow bg-meadow/10 px-3 py-1 rounded-full border border-meadow/20">QUITADA</span>
+            </div>
 
-              <div v-else class="flex flex-col items-center gap-4 p-6 rounded-xl bg-stone/30 border border-stone text-center">
-                <p class="text-xs text-ash font-medium">
-                  Aguardando pagamento ao banco pelo responsável.
-                </p>
-                <Button variant="secondary" size="sm" @click="registrarPagamentoBancoManual(fatura.id)" class="border border-stone">
-                  Já paguei o banco
-                </Button>
-              </div>
-
-              <!-- Lista de Acertos -->
-              <div class="space-y-4">
-                <div v-for="acerto in acertosDaFatura(fatura.id)" :key="acerto.id" class="p-4 rounded-xl border border-stone bg-canvas space-y-4">
-                  <div class="flex justify-between items-start">
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-stone flex items-center justify-center font-display text-xs text-charcoal">
-                        {{ getMembroNome(acerto.membroId)[0] }}
+            <div class="p-6 space-y-6">
+              <div class="space-y-8">
+                <!-- Lista de Acertos -->
+                <div class="space-y-4">
+                  <div v-for="acerto in acertosDaFatura(faturaAtivaVisualizada.id)" :key="acerto.id" class="p-4 rounded-xl border border-stone bg-canvas space-y-4">
+                    <div class="flex justify-between items-start">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-stone flex items-center justify-center font-display text-xs text-charcoal">
+                          {{ getMembroNome(acerto.membroId)[0] }}
+                        </div>
+                        <div>
+                          <p class="text-sm font-bold text-charcoal">
+                            {{ getMembroNome(acerto.membroId) }} → {{ getMembroNome(faturaAtivaVisualizada.responsavelId) }}
+                          </p>
+                          <p class="text-[10px] text-ash">
+                            Total: R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p class="text-sm font-bold text-charcoal">
-                          {{ getMembroNome(acerto.membroId) }} → {{ getMembroNome(fatura.responsavelId) }}
+                      <div class="text-right">
+                        <p :class="['text-sm font-bold', acerto.pago ? 'text-meadow' : 'text-coral']">
+                          {{ acerto.pago ? '✓ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') }}
                         </p>
-                        <p class="text-[10px] text-ash">
-                          Total: R$ {{ formatarDinheiro(acerto.valorAcerto.centavos).toFixed(2).replace('.', ',') }}
-                        </p>
+                        <button v-if="!acerto.pago" @click="iniciarPix(acerto)" class="text-[10px] font-bold text-ember hover:underline mt-1">
+                          Registrar Pix
+                        </button>
                       </div>
                     </div>
-                    <div class="text-right">
-                      <p :class="['text-sm font-bold', acerto.pago ? 'text-meadow' : 'text-coral']">
-                        {{ acerto.pago ? '✓ Quitado' : 'R$ ' + formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0)).toFixed(2).replace('.', ',') }}
+
+                    <!-- Barra de Progresso Minimalist -->
+                    <div class="h-1.5 w-full bg-stone rounded-full overflow-hidden">
+                      <div 
+                        class="h-full bg-ember transition-all duration-500"
+                        :style="{ width: `${((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100}%` }"
+                      />
+                    </div>
+
+                    <!-- Input de Pix Parcial -->
+                    <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-stone space-y-4 animate-in fade-in slide-in-from-top-2">
+                      <div class="flex items-center gap-3">
+                        <div class="relative flex-1">
+                          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xs font-bold">R$</span>
+                          <input 
+                            v-model.number="valorPixInput"
+                            type="number"
+                            step="0.01"
+                            class="w-full pl-9 pr-4 py-2 rounded-lg border border-stone bg-canvas focus:border-ember outline-none text-sm font-bold text-charcoal"
+                          />
+                        </div>
+                        <Button size="sm" @click="enviarReembolsoPix(acerto.id)">Registrar</Button>
+                      </div>
+                      <p class="text-[10px] text-ash">
+                        Ou <button @click="quitarComAjuste(acerto.id)" class="text-ember font-bold underline">Quitar Valor Total</button>
                       </p>
-                      <button v-if="!acerto.pago" @click="iniciarPix(acerto)" class="text-[10px] font-bold text-ember hover:underline mt-1">
-                        Registrar Pix
-                      </button>
                     </div>
                   </div>
-
-                  <!-- Barra de Progresso Minimalist -->
-                  <div class="h-1.5 w-full bg-stone rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-ember transition-all duration-500"
-                      :style="{ width: `${((acerto.valorPago?.centavos || 0) / acerto.valorAcerto.centavos) * 100}%` }"
-                    />
-                  </div>
-
-                  <!-- Input de Pix Parcial -->
-                  <div v-if="acertoPixId === acerto.id" class="pt-4 border-t border-stone space-y-4 animate-in fade-in slide-in-from-top-2">
-                    <div class="flex items-center gap-3">
-                      <div class="relative flex-1">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xs font-bold">R$</span>
-                        <input 
-                          v-model.number="valorPixInput"
-                          type="number"
-                          step="0.01"
-                          class="w-full pl-9 pr-4 py-2 rounded-lg border border-stone bg-canvas focus:border-ember outline-none text-sm font-bold text-charcoal"
-                        />
-                      </div>
-                      <Button size="sm" @click="enviarReembolsoPix(acerto.id)">Registrar</Button>
-                    </div>
-                    <p class="text-[10px] text-ash">
-                      Ou <button @click="quitarComAjuste(acerto.id)" class="text-ember font-bold underline">Quitar Valor Total</button>
-                    </p>
-                  </div>
                 </div>
-              </div>
-
-              <!-- CTA Final: Todos quitados mas banco não pago -->
-              <div v-if="todosOsAcertosQuitados(fatura.id) && !fatura.dataPagamentoBanco" class="p-6 rounded-2xl bg-meadow text-white text-center space-y-4 shadow-sm">
-                <div class="space-y-1">
-                  <p class="font-display text-xl font-bold">Tudo Coletado!</p>
-                  <p class="text-xs opacity-90">Todos os moradores já reembolsaram. Hora de pagar o banco.</p>
-                </div>
-                <Button variant="secondary" class="w-full bg-canvas text-charcoal hover:bg-white border border-stone" @click="registrarPagamentoBancoManual(fatura.id)">
-                  Registrar Pagamento ao Banco
-                </Button>
               </div>
             </div>
-          </div>
-        </Card>
-      </div>
-    </section>
+          </Card>
+        </div>
+      </section>
+
 
 
 
@@ -678,29 +778,50 @@ const excluirGasto = async (id: string) => {
       @cancel="showBottomSheetConfigCF = false"
     />
 
-    <!-- BottomSheet Novo Período -->
-    <BottomSheet :model-value="showBottomSheetNovoPeriodo" @update:model-value="val => { if (!val) showBottomSheetNovoPeriodo = false }" width-class="md:w-[420px]">
-      <div class="p-6 sm:p-8 space-y-6 flex-grow">
-        <div class="space-y-2 text-center">
-          <h3 class="text-3xl font-display text-charcoal">Novo <span class="text-ember">Período</span></h3>
-          <p class="text-xs text-ash leading-relaxed">
-            O mês anterior será trancado permanentemente. O saldo será transportado automaticamente para o novo período.
+    <!-- BottomSheet Novo Período (Dossiê Estratégico) -->
+    <BottomSheet :model-value="showBottomSheetNovoPeriodo" @update:model-value="val => { if (!val) showBottomSheetNovoPeriodo = false }" width-class="md:w-[460px]" max-height="95dvh">
+      
+      <!-- Corpo com Scroll -->
+      <div class="p-6 sm:p-8 space-y-8 flex-grow overflow-y-auto custom-scrollbar">
+        <div class="space-y-3">
+          <h3 class="text-3xl font-display text-charcoal leading-tight">Fechamento<br>de <span class="text-ember">Período</span></h3>
+          <p class="text-sm text-ash leading-relaxed">
+            Revise os números antes de arquivar o mês de <strong class="text-charcoal">{{ faturaAtivaVisualizada ? formatarMesAno(faturaAtivaVisualizada.periodo.mes, faturaAtivaVisualizada.periodo.ano) : '' }}</strong>. O saldo será consolidado e os acertos serão gerados automaticamente.
           </p>
         </div>
-        
-        <div class="space-y-3">
-          <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Mês de Referência</label>
-          <input 
-            type="text" 
-            v-model="nomeNovoPeriodo" 
-            class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all" 
-            placeholder="Ex: Junho 2026"
-          />
+
+        <div v-if="faturaAtivaVisualizada" class="grid grid-cols-2 gap-3">
+          <div class="bg-parchment p-4 rounded-xl border border-stone">
+            <p class="text-[10px] font-bold uppercase text-ash tracking-widest mb-1">Total do Mês</p>
+            <p class="text-2xl font-display text-charcoal break-words">R$ {{ formatarDinheiro(calcularTotalFatura(faturaAtivaVisualizada.id)).toFixed(2).replace('.', ',') }}</p>
+            <p class="text-[10px] text-ash font-medium mt-1">{{ gastosDaFatura(faturaAtivaVisualizada.id).length }} lançamentos registrados</p>
+          </div>
+          
+          <div class="bg-parchment p-4 rounded-xl border border-stone">
+            <p class="text-[10px] font-bold uppercase text-ash tracking-widest mb-1">Impacto (Pix)</p>
+            <p class="text-2xl font-display text-ember">{{ nettingTransferencias.length }} Acertos</p>
+            <p class="text-[10px] text-ash font-medium mt-1">serão cobrados dos moradores</p>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-2">
+        <div v-if="faturaAtivaVisualizada && contasFixas.some(c => !gastosDaFatura(faturaAtivaVisualizada.id).some(g => g.recurringBillId === c.id))" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start">
+          <div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <AlertTriangle class="w-3.5 h-3.5 text-amber-600" />
+          </div>
+          <div>
+            <p class="text-xs font-bold text-amber-700">Contas fixas pendentes!</p>
+            <p class="text-[11px] text-amber-700/80 mt-0.5">Ainda existem contas fixas deste mês que não foram lançadas. Deseja fechar mesmo assim?</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Fixo (Botões) -->
+      <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
+        <div class="grid grid-cols-2 gap-3">
           <Button variant="secondary" @click="showBottomSheetNovoPeriodo = false">Cancelar</Button>
-          <Button variant="primary" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">Confirmar</Button>
+          <Button variant="primary" class="bg-charcoal text-white hover:bg-midnight border-none" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">
+            Arquivar Mês
+          </Button>
         </div>
       </div>
     </BottomSheet>
@@ -726,5 +847,107 @@ const excluirGasto = async (id: string) => {
       @cancel="showBottomSheetAjustar = false"
       @save="confirmarAjusteGasto"
     />
+
+    <!-- BottomSheet de Navegação de Histórico (Mobile Premium) -->
+    <BottomSheet 
+      :model-value="showBottomSheetHistorico" 
+      @update:model-value="val => { if (!val) showBottomSheetHistorico = false }" 
+      width-class="md:w-[460px]"
+      max-height="85dvh"
+    >
+      <div 
+        class="p-6 sm:p-8 space-y-6 flex-grow custom-scrollbar"
+        :class="isDropdownAbertosOpen ? 'overflow-y-visible' : 'overflow-y-auto'"
+      >
+        <div class="space-y-3">
+          <h3 class="text-3xl font-display text-charcoal leading-tight">Navegar<br>nos <span class="text-ember">Períodos</span></h3>
+          <p class="text-xs text-ash leading-relaxed">
+            Selecione o mês que você deseja gerenciar. Todos os meses estão abertos para lançamentos até serem fechados.
+          </p>
+        </div>
+
+        <!-- Seção: Meses em Aberto (Seletor Premium) -->
+        <div class="space-y-3">
+          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Gerenciar Período Aberto</h4>
+          <div class="relative" tabindex="0" @blur="isDropdownAbertosOpen = false">
+            <div 
+              @click="isDropdownAbertosOpen = !isDropdownAbertosOpen"
+              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none flex justify-between items-center"
+              :class="isDropdownAbertosOpen ? 'border-ember ring-2 ring-ember/20' : ''"
+            >
+              <span class="flex items-center gap-2.5">
+                <span class="w-2 h-2 rounded-full bg-meadow animate-pulse" />
+                <span class="block truncate">
+                  {{ (periodoSelecionado && props.faturasFechadas.every(f => f.periodo.mes !== periodoSelecionado.mes || f.periodo.ano !== periodoSelecionado.ano))
+                    ? formatarMesAno(periodoSelecionado.mes, periodoSelecionado.ano)
+                    : 'Selecionar mês aberto...'
+                  }}
+                </span>
+              </span>
+              <ChevronDown 
+                class="w-4 h-4 text-ash pointer-events-none transition-transform duration-200" 
+                :class="isDropdownAbertosOpen ? 'rotate-180' : ''"
+              />
+            </div>
+            
+            <!-- Listagem suspensa do Dropdown de Abertos -->
+            <transition name="dropdown-slide">
+              <div 
+                v-if="isDropdownAbertosOpen" 
+                class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
+              >
+                <div 
+                  v-for="op in mesesAbertosOpcoes" 
+                  :key="op.nome" 
+                  :ref="el => setItemSelecionadoRef(el, op)"
+                  @mousedown.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false" 
+                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors flex items-center gap-3"
+                  :class="periodoSelecionado.mes === op.mes && periodoSelecionado.ano === op.ano ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
+                >
+                  <span class="w-2 h-2 rounded-full bg-meadow animate-pulse shrink-0" />
+                  {{ op.nome }}
+                </div>
+              </div>
+            </transition>
+          </div>
+        </div>
+
+        <!-- Divider Elegante -->
+        <hr class="border-stone/60 my-6" />
+
+        <!-- Seção: Histórico de Trancados -->
+        <div class="space-y-3">
+          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Histórico de Fechados (Arquivados)</h4>
+          <div class="grid gap-2">
+            <div 
+              v-for="item in mesesTrancadosOpcoes" 
+              :key="item.nome"
+              @click="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
+              class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
+              :class="periodoSelecionado.mes === item.mes && periodoSelecionado.ano === item.ano ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas hover:border-ember/30 text-charcoal'"
+            >
+              <div class="flex items-center gap-3">
+                <span class="w-2.5 h-2.5 rounded-full bg-ash" />
+                <span class="text-sm font-semibold">{{ item.nome }}</span>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] uppercase font-bold text-ash">Arquivado</span>
+                <Lock class="w-3.5 h-3.5 text-ash shrink-0" />
+              </div>
+            </div>
+            
+            <div v-if="mesesTrancadosOpcoes.length === 0" class="text-center py-6 border border-dashed border-stone rounded-xl">
+              <p class="text-xs text-ash italic">Nenhum período arquivado ainda.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer do BottomSheet -->
+      <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
+        <Button variant="secondary" class="w-full" @click="showBottomSheetHistorico = false">Fechar</Button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
