@@ -75,9 +75,6 @@
 }
 
 @layer base {
-  html {
-    scrollbar-gutter: stable;
-  }
   body {
     @apply bg-canvas text-graphite font-sans antialiased;
   }

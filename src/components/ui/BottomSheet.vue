@@ -75,14 +75,23 @@ const close = () => emit('update:modelValue', false)
 
 const { registerOpen, registerClose } = useBottomSheetState()
 
-// Lock body scroll when bottom sheet is open
+// Lock body scroll and compensate scrollbar width to prevent layout shifts
+const getScrollbarWidth = () => {
+  return window.innerWidth - document.documentElement.clientWidth
+}
+
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     registerOpen()
+    const scrollbarWidth = getScrollbarWidth()
     document.body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
   } else {
     registerClose()
     document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
   }
 }, { immediate: true })
 
@@ -90,6 +99,7 @@ onUnmounted(() => {
   if (props.modelValue) {
     registerClose()
     document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
   }
 })
 
