@@ -131,25 +131,15 @@ const handleSalvarTransacao = async () => {
 
 
     <!-- Floating Action Button (FAB) -->
-    <transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="scale-0"
-      enter-to-class="scale-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="scale-100"
-      leave-to-class="scale-0"
+    <Button
+      v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
+      variant="primary"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 p-0 rounded-full shadow-lg z-[100] active:scale-95 border-4 border-card"
+      @click="currentView = 'wizard'"
+      data-testid="novo-lancamento-fab"
     >
-      <Button
-        v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-        variant="primary"
-        class="fab-rounded fixed bottom-20 md:bottom-8 right-8 w-14 h-14 p-0 rounded-full shadow-[0_1px_6px_rgba(0,0,0,0.08),0_0_24px_rgba(0,0,0,0.08)] z-[100] active:scale-95"
-        @click="currentView = 'wizard'"
-        data-testid="novo-lancamento-fab"
-        aria-label="Novo lancamento"
-      >
-        <Plus class="w-6 h-6 stroke-[3px]" />
-      </Button>
-    </transition>
+      <Plus class="w-7 h-7 stroke-[3px]" />
+    </Button>
 
     <!-- Bottomsheet Não Modal do Wizard de Novo Lançamento -->
     <BottomSheet 
