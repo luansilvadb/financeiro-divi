@@ -12,12 +12,12 @@ import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import { LocalStorageGastoRepository } from '../../modules/ledger/adapters/LocalStorageGastoRepository'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
-import ModalConfigurarContaFixa from './ModalConfigurarContaFixa.vue'
+import BottomSheetConfigurarContaFixa from './BottomSheetConfigurarContaFixa.vue'
 import RevisaoFatura from './dashboard/RevisaoFatura.vue'
-import ModalFecharFatura from './dashboard/ModalFecharFatura.vue'
-import ModalAcertoCompensacao from './dashboard/ModalAcertoCompensacao.vue'
+import BottomSheetFecharFatura from './dashboard/BottomSheetFecharFatura.vue'
+import BottomSheetAcertoCompensacao from './dashboard/BottomSheetAcertoCompensacao.vue'
 import ActivityFeed from './ActivityFeed.vue'
-import ModalAjustarGasto from './ModalAjustarGasto.vue'
+import BottomSheetAjustarGasto from './BottomSheetAjustarGasto.vue'
 import DetalhamentoSaldosCard from './dashboard/DetalhamentoSaldosCard.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
@@ -97,34 +97,34 @@ const faturaSobRevisao = ref<any | null>(null)
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
 
-// Estado do modal de fechamento (Gap 6)
-const showModalFechar = ref(false)
+// Estado do BottomSheet de fechamento (Gap 6)
+const showBottomSheetFechar = ref(false)
 const faturaParaFechar = ref<any | null>(null)
 
 const abrirFecharFatura = (faturaId: string) => {
   const fatura = props.faturasAbertas.find(f => f.id === faturaId)
   if (fatura) {
     faturaParaFechar.value = fatura
-    showModalFechar.value = true
+    showBottomSheetFechar.value = true
   }
 }
 
 const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
   await fecharFaturaManual(faturaId, responsavelId)
-  showModalFechar.value = false
+  showBottomSheetFechar.value = false
   faturaParaFechar.value = null
   await useCartoesEFaturas().inicializar()
 }
 
-// Estado do modal de Ajuste (✏️ Ajustar)
-const showModalAjustar = ref(false)
+// Estado do BottomSheet de Ajuste (✏️ Ajustar)
+const showBottomSheetAjustar = ref(false)
 const gastoParaAjustar = ref<any | null>(null)
 
 const abrirAjustarGasto = (gastoId: string) => {
   const gasto = globalGastos.value.find(g => g.id === gastoId)
   if (gasto) {
     gastoParaAjustar.value = gasto
-    showModalAjustar.value = true
+    showBottomSheetAjustar.value = true
   }
 }
 
@@ -139,7 +139,7 @@ const confirmarAjusteGasto = async (dados: {
 }) => {
   if (!gastoParaAjustar.value) return
   await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
-  showModalAjustar.value = false
+  showBottomSheetAjustar.value = false
   gastoParaAjustar.value = null
   await useCartoesEFaturas().inicializar()
 }
@@ -172,9 +172,9 @@ const quitarComAjuste = async (acertoId: string) => {
 const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
 const { isMonthLocked, setMonthLocked } = useFaturaRollover()
 
-// Modais Contas Fixas
+// BottomSheets Contas Fixas
 const showPopupLancar = ref(false)
-const showModalConfigCF = ref(false)
+const showBottomSheetConfigCF = ref(false)
 const billSelecionada = ref<any | null>(null)
 
 const abrirLancarBill = (bill: any) => {
@@ -184,12 +184,12 @@ const abrirLancarBill = (bill: any) => {
 
 const abrirConfigurarBill = (bill: any) => {
   billSelecionada.value = bill
-  showModalConfigCF.value = true
+  showBottomSheetConfigCF.value = true
 }
 
 const abrirNovoBill = () => {
   billSelecionada.value = null
-  showModalConfigCF.value = true
+  showBottomSheetConfigCF.value = true
 }
 
 const confirmarLancarBill = async (dados: { valorReal: number, compradorId: string, splitIds: string[] }) => {
@@ -202,28 +202,28 @@ const confirmarLancarBill = async (dados: { valorReal: number, compradorId: stri
 
 const confirmarSalvarTemplate = (template: any) => {
   salvarContaFixa(template)
-  showModalConfigCF.value = false
+  showBottomSheetConfigCF.value = false
 }
 
 const confirmarDeletarTemplate = (id: string) => {
   excluirContaFixa(id)
-  showModalConfigCF.value = false
+  showBottomSheetConfigCF.value = false
 }
 
 // Lógica de Rollover
-const showModalNovoPeriodo = ref(false)
+const showBottomSheetNovoPeriodo = ref(false)
 const nomeNovoPeriodo = ref('')
 
-const abrirNovoPeriodoModal = () => {
+const abrirNovoPeriodoBottomSheet = () => {
   nomeNovoPeriodo.value = sugerirProximoPeriodo()
-  showModalNovoPeriodo.value = true
+  showBottomSheetNovoPeriodo.value = true
 }
 
 const confirmarNovoPeriodo = async () => {
   if (!nomeNovoPeriodo.value.trim()) return
   
   await executarNovoPeriodo(nomeNovoPeriodo.value)
-  showModalNovoPeriodo.value = false
+  showBottomSheetNovoPeriodo.value = false
 }
 
 // --- INTEGRAÇÃO SENIOR V19: LIVE BALANCES & NETTING ---
@@ -240,12 +240,12 @@ const nettingTransferencias = computed(() => {
   return calcularTransacoesNetting(saldosUnificadosAtivos.value)
 })
 
-const showModalNetting = ref(false)
+const showBottomSheetNetting = ref(false)
 const nettingTarget = ref<any | null>(null)
 
-const abrirModalNetting = (transferencia: any) => {
+const abrirBottomSheetNetting = (transferencia: any) => {
   nettingTarget.value = transferencia
-  showModalNetting.value = true
+  showBottomSheetNetting.value = true
 }
 
 const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
@@ -272,7 +272,7 @@ const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: n
   })
 
   await gRepo.salvar(acertoGasto)
-  showModalNetting.value = false
+  showBottomSheetNetting.value = false
   nettingTarget.value = null
   await useCartoesEFaturas().inicializar()
 }
@@ -326,7 +326,7 @@ const excluirGasto = async (id: string) => {
       <div class="flex-1">
         <div 
           class="flex flex-col cursor-pointer group active:opacity-70 transition-opacity"
-          @click="abrirNovoPeriodoModal"
+          @click="abrirNovoPeriodoBottomSheet"
         >
           <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1">Período</span>
           <div class="flex items-center gap-2">
@@ -417,7 +417,7 @@ const excluirGasto = async (id: string) => {
               </div>
             </div>
             <Button 
-              @click="abrirModalNetting(t)"
+              @click="abrirBottomSheetNetting(t)"
               :disabled="isMonthLocked"
               variant="primary"
               class="w-full md:w-auto"
@@ -677,12 +677,12 @@ const excluirGasto = async (id: string) => {
     </section>
     </div><!-- /isFaturas -->
 
-    <!-- Modal de Fechamento de Fatura com Dono Variável (Gap 6) -->
-    <ModalFecharFatura 
-      :show="showModalFechar"
+    <!-- BottomSheet de Fechamento de Fatura com Dono Variável (Gap 6) -->
+    <BottomSheetFecharFatura 
+      :show="showBottomSheetFechar"
       :fatura="faturaParaFechar"
       :membros="props.membros"
-      @close="showModalFechar = false"
+      @close="showBottomSheetFechar = false"
       @confirmar="confirmarFechamentoFatura"
     />
 
@@ -695,17 +695,17 @@ const excluirGasto = async (id: string) => {
       @cancel="showPopupLancar = false"
     />
 
-    <ModalConfigurarContaFixa 
-      :visible="showModalConfigCF"
+    <BottomSheetConfigurarContaFixa 
+      :visible="showBottomSheetConfigCF"
       :bill="billSelecionada"
       :membros="props.membros"
       @save="confirmarSalvarTemplate"
       @delete="confirmarDeletarTemplate"
-      @cancel="showModalConfigCF = false"
+      @cancel="showBottomSheetConfigCF = false"
     />
 
-    <!-- Bottomsheet Não Modal Novo Período -->
-    <BottomSheet :model-value="showModalNovoPeriodo" @update:model-value="val => { if (!val) showModalNovoPeriodo = false }" width-class="md:w-[420px]">
+    <!-- BottomSheet Novo Período -->
+    <BottomSheet :model-value="showBottomSheetNovoPeriodo" @update:model-value="val => { if (!val) showBottomSheetNovoPeriodo = false }" width-class="md:w-[420px]">
       <div class="p-6 sm:p-8 space-y-6 flex-grow">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Transição</SectionLabel>
@@ -726,31 +726,31 @@ const excluirGasto = async (id: string) => {
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-2">
-          <Button variant="secondary" @click="showModalNovoPeriodo = false">Cancelar</Button>
+          <Button variant="secondary" @click="showBottomSheetNovoPeriodo = false">Cancelar</Button>
           <Button variant="primary" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">Confirmar</Button>
         </div>
       </div>
     </BottomSheet>
 
-    <!-- Modal de Netting Otimizado (Senior v19) -->
-    <ModalAcertoCompensacao 
-      :visible="showModalNetting"
+    <!-- BottomSheet de Netting Otimizado (Senior v19) -->
+    <BottomSheetAcertoCompensacao 
+      :visible="showBottomSheetNetting"
       :from-id="nettingTarget?.from"
       :to-id="nettingTarget?.to"
       :from-name="getMembroNome(nettingTarget?.from)"
       :to-name="getMembroNome(nettingTarget?.to)"
       :suggested-value="nettingTarget?.val || 0"
-      @cancel="showModalNetting = false"
+      @cancel="showBottomSheetNetting = false"
       @confirm="confirmarBaixaNetting"
     />
 
-    <!-- Modal de Ajuste de Lançamento (✏️ Ajustar) -->
-    <ModalAjustarGasto 
-      :visible="showModalAjustar"
+    <!-- BottomSheet de Ajuste de Lançamento (✏️ Ajustar) -->
+    <BottomSheetAjustarGasto 
+      :visible="showBottomSheetAjustar"
       :gasto="gastoParaAjustar"
       :membros="props.membros"
       :cartoes="props.cartoes"
-      @cancel="showModalAjustar = false"
+      @cancel="showBottomSheetAjustar = false"
       @save="confirmarAjusteGasto"
     />
   </div>

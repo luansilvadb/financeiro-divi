@@ -81,7 +81,7 @@ const handleSalvarTransacao = async () => {
       </Button>
     </Transition>
 
-    <!-- Bottomsheet Não Modal do Wizard de Novo Lançamento -->
+    <!-- BottomSheet do Wizard de Novo Lançamento -->
     <BottomSheet 
       :model-value="currentView === 'wizard'"
       @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
@@ -95,7 +95,7 @@ const handleSalvarTransacao = async () => {
       />
     </BottomSheet>
 
-    <!-- Bottomsheet Não Modal de Configurações -->
+    <!-- BottomSheet de Configurações -->
     <BottomSheet 
       :model-value="currentView === 'settings'"
       @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
