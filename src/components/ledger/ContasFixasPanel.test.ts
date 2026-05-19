@@ -61,7 +61,7 @@ describe('ContasFixasPanel', () => {
     expect(wrapper.text()).toContain('Aluguel')
     expect(wrapper.text()).toContain('R$ 1200,00 por Luan')
     expect(wrapper.text()).toContain('Energia')
-    expect(wrapper.text()).toContain('Aguardando talão')
+    expect(wrapper.text()).not.toContain('Aguardando talão')
     expect(wrapper.find('[data-testid="configurar-conta-aluguel"]').attributes('aria-label')).toBe('Configurar Aluguel')
   })
 

@@ -99,9 +99,6 @@ const obterNomeMembro = (id?: string) => {
                   R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
                 </span>
               </div>
-              <span v-else class="text-[10px] text-ash flex items-center mt-1 font-semibold uppercase tracking-wider">
-                Aguardando talão
-              </span>
             </div>
           </div>
 
