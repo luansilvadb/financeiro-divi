@@ -396,13 +396,17 @@ const totalFuturasVencer = computed(() => {
 
 const showParcelasFuturas = ref(false)
 
-// --- EXECUÇÃO DE ROLLOVER SEGURO ---
 const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
   const { executarRolloverPeriodo } = useFaturaRollover()
   
+  const faturasAbertasVisualizadas = props.faturasAbertas.filter(f => 
+    f.periodo.mes === faturaAtivaVisualizada.value.periodo.mes && 
+    f.periodo.ano === faturaAtivaVisualizada.value.periodo.ano
+  )
+
   await executarRolloverPeriodo(
     nomeNovoPeriodo,
-    props.faturasAbertas,
+    faturasAbertasVisualizadas,
     props.cartoes,
     saldosUnificadosAtivos.value,
     currentMonthName.value
