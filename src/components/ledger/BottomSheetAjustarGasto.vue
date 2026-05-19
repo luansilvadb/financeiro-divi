@@ -5,7 +5,7 @@ import { Dinheiro } from '../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
 import Button from '../ui/Button.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
-import { Check, CreditCard, Wallet, Users, Info } from 'lucide-vue-next'
+import { Check, CreditCard, Wallet, Users, Info, Minus, Plus } from 'lucide-vue-next'
 
 interface Props {
   visible: boolean
@@ -23,6 +23,7 @@ const quemPaga = ref('')
 const activeMethod = ref<'pix' | 'card'>('pix')
 const activeCardOwner = ref<string | null>(null)
 const selectedSplit = ref<string[]>([])
+const installmentsInput = ref(1)
 
 // Monitora alterações do gasto recebido por prop para sincronizar o formulário
 watch(() => props.gasto, (newG) => {
@@ -33,6 +34,7 @@ watch(() => props.gasto, (newG) => {
     activeMethod.value = newG.method
     activeCardOwner.value = newG.cardOwner
     selectedSplit.value = newG.divisoes.map(d => d.membroId)
+    installmentsInput.value = newG.installments || 1
   }
 }, { immediate: true })
 
@@ -51,10 +53,39 @@ const toggleSplit = (memberId: string) => {
   }
 }
 
+const ajustarParcelas = (delta: number) => {
+  installmentsInput.value = Math.max(1, installmentsInput.value + delta)
+}
+
+const infoParcelamento = computed(() => {
+  if (installmentsInput.value <= 1) return 'À vista'
+  const val = Number(valorInput.value) || 0
+  const parcela = (val / installmentsInput.value).toFixed(2).replace('.', ',')
+  return `${installmentsInput.value}x de R$ ${parcela}`
+})
+
 // Recálculo dinâmico das parcelas do rateio
 const calculatedSharesDesc = computed(() => {
   const n = selectedSplit.value.length
   if (n === 0 || valorInput.value <= 0) return 'Digite um valor e selecione participantes'
+  
+  if (installmentsInput.value > 1) {
+    const shareTotal = valorInput.value / n
+    const shareParcela = shareTotal / installmentsInput.value
+    const formattedTotal = shareTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    const formattedParcela = shareParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    
+    if (n === props.membros.length) {
+      return `Dividido igualmente com todos. Cada um paga ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
+    } else if (n === 1) {
+      const name = props.membros.find(m => m.id === selectedSplit.value[0])?.nome || ''
+      return `Só de ${name}. Assume 100% pagando ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
+    } else {
+      const names = selectedSplit.value.map(id => props.membros.find(m => m.id === id)?.nome).join(' e ')
+      return `Entre ${names}. Cada um paga ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
+    }
+  }
+
   const share = valorInput.value / n
   const formatted = share.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   
@@ -109,7 +140,7 @@ const handleConfirm = () => {
     method: activeMethod.value,
     cardOwner: activeCardOwner.value,
     divisoes,
-    installments: props.gasto?.installments || 1
+    installments: installmentsInput.value
   })
 }
 </script>
@@ -175,6 +206,23 @@ const handleConfirm = () => {
               >
                 <CreditCard class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">C6</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Parcelamento -->
+          <div v-if="activeMethod === 'card' || props.gasto?.isLoan" class="space-y-2">
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Parcelamento</label>
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-stone bg-canvas">
+              <button type="button" @click="ajustarParcelas(-1)" class="w-9 h-9 rounded-full bg-stone hover:bg-stone/80 text-charcoal flex items-center justify-center transition-colors">
+                <Minus class="w-4 h-4" />
+              </button>
+              <div class="text-center">
+                <span class="text-base font-bold text-charcoal">{{ installmentsInput }}x</span>
+                <p class="text-[11px] text-ash">{{ infoParcelamento }}</p>
+              </div>
+              <button type="button" @click="ajustarParcelas(1)" class="w-9 h-9 rounded-full bg-stone hover:bg-stone/80 text-charcoal flex items-center justify-center transition-colors">
+                <Plus class="w-4 h-4" />
               </button>
             </div>
           </div>
