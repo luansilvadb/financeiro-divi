@@ -432,6 +432,16 @@ const excluirGasto = async (id: string) => {
   await gRepo.excluir(id)
   await useCartoesEFaturas().inicializar()
 }
+
+// --- ESTORNAR CONTA FIXA ---
+const estornarContaFixa = async (bill: any) => {
+  const gasto = gastosFaturaSelecionada.value.find(g => g.recurringBillId === bill.id)
+  if (gasto) {
+    if (confirm(`Deseja realmente estornar o pagamento de ${bill.name}?`)) {
+      await excluirGasto(gasto.id)
+    }
+  }
+}
 </script>
 
 <template>
@@ -599,6 +609,7 @@ const excluirGasto = async (id: string) => {
         @lancar="abrirLancarBill"
         @configurar="abrirConfigurarBill"
         @novo="abrirNovoBill"
+        @estornar="estornarContaFixa"
       />
     </section>
 

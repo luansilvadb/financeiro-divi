@@ -65,7 +65,7 @@ describe('ContasFixasPanel', () => {
     expect(wrapper.find('[data-testid="configurar-conta-aluguel"]').attributes('aria-label')).toBe('Configurar Aluguel')
   })
 
-  it('mantem os eventos de lancar, configurar e novo', async () => {
+  it('mantem os eventos de lancar, estornar, configurar e novo', async () => {
     const wrapper = mount(ContasFixasPanel, {
       props: {
         contasFixas,
@@ -76,10 +76,12 @@ describe('ContasFixasPanel', () => {
     })
 
     await wrapper.find('[data-testid="lancar-conta-energia"]').trigger('click')
+    await wrapper.find('[data-testid="estornar-conta-aluguel"]').trigger('click')
     await wrapper.find('[data-testid="configurar-conta-aluguel"]').trigger('click')
     await wrapper.find('[data-testid="nova-conta-fixa"]').trigger('click')
 
     expect(wrapper.emitted('lancar')?.[0]).toEqual([contasFixas[1]])
+    expect(wrapper.emitted('estornar')?.[0]).toEqual([contasFixas[0]])
     expect(wrapper.emitted('configurar')?.[0]).toEqual([contasFixas[0]])
     expect(wrapper.emitted('novo')).toHaveLength(1)
   })

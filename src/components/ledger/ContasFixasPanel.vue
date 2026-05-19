@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: 'lancar', bill: ContaFixa): void
   (e: 'configurar', bill: ContaFixa): void
   (e: 'novo'): void
+  (e: 'estornar', bill: ContaFixa): void
 }>()
 
 const verificarPaga = (conta: ContaFixa) => {
@@ -113,6 +114,17 @@ const obterNomeMembro = (id?: string) => {
               :data-testid="`lancar-conta-${bill.id}`"
             >
               Lançar
+            </Button>
+            <Button 
+              v-else 
+              @click="$emit('estornar', bill)" 
+              variant="secondary"
+              size="sm"
+              class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border-coral/30 hover:border-coral"
+              :disabled="isMonthLocked"
+              :data-testid="`estornar-conta-${bill.id}`"
+            >
+              Estornar
             </Button>
             <Button 
               variant="secondary" 
