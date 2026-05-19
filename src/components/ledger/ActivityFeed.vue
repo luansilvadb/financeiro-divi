@@ -93,7 +93,7 @@ const handleDelete = (id: string) => {
               </span>
               <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span class="text-[10px] font-bold text-ember uppercase tracking-wider">
-                  {{ g.isLoan ? '🤝 Empréstimo' : g.isSettlement ? '🔄 Acerto' : g.method === 'card' ? '💳 Cartão' : '⚡ Pix' }}
+                  {{ g.isLoan ? 'Empréstimo' : g.isSettlement ? 'Acerto' : g.method === 'card' ? 'Cartão' : 'Pix' }}
                 </span>
                 <span class="text-[10px] text-ash">
                   • Pago por <strong class="text-charcoal font-semibold">{{ getMembroNome(g.compradorId) }}</strong>
