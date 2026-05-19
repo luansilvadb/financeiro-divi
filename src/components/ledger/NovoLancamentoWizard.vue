@@ -8,8 +8,7 @@ import {
   Handshake,
   Plus,
   Minus,
-  Check,
-  Zap
+  Check
 } from 'lucide-vue-next'
 
 interface Props {
@@ -150,9 +149,6 @@ const handleGravar = async () => {
             <template v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')">Qual a descrição?</template>
             <template v-else-if="step === 5 && wizFlow === 'expense'">Com quem dividir?</template>
           </h2>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-parchment shadow-subtle flex items-center justify-center shrink-0">
-          <Zap class="w-4 h-4 text-graphite" />
         </div>
       </div>
 
