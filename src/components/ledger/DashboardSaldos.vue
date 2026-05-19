@@ -482,11 +482,11 @@ const estornarContaFixa = async (bill: any) => {
       <div class="flex-1 flex justify-end">
         <button 
           @click="$emit('openSettings')" 
-          class="w-11 h-11 bg-stone/30 hover:bg-stone/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-2xl flex items-center justify-center transition-colors border border-stone/20"
+          class="w-11 h-11 bg-transparent hover:bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-xl flex items-center justify-center transition-all group"
           aria-label="Configurações"
           title="Configurações"
         >
-          <Settings class="w-5 h-5 text-graphite" />
+          <Settings class="w-6 h-6 text-ash group-hover:text-ember transition-colors duration-200" />
         </button>
       </div>
     </header>
