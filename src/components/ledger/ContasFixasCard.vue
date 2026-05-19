@@ -50,16 +50,14 @@ const DURATION_LONG = 800 // ms para segurar completo (long press)
 
 const triggerAction = () => {
   if (props.isMonthLocked) return
-  if (props.paga) {
-    emit('estornar', props.bill)
-  } else {
-    emit('lancar', props.bill)
-  }
+  emit('configurar', props.bill)
 }
 
 const triggerTapAction = () => {
   if (props.isMonthLocked) return
-  if (!props.paga) {
+  if (props.paga) {
+    emit('estornar', props.bill)
+  } else {
     emit('lancar', props.bill)
   }
 }
@@ -226,22 +224,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Botão de Configurar isolado da interação do card principal -->
-    <div class="flex items-center gap-2 shrink-0 ml-4 relative z-10">
-      <Button 
-        variant="secondary" 
-        size="icon"
-        @click.stop="$emit('configurar', bill)"
-        @pointerdown.stop
-        @pointerup.stop
-        class="w-8 h-8 rounded-lg border border-stone bg-white/80 hover:bg-white active:scale-95 transition-all shadow-sm"
-        :data-testid="`configurar-conta-${bill.id}`"
-        :aria-label="`Configurar ${bill.name}`"
-        :title="`Configurar ${bill.name}`"
-      >
-        <Settings class="w-4 h-4 text-ash" />
-      </Button>
-    </div>
+
   </div>
 </template>
 
