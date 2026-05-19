@@ -957,7 +957,11 @@ const excluirGasto = async (id: string) => {
                   :key="op.nome" 
                   :ref="el => setItemSelecionadoRef(el, op)"
                   @mousedown.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false" 
-                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors flex items-center gap-3"
+                  @keydown.enter.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false"
+                  @keydown.space.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false"
+                  role="button"
+                  tabindex="0"
+                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors flex items-center gap-3 focus:outline-none focus:bg-stone"
                   :class="periodoSelecionado.mes === op.mes && periodoSelecionado.ano === op.ano ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
                 >
                   <span class="w-2 h-2 rounded-full bg-meadow animate-pulse shrink-0" />
