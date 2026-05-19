@@ -94,14 +94,12 @@ const obterNomeMembro = (id?: string) => {
             </div>
             <div class="min-w-0 flex-1">
               <span class="font-bold text-sm block text-charcoal truncate tracking-[-0.17px]">{{ bill.name }}</span>
-              <div v-if="verificarPaga(bill)" class="flex items-center gap-1.5 mt-1">
-                <div class="w-2 h-2 rounded-full bg-meadow"></div>
+              <div v-if="verificarPaga(bill)" class="flex items-center mt-1">
                 <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
                   R$ {{ obterStatusGasto(bill)?.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(obterStatusGasto(bill)?.pagoPor) }}
                 </span>
               </div>
-              <span v-else class="text-[10px] text-ash flex items-center gap-1.5 mt-1 font-semibold uppercase tracking-wider">
-                <div class="w-2 h-2 rounded-full bg-sunburst"></div>
+              <span v-else class="text-[10px] text-ash flex items-center mt-1 font-semibold uppercase tracking-wider">
                 Aguardando talão
               </span>
             </div>
