@@ -13,7 +13,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
 </script>
 
 <template>
-  <nav class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-stone pb-safe">
+  <nav class="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-stone pb-safe">
     <div class="flex items-center justify-around h-16">
       <template v-for="(tab, index) in tabs" :key="tab.id">
         <!-- Divisor/Espaço para o FAB no centro -->
