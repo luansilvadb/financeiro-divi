@@ -115,8 +115,8 @@ const cancelInteraction = () => {
     animationFrameId = null
   }
   
-  // Fade out suave do ripple
-  if (ripple.value.active) {
+  // Fade out suave do ripple apenas para o long press
+  if (ripple.value.active && ripple.value.type === 'long') {
     const fadeTick = () => {
       if (ripple.value.opacity > 0) {
         ripple.value.opacity -= 0.05
