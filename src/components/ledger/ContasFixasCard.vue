@@ -197,7 +197,7 @@ onUnmounted(() => {
       v-if="ripple.active"
       class="absolute rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2"
       :class="[
-        paga ? 'bg-coral/25' : 'bg-meadow/25'
+        paga ? 'bg-coral/25' : 'bg-ember/20'
       ]"
       :style="{
         left: ripple.x + 'px',
