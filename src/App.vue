@@ -24,8 +24,7 @@ const {
   quitarAcertoMembro,
   faturasAbertas,
   faturasFechadas,
-  calcularConsumoMembro,
-  calcularAdiantamentoMembro
+  calcularConsumoMembro
 } = useCartoesEFaturas()
 
 useStorageSync()
@@ -56,7 +55,6 @@ const isPeriodLocked = ref(false)
           :acertosPendentes="acertos"
           :cartoes="cartoes"
           :calcular-consumo="calcularConsumoMembro"
-          :calcular-adiantamento="calcularAdiantamentoMembro"
           :active-tab="activeTab"
           @quitarAcerto="quitarAcertoMembro"
           @fecharFatura="fecharFaturaManual"

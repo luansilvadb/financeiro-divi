@@ -9,8 +9,7 @@ export function useDashboardCalculations(
   acertosPendentes: any[],
   globalGastos: any[],
   globalAcertos: any[],
-  calcularConsumo: (faturaId: string, membroId: string) => number,
-  calcularAdiantamento?: (faturaId: string, membroId: string) => number
+  calcularConsumo: (faturaId: string, membroId: string) => number
 ) {
   const getMembrosList = () => {
     return 'value' in membrosRef ? membrosRef.value : membrosRef

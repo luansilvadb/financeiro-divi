@@ -41,7 +41,6 @@ interface Props {
   acertosPendentes: any[]
   cartoes: any[]
   calcularConsumo: (faturaId: string, membroId: string) => number
-  calcularAdiantamento?: (faturaId: string, membroId: string) => number
   gastos?: any[]
   activeTab?: Tab
 }
@@ -181,8 +180,7 @@ const calculations = useDashboardCalculations(
   props.acertosPendentes,
   globalGastos.value,
   globalAcertos.value,
-  props.calcularConsumo,
-  props.calcularAdiantamento
+  props.calcularConsumo
 )
 
 // Destructure for template access
