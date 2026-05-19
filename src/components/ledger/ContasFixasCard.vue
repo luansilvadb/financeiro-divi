@@ -40,6 +40,7 @@ const ripple = ref<RippleState>({
 
 let startTime = 0
 let isHolding = false
+let lastMaxRadius = 0
 let longPressTimeout: any | null = null
 let longPressActionTimeout: any | null = null
 let animationFrameId: number | null = null
@@ -144,12 +145,12 @@ const onPointerDown = (e: PointerEvent) => {
   // Calcula raio máximo (distância até o canto mais distante do card)
   const dx = Math.max(x, rect.width - x)
   const dy = Math.max(y, rect.height - y)
-  const maxRadius = Math.sqrt(dx * dx + dy * dy)
+  lastMaxRadius = Math.sqrt(dx * dx + dy * dy)
 
   // Inicia timeout para distinguir tap de long press
   longPressTimeout = setTimeout(() => {
     if (isHolding) {
-      startLongPressAnimation(x, y, maxRadius)
+      startLongPressAnimation(x, y, lastMaxRadius)
     }
   }, 180)
 }
@@ -176,8 +177,8 @@ const onPointerUp = (e: PointerEvent) => {
         ripple.value.type = 'tap'
         ripple.value.x = x
         ripple.value.y = y
-        ripple.value.radius = 40
-        ripple.value.opacity = 0.4
+        ripple.value.radius = lastMaxRadius
+        ripple.value.opacity = 0.55
 
         triggerTapAction()
 
@@ -272,11 +273,11 @@ onUnmounted(() => {
 <style scoped>
 @keyframes ripple-tap {
   0% {
-    transform: translate(-50%, -50%) scale(0.1);
-    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.55;
   }
   100% {
-    transform: translate(-50%, -50%) scale(4);
+    transform: translate(-50%, -50%) scale(1.05);
     opacity: 0;
   }
 }
