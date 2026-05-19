@@ -134,9 +134,9 @@ const handleGravar = async () => {
 <template>
   <div
     data-testid="novo-lancamento-wizard"
-    class="wizard-family min-h-[600px] flex flex-col overflow-hidden bg-white rounded-card text-graphite"
+    class="wizard-family flex flex-col overflow-hidden h-full text-graphite"
   >
-    <header class="p-5 sm:p-6 border-b border-stone bg-white">
+    <header class="p-5 sm:p-6 border-b border-stone flex-shrink-0">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div class="min-w-0">
           <p class="inline-flex text-xs font-semibold text-ash bg-stone rounded-full px-2.5 py-1">

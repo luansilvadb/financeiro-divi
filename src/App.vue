@@ -46,7 +46,7 @@ const handleSalvarTransacao = async () => {
 
 <template>
   <div class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
-    <div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-16 pb-36 md:pb-16 relative">
+    <div class="max-w-[1200px] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-36 md:pb-16 relative">
       <!-- Main Content -->
       <main class="relative z-10">
         <DashboardSaldos 
@@ -69,29 +69,30 @@ const handleSalvarTransacao = async () => {
 
 
     <!-- Floating Action Button (FAB) -->
-    <Button
-      v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-      variant="primary"
-      class="fixed bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 p-0 rounded-full shadow-lg z-[100] active:scale-95 border-4 border-card"
-      @click="currentView = 'wizard'"
-      data-testid="novo-lancamento-fab"
-    >
-      <Plus class="w-7 h-7 stroke-[3px]" />
-    </Button>
+    <Transition name="fab-zoom">
+      <Button
+        v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
+        variant="primary"
+        class="fixed bottom-6 left-0 right-0 mx-auto w-14 h-14 p-0 rounded-full shadow-lg z-[100] active:scale-95 border-4 border-card"
+        @click="currentView = 'wizard'"
+        data-testid="novo-lancamento-fab"
+      >
+        <Plus class="w-7 h-7 stroke-[3px]" />
+      </Button>
+    </Transition>
 
     <!-- Bottomsheet Não Modal do Wizard de Novo Lançamento -->
     <BottomSheet 
       :model-value="currentView === 'wizard'"
       @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
       width-class="md:w-[560px]"
+      max-height="95dvh"
     >
-      <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col">
-        <NovoLancamentoWizard 
-          :membros="ativos"
-          @salvar="handleSalvarTransacao"
-          @cancelar="currentView = 'dashboard'"
-        />
-      </div>
+      <NovoLancamentoWizard 
+        :membros="ativos"
+        @salvar="handleSalvarTransacao"
+        @cancelar="currentView = 'dashboard'"
+      />
     </BottomSheet>
 
     <!-- Bottomsheet Não Modal de Configurações -->
@@ -99,13 +100,14 @@ const handleSalvarTransacao = async () => {
       :model-value="currentView === 'settings'"
       @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
       width-class="md:w-[560px]"
+      max-height="90dvh"
     >
-      <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col p-6">
+      <div class="flex-grow overflow-y-auto custom-scrollbar p-6 sm:p-8">
         <ConfiguracoesMembros />
       </div>
     </BottomSheet>
 
-    <BottomTabBar v-if="!isAnyBottomSheetOpen" v-model="activeTab" />
+    <BottomTabBar v-model="activeTab" />
   </div>
 </template>
 
@@ -119,5 +121,18 @@ const handleSalvarTransacao = async () => {
 .v-enter-from,
 .v-leave-to {
   opacity: 0;
+}
+
+/* Zoom effect for FAB */
+.fab-zoom-enter-active,
+.fab-zoom-leave-active {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+  transform-origin: center center;
+}
+
+.fab-zoom-enter-from,
+.fab-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0);
 }
 </style>

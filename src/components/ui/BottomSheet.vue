@@ -16,7 +16,7 @@
     >
       <div
         class="pointer-events-auto relative flex flex-col bg-card border-t border-x border-stone shadow-lg transition-all duration-300 text-graphite
-               rounded-t-card-lg md:rounded-t-card rounded-b-none max-h-[90dvh] w-full"
+               rounded-t-card-lg md:rounded-t-card rounded-b-none max-h-[90dvh] w-full overflow-hidden"
         :class="widthClass"
         :style="{ maxHeight }"
         @touchstart="onTouchStart"

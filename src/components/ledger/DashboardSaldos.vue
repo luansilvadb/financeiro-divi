@@ -321,7 +321,7 @@ const excluirGasto = async (id: string) => {
 
   <div v-else class="space-y-12">
     <!-- NOVO HEADER TRIPARTITE (Aesthetic v2026) -->
-    <header class="flex items-center justify-between py-6 mb-8 border-b border-stone/50">
+    <header class="flex items-center justify-between pb-6 pt-3 mb-8 border-b border-stone/50">
       <!-- Coluna Esquerda: Mês Selector -->
       <div class="flex-1">
         <div 
@@ -706,7 +706,7 @@ const excluirGasto = async (id: string) => {
 
     <!-- Bottomsheet Não Modal Novo Período -->
     <BottomSheet :model-value="showModalNovoPeriodo" @update:model-value="val => { if (!val) showModalNovoPeriodo = false }" width-class="md:w-[420px]">
-      <div class="p-8 space-y-6 flex-grow">
+      <div class="p-6 sm:p-8 space-y-6 flex-grow">
         <div class="space-y-2 text-center">
           <SectionLabel class="mx-auto">Transição</SectionLabel>
           <h3 class="text-3xl font-display text-charcoal">Novo <span class="text-ember">Período</span></h3>
