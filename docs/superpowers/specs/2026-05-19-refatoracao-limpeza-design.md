@@ -1,51 +1,46 @@
-# Especificação de Design - Refatoração e Limpeza de Código Morto
+# Especificação de Design: Refatoração, Limpeza e Densificação da Codebase Divi
 
-## Contexto e Objetivo
-Esta especificação detalha a refatoração e a higienização da codebase do projeto **Divi**. O foco principal é a eliminação de código morto (módulos e funções inativas), a redução de complexidade ciclomática na inicialização de dados financeiros e a densificação do projeto para garantir responsabilidades claras por arquivo.
+## 1. Objetivos
 
-O sistema atualmente usa as entidades `Gasto`, `Fatura` e a lógica reescrita de `useSaldosUnificados` para os cálculos financeiros em tempo real. Uma camada anterior baseada em `Transacao`, `Divisao` e `CalculadoraSaldos` permanece na codebase sem uso produtivo e será completamente eliminada.
+*   **Redução de complexidade ciclomática**: Simplificar condicionais aninhados e fluxos complexos em funções chave.
+*   **Remoção de código morto**: Eliminar imports não utilizados, variáveis órfãs, logs obsoletos e funções legadas não chamadas.
+*   **Densificação**: Garantir que as responsabilidades estejam bem distribuídas entre camadas (domínio, serviços, repositórios, composables e componentes).
 
-## 1. Eliminação de Módulos Inativos (Ecossistema de Transações)
-Os seguintes arquivos físicos constituem código morto e serão removidos por completo do repositório:
+---
 
-1. `src/modules/ledger/core/domain/Transacao.ts` e seu teste correspondente `Transacao.test.ts`.
-2. `src/modules/ledger/core/domain/Divisao.ts`.
-3. `src/modules/ledger/core/ports/ITransacaoRepository.ts`.
-4. `src/modules/ledger/adapters/LocalStorageTransacaoRepository.ts` e seu teste `LocalStorageTransacaoRepository.test.ts`.
-5. `src/modules/ledger/composables/useTransacoes.ts`.
-6. `src/modules/ledger/core/services/CalculadoraSaldos.ts` e seus testes `CalculadoraSaldos.test.ts` / `CalculadoraSaldos.spec.ts`.
-7. `src/modules/ledger/index.ts`.
+## 2. Escopo de Alterações
 
-### Ajuste em `src/modules/ledger/composables/useStorageSync.ts`
-* Remover o import de `useTransacoes`.
-* Remover a reação à chave de storage `divi_transactions` no escopo do listener `storage`.
+### 2.1. Assistente de Lançamentos (`useNovoLancamentoWizard.ts`)
 
-## 2. Remoção de Métodos e Campos Mortos nos Composables Ativos
-Iremos expurgar as seguintes propriedades e funções inativas dos composables que permanecem no sistema:
+*   **Validações declarativas**:
+    *   Mapear regras de avanço de passo de forma declarativa para os fluxos de despesa (`expense`) e empréstimo (`loan`), eliminando branches `if (step === ...)` aninhados.
+*   **Busca e Resolução de Fatura Ativa**:
+    *   Criar função utilitária `obterPeriodoCorrente` baseada no `localStorage`.
+    *   Criar função pura `determinarCartaoId` isolando a lógica de determinação baseada no método de pagamento, dono do cartão e comprador.
+    *   Substituir a lógica duplicada de obter/criar fatura reativa em `findActiveFatura` e `obterOuCriarFaturaParaPeriodo` por um método único centralizado: `obterOuCriarFatura(cartaoId, mes, ano, responsavelId)`.
+*   **Decomposição de Fluxo de Salvamento**:
+    *   Extrair o laço de projeção de parcelas futuras de `finalizarGastoOuEmprestimo` para um helper dedicado `projetarGastosParcelados`.
 
-### `src/modules/ledger/composables/useCartoesEFaturas.ts`
-* Remover as funções auxiliares `atualizarGastoDivisoesManual` e `atualizarGastoCompradorManual` e seus respectivos retornos no composable.
+### 2.2. Estado e Serviços (`useCartoesEFaturas.ts` & `FaturaService.ts`)
 
-### `src/modules/ledger/composables/useNovoLancamentoWizard.ts`
-* Remover a variável reativa `querDividirAgora` e seu retorno no composable.
+*   **Migração Desacoplada**:
+    *   Mover a função `desduplicarEMigrarFaturas` de `useCartoesEFaturas.ts` para dentro do `LocalStorageFaturaRepository.ts` (encapsulando a infraestrutura) ou simplificar a rotina para que o composable de estado reativo não acesse diretamente o `localStorage` nem misture responsabilidades.
+*   **Assinatura Limpa em `FaturaService`**:
+    *   Substituir overload confuso em `fecharFatura(faturaId, responsavelIdOrDate, dataPagamentoBanco)` pela assinatura definitiva e bem tipada:
+        `fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco?: Date)`.
+    *   Ajustar as chamadas e testes associados em `FaturaService.test.ts` e `useCartoesEFaturas.ts`.
 
-### `src/modules/ledger/composables/useDashboardCalculations.ts`
-* Remover os métodos `getCartaoNome`, `faturaTemAcertosAtivos`, `sugerirProximoPeriodo`, `getAdiantamento` e a propriedade calculada duplicada `totalFuturasVencer` (o componente `DashboardSaldos.vue` já calcula isso localmente de forma otimizada).
+### 2.3. Apresentação (`DashboardSaldos.vue`)
 
-## 3. Redução de Complexidade Ciclomática (`useCartoesEFaturas.ts`)
-Para reduzir a complexidade e aninhamento de condicionais no método `carregar()` do composable `useCartoesEFaturas.ts`, toda a lógica de desduplicação e migração de faturas duplicadas do LocalStorage será isolada em uma função helper pura no final do arquivo:
+*   **Varredura de Imports e Código Morto**:
+    *   Remover imports de ícones Lucide não utilizados e variáveis declaradas sem uso.
+    *   Simplificar ou remover handlers/estruturas redundantes.
+    *   Garantir a total estabilidade dos eventos disparados para o `App.vue`.
 
-```typescript
-async function desduplicarEMigrarFaturas(todasFaturas: Fatura[]): Promise<Fatura[]> {
-  // Lógica de desduplicação e migração atual de faturas...
-}
-```
+---
 
-Dessa forma, o corpo da função `carregar()` reduz sua complexidade apenas para invocar a helper:
-```typescript
-todasFaturas = await desduplicarEMigrarFaturas(todasFaturas)
-```
+## 3. Critérios de Aceitação e Testabilidade
 
-## Critérios de Sucesso e Validação
-1. Todos os 130 testes existentes do Vitest devem continuar passando com sucesso.
-2. O build de produção (`npm run build`) deve compilar sem nenhum erro de tipagem ou referência quebrada.
+1.  **Execução de Testes**: Todos os 108 testes existentes na suite do Vitest devem passar sem quebras.
+2.  **Verificação de Build**: O build de produção (`npm run build` ou `vue-tsc -b`) deve compilar sem erros de tipagem no TypeScript.
+3.  **Comportamento da UI**: A navegação e persistência de rascunhos no Wizard de Lançamentos devem continuar funcionando conforme especificado.
