@@ -324,7 +324,10 @@ const excluirGasto = async (id: string) => {
     <header class="flex items-center justify-between py-6 mb-8 border-b border-stone/50">
       <!-- Coluna Esquerda: Mês Selector -->
       <div class="flex-1">
-        <div class="flex flex-col cursor-pointer group active:opacity-70 transition-opacity">
+        <div 
+          class="flex flex-col cursor-pointer group active:opacity-70 transition-opacity"
+          @click="abrirNovoPeriodoModal"
+        >
           <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1">Período</span>
           <div class="flex items-center gap-2">
             <span class="text-2xl font-black text-charcoal tracking-tighter">{{ currentMonthName }}</span>
