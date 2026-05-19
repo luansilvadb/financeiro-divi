@@ -8,7 +8,7 @@ const props = defineProps<{
   bill: ContaFixa
   paga: boolean
   statusGasto: { valorReal: number; pagoPor: string } | null
-  obterNomeMembro: (id?: string) => string
+  obterNomeMembro: (id?: string) => string | undefined
   isMonthLocked: boolean
 }>()
 
