@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { useDashboardViewModel } from './useDashboardViewModel'
 import type { DashboardProps } from './useDashboardViewModel'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import { Dinheiro } from '../models/entities/Dinheiro'
 
 // Mocks para os composables de suporte
 const mockCartoesEFaturas = {
@@ -53,9 +53,15 @@ vi.mock('./useDashboardCalculations', () => ({
   useDashboardCalculations: () => mockCalculations
 }))
 
-// Mocks para repositórios e serviços de domínio
 const mockSalvarGasto = vi.fn()
 const mockExcluirGasto = vi.fn()
+const mockGastoService = {
+  lancarGastoOuEmprestimo: vi.fn(),
+  excluirGasto: vi.fn(),
+  registrarAcertoNetting: vi.fn(),
+  lancarGastoContaFixa: vi.fn(),
+  atualizarGastoCompleto: vi.fn()
+}
 
 const mockFaturaRolloverService = {
   executarRolloverPeriodo: vi.fn(),
@@ -97,7 +103,8 @@ describe('useDashboardViewModel', () => {
         salvar: vi.fn(),
         excluir: vi.fn()
       },
-      faturaRolloverService: mockFaturaRolloverService as any
+      faturaRolloverService: mockFaturaRolloverService as any,
+      gastoService: mockGastoService
     }
     return useDashboardViewModel(props, emit, deps || defaultDeps)
   }
@@ -109,6 +116,11 @@ describe('useDashboardViewModel', () => {
     mockUseContasFixasSpy.mockClear()
     mockCartoesEFaturas.gastos.value = []
     mockCartoesEFaturas.acertos.value = []
+    mockGastoService.lancarGastoOuEmprestimo.mockClear()
+    mockGastoService.excluirGasto.mockClear()
+    mockGastoService.registrarAcertoNetting.mockClear()
+    mockGastoService.lancarGastoContaFixa.mockClear()
+    mockGastoService.atualizarGastoCompleto.mockClear()
   })
 
   it('should initialize selected period from localStorage if available', () => {
@@ -278,13 +290,13 @@ describe('useDashboardViewModel', () => {
     const dadosNetting = { from: 'm1', to: 'm2', valor: 50, method: 'pix', descricao: 'Netting' }
     await vm.confirmarBaixaNetting(dadosNetting)
 
-    expect(mockSalvarGasto).toHaveBeenCalled()
+    expect(mockGastoService.registrarAcertoNetting).toHaveBeenCalled()
     expect(vm.showBottomSheetNetting.value).toBe(false)
     expect(vm.nettingTarget.value).toBeNull()
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
 
     await vm.excluirGasto('g1')
-    expect(mockExcluirGasto).toHaveBeenCalledWith('g1')
+    expect(mockGastoService.excluirGasto).toHaveBeenCalledWith('g1')
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
   })
 
@@ -301,7 +313,7 @@ describe('useDashboardViewModel', () => {
     await vm.estornarContaFixa({ id: 'b1', name: 'Internet' })
 
     expect(confirmSpy).toHaveBeenCalled()
-    expect(mockExcluirGasto).toHaveBeenCalledWith('g-recur')
+    expect(mockGastoService.excluirGasto).toHaveBeenCalledWith('g-recur')
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
   })
 

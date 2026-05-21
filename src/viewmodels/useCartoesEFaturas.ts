@@ -1,32 +1,29 @@
 import { ref, computed } from 'vue'
-import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
-import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
-import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
-import { LocalStorageAntecipacaoRepository } from '../infrastructure/local/LocalStorageAntecipacaoRepository'
-import { LocalStorageAcertoMembroRepository } from '../infrastructure/local/LocalStorageAcertoMembroRepository'
-import { FaturaService } from '../model/services/FaturaService'
-import { AcertoService } from '../model/services/AcertoService'
-import { GastoService } from '../model/services/GastoService'
-import { Cartao } from '../model/domain/Cartao'
-import { Fatura } from '../model/domain/Fatura'
-import { AcertoMembro } from '../model/domain/AcertoMembro'
-import { Gasto } from '../model/domain/Gasto'
-import { Antecipacao } from '../model/domain/Antecipacao'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { DivisaoDeGasto } from '../model/domain/DivisaoDeGasto'
-import type { ICartaoRepository } from '../model/repositories/ICartaoRepository'
-import type { IFaturaRepository } from '../model/repositories/IFaturaRepository'
-import type { IGastoRepository } from '../model/repositories/IGastoRepository'
-import type { IAntecipacaoRepository } from '../model/repositories/IAntecipacaoRepository'
-import type { IAcertoMembroRepository } from '../model/repositories/IAcertoMembroRepository'
-
-const cartaoRepo = new LocalStorageCartaoRepository()
-const faturaRepo = new LocalStorageFaturaRepository()
-const gastoRepo = new LocalStorageGastoRepository()
-const antRepo = new LocalStorageAntecipacaoRepository()
-const acertoRepo = new LocalStorageAcertoMembroRepository()
-
-
+import type { IFaturaService } from '../models/services/IFaturaService'
+import type { IAcertoService } from '../models/services/IAcertoService'
+import type { IGastoService } from '../models/services/IGastoService'
+import { Cartao } from '../models/entities/Cartao'
+import { Fatura } from '../models/entities/Fatura'
+import { AcertoMembro } from '../models/entities/AcertoMembro'
+import { Gasto } from '../models/entities/Gasto'
+import { Antecipacao } from '../models/entities/Antecipacao'
+import { Dinheiro } from '../models/entities/Dinheiro'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
+import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
+import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
+import type { IGastoRepository } from '../models/repositories/IGastoRepository'
+import type { IAntecipacaoRepository } from '../models/repositories/IAntecipacaoRepository'
+import type { IAcertoMembroRepository } from '../models/repositories/IAcertoMembroRepository'
+import {
+  cartaoRepository,
+  faturaRepository,
+  gastoRepository,
+  antecipacaoRepository,
+  acertoMembroRepository,
+  faturaService,
+  acertoService,
+  gastoService
+} from '../shared/container'
 
 const cartoes = ref<Cartao[]>([])
 const faturas = ref<Fatura[]>([])
@@ -42,21 +39,21 @@ export interface CartoesEFaturasDependencies {
   gastoRepository?: IGastoRepository
   antecipacaoRepository?: IAntecipacaoRepository
   acertoMembroRepository?: IAcertoMembroRepository
-  faturaService?: FaturaService
-  acertoService?: AcertoService
-  gastoService?: GastoService
+  faturaService?: IFaturaService
+  acertoService?: IAcertoService
+  gastoService?: IGastoService
 }
 
 export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {}) {
-  const localCartaoRepo = dependencies.cartaoRepository || cartaoRepo
-  const localFaturaRepo = dependencies.faturaRepository || faturaRepo
-  const localGastoRepo = dependencies.gastoRepository || gastoRepo
-  const localAntRepo = dependencies.antecipacaoRepository || antRepo
-  const localAcertoRepo = dependencies.acertoMembroRepository || acertoRepo
+  const localCartaoRepo = dependencies.cartaoRepository || cartaoRepository
+  const localFaturaRepo = dependencies.faturaRepository || faturaRepository
+  const localGastoRepo = dependencies.gastoRepository || gastoRepository
+  const localAntRepo = dependencies.antecipacaoRepository || antecipacaoRepository
+  const localAcertoRepo = dependencies.acertoMembroRepository || acertoMembroRepository
 
-  const localFaturaService = dependencies.faturaService || new FaturaService(localFaturaRepo, localGastoRepo, localAntRepo, localAcertoRepo)
-  const localAcertoService = dependencies.acertoService || new AcertoService(localAcertoRepo, localFaturaRepo)
-  const localGastoService = dependencies.gastoService || new GastoService(localGastoRepo, localFaturaRepo, localCartaoRepo)
+  const localFaturaService = dependencies.faturaService || faturaService
+  const localAcertoService = dependencies.acertoService || acertoService
+  const localGastoService = dependencies.gastoService || gastoService
 
   const inicializar = async () => {
     if (promiseInicializacao) return promiseInicializacao

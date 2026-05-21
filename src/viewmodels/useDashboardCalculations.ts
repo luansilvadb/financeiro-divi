@@ -1,7 +1,7 @@
 import { computed } from 'vue'
-import { Gasto } from '../model/domain/Gasto'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { NOMES_MESES } from '../../../shared/utils/meses'
+import { Gasto } from '../models/entities/Gasto'
+import { Dinheiro } from '../models/entities/Dinheiro'
+import { NOMES_MESES } from '../shared/utils/meses'
 
 export function useDashboardCalculations(
   membros: { id: string; nome: string }[],

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useMembros } from './useMembros'
-import { Membro } from '../model/domain/Membro'
+import { Membro } from '../models/entities/Membro'
 
 describe('useMembros', () => {
   beforeEach(() => {

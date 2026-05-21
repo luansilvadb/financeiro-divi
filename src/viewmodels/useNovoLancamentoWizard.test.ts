@@ -121,7 +121,7 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
 
     await finalizarGastoOuEmprestimo()
 
-    const { LocalStorageGastoRepository } = await import('../infrastructure/local/LocalStorageGastoRepository')
+    const { LocalStorageGastoRepository } = await import('../models/repositories/local/LocalStorageGastoRepository')
     const gRepo = new LocalStorageGastoRepository()
     const todosGastos = await gRepo.listarTodos()
 

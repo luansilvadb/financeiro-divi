@@ -1,12 +1,9 @@
 import { ref } from 'vue'
-import type { ContaFixa } from '../model/domain/ContaFixa'
-import type { Gasto } from '../model/domain/Gasto'
-import { LocalStorageContaFixaRepository } from '../infrastructure/local/LocalStorageContaFixaRepository'
-import type { IContaFixaRepository } from '../model/repositories/IContaFixaRepository'
-import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
-import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
-import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
-import { GastoService } from '../model/services/GastoService'
+import type { ContaFixa } from '../models/entities/ContaFixa'
+import type { Gasto } from '../models/entities/Gasto'
+import type { IContaFixaRepository } from '../models/repositories/IContaFixaRepository'
+import type { IGastoService } from '../models/services/IGastoService'
+import { contaFixaRepository, gastoService } from '../shared/container'
 
 const CONTAS_PADRAO: ContaFixa[] = [
   { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValue: 1500.00, defaultSplit: ['luciana', 'luan', 'joao'] },
@@ -18,16 +15,12 @@ const CONTAS_PADRAO: ContaFixa[] = [
 
 export interface ContasFixasDependencies {
   contaFixaRepository?: IContaFixaRepository
-  gastoService?: GastoService
+  gastoService?: IGastoService
 }
 
 export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
-  const contaFixaRepo = dependencies.contaFixaRepository || new LocalStorageContaFixaRepository()
-  
-  const gastoRepo = new LocalStorageGastoRepository()
-  const faturaRepo = new LocalStorageFaturaRepository()
-  const cartaoRepo = new LocalStorageCartaoRepository()
-  const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
+  const contaFixaRepo = dependencies.contaFixaRepository || contaFixaRepository
+  const servicoGasto = dependencies.gastoService || gastoService
 
   const contasFixas = ref<ContaFixa[]>([])
 
@@ -74,7 +67,7 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
     compradorId: string,
     participantes: string[]
   ) => {
-    await gastoService.lancarGastoContaFixa({
+    await servicoGasto.lancarGastoContaFixa({
       faturaId,
       conta,
       valorTotal,

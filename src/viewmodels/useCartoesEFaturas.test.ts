@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
-import { Cartao } from '../model/domain/Cartao'
+import { Cartao } from '../models/entities/Cartao'
 
 describe('useCartoesEFaturas', () => {
   beforeEach(() => {
@@ -25,7 +25,7 @@ describe('useCartoesEFaturas', () => {
     await inicializar()
     
     // Salvar um cartão para garantir uma fatura aberta válida
-    const { Cartao } = await import('../model/domain/Cartao')
+    const { Cartao } = await import('../models/entities/Cartao')
     const novoCard = new Cartao({ id: 'c-teste', nome: 'Nubank Teste', diaFechamento: 15, responsavelPadraoId: 'm1' })
     await salvarCartaoManual(novoCard)
 
@@ -34,11 +34,11 @@ describe('useCartoesEFaturas', () => {
     const faturaId = faturaValida!.id
 
     // 1. Cria um gasto mock direto no repositório local
-    const { LocalStorageGastoRepository } = await import('../infrastructure/local/LocalStorageGastoRepository')
+    const { LocalStorageGastoRepository } = await import('../models/repositories/local/LocalStorageGastoRepository')
     const gRepo = new LocalStorageGastoRepository()
-    const { Dinheiro } = await import('../../../shared/primitives/Dinheiro')
-    const { Gasto } = await import('../model/domain/Gasto')
-    const { DivisaoDeGasto } = await import('../model/domain/DivisaoDeGasto')
+    const { Dinheiro } = await import('../models/entities/Dinheiro')
+    const { Gasto } = await import('../models/entities/Gasto')
+    const { DivisaoDeGasto } = await import('../models/entities/DivisaoDeGasto')
 
     const original = new Gasto({
       id: 'g-teste-update',

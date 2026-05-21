@@ -1,15 +1,13 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { DivisaoDeGasto } from '../model/domain/DivisaoDeGasto'
-import { obterPeriodoSelecionado } from '../../../shared/utils/periodoStorage'
-import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
-import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
-import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { GastoService } from '../model/services/GastoService'
-import type { IGastoRepository } from '../model/repositories/IGastoRepository'
-import type { IFaturaRepository } from '../model/repositories/IFaturaRepository'
-import type { ICartaoRepository } from '../model/repositories/ICartaoRepository'
-import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from '../../../shared/utils/rascunhoWizardStorage'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
+import { obterPeriodoSelecionado } from './storage/periodoStorage'
+import { Dinheiro } from '../models/entities/Dinheiro'
+import type { IGastoService } from '../models/services/IGastoService'
+import type { IGastoRepository } from '../models/repositories/IGastoRepository'
+import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
+import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
+import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from './storage/rascunhoWizardStorage'
+import { gastoRepository, faturaRepository, cartaoRepository, gastoService } from '../shared/container'
 
 // Helper: Validate loan flow advancement
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
@@ -75,7 +73,7 @@ export interface WizardDependencies {
   gastoRepository?: IGastoRepository
   faturaRepository?: IFaturaRepository
   cartaoRepository?: ICartaoRepository
-  gastoService?: GastoService
+  gastoService?: IGastoService
 }
 
 export function useNovoLancamentoWizard(
@@ -85,10 +83,10 @@ export function useNovoLancamentoWizard(
   const step = ref(1)
 
   // Dependências injetadas
-  const gastoRepo = dependencies.gastoRepository || new LocalStorageGastoRepository()
-  const faturaRepo = dependencies.faturaRepository || new LocalStorageFaturaRepository()
-  const cartaoRepo = dependencies.cartaoRepository || new LocalStorageCartaoRepository()
-  const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
+  const gastoRepo = dependencies.gastoRepository || gastoRepository
+  const faturaRepo = dependencies.faturaRepository || faturaRepository
+  const cartaoRepo = dependencies.cartaoRepository || cartaoRepository
+  const servicoGasto = dependencies.gastoService || gastoService
 
 
 
@@ -160,7 +158,7 @@ export function useNovoLancamentoWizard(
       valoresDivisaoWizard.value
     )
 
-    await gastoService.lancarGastoOuEmprestimo({
+    await servicoGasto.lancarGastoOuEmprestimo({
       flow,
       paymentMethod: payment,
       compradorId: compradorSelecionadoId.value,

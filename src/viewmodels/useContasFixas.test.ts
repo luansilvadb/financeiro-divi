@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useContasFixas } from './useContasFixas'
-import { Gasto } from '../model/domain/Gasto'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { DivisaoDeGasto } from '../model/domain/DivisaoDeGasto'
+import { Gasto } from '../models/entities/Gasto'
+import { Dinheiro } from '../models/entities/Dinheiro'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 
 describe('useContasFixas', () => {
   beforeEach(() => {

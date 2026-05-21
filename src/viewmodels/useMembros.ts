@@ -1,16 +1,16 @@
 import { ref, computed } from 'vue'
-import { Membro } from '../model/domain/Membro'
-import type { IMembroRepository } from '../model/repositories/IMembroRepository'
-import { MembroService } from '../model/services/MembroService'
-import { LocalStorageMembroRepository } from '../infrastructure/local/LocalStorageMembroRepository'
+import { Membro } from '../models/entities/Membro'
+import type { IMembroRepository } from '../models/repositories/IMembroRepository'
+import type { IMembroService } from '../models/services/IMembroService'
+import { membroRepository, membroService } from '../shared/container'
 
 export interface MembrosDependencies {
   membroRepository?: IMembroRepository
-  membroService?: MembroService
+  membroService?: IMembroService
 }
 
-const defaultRepo = new LocalStorageMembroRepository()
-const defaultService = new MembroService(defaultRepo)
+const defaultRepo = membroRepository
+const defaultService = membroService
 const membros = ref<Membro[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
