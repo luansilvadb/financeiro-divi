@@ -13,6 +13,10 @@ const CONTAS_PADRAO: ContaFixa[] = [
   { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValue: null, defaultSplit: ['luciana', 'luan'] }
 ]
 
+const contasFixas = ref<ContaFixa[]>([])
+const inicializado = ref(false)
+let promiseInicializacao: Promise<void> | null = null
+
 export interface ContasFixasDependencies {
   contaFixaRepository?: IContaFixaRepository
   gastoService?: IGastoService
@@ -22,17 +26,27 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
   const contaFixaRepo = dependencies.contaFixaRepository || contaFixaRepository
   const servicoGasto = dependencies.gastoService || gastoService
 
-  const contasFixas = ref<ContaFixa[]>([])
-
   const carregarTemplates = async () => {
-    const saved = await contaFixaRepo.listarTodas()
-    if (saved && saved.length > 0) {
-      contasFixas.value = saved
-    } else {
-      contasFixas.value = [...CONTAS_PADRAO]
-      for (const template of CONTAS_PADRAO) {
-        await contaFixaRepo.salvar(template)
+    if (promiseInicializacao) return promiseInicializacao
+
+    const carregar = async () => {
+      const saved = await contaFixaRepo.listarTodas()
+      if (saved && saved.length > 0) {
+        contasFixas.value = saved
+      } else {
+        contasFixas.value = [...CONTAS_PADRAO]
+        for (const template of CONTAS_PADRAO) {
+          await contaFixaRepo.salvar(template)
+        }
       }
+      inicializado.value = true
+    }
+
+    promiseInicializacao = carregar()
+    try {
+      await promiseInicializacao
+    } finally {
+      promiseInicializacao = null
     }
   }
 
@@ -76,13 +90,22 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
     })
   }
 
-  carregarTemplates()
+  const resetar = () => {
+    contasFixas.value = []
+    inicializado.value = false
+  }
+
+  if (!inicializado.value) {
+    carregarTemplates()
+  }
 
   return {
     contasFixas,
     salvarContaFixa,
     excluirContaFixa,
     verificarStatusPaga,
-    lancarGastoContaFixa
+    lancarGastoContaFixa,
+    carregarTemplates,
+    resetar
   }
 }

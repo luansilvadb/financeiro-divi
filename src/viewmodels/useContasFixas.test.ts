@@ -7,6 +7,8 @@ import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 describe('useContasFixas', () => {
   beforeEach(() => {
     localStorage.clear()
+    const { resetar } = useContasFixas()
+    resetar()
   })
 
   const esperarTick = () => new Promise(resolve => setTimeout(resolve, 0))

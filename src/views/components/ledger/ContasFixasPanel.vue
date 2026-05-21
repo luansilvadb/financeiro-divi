@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
 import { Gasto } from '../../../models/entities/Gasto'
 import { Repeat, Plus } from 'lucide-vue-next'
