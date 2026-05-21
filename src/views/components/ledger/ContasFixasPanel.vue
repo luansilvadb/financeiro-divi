@@ -97,15 +97,20 @@ const obterNomeMembro = (id?: string) => {
       </template>
 
       <!-- Adicionar Nova Conta -->
-      <button 
-        @click="$emit('novo')" 
-        :disabled="isMonthLocked"
-        class="group flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone hover:border-ember hover:bg-ember/5 transition-all duration-300 text-ash hover:text-ember font-bold text-xs uppercase tracking-widest mt-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-stone disabled:hover:text-ash"
-        data-testid="nova-conta-fixa"
-      >
-        <Plus class="w-4 h-4 transition-transform group-hover:scale-110" />
-        <span>Adicionar conta fixa</span>
-      </button>
+      <div class="flex flex-col items-center gap-2 mt-2">
+        <button 
+          @click="$emit('novo')" 
+          :disabled="isMonthLocked"
+          class="group w-full flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone hover:border-ember hover:bg-ember/5 transition-all duration-300 text-ash hover:text-ember font-bold text-xs uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-stone disabled:hover:text-ash"
+          data-testid="nova-conta-fixa"
+        >
+          <Plus class="w-4 h-4 transition-transform group-hover:scale-110" />
+          <span>Adicionar conta fixa</span>
+        </button>
+        <p v-if="isMonthLocked" class="text-[9px] text-ash animate-in fade-in">
+          Reabra o mês para gerenciar contas fixas
+        </p>
+      </div>
     </div>
   </Card>
 </template>

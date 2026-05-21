@@ -214,6 +214,7 @@ export function useDashboardViewModel(
 
   // --- Ações de Negócio ---
   const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
+    if (faturaSelecionadaTrancada.value) return
     await fecharFaturaManual(faturaId, responsavelId)
     showBottomSheetFechar.value = false
     faturaParaFechar.value = null
@@ -221,6 +222,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarAjusteGasto = async (dados: any) => {
+    if (faturaSelecionadaTrancada.value) return
     if (!gastoParaAjustar.value) return
     await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
     showBottomSheetAjustar.value = false
@@ -229,6 +231,7 @@ export function useDashboardViewModel(
   }
 
   const enviarReembolsoPix = async (acertoId: string) => {
+    if (faturaSelecionadaTrancada.value) return
     if (valorPixInput.value <= 0) return
     isSubmittingPix.value = true
     try {
@@ -241,6 +244,7 @@ export function useDashboardViewModel(
   }
 
   const quitarComAjuste = async (acertoId: string) => {
+    if (faturaSelecionadaTrancada.value) return
     isSubmittingPix.value = true
     try {
       await quitarAcertoMembro(acertoId)
@@ -261,11 +265,13 @@ export function useDashboardViewModel(
   }
 
   const confirmarSalvarTemplate = (template: any) => {
+    if (faturaSelecionadaTrancada.value) return
     salvarContaFixa(template)
     showBottomSheetConfigCF.value = false
   }
 
   const confirmarDeletarTemplate = (id: string) => {
+    if (faturaSelecionadaTrancada.value) return
     excluirContaFixa(id)
     showBottomSheetConfigCF.value = false
   }
@@ -294,6 +300,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
+    if (faturaSelecionadaTrancada.value) return
     const activeFaturaId = faturaAtivaVisualizada.value?.id
     if (!activeFaturaId) return
 
@@ -312,6 +319,7 @@ export function useDashboardViewModel(
   }
 
   const excluirGasto = async (id: string) => {
+    if (faturaSelecionadaTrancada.value) return
     await localGastoService.excluirGasto(id)
     await cartoesEFaturas.inicializar()
   }

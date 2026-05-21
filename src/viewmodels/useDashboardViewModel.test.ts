@@ -281,6 +281,35 @@ describe('useDashboardViewModel', () => {
     vi.useRealTimers()
   })
 
+  it('should NOT adjust expense if period is locked', async () => {
+    const propsWithLockedMonth: DashboardProps = {
+      ...dummyProps,
+      faturasFechadas: [{ id: 'f1', periodo: { mes: 5, ano: 2026 } }]
+    }
+    vi.setSystemTime(new Date(2026, 4, 1))
+    const vm = createViewModel(propsWithLockedMonth, vi.fn())
+    
+    vm.gastoParaAjustar.value = { id: 'g1' }
+    await vm.confirmarAjusteGasto({ descricao: 'Novo' })
+
+    expect(mockCartoesEFaturas.atualizarGastoCompletoManual).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('should NOT delete expense if period is locked', async () => {
+    const propsWithLockedMonth: DashboardProps = {
+      ...dummyProps,
+      faturasFechadas: [{ id: 'f1', periodo: { mes: 5, ano: 2026 } }]
+    }
+    vi.setSystemTime(new Date(2026, 4, 1))
+    const vm = createViewModel(propsWithLockedMonth, vi.fn())
+    
+    await vm.excluirGasto('g1')
+
+    expect(mockGastoService.excluirGasto).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
   it('should save and delete bill templates', () => {
     const vm = createViewModel(dummyProps, vi.fn())
     vm.showBottomSheetConfigCF.value = true

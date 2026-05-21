@@ -111,28 +111,33 @@ const handleDelete = (id: string) => {
           </div>
 
           <!-- Ações do Feed -->
-          <div class="flex justify-end gap-2 pt-3 border-t border-stone transition-opacity">
-            <Button 
-              v-if="!g.isSettlement"
-              variant="secondary"
-              size="sm"
-              class="h-8 px-3 text-[10px] border border-stone"
-              @click="emit('ajustarGasto', g.id)"
-              :disabled="props.isMonthLocked"
-            >
-              <Edit3 class="w-3.5 h-3.5 mr-1.5" />
-              Ajustar
-            </Button>
-            <Button 
-              variant="secondary"
-              size="sm"
-              class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
-              @click="handleDelete(g.id)"
-              :disabled="props.isMonthLocked"
-            >
-              <Trash2 class="w-3.5 h-3.5 mr-1.5" />
-              Excluir
-            </Button>
+          <div class="flex flex-col items-end gap-2 pt-3 border-t border-stone transition-opacity">
+            <div class="flex justify-end gap-2 w-full">
+              <Button 
+                v-if="!g.isSettlement"
+                variant="secondary"
+                size="sm"
+                class="h-8 px-3 text-[10px] border border-stone"
+                @click="emit('ajustarGasto', g.id)"
+                :disabled="props.isMonthLocked"
+              >
+                <Edit3 class="w-3.5 h-3.5 mr-1.5" />
+                Ajustar
+              </Button>
+              <Button 
+                variant="secondary"
+                size="sm"
+                class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
+                @click="handleDelete(g.id)"
+                :disabled="props.isMonthLocked"
+              >
+                <Trash2 class="w-3.5 h-3.5 mr-1.5" />
+                Excluir
+              </Button>
+            </div>
+            <p v-if="props.isMonthLocked" class="text-[9px] text-ash mt-1 animate-in fade-in">
+              Reabra o mês para editar ou excluir
+            </p>
           </div>
         </div>
       </div>
