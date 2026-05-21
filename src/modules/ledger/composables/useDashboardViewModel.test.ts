@@ -68,4 +68,27 @@ describe('useDashboardViewModel', () => {
     )
     expect(matchingOption?.status).toBe('FECHADA')
   })
+
+  it('should toggle historical bottom sheet correctly', () => {
+    const dummyProps = {
+      membros: [], faturasAbertas: [], faturasFechadas: [], acertosPendentes: [], cartoes: [], calcularConsumo: () => 0
+    }
+    const vm = useDashboardViewModel(dummyProps, vi.fn())
+    expect(vm.showBottomSheetHistorico.value).toBe(false)
+    vm.abrirHistorico()
+    expect(vm.showBottomSheetHistorico.value).toBe(true)
+    vm.fecharHistorico()
+    expect(vm.showBottomSheetHistorico.value).toBe(false)
+  })
+
+  it('should configure bill launch popup states', () => {
+    const dummyProps = {
+      membros: [], faturasAbertas: [], faturasFechadas: [], acertosPendentes: [], cartoes: [], calcularConsumo: () => 0
+    }
+    const vm = useDashboardViewModel(dummyProps, vi.fn())
+    const bill = { id: 'luz', name: 'Energia' }
+    vm.abrirLancarBill(bill)
+    expect(vm.billSelecionada.value).toEqual(bill)
+    expect(vm.showPopupLancar.value).toBe(true)
+  })
 })

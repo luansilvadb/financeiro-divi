@@ -91,12 +91,91 @@ export function useDashboardViewModel(props: DashboardProps, emit: any) {
     return listaMesesSeletor.value.filter(item => item.status === 'FECHADA')
   })
 
+  // UI States
+  const showBottomSheetHistorico = ref(false)
+  const showBottomSheetFechar = ref(false)
+  const faturaParaFechar = ref<any | null>(null)
+  const showBottomSheetAjustar = ref(false)
+  const gastoParaAjustar = ref<any | null>(null)
+  const showPopupLancar = ref(false)
+  const showBottomSheetConfigCF = ref(false)
+  const billSelecionada = ref<any | null>(null)
+  const showBottomSheetNovoPeriodo = ref(false)
+  const nomeNovoPeriodo = ref('')
+  const showBottomSheetNetting = ref(false)
+  const nettingTarget = ref<any | null>(null)
+  const showParcelasFuturas = ref(false)
+  const isDropdownAbertosOpen = ref(false)
+  const acertoPixId = ref<string | null>(null)
+  const valorPixInput = ref(0)
+  const isSubmittingPix = ref(false)
+
+  // Toggle Methods
+  const abrirHistorico = () => { showBottomSheetHistorico.value = true }
+  const fecharHistorico = () => { showBottomSheetHistorico.value = false }
+  
+  const abrirLancarBill = (bill: any) => {
+    billSelecionada.value = bill
+    showPopupLancar.value = true
+  }
+  const fecharLancarBill = () => { showPopupLancar.value = false }
+
+  const abrirConfigurarBill = (bill: any) => {
+    billSelecionada.value = bill
+    showBottomSheetConfigCF.value = true
+  }
+  const abrirNovoBill = () => {
+    billSelecionada.value = null
+    showBottomSheetConfigCF.value = true
+  }
+  const fecharConfigurarBill = () => { showBottomSheetConfigCF.value = false }
+
+  const abrirAjustarGasto = (gasto: any) => {
+    gastoParaAjustar.value = gasto
+    showBottomSheetAjustar.value = true
+  }
+  const fecharAjustarGasto = () => { showBottomSheetAjustar.value = false }
+
+  const abrirBottomSheetNetting = (transferencia: any) => {
+    nettingTarget.value = transferencia
+    showBottomSheetNetting.value = true
+  }
+  const fecharBottomSheetNetting = () => { showBottomSheetNetting.value = false }
+
   return {
     periodoSelecionado,
     faturaSelecionadaTrancada,
     faturaAtivaVisualizada,
     listaMesesSeletor,
     mesesAbertosOpcoes,
-    mesesTrancadosOpcoes
+    mesesTrancadosOpcoes,
+    showBottomSheetHistorico,
+    showBottomSheetFechar,
+    faturaParaFechar,
+    showBottomSheetAjustar,
+    gastoParaAjustar,
+    showPopupLancar,
+    showBottomSheetConfigCF,
+    billSelecionada,
+    showBottomSheetNovoPeriodo,
+    nomeNovoPeriodo,
+    showBottomSheetNetting,
+    nettingTarget,
+    showParcelasFuturas,
+    isDropdownAbertosOpen,
+    acertoPixId,
+    valorPixInput,
+    isSubmittingPix,
+    abrirHistorico,
+    fecharHistorico,
+    abrirLancarBill,
+    fecharLancarBill,
+    abrirConfigurarBill,
+    abrirNovoBill,
+    fecharConfigurarBill,
+    abrirAjustarGasto,
+    fecharAjustarGasto,
+    abrirBottomSheetNetting,
+    fecharBottomSheetNetting
   }
 }
