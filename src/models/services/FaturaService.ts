@@ -4,6 +4,7 @@ import type { IAntecipacaoRepository } from '../repositories/IAntecipacaoReposit
 import type { IAcertoMembroRepository } from '../repositories/IAcertoMembroRepository'
 import { AcertoMembro } from '../entities/AcertoMembro'
 import { Dinheiro } from '../entities/Dinheiro'
+import { Fatura } from '../entities/Fatura'
 import type { IFaturaService } from './IFaturaService'
 
 export class FaturaService implements IFaturaService {
@@ -107,8 +108,7 @@ export class FaturaService implements IFaturaService {
     for (const card of cartoes) {
       const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
       if (!temFatura) {
-        const FaturaClass = (await import('../entities/Fatura')).Fatura
-        const novaFatura = new FaturaClass({
+        const novaFatura = new Fatura({
           id: crypto.randomUUID(),
           cartaoId: card.id,
           periodo: { mes, ano },
