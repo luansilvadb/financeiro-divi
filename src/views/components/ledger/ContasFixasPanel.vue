@@ -99,7 +99,8 @@ const obterNomeMembro = (id?: string) => {
       <!-- Adicionar Nova Conta -->
       <button 
         @click="$emit('novo')" 
-        class="group flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone hover:border-ember hover:bg-ember/5 transition-all duration-300 text-ash hover:text-ember font-bold text-xs uppercase tracking-widest mt-2"
+        :disabled="isMonthLocked"
+        class="group flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone hover:border-ember hover:bg-ember/5 transition-all duration-300 text-ash hover:text-ember font-bold text-xs uppercase tracking-widest mt-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-stone disabled:hover:text-ash"
         data-testid="nova-conta-fixa"
       >
         <Plus class="w-4 h-4 transition-transform group-hover:scale-110" />

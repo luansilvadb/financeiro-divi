@@ -256,6 +256,31 @@ describe('useDashboardViewModel', () => {
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
   })
 
+  it('should NOT launch bill templates if period is locked', async () => {
+    const propsWithLockedMonth: DashboardProps = {
+      ...dummyProps,
+      faturasFechadas: [{ id: 'f1', periodo: { mes: 5, ano: 2026 } }]
+    }
+    // Mockar Date para garantir que Maio/2026 seja o inicial
+    vi.setSystemTime(new Date(2026, 4, 1))
+
+    const vm = createViewModel(propsWithLockedMonth, vi.fn())
+    
+    // Verificar se o ViewModel identificou que está trancado
+    expect(vm.faturaSelecionadaTrancada.value).toBe(true)
+
+    vm.billSelecionada.value = { id: 'b1', name: 'Luz' }
+    vm.showPopupLancar.value = true
+
+    const dadosLancamento = { valorReal: 150, compradorId: 'm1', splitIds: ['m1', 'm2'] }
+    await vm.confirmarLancarBill(dadosLancamento)
+
+    expect(mockContasFixas.lancarGastoContaFixa).not.toHaveBeenCalled()
+    expect(vm.showPopupLancar.value).toBe(true) 
+
+    vi.useRealTimers()
+  })
+
   it('should save and delete bill templates', () => {
     const vm = createViewModel(dummyProps, vi.fn())
     vm.showBottomSheetConfigCF.value = true

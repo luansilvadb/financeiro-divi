@@ -252,6 +252,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarLancarBill = async (dados: { valorReal: number; compradorId: string; splitIds: string[] }) => {
+    if (faturaSelecionadaTrancada.value) return
     const activeFaturaId = faturaAtivaVisualizada.value?.id
     if (!activeFaturaId) return
     await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
