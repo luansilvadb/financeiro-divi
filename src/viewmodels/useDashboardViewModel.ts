@@ -8,7 +8,7 @@ import { useDashboardCalculations } from './useDashboardCalculations'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
-import { formatarMesAno } from '../shared/utils/meses'
+import { formatarMesAno, gerarListaMesesSeletor } from '../shared/utils/meses'
 import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from './storage/periodoStorage'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
@@ -92,23 +92,7 @@ export function useDashboardViewModel(
   })
 
   // --- Seletor de Meses ---
-  const listaMesesSeletor = computed(() => {
-    const hoje = new Date()
-    const list = []
-    for (let i = -12; i <= 12; i++) {
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
-      const mesIdx = d.getMonth() + 1
-      const anoIdx = d.getFullYear()
-      const estaFechada = props.faturasFechadas.some(f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx)
-      list.push({
-        mes: mesIdx,
-        ano: anoIdx,
-        nome: formatarMesAno(mesIdx, anoIdx),
-        status: estaFechada ? 'FECHADA' : 'ABERTA'
-      })
-    }
-    return list
-  })
+  const listaMesesSeletor = computed(() => gerarListaMesesSeletor(props.faturasFechadas))
 
   const mesesAbertosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'ABERTA'))
   const mesesTrancadosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'FECHADA'))
