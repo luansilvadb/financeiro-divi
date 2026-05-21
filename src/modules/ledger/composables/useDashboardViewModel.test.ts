@@ -35,4 +35,37 @@ describe('useDashboardViewModel', () => {
     expect(vm.periodoSelecionado.value.mes).toBe(hoje.getMonth() + 1)
     expect(vm.periodoSelecionado.value.ano).toBe(hoje.getFullYear())
   })
+
+  it('should identify lock status of selected period', () => {
+    const dummyProps = {
+      membros: [],
+      faturasAbertas: [],
+      faturasFechadas: [{ periodo: { mes: 5, ano: 2026 } }],
+      acertosPendentes: [],
+      cartoes: [],
+      calcularConsumo: () => 0
+    }
+    localStorage.setItem('divi_periodo_selecionado', JSON.stringify({ mes: 5, ano: 2026 }))
+    const emit = vi.fn()
+    const vm = useDashboardViewModel(dummyProps, emit)
+    expect(vm.faturaSelecionadaTrancada.value).toBe(true)
+    expect(emit).toHaveBeenCalledWith('periodoStatusChanged', true)
+  })
+
+  it('should compute month selector list correctly', () => {
+    const dummyProps = {
+      membros: [],
+      faturasAbertas: [],
+      faturasFechadas: [{ periodo: { mes: 5, ano: 2026 } }],
+      acertosPendentes: [],
+      cartoes: [],
+      calcularConsumo: () => 0
+    }
+    const vm = useDashboardViewModel(dummyProps, vi.fn())
+    expect(vm.listaMesesSeletor.value.length).toBe(25) // de -12 a +12 meses
+    const matchingOption = vm.listaMesesSeletor.value.find(
+      (m: any) => m.mes === 5 && m.ano === 2026
+    )
+    expect(matchingOption?.status).toBe('FECHADA')
+  })
 })

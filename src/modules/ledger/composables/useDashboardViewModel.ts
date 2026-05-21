@@ -1,4 +1,5 @@
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { Fatura } from '../core/domain/Fatura'
 
 export interface DashboardProps {
   membros: { id: string; nome: string; ativo?: boolean }[]
@@ -33,7 +34,69 @@ export function useDashboardViewModel(props: DashboardProps, emit: any) {
     localStorage.setItem('divi_periodo_selecionado', JSON.stringify(novos))
   }, { deep: true, immediate: true })
 
+  const faturaSelecionadaTrancada = computed(() => {
+    const p = periodoSelecionado.value
+    return props.faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+  })
+
+  watch(faturaSelecionadaTrancada, (isLocked) => {
+    emit('periodoStatusChanged', isLocked)
+  }, { immediate: true })
+
+  const faturaAtivaVisualizada = computed(() => {
+    const p = periodoSelecionado.value
+    const faturaEncontrada = props.faturasAbertas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano) ||
+                             props.faturasFechadas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    if (faturaEncontrada) return faturaEncontrada
+
+    return new Fatura({
+      id: `virtual-${p.mes}-${p.ano}`,
+      cartaoId: props.cartoes[0]?.id || 'virtual-card',
+      periodo: { mes: p.mes, ano: p.ano },
+      responsavelId: props.membros[0]?.id || 'virtual-member',
+      status: 'ABERTA'
+    })
+  })
+
+  const listaMesesSeletor = computed(() => {
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    const hoje = new Date()
+    const list = []
+
+    for (let i = -12; i <= 12; i++) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
+      const mesIdx = d.getMonth() + 1
+      const anoIdx = d.getFullYear()
+      
+      const estaFechada = props.faturasFechadas.some(
+        f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx
+      )
+
+      list.push({
+        mes: mesIdx,
+        ano: anoIdx,
+        nome: `${meses[mesIdx - 1]} ${anoIdx}`,
+        status: estaFechada ? 'FECHADA' : 'ABERTA'
+      })
+    }
+
+    return list
+  })
+
+  const mesesAbertosOpcoes = computed(() => {
+    return listaMesesSeletor.value.filter(item => item.status === 'ABERTA')
+  })
+
+  const mesesTrancadosOpcoes = computed(() => {
+    return listaMesesSeletor.value.filter(item => item.status === 'FECHADA')
+  })
+
   return {
-    periodoSelecionado
+    periodoSelecionado,
+    faturaSelecionadaTrancada,
+    faturaAtivaVisualizada,
+    listaMesesSeletor,
+    mesesAbertosOpcoes,
+    mesesTrancadosOpcoes
   }
 }
