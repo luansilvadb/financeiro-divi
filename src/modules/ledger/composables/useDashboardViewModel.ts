@@ -1,4 +1,4 @@
-import { ref, watch, computed, toRef } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Fatura } from '../core/domain/Fatura'
 import { Gasto } from '../core/domain/Gasto'
 import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
@@ -197,8 +197,8 @@ export function useDashboardViewModel(
   // Dynamic calculations instance to track changes in globalGastos/globalAcertos
   const calculations = computed(() => {
     return useDashboardCalculations(
-      toRef(props, 'membros'),
-      faturasFiltradasCalculations,
+      props.membros,
+      faturasFiltradasCalculations.value,
       props.faturasFechadas,
       props.acertosPendentes,
       globalGastos.value,

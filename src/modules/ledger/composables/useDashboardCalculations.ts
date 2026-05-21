@@ -1,27 +1,18 @@
-import { computed, type Ref } from 'vue'
+import { computed } from 'vue'
 import { Gasto } from '../core/domain/Gasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
 export function useDashboardCalculations(
-  membrosRef: Ref<{ id: string; nome: string }[]> | { id: string; nome: string }[],
-  faturasAbertas: any[] | Ref<any[]>,
+  membros: { id: string; nome: string }[],
+  faturasAbertas: any[],
   _faturasFechadas: any[],
   acertosPendentes: any[],
   globalGastos: any[],
   globalAcertos: any[],
   calcularConsumo: (faturaId: string, membroId: string) => number
 ) {
-  const getMembrosList = () => {
-    return 'value' in membrosRef ? membrosRef.value : membrosRef
-  }
-
-  const getFaturasAbertas = () => {
-    return faturasAbertas && 'value' in faturasAbertas ? (faturasAbertas as Ref<any[]>).value : (faturasAbertas as any[])
-  }
-
   const getMembroNome = (id: string) => {
     if (!id) return 'Desconhecido'
-    const membros = getMembrosList()
     const membro = membros.find(m => m.id === id)
     if (!membro && membros.length > 0) {
       console.warn(`Member ID not found: ${id}. Available members:`, membros.map(m => ({ id: m.id, nome: m.nome })))
@@ -38,7 +29,6 @@ export function useDashboardCalculations(
   }
 
   const calcularTotalFatura = (faturaId: string) => {
-    const membros = getMembrosList()
     return membros.reduce((sum: number, m: { id: string }) => sum + getConsumo(faturaId, m.id), 0)
   }
 
@@ -62,21 +52,21 @@ export function useDashboardCalculations(
   }
 
   const currentMonthName = computed(() => {
-    const fat = getFaturasAbertas()[0]
+    const fat = faturasAbertas[0]
     if (!fat) return 'Mês'
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     return meses[fat.periodo.mes - 1]
   })
 
   const currentYear = computed(() => {
-    const fat = getFaturasAbertas()[0]
+    const fat = faturasAbertas[0]
     if (!fat) return 'Atual'
     return fat.periodo.ano.toString()
   })
 
   const parcelasFuturasDetalhadas = computed(() => {
     const list: any[] = []
-    const fatAtiva = getFaturasAbertas()[0]
+    const fatAtiva = faturasAbertas[0]
     if (!fatAtiva) return list
 
     const gastosDaFaturaAtiva = gastosDaFatura(fatAtiva.id)
