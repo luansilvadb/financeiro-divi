@@ -5,6 +5,7 @@ import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useFaturaRollover } from './useFaturaRollover'
 import { useDashboardCalculations } from './useDashboardCalculations'
+import { useDashboardUIState } from './useDashboardUIState'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
@@ -97,50 +98,37 @@ export function useDashboardViewModel(
   const mesesAbertosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'ABERTA'))
   const mesesTrancadosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'FECHADA'))
 
-  // --- UI States ---
-  const showBottomSheetHistorico = ref(false)
-  const showBottomSheetFechar = ref(false)
-  const faturaParaFechar = ref<any | null>(null)
-  const showBottomSheetAjustar = ref(false)
-  const gastoParaAjustar = ref<any | null>(null)
-  const showPopupLancar = ref(false)
-  const showBottomSheetConfigCF = ref(false)
-  const billSelecionada = ref<any | null>(null)
-  const showBottomSheetNovoPeriodo = ref(false)
-  const nomeNovoPeriodo = ref('')
-  const showBottomSheetNetting = ref(false)
-  const nettingTarget = ref<any | null>(null)
-  const showParcelasFuturas = ref(false)
-  const isDropdownAbertosOpen = ref(false)
-  const acertoPixId = ref<string | null>(null)
-  const valorPixInput = ref(0)
-  const isSubmittingPix = ref(false)
+  // --- UI States & Sub-composables ---
+  const uiState = useDashboardUIState()
+  const {
+    showBottomSheetHistorico,
+    showBottomSheetFechar,
+    faturaParaFechar,
+    showBottomSheetAjustar,
+    gastoParaAjustar,
+    showPopupLancar,
+    showBottomSheetConfigCF,
+    billSelecionada,
+    showBottomSheetNovoPeriodo,
+    nomeNovoPeriodo,
+    showBottomSheetNetting,
+    nettingTarget,
+    showParcelasFuturas,
+    isDropdownAbertosOpen,
+    acertoPixId,
+    valorPixInput,
+    isSubmittingPix,
+    abrirLancarBill,
+    abrirConfigurarBill,
+    abrirNovoBill,
+    abrirAjustarGasto,
+    abrirBottomSheetNetting,
+    abrirNovoPeriodoBottomSheet: uiAbrirNovoPeriodoBottomSheet,
+    iniciarPix: uiIniciarPix
+  } = uiState
 
-  // --- Toggle Methods (apenas os que são usados no template) ---
-  const abrirLancarBill = (bill: any) => {
-    billSelecionada.value = bill
-    showPopupLancar.value = true
-  }
-
-  const abrirConfigurarBill = (bill: any) => {
-    billSelecionada.value = bill
-    showBottomSheetConfigCF.value = true
-  }
-
-  const abrirNovoBill = () => {
-    billSelecionada.value = null
-    showBottomSheetConfigCF.value = true
-  }
-
-  const abrirAjustarGasto = (gasto: any) => {
-    gastoParaAjustar.value = gasto
-    showBottomSheetAjustar.value = true
-  }
-
-  const abrirBottomSheetNetting = (transferencia: any) => {
-    nettingTarget.value = transferencia
-    showBottomSheetNetting.value = true
-  }
+  const iniciarPix = (acerto: any) => uiIniciarPix(acerto, formatarDinheiro)
+  const abrirNovoPeriodoBottomSheet = () => uiAbrirNovoPeriodoBottomSheet(faturaAtivaVisualizada.value)
 
   // --- Composables e Services ---
   const cartoesEFaturas = useCartoesEFaturas({
@@ -239,11 +227,6 @@ export function useDashboardViewModel(
     await cartoesEFaturas.inicializar()
   }
 
-  const iniciarPix = (acerto: any) => {
-    acertoPixId.value = acerto.id
-    valorPixInput.value = formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0))
-  }
-
   const enviarReembolsoPix = async (acertoId: string) => {
     if (valorPixInput.value <= 0) return
     isSubmittingPix.value = true
@@ -283,18 +266,6 @@ export function useDashboardViewModel(
   const confirmarDeletarTemplate = (id: string) => {
     excluirContaFixa(id)
     showBottomSheetConfigCF.value = false
-  }
-
-  const abrirNovoPeriodoBottomSheet = () => {
-    const fat = faturaAtivaVisualizada.value
-    if (fat) {
-      const proximoMIdx = fat.periodo.mes % 12
-      const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
-      nomeNovoPeriodo.value = formatarMesAno(proximoMIdx + 1, proximoAno)
-    } else {
-      nomeNovoPeriodo.value = ''
-    }
-    showBottomSheetNovoPeriodo.value = true
   }
 
   const executarNovoPeriodo = async (nomeNovoPeriodoVal: string) => {
