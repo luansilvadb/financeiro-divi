@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, toRef, nextTick, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import type { Tab } from '../ui/BottomTabBar.vue'
-import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
-import { Gasto } from '../../modules/ledger/core/domain/Gasto'
-import { Fatura } from '../../modules/ledger/core/domain/Fatura'
-import { useContasFixas } from '../../modules/ledger/composables/useContasFixas'
-import { useFaturaRollover } from '../../modules/ledger/composables/useFaturaRollover'
-import { useSaldosUnificados } from '../../modules/ledger/composables/useSaldosUnificados'
-import { useDashboardCalculations } from '../../modules/ledger/composables/useDashboardCalculations'
-import { DivisaoDeGasto } from '../../modules/ledger/core/domain/DivisaoDeGasto'
-import { LocalStorageGastoRepository } from '../../modules/ledger/adapters/LocalStorageGastoRepository'
+import { useDashboardViewModel } from '../../modules/ledger/composables/useDashboardViewModel'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from './BottomSheetConfigurarContaFixa.vue'
@@ -48,114 +39,70 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura', 'openSettings', 'periodoStatusChanged'])
 
+// Instanciação da ViewModel
+const vm = useDashboardViewModel(props, emit)
+
+// Desestruturação reativa das propriedades e métodos para uso no template
 const {
-  registrarReembolsoParcialManual,
-  fecharFaturaManual,
-  quitarAcertoMembro,
-  atualizarGastoCompletoManual,
-  gastos: globalGastos,
-  acertos: globalAcertos
-} = useCartoesEFaturas()
+  periodoSelecionado,
+  faturaSelecionadaTrancada,
+  faturaAtivaVisualizada,
+  mesesAbertosOpcoes,
+  mesesTrancadosOpcoes,
+  showBottomSheetHistorico,
+  showBottomSheetFechar,
+  faturaParaFechar,
+  showBottomSheetAjustar,
+  gastoParaAjustar,
+  showPopupLancar,
+  showBottomSheetConfigCF,
+  billSelecionada,
+  showBottomSheetNovoPeriodo,
+  nomeNovoPeriodo,
+  showBottomSheetNetting,
+  nettingTarget,
+  showParcelasFuturas,
+  isDropdownAbertosOpen,
+  acertoPixId,
+  valorPixInput,
+  isSubmittingPix,
+  saldosUnificadosAtivos,
+  nettingTransferencias,
+  membrosVisiveis,
+  totalFuturasVencer,
+  parcelasFuturasDetalhadas,
+  contasFixas,
+  gastosFaturaSelecionada,
+  getMembroNome,
+  formatarDinheiro,
+  calcularTotalFatura,
+  acertosDaFatura,
+  gastosDaFatura,
+  todosOsAcertosQuitados,
+  currentMonthName,
+  currentYear,
+  abrirLancarBill,
+  abrirConfigurarBill,
+  abrirNovoBill,
+  abrirAjustarGasto,
+  abrirBottomSheetNetting,
+  abrirNovoPeriodoBottomSheet,
+  confirmarFechamentoFatura,
+  confirmarAjusteGasto,
+  iniciarPix,
+  enviarReembolsoPix,
+  quitarComAjuste,
+  confirmarLancarBill,
+  confirmarSalvarTemplate,
+  confirmarDeletarTemplate,
+  confirmarNovoPeriodo,
+  confirmarBaixaNetting,
+  excluirGasto,
+  estornarContaFixa,
+  formatarMesAno
+} = vm
 
-// Lógica de navegação de períodos por calendário / seletor de meses
-const showBottomSheetHistorico = ref(false)
-
-const obterPeriodoInicial = () => {
-  const salvo = localStorage.getItem('divi_periodo_selecionado')
-  if (salvo) {
-    try {
-      const parsed = JSON.parse(salvo)
-      if (parsed.mes && parsed.ano) return parsed
-    } catch (e) {}
-  }
-  const faturaReferencia = props.faturasAbertas?.[0] || props.faturasFechadas?.[0]
-  if (faturaReferencia?.periodo) {
-    return { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
-  }
-  return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
-}
-
-const periodoSelecionado = ref<{ mes: number, ano: number }>(obterPeriodoInicial())
-
-watch(periodoSelecionado, (novos) => {
-  localStorage.setItem('divi_periodo_selecionado', JSON.stringify(novos))
-}, { deep: true, immediate: true })
-
-const faturaAtivaVisualizada = computed(() => {
-  const p = periodoSelecionado.value
-  const faturaEncontrada = props.faturasAbertas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano) ||
-                           props.faturasFechadas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-  if (faturaEncontrada) return faturaEncontrada
-
-  return new Fatura({
-    id: `virtual-${p.mes}-${p.ano}`,
-    cartaoId: props.cartoes[0]?.id || 'virtual-card',
-    periodo: { mes: p.mes, ano: p.ano },
-    responsavelId: props.membros[0]?.id || 'virtual-member',
-    status: 'ABERTA'
-  })
-})
-
-const faturaSelecionadaTrancada = computed(() => {
-  const p = periodoSelecionado.value
-  return props.faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-})
-
-watch(faturaSelecionadaTrancada, (isLocked) => {
-  emit('periodoStatusChanged', isLocked)
-}, { immediate: true })
-
-const faturasFiltradasCalculations = computed(() => {
-  const ativa = faturaAtivaVisualizada.value
-  if (!ativa) return []
-  return [ativa]
-})
-
-const formatarMesAno = (mes: number, ano: number) => {
-  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  return `${meses[mes - 1]} ${ano}`
-}
-
-const gastosFaturaSelecionada = computed(() => {
-  const fatId = faturaAtivaVisualizada.value?.id
-  if (!fatId) return []
-  return globalGastos.value.filter(g => g.faturaId === fatId)
-})
-
-const listaMesesSeletor = computed(() => {
-  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  const hoje = new Date()
-  const list = []
-
-  for (let i = -12; i <= 12; i++) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
-    const mesIdx = d.getMonth() + 1
-    const anoIdx = d.getFullYear()
-    
-    const estaFechada = props.faturasFechadas.some(
-      f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx
-    )
-
-    list.push({
-      mes: mesIdx,
-      ano: anoIdx,
-      nome: `${meses[mesIdx - 1]} ${anoIdx}`,
-      status: estaFechada ? 'FECHADA' : 'ABERTA'
-    })
-  }
-
-  return list
-})
-
-const mesesAbertosOpcoes = computed(() => {
-  return listaMesesSeletor.value.filter(item => item.status === 'ABERTA')
-})
-
-const mesesTrancadosOpcoes = computed(() => {
-  return listaMesesSeletor.value.filter(item => item.status === 'FECHADA')
-})
-
-const isDropdownAbertosOpen = ref(false)
+// Lógica de scroll para o item selecionado (única lógica de UI pura/DOM mantida na View)
 const itemSelecionadoRef = ref<any>(null)
 const setItemSelecionadoRef = (el: any, op: { mes: number; ano: number }) => {
   if (el && periodoSelecionado.value.mes === op.mes && periodoSelecionado.value.ano === op.ano) {
@@ -172,276 +119,9 @@ watch(isDropdownAbertosOpen, async (aberto) => {
   }
 })
 
-// Extract calculation logic to dedicated composable
-const calculations = useDashboardCalculations(
-  toRef(props, 'membros'),
-  faturasFiltradasCalculations, // pass computed wrapper instead of static prop array
-  props.faturasFechadas,
-  props.acertosPendentes,
-  globalGastos.value,
-  globalAcertos.value,
-  props.calcularConsumo
-)
-
-// Destructure for template access
-const {
-  getMembroNome,
-  formatarDinheiro,
-  calcularTotalFatura,
-  acertosDaFatura,
-  gastosDaFatura,
-  todosOsAcertosQuitados,
-  currentMonthName,
-  currentYear,
-  parcelasFuturasDetalhadas
-} = calculations
-
+// Helpers locais para a renderização das Tabs
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
-
-// Estado do BottomSheet de fechamento (Gap 6)
-const showBottomSheetFechar = ref(false)
-const faturaParaFechar = ref<any | null>(null)
-
-
-const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
-  await fecharFaturaManual(faturaId, responsavelId)
-  showBottomSheetFechar.value = false
-  faturaParaFechar.value = null
-  await useCartoesEFaturas().inicializar()
-}
-
-// Estado do BottomSheet de Ajuste (✏️ Ajustar)
-const showBottomSheetAjustar = ref(false)
-const gastoParaAjustar = ref<any | null>(null)
-
-const abrirAjustarGasto = (gastoId: string) => {
-  const gasto = globalGastos.value.find(g => g.id === gastoId)
-  if (gasto) {
-    gastoParaAjustar.value = gasto
-    showBottomSheetAjustar.value = true
-  }
-}
-
-const confirmarAjusteGasto = async (dados: {
-  descricao: string
-  valorTotal: any
-  compradorId: string
-  method: 'pix' | 'card'
-  cardOwner: string | null
-  divisoes: any[]
-  installments: number
-}) => {
-  if (!gastoParaAjustar.value) return
-  await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
-  showBottomSheetAjustar.value = false
-  gastoParaAjustar.value = null
-  await useCartoesEFaturas().inicializar()
-}
-
-// Estado de Pix Parcial por acerto
-const acertoPixId = ref<string | null>(null)
-const valorPixInput = ref<number>(0)
-const isSubmittingPix = ref(false)
-
-// Inicia Pix
-const iniciarPix = (acerto: any) => {
-  acertoPixId.value = acerto.id
-  valorPixInput.value = formatarDinheiro(acerto.valorAcerto.centavos - (acerto.valorPago?.centavos || 0))
-}
-
-// Envia reembolso Pix parcial/total
-const enviarReembolsoPix = async (acertoId: string) => {
-  if (valorPixInput.value <= 0) return
-  isSubmittingPix.value = true
-  try {
-    await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
-    acertoPixId.value = null
-    await useCartoesEFaturas().inicializar()
-  } finally {
-    isSubmittingPix.value = false
-  }
-}
-
-const quitarComAjuste = async (acertoId: string) => {
-  isSubmittingPix.value = true
-  try {
-    await quitarAcertoMembro(acertoId)
-    acertoPixId.value = null
-    await useCartoesEFaturas().inicializar()
-  } finally {
-    isSubmittingPix.value = false
-  }
-}
-
-// --- INTEGRAÇÃO SENIOR V18 (FASES 2-5) ---
-const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
-
-// BottomSheets Contas Fixas
-const showPopupLancar = ref(false)
-const showBottomSheetConfigCF = ref(false)
-const billSelecionada = ref<any | null>(null)
-
-const abrirLancarBill = (bill: any) => {
-  billSelecionada.value = bill
-  showPopupLancar.value = true
-}
-
-const abrirConfigurarBill = (bill: any) => {
-  billSelecionada.value = bill
-  showBottomSheetConfigCF.value = true
-}
-
-const abrirNovoBill = () => {
-  billSelecionada.value = null
-  showBottomSheetConfigCF.value = true
-}
-
-const confirmarLancarBill = async (dados: { valorReal: number, compradorId: string, splitIds: string[] }) => {
-  const activeFaturaId = faturaAtivaVisualizada.value?.id
-  if (!activeFaturaId) return
-  await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
-  showPopupLancar.value = false
-  await useCartoesEFaturas().inicializar()
-}
-
-const confirmarSalvarTemplate = (template: any) => {
-  salvarContaFixa(template)
-  showBottomSheetConfigCF.value = false
-}
-
-const confirmarDeletarTemplate = (id: string) => {
-  excluirContaFixa(id)
-  showBottomSheetConfigCF.value = false
-}
-
-// Lógica de Rollover
-const showBottomSheetNovoPeriodo = ref(false)
-const nomeNovoPeriodo = ref('')
-
-const sugerirProximoPeriodoLocal = (fat: any) => {
-  if (!fat) return ''
-  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  const mIdx = fat.periodo.mes - 1 // 0-indexed
-  const proximoMIdx = (mIdx + 1) % 12
-  const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
-  return `${meses[proximoMIdx]} ${proximoAno}`
-}
-
-const abrirNovoPeriodoBottomSheet = () => {
-  nomeNovoPeriodo.value = sugerirProximoPeriodoLocal(faturaAtivaVisualizada.value)
-  showBottomSheetNovoPeriodo.value = true
-}
-
-const confirmarNovoPeriodo = async () => {
-  if (!nomeNovoPeriodo.value.trim()) return
-  
-  await executarNovoPeriodo(nomeNovoPeriodo.value)
-  showBottomSheetNovoPeriodo.value = false
-}
-
-// --- INTEGRAÇÃO SENIOR V19: LIVE BALANCES & NETTING ---
-const { calcularSaldosUnificados, calcularTransacoesNetting } = useSaldosUnificados()
-
-const saldosUnificadosAtivos = computed(() => {
-  const activeFaturaId = faturaAtivaVisualizada.value?.id
-  if (!activeFaturaId) return {}
-  const gastosPeriodo = globalGastos.value.filter(g => g.faturaId === activeFaturaId)
-  return calcularSaldosUnificados(props.membros, gastosPeriodo)
-})
-
-const nettingTransferencias = computed(() => {
-  return calcularTransacoesNetting(saldosUnificadosAtivos.value)
-})
-
-const membrosVisiveis = computed(() => {
-  return props.membros.filter(m => {
-    if (m.ativo !== false) return true // Moradores ativos aparecem sempre
-    const saldo = saldosUnificadosAtivos.value[m.id] || 0
-    return Math.abs(saldo) > 0.005 // Moradores desativados só aparecem se tiverem saldo residual
-  })
-})
-
-const showBottomSheetNetting = ref(false)
-const nettingTarget = ref<any | null>(null)
-
-const abrirBottomSheetNetting = (transferencia: any) => {
-  nettingTarget.value = transferencia
-  showBottomSheetNetting.value = true
-}
-
-const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
-  const activeFaturaId = faturaAtivaVisualizada.value?.id
-  if (!activeFaturaId) return
-
-  const gRepo = new LocalStorageGastoRepository()
-
-  const acertoGasto = new Gasto({
-    id: crypto.randomUUID(),
-    faturaId: activeFaturaId,
-    descricao: dados.descricao,
-    valorTotal: Dinheiro.deReais(dados.valor),
-    compradorId: dados.from, // Devedor paga (quem faz o Pix)
-    divisoes: [new DivisaoDeGasto(dados.to, Dinheiro.deReais(dados.valor))], // Credor recebe (quem recebe o Pix, abatendo seu saldo positivo)
-    isSettlement: true,
-    settlementDetails: {
-      fromMemberId: dados.from,
-      toMemberId: dados.to,
-      method: dados.method as any
-    },
-    installments: 1,
-    isLoan: false
-  })
-
-  await gRepo.salvar(acertoGasto)
-  showBottomSheetNetting.value = false
-  nettingTarget.value = null
-  await useCartoesEFaturas().inicializar()
-}
-
-// --- INTEGRAÇÃO SENIOR V19: ACCORDIONS DE FATURAS E PARCELAS FUTURAS ---
-
-const totalFuturasVencer = computed(() => {
-  return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)
-})
-
-const showParcelasFuturas = ref(false)
-
-const executarNovoPeriodo = async (nomeNovoPeriodo: string) => {
-  const { executarRolloverPeriodo } = useFaturaRollover()
-  
-  const faturasAbertasVisualizadas = props.faturasAbertas.filter(f => 
-    f.periodo.mes === faturaAtivaVisualizada.value.periodo.mes && 
-    f.periodo.ano === faturaAtivaVisualizada.value.periodo.ano
-  )
-
-  await executarRolloverPeriodo(
-    nomeNovoPeriodo,
-    faturasAbertasVisualizadas,
-    props.cartoes,
-    saldosUnificadosAtivos.value,
-    currentMonthName.value
-  )
-
-  await useCartoesEFaturas().inicializar()
-}
-
-// --- DESFAZER LANÇAMENTOS DO FEED ---
-const excluirGasto = async (id: string) => {
-  const gRepo = new LocalStorageGastoRepository()
-  await gRepo.excluir(id)
-  await useCartoesEFaturas().inicializar()
-}
-
-// --- ESTORNAR CONTA FIXA ---
-const estornarContaFixa = async (bill: any) => {
-  const gasto = gastosFaturaSelecionada.value.find(g => g.recurringBillId === bill.id)
-  if (gasto) {
-    if (confirm(`Deseja realmente estornar o pagamento de ${bill.name}?`)) {
-      await excluirGasto(gasto.id)
-    }
-  }
-}
 </script>
 
 <template>
