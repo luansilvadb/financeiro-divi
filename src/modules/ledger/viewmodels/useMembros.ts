@@ -1,20 +1,29 @@
 import { ref, computed } from 'vue'
-import { Membro } from '../core/domain/Membro'
-import { LocalStorageMembroRepository } from '../adapters/LocalStorageMembroRepository'
+import { Membro } from '../model/domain/Membro'
+import type { IMembroRepository } from '../model/repositories/IMembroRepository'
+import { MembroService } from '../model/services/MembroService'
+import { LocalStorageMembroRepository } from '../infrastructure/local/LocalStorageMembroRepository'
 
-// Estado global compartilhado por todas as instâncias do composable (Singleton)
-const repository = new LocalStorageMembroRepository()
+export interface MembrosDependencies {
+  membroRepository?: IMembroRepository
+  membroService?: MembroService
+}
+
+const defaultRepo = new LocalStorageMembroRepository()
+const defaultService = new MembroService(defaultRepo)
 const membros = ref<Membro[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
 
-export function useMembros() {
+export function useMembros(dependencies: MembrosDependencies = {}) {
+  const repo = dependencies.membroRepository || defaultRepo
+  const service = dependencies.membroService || defaultService
+
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
   // ✅ Usado para sincronismo: sempre relê do disco
   const carregar = async () => {
-    let lista = await repository.listarTodos()
-    
+    let lista = await repo.listarTodos()
     membros.value = lista
     inicializado.value = true
   }
@@ -27,27 +36,18 @@ export function useMembros() {
   }
 
   const adicionarMembro = async (nome: string) => {
-    const novo = new Membro({ id: crypto.randomUUID(), nome })
-    await repository.salvar(novo)
+    await service.adicionarMembro(nome)
     await carregar()
   }
 
   const desativarMembro = async (id: string) => {
-    const membro = await repository.buscarPorId(id)
-    if (membro) {
-      const atualizado = new Membro({ ...membro, ativo: false })
-      await repository.salvar(atualizado)
-      await carregar()
-    }
+    await service.desativarMembro(id)
+    await carregar()
   }
 
   const ativarMembro = async (id: string) => {
-    const membro = await repository.buscarPorId(id)
-    if (membro) {
-      const atualizado = new Membro({ ...membro, ativo: true })
-      await repository.salvar(atualizado)
-      await carregar()
-    }
+    await service.ativarMembro(id)
+    await carregar()
   }
 
   // Garantir carregamento inicial lazy

@@ -1,50 +1,93 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useMembros } from './useMembros'
-
-// Mocking LocalStorage to avoid side effects
-const localStorageMock = (() => {
-  let store: Record<string, string> = {}
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    clear: () => { store = {} },
-    removeItem: (key: string) => { delete store[key] }
-  }
-})()
-
-Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+import { Membro } from '../model/domain/Membro'
 
 describe('useMembros', () => {
   beforeEach(() => {
-    localStorage.clear()
     vi.clearAllMocks()
   })
 
   it('deve iniciar vazio se o repositório estiver vazio', async () => {
-    const { membros, carregar } = useMembros()
-    
+    const mockRepo = {
+      listarTodos: vi.fn().mockResolvedValue([]),
+      salvar: vi.fn(),
+      buscarPorId: vi.fn()
+    }
+    const mockService = {
+      adicionarMembro: vi.fn(),
+      desativarMembro: vi.fn(),
+      ativarMembro: vi.fn()
+    }
+
+    const { membros, carregar } = useMembros({ membroRepository: mockRepo, membroService: mockService as any })
     await carregar()
 
     expect(membros.value.length).toBe(0)
+    expect(mockRepo.listarTodos).toHaveBeenCalled()
   })
 
-  it('deve adicionar um novo membro', async () => {
-    const { membros, adicionarMembro, carregar } = useMembros()
-    await carregar() 
-    
+  it('deve adicionar um novo membro delegando ao MembroService', async () => {
+    const mockRepo = {
+      listarTodos: vi.fn().mockResolvedValue([]),
+      salvar: vi.fn(),
+      buscarPorId: vi.fn()
+    }
+    const mockService = {
+      adicionarMembro: vi.fn().mockResolvedValue(new Membro({ id: 'm1', nome: 'Novo Membro' })),
+      desativarMembro: vi.fn(),
+      ativarMembro: vi.fn()
+    }
+
+    // Na primeira chamada, carregar inicializa. Simulamos listarTodos retornando o membro após adição.
+    let listCounter = 0
+    mockRepo.listarTodos.mockImplementation(async () => {
+      listCounter++
+      if (listCounter > 1) {
+        return [new Membro({ id: 'm1', nome: 'Novo Membro' })]
+      }
+      return []
+    })
+
+    const { membros, adicionarMembro, carregar } = useMembros({ membroRepository: mockRepo, membroService: mockService as any })
+    await carregar()
+
     await adicionarMembro('Novo Membro')
-    
+
+    expect(mockService.adicionarMembro).toHaveBeenCalledWith('Novo Membro')
     expect(membros.value.length).toBe(1)
-    expect(membros.value.find(m => m.nome === 'Novo Membro')).toBeDefined()
+    expect(membros.value[0].nome).toBe('Novo Membro')
   })
 
-  it('deve desativar um membro', async () => {
-    const { ativos, desativarMembro, carregar } = useMembros()
-    await carregar() // migração
-    
-    const idParaDesativar = 'luan'
-    await desativarMembro(idParaDesativar)
-    
-    expect(ativos.value.find(m => m.id === idParaDesativar)).toBeUndefined()
+  it('deve desativar um membro delegando ao MembroService', async () => {
+    const membroAtivo = new Membro({ id: 'm-ativo', nome: 'Membro Ativo', ativo: true })
+    const mockRepo = {
+      listarTodos: vi.fn().mockResolvedValue([membroAtivo]),
+      salvar: vi.fn(),
+      buscarPorId: vi.fn()
+    }
+    const mockService = {
+      adicionarMembro: vi.fn(),
+      desativarMembro: vi.fn().mockResolvedValue(undefined),
+      ativarMembro: vi.fn()
+    }
+
+    let listCounter = 0
+    mockRepo.listarTodos.mockImplementation(async () => {
+      listCounter++
+      if (listCounter > 1) {
+        return [new Membro({ id: 'm-ativo', nome: 'Membro Ativo', ativo: false })]
+      }
+      return [membroAtivo]
+    })
+
+    const { ativos, desativarMembro, carregar } = useMembros({ membroRepository: mockRepo, membroService: mockService as any })
+    await carregar()
+
+    expect(ativos.value.length).toBe(1)
+
+    await desativarMembro('m-ativo')
+
+    expect(mockService.desativarMembro).toHaveBeenCalledWith('m-ativo')
+    expect(ativos.value.length).toBe(0)
   })
 })

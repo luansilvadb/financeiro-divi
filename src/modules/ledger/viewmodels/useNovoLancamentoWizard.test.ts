@@ -121,7 +121,7 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
 
     await finalizarGastoOuEmprestimo()
 
-    const { LocalStorageGastoRepository } = await import('../adapters/LocalStorageGastoRepository')
+    const { LocalStorageGastoRepository } = await import('../infrastructure/local/LocalStorageGastoRepository')
     const gRepo = new LocalStorageGastoRepository()
     const todosGastos = await gRepo.listarTodos()
 
@@ -171,5 +171,38 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
       compradorId: 'luan',
       valor: 100
     }))
+  })
+
+  it('deve salvar e carregar rascunho de lancamento usando o rascunhoWizardStorage', async () => {
+    vi.useFakeTimers()
+    const [{ wizFlow, compradorSelecionadoId, valor }, app] = withSetup(() => 
+      useNovoLancamentoWizard(['luan'].map(id => ({ id, nome: id })))
+    )
+
+    wizFlow.value = 'expense'
+    compradorSelecionadoId.value = 'luan'
+    valor.value = 100
+
+    // Aguardar o watcher do Vue rodar para agendar o setTimeout
+    await Promise.resolve()
+
+    // Esperar rodar o watch e o timeout
+    vi.advanceTimersByTime(600)
+
+    // Desmontar para simular nova sessão
+    app.unmount()
+    vi.useRealTimers()
+
+    // Instanciar novo
+    const [{ wizFlow: wizFlow2, compradorSelecionadoId: compradorSelecionadoId2, valor: valor2 }] = withSetup(() => 
+      useNovoLancamentoWizard(['luan'].map(id => ({ id, nome: id })))
+    )
+
+    // Aguardar Mounted tick
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(wizFlow2.value).toBe('expense')
+    expect(compradorSelecionadoId2.value).toBe('luan')
+    expect(valor2.value).toBe(100)
   })
 })

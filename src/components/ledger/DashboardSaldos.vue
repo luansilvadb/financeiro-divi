@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import type { Tab } from '../ui/BottomTabBar.vue'
-import { useDashboardViewModel } from '../../modules/ledger/composables/useDashboardViewModel'
+import { useDashboardViewModel } from '../../modules/ledger/viewmodels/useDashboardViewModel'
 import ContasFixasPanel from './ContasFixasPanel.vue'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from './BottomSheetConfigurarContaFixa.vue'

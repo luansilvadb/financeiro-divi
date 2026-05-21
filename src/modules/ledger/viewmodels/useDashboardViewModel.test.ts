@@ -36,12 +36,15 @@ const mockCalculations = {
   parcelasFuturasDetalhadas: ref([]),
 }
 
+const mockUseCartoesEFaturasSpy = vi.fn<(deps?: any) => any>(() => mockCartoesEFaturas)
+const mockUseContasFixasSpy = vi.fn<(deps?: any) => any>(() => mockContasFixas)
+
 vi.mock('./useCartoesEFaturas', () => ({
-  useCartoesEFaturas: () => mockCartoesEFaturas
+  useCartoesEFaturas: (deps?: any) => mockUseCartoesEFaturasSpy(deps)
 }))
 
 vi.mock('./useContasFixas', () => ({
-  useContasFixas: () => mockContasFixas
+  useContasFixas: (deps?: any) => mockUseContasFixasSpy(deps)
 }))
 
 
@@ -84,6 +87,16 @@ describe('useDashboardViewModel', () => {
         buscarPorId: vi.fn().mockResolvedValue(null),
         excluirPorFatura: vi.fn()
       },
+      cartaoRepository: {
+        listarTodos: vi.fn().mockResolvedValue([]),
+        salvar: vi.fn(),
+        excluir: vi.fn()
+      },
+      contaFixaRepository: {
+        listarTodas: vi.fn().mockResolvedValue([]),
+        salvar: vi.fn(),
+        excluir: vi.fn()
+      },
       faturaRolloverService: mockFaturaRolloverService as any
     }
     return useDashboardViewModel(props, emit, deps || defaultDeps)
@@ -92,6 +105,8 @@ describe('useDashboardViewModel', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
+    mockUseCartoesEFaturasSpy.mockClear()
+    mockUseContasFixasSpy.mockClear()
     mockCartoesEFaturas.gastos.value = []
     mockCartoesEFaturas.acertos.value = []
   })
@@ -288,5 +303,23 @@ describe('useDashboardViewModel', () => {
     expect(confirmSpy).toHaveBeenCalled()
     expect(mockExcluirGasto).toHaveBeenCalledWith('g-recur')
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
+  })
+
+  it('should inject dependencies into sub-composables correctly', () => {
+    const customCartaoRepo = { listarTodos: vi.fn(), salvar: vi.fn(), excluir: vi.fn() }
+    const customContaFixaRepo = { listarTodas: vi.fn(), salvar: vi.fn(), excluir: vi.fn() }
+
+    createViewModel(dummyProps, vi.fn(), {
+      cartaoRepository: customCartaoRepo,
+      contaFixaRepository: customContaFixaRepo
+    })
+
+    expect(mockUseCartoesEFaturasSpy).toHaveBeenCalledWith(expect.objectContaining({
+      cartaoRepository: customCartaoRepo
+    }))
+
+    expect(mockUseContasFixasSpy).toHaveBeenCalledWith(expect.objectContaining({
+      contaFixaRepository: customContaFixaRepo
+    }))
   })
 })

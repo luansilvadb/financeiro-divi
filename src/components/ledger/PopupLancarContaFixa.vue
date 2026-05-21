@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
+import type { ContaFixa } from '../../modules/ledger/model/domain/ContaFixa'
 import BottomSheet from '../ui/BottomSheet.vue'
 
 const props = defineProps<{

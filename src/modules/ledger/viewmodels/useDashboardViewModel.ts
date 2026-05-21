@@ -1,19 +1,22 @@
 import { ref, watch, computed } from 'vue'
-import { Fatura } from '../core/domain/Fatura'
+import { Fatura } from '../model/domain/Fatura'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useFaturaRollover } from './useFaturaRollover'
 import { useDashboardCalculations } from './useDashboardCalculations'
-import { calcularSaldosUnificados, calcularTransacoesNetting } from '../core/services/NettingService'
-import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
-import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
-import { LocalStorageCartaoRepository } from '../adapters/LocalStorageCartaoRepository'
-import { GastoService } from '../core/services/GastoService'
-import { FaturaRolloverService } from '../core/services/FaturaRolloverService'
+import { calcularSaldosUnificados, calcularTransacoesNetting } from '../model/services/NettingService'
+import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
+import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
+import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
+import { GastoService } from '../model/services/GastoService'
+import { FaturaRolloverService } from '../model/services/FaturaRolloverService'
 import { formatarMesAno } from '../../../shared/utils/meses'
-import type { IGastoRepository } from '../core/ports/IGastoRepository'
-import type { IFaturaRepository } from '../core/ports/IFaturaRepository'
+import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from '../../../shared/utils/periodoStorage'
+import type { IGastoRepository } from '../model/repositories/IGastoRepository'
+import type { IFaturaRepository } from '../model/repositories/IFaturaRepository'
+import type { ICartaoRepository } from '../model/repositories/ICartaoRepository'
+import type { IContaFixaRepository } from '../model/repositories/IContaFixaRepository'
 
 export interface DashboardProps {
   membros: { id: string; nome: string; ativo?: boolean }[]
@@ -28,25 +31,18 @@ export interface DashboardProps {
 export interface DashboardDependencies {
   gastoRepository?: IGastoRepository
   faturaRepository?: IFaturaRepository
+  cartaoRepository?: ICartaoRepository
+  contaFixaRepository?: IContaFixaRepository
   faturaRolloverService?: FaturaRolloverService
   gastoService?: GastoService
 }
 
-const PERIODO_STORAGE_KEY = 'divi_periodo_selecionado'
-
 function obterPeriodoInicial(faturasAbertas: any[], faturasFechadas: any[]): { mes: number; ano: number } {
-  const salvo = localStorage.getItem(PERIODO_STORAGE_KEY)
-  if (salvo) {
-    try {
-      const parsed = JSON.parse(salvo)
-      if (parsed.mes && parsed.ano) return parsed
-    } catch (_) {}
-  }
   const faturaReferencia = faturasAbertas?.[0] || faturasFechadas?.[0]
-  if (faturaReferencia?.periodo) {
-    return { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
-  }
-  return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
+  const fallback = faturaReferencia?.periodo
+    ? { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
+    : undefined
+  return obterPeriodoSelecionado(fallback)
 }
 
 export function useDashboardViewModel(
@@ -56,7 +52,7 @@ export function useDashboardViewModel(
 ) {
   const gastoRepo = dependencies.gastoRepository || new LocalStorageGastoRepository()
   const faturaRepo = dependencies.faturaRepository || new LocalStorageFaturaRepository()
-  const cartaoRepo = new LocalStorageCartaoRepository()
+  const cartaoRepo = dependencies.cartaoRepository || new LocalStorageCartaoRepository()
   const rolloverService = dependencies.faturaRolloverService || new FaturaRolloverService(faturaRepo, gastoRepo)
   const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
 
@@ -64,7 +60,7 @@ export function useDashboardViewModel(
   const periodoSelecionado = ref<{ mes: number; ano: number }>(obterPeriodoInicial(props.faturasAbertas, props.faturasFechadas))
 
   watch(periodoSelecionado, (novos) => {
-    localStorage.setItem(PERIODO_STORAGE_KEY, JSON.stringify(novos))
+    salvarPeriodoSelecionado(novos)
   }, { deep: true, immediate: true })
 
   const faturaSelecionadaTrancada = computed(() => {
@@ -159,8 +155,16 @@ export function useDashboardViewModel(
   }
 
   // --- Composables e Services ---
-  const cartoesEFaturas = useCartoesEFaturas()
-  const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
+  const cartoesEFaturas = useCartoesEFaturas({
+    cartaoRepository: cartaoRepo,
+    faturaRepository: faturaRepo,
+    gastoRepository: gastoRepo,
+    gastoService: gastoService
+  })
+  const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas({
+    contaFixaRepository: dependencies.contaFixaRepository,
+    gastoService: gastoService
+  })
   const { executarRolloverPeriodo } = useFaturaRollover({
     faturaRepository: faturaRepo,
     gastoRepository: gastoRepo,

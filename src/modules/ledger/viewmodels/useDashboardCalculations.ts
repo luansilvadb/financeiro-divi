@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { Gasto } from '../core/domain/Gasto'
+import { Gasto } from '../model/domain/Gasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { NOMES_MESES } from '../../../shared/utils/meses'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useMembros } from '../../modules/ledger/composables/useMembros'
+import { useMembros } from '../../modules/ledger/viewmodels/useMembros'
 import { UserMinus, UserCheck, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from './ConfiguracoesCartoes.vue'
 import Card from '../ui/Card.vue'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Fatura } from '../../../modules/ledger/core/domain/Fatura'
+import { Fatura } from '../../../modules/ledger/model/domain/Fatura'
 import SeletorMembros from '../shared/SeletorMembros.vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'

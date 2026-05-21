@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useFaturaRollover } from './useFaturaRollover'
-import { Fatura } from '../core/domain/Fatura'
-import { FaturaRolloverService } from '../core/services/FaturaRolloverService'
+import { Fatura } from '../model/domain/Fatura'
+import { FaturaRolloverService } from '../model/services/FaturaRolloverService'
 
 describe('useFaturaRollover', () => {
   beforeEach(() => {

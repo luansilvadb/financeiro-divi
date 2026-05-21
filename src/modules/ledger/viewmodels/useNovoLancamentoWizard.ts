@@ -1,15 +1,15 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
-import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
-import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
-import { LocalStorageCartaoRepository } from '../adapters/LocalStorageCartaoRepository'
+import { DivisaoDeGasto } from '../model/domain/DivisaoDeGasto'
+import { obterPeriodoSelecionado } from '../../../shared/utils/periodoStorage'
+import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
+import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
+import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { GastoService } from '../core/services/GastoService'
-import type { IGastoRepository } from '../core/ports/IGastoRepository'
-import type { IFaturaRepository } from '../core/ports/IFaturaRepository'
-import type { ICartaoRepository } from '../core/ports/ICartaoRepository'
-
-const STORAGE_KEY = 'divi_rascunho_novo_lancamento_v18'
+import { GastoService } from '../model/services/GastoService'
+import type { IGastoRepository } from '../model/repositories/IGastoRepository'
+import type { IFaturaRepository } from '../model/repositories/IFaturaRepository'
+import type { ICartaoRepository } from '../model/repositories/ICartaoRepository'
+import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from '../../../shared/utils/rascunhoWizardStorage'
 
 // Helper: Validate loan flow advancement
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
@@ -90,16 +90,7 @@ export function useNovoLancamentoWizard(
   const cartaoRepo = dependencies.cartaoRepository || new LocalStorageCartaoRepository()
   const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
 
-  const obterPeriodoCorrente = (): { mes: number; ano: number } => {
-    const raw = localStorage.getItem('divi_periodo_selecionado')
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw)
-        if (parsed.mes && parsed.ano) return { mes: Number(parsed.mes), ano: Number(parsed.ano) }
-      } catch (_) {}
-    }
-    return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
-  }
+
 
   // Controle de Fluxo v18
   const wizFlow = ref<'expense' | 'loan' | null>(null)
@@ -179,7 +170,7 @@ export function useNovoLancamentoWizard(
       installments: installments.value,
       cardOwnerId: wizCardOwner.value,
       borrowerId: borrowerId.value,
-      periodo: obterPeriodoCorrente()
+      periodo: obterPeriodoSelecionado()
     })
 
     reset()
@@ -198,15 +189,14 @@ export function useNovoLancamentoWizard(
     participantesDivisao.value = membros.map(m => m.id)
     modoDivisaoWizard.value = 'IGUAL'
     valoresDivisaoWizard.value = {}
-    localStorage.removeItem(STORAGE_KEY)
+    limparRascunhoWizard()
   }
 
   // Persistência de Rascunho no LocalStorage
   onMounted(async () => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
+    const data = obterRascunhoWizard()
+    if (data) {
       try {
-        const data = JSON.parse(saved)
         if (data.step !== undefined) step.value = data.step
         if (data.wizFlow !== undefined) wizFlow.value = data.wizFlow
         if (data.wizPayment !== undefined) wizPayment.value = data.wizPayment
@@ -238,7 +228,7 @@ export function useNovoLancamentoWizard(
     (state) => {
       clearTimeout(saveTimeout)
       saveTimeout = setTimeout(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+        salvarRascunhoWizard(state)
       }, 500)
     },
     { deep: true }

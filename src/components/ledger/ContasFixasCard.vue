@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
-import type { ContaFixa } from '../../modules/ledger/core/domain/ContaFixa'
+import type { ContaFixa } from '../../modules/ledger/model/domain/ContaFixa'
 
 const props = defineProps<{
   bill: ContaFixa

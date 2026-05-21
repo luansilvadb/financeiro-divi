@@ -36,10 +36,10 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
       }
     })
 
-    const { useCartoesEFaturas } = await import('../../modules/ledger/composables/useCartoesEFaturas')
+    const { useCartoesEFaturas } = await import('../../modules/ledger/viewmodels/useCartoesEFaturas')
     const { Dinheiro } = await import('../../shared/primitives/Dinheiro')
-    const { Gasto } = await import('../../modules/ledger/core/domain/Gasto')
-    const { DivisaoDeGasto } = await import('../../modules/ledger/core/domain/DivisaoDeGasto')
+    const { Gasto } = await import('../../modules/ledger/model/domain/Gasto')
+    const { DivisaoDeGasto } = await import('../../modules/ledger/model/domain/DivisaoDeGasto')
 
     const mockG = new Gasto({
       id: 'g-teste-saldo',
@@ -90,10 +90,10 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     })
 
     // Mock do inicializar do useCartoesEFaturas para conter gastos ativos
-    const { useCartoesEFaturas } = await import('../../modules/ledger/composables/useCartoesEFaturas')
+    const { useCartoesEFaturas } = await import('../../modules/ledger/viewmodels/useCartoesEFaturas')
     const { Dinheiro } = await import('../../shared/primitives/Dinheiro')
-    const { Gasto } = await import('../../modules/ledger/core/domain/Gasto')
-    const { DivisaoDeGasto } = await import('../../modules/ledger/core/domain/DivisaoDeGasto')
+    const { Gasto } = await import('../../modules/ledger/model/domain/Gasto')
+    const { DivisaoDeGasto } = await import('../../modules/ledger/model/domain/DivisaoDeGasto')
 
     const mockG = new Gasto({
       id: 'g-teste-feed',

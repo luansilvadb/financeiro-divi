@@ -1,9 +1,9 @@
-import { Fatura } from '../core/domain/Fatura'
-import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
-import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
-import { FaturaRolloverService } from '../core/services/FaturaRolloverService'
-import type { IFaturaRepository } from '../core/ports/IFaturaRepository'
-import type { IGastoRepository } from '../core/ports/IGastoRepository'
+import { Fatura } from '../model/domain/Fatura'
+import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
+import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
+import { FaturaRolloverService } from '../model/services/FaturaRolloverService'
+import type { IFaturaRepository } from '../model/repositories/IFaturaRepository'
+import type { IGastoRepository } from '../model/repositories/IGastoRepository'
 
 export interface RolloverDependencies {
   faturaRepository?: IFaturaRepository

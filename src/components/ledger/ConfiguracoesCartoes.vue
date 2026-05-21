@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import { Cartao } from '../../modules/ledger/core/domain/Cartao'
-import { useCartoesEFaturas } from '../../modules/ledger/composables/useCartoesEFaturas'
-import { useMembros } from '../../modules/ledger/composables/useMembros'
+import { Cartao } from '../../modules/ledger/model/domain/Cartao'
+import { useCartoesEFaturas } from '../../modules/ledger/viewmodels/useCartoesEFaturas'
+import { useMembros } from '../../modules/ledger/viewmodels/useMembros'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import { Trash2, CreditCard, Calendar, User, ChevronDown } from 'lucide-vue-next'

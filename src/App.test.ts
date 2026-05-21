@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import App from './App.vue'
 
-vi.mock('./modules/ledger/composables/useMembros', () => ({
+vi.mock('./modules/ledger/viewmodels/useMembros', () => ({
   useMembros: () => ({
     ativos: ref([]),
     membros: ref([]),
@@ -11,7 +11,7 @@ vi.mock('./modules/ledger/composables/useMembros', () => ({
   }),
 }))
 
-vi.mock('./modules/ledger/composables/useCartoesEFaturas', () => ({
+vi.mock('./modules/ledger/viewmodels/useCartoesEFaturas', () => ({
   useCartoesEFaturas: () => ({
     cartoes: ref([]),
     acertos: ref([]),
@@ -26,7 +26,7 @@ vi.mock('./modules/ledger/composables/useCartoesEFaturas', () => ({
   }),
 }))
 
-vi.mock('./modules/ledger/composables/useStorageSync', () => ({
+vi.mock('./modules/ledger/viewmodels/useStorageSync', () => ({
   useStorageSync: vi.fn(),
 }))
 

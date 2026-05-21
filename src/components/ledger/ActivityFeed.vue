@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Clock, Edit3, Trash2 } from 'lucide-vue-next'
-import { Gasto } from '../../modules/ledger/core/domain/Gasto'
+import { Gasto } from '../../modules/ledger/model/domain/Gasto'
 import { computed } from 'vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'

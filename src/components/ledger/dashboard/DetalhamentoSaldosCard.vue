@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Gasto } from '../../../modules/ledger/core/domain/Gasto'
+import { Gasto } from '../../../modules/ledger/model/domain/Gasto'
 import Card from '../../ui/Card.vue'
 import { Wallet, CreditCard, Handshake, Search } from 'lucide-vue-next'
 

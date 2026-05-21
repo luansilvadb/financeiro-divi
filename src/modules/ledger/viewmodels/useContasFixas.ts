@@ -1,12 +1,12 @@
 import { ref } from 'vue'
-import type { ContaFixa } from '../core/domain/ContaFixa'
-import { Gasto } from '../core/domain/Gasto'
-import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
-import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
-
-const STORAGE_KEY = 'divi_contas_fixas_templates_v18'
-const gastoRepo = new LocalStorageGastoRepository()
+import type { ContaFixa } from '../model/domain/ContaFixa'
+import type { Gasto } from '../model/domain/Gasto'
+import { LocalStorageContaFixaRepository } from '../infrastructure/local/LocalStorageContaFixaRepository'
+import type { IContaFixaRepository } from '../model/repositories/IContaFixaRepository'
+import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
+import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
+import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
+import { GastoService } from '../model/services/GastoService'
 
 const CONTAS_PADRAO: ContaFixa[] = [
   { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValue: 1500.00, defaultSplit: ['luciana', 'luan', 'joao'] },
@@ -16,40 +16,46 @@ const CONTAS_PADRAO: ContaFixa[] = [
   { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValue: null, defaultSplit: ['luciana', 'luan'] }
 ]
 
-export function useContasFixas() {
+export interface ContasFixasDependencies {
+  contaFixaRepository?: IContaFixaRepository
+  gastoService?: GastoService
+}
+
+export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
+  const contaFixaRepo = dependencies.contaFixaRepository || new LocalStorageContaFixaRepository()
+  
+  const gastoRepo = new LocalStorageGastoRepository()
+  const faturaRepo = new LocalStorageFaturaRepository()
+  const cartaoRepo = new LocalStorageCartaoRepository()
+  const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
+
   const contasFixas = ref<ContaFixa[]>([])
 
-  const carregarTemplates = () => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        contasFixas.value = JSON.parse(saved)
-      } catch (e) {
-        contasFixas.value = [...CONTAS_PADRAO]
-      }
+  const carregarTemplates = async () => {
+    const saved = await contaFixaRepo.listarTodas()
+    if (saved && saved.length > 0) {
+      contasFixas.value = saved
     } else {
       contasFixas.value = [...CONTAS_PADRAO]
-      salvarNoStorage()
+      for (const template of CONTAS_PADRAO) {
+        await contaFixaRepo.salvar(template)
+      }
     }
   }
 
-  const salvarNoStorage = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contasFixas.value))
-  }
-
-  const salvarContaFixa = (template: ContaFixa) => {
+  const salvarContaFixa = async (template: ContaFixa) => {
     const idx = contasFixas.value.findIndex(c => c.id === template.id)
     if (idx > -1) {
       contasFixas.value[idx] = template
     } else {
       contasFixas.value.push(template)
     }
-    salvarNoStorage()
+    await contaFixaRepo.salvar(template)
   }
 
-  const excluirContaFixa = (id: string) => {
+  const excluirContaFixa = async (id: string) => {
     contasFixas.value = contasFixas.value.filter(c => c.id !== id)
-    salvarNoStorage()
+    await contaFixaRepo.excluir(id)
   }
 
   const verificarStatusPaga = (conta: ContaFixa, gastos: Gasto[]) => {
@@ -68,23 +74,13 @@ export function useContasFixas() {
     compradorId: string,
     participantes: string[]
   ) => {
-    const total = Dinheiro.deReais(valorTotal)
-    const partes = total.distribuir(participantes.length)
-    const divisoes = participantes.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
-
-    const novoGasto = new Gasto({
-      id: crypto.randomUUID(),
+    await gastoService.lancarGastoContaFixa({
       faturaId,
-      descricao: `Talão: ${conta.name}`,
-      valorTotal: total,
+      conta,
+      valorTotal,
       compradorId,
-      divisoes,
-      recurringBillId: conta.id,
-      installments: 1,
-      isLoan: false
+      participantes
     })
-
-    await gastoRepo.salvar(novoGasto)
   }
 
   carregarTemplates()

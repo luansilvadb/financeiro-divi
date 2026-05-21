@@ -1,18 +1,24 @@
 import { ref, computed } from 'vue'
-import { LocalStorageCartaoRepository } from '../adapters/LocalStorageCartaoRepository'
-import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
-import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
-import { LocalStorageAntecipacaoRepository } from '../adapters/LocalStorageAntecipacaoRepository'
-import { LocalStorageAcertoMembroRepository } from '../adapters/LocalStorageAcertoMembroRepository'
-import { FaturaService } from '../core/services/FaturaService'
-import { AcertoService } from '../core/services/AcertoService'
-import { Cartao } from '../core/domain/Cartao'
-import { Fatura } from '../core/domain/Fatura'
-import { AcertoMembro } from '../core/domain/AcertoMembro'
-import { Gasto } from '../core/domain/Gasto'
-import { Antecipacao } from '../core/domain/Antecipacao'
+import { LocalStorageCartaoRepository } from '../infrastructure/local/LocalStorageCartaoRepository'
+import { LocalStorageFaturaRepository } from '../infrastructure/local/LocalStorageFaturaRepository'
+import { LocalStorageGastoRepository } from '../infrastructure/local/LocalStorageGastoRepository'
+import { LocalStorageAntecipacaoRepository } from '../infrastructure/local/LocalStorageAntecipacaoRepository'
+import { LocalStorageAcertoMembroRepository } from '../infrastructure/local/LocalStorageAcertoMembroRepository'
+import { FaturaService } from '../model/services/FaturaService'
+import { AcertoService } from '../model/services/AcertoService'
+import { GastoService } from '../model/services/GastoService'
+import { Cartao } from '../model/domain/Cartao'
+import { Fatura } from '../model/domain/Fatura'
+import { AcertoMembro } from '../model/domain/AcertoMembro'
+import { Gasto } from '../model/domain/Gasto'
+import { Antecipacao } from '../model/domain/Antecipacao'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
-import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
+import { DivisaoDeGasto } from '../model/domain/DivisaoDeGasto'
+import type { ICartaoRepository } from '../model/repositories/ICartaoRepository'
+import type { IFaturaRepository } from '../model/repositories/IFaturaRepository'
+import type { IGastoRepository } from '../model/repositories/IGastoRepository'
+import type { IAntecipacaoRepository } from '../model/repositories/IAntecipacaoRepository'
+import type { IAcertoMembroRepository } from '../model/repositories/IAcertoMembroRepository'
 
 const cartaoRepo = new LocalStorageCartaoRepository()
 const faturaRepo = new LocalStorageFaturaRepository()
@@ -20,8 +26,7 @@ const gastoRepo = new LocalStorageGastoRepository()
 const antRepo = new LocalStorageAntecipacaoRepository()
 const acertoRepo = new LocalStorageAcertoMembroRepository()
 
-const faturaService = new FaturaService(faturaRepo, gastoRepo, antRepo, acertoRepo)
-const acertoService = new AcertoService(acertoRepo, faturaRepo)
+
 
 const cartoes = ref<Cartao[]>([])
 const faturas = ref<Fatura[]>([])
@@ -31,48 +36,53 @@ const antecipacoes = ref<Antecipacao[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
 
-export function useCartoesEFaturas() {
+export interface CartoesEFaturasDependencies {
+  cartaoRepository?: ICartaoRepository
+  faturaRepository?: IFaturaRepository
+  gastoRepository?: IGastoRepository
+  antecipacaoRepository?: IAntecipacaoRepository
+  acertoMembroRepository?: IAcertoMembroRepository
+  faturaService?: FaturaService
+  acertoService?: AcertoService
+  gastoService?: GastoService
+}
+
+export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {}) {
+  const localCartaoRepo = dependencies.cartaoRepository || cartaoRepo
+  const localFaturaRepo = dependencies.faturaRepository || faturaRepo
+  const localGastoRepo = dependencies.gastoRepository || gastoRepo
+  const localAntRepo = dependencies.antecipacaoRepository || antRepo
+  const localAcertoRepo = dependencies.acertoMembroRepository || acertoRepo
+
+  const localFaturaService = dependencies.faturaService || new FaturaService(localFaturaRepo, localGastoRepo, localAntRepo, localAcertoRepo)
+  const localAcertoService = dependencies.acertoService || new AcertoService(localAcertoRepo, localFaturaRepo)
+  const localGastoService = dependencies.gastoService || new GastoService(localGastoRepo, localFaturaRepo, localCartaoRepo)
+
   const inicializar = async () => {
     if (promiseInicializacao) return promiseInicializacao
     
     const carregar = async () => {
-      const todosCartoes = await cartaoRepo.listarTodos()
+      const todosCartoes = await localCartaoRepo.listarTodos()
       cartoes.value = todosCartoes
 
-      // Inicializar faturas abertas padrão caso não existam para todos os cartões cadastrados
       const hoje = new Date()
       const mesAtual = hoje.getMonth() + 1
       const anoAtual = hoje.getFullYear()
-      let todasFaturas = await faturaRepo.listarTodas()
 
-      for (const card of todosCartoes) {
-        const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
-        if (!temFatura) {
-          const novaFatura = new Fatura({
-            id: crypto.randomUUID(),
-            cartaoId: card.id,
-            periodo: { mes: mesAtual, ano: anoAtual },
-            responsavelId: card.responsavelPadraoId,
-            status: 'ABERTA'
-          })
-          await faturaRepo.salvar(novaFatura)
-          todasFaturas.push(novaFatura)
-        }
-      }
+      const todasFaturas = await localFaturaService.assegurarFaturasAbertas(todosCartoes, mesAtual, anoAtual)
       faturas.value = todasFaturas
 
-      // Carregar acertos, gastos e antecipações
       const todosAcertos: AcertoMembro[] = []
       const todosGastos: Gasto[] = []
       const todasAnt: Antecipacao[] = []
       for (const f of todasFaturas) {
-        const porFaturaAcertos = await acertoRepo.buscarPorFatura(f.id)
+        const porFaturaAcertos = await localAcertoRepo.buscarPorFatura(f.id)
         todosAcertos.push(...porFaturaAcertos)
 
-        const porFaturaGastos = await gastoRepo.buscarPorFatura(f.id)
+        const porFaturaGastos = await localGastoRepo.buscarPorFatura(f.id)
         todosGastos.push(...porFaturaGastos)
 
-        const porFaturaAnt = await antRepo.buscarPorFatura(f.id)
+        const porFaturaAnt = await localAntRepo.buscarPorFatura(f.id)
         todasAnt.push(...porFaturaAnt)
       }
       acertos.value = todosAcertos
@@ -89,42 +99,39 @@ export function useCartoesEFaturas() {
     }
   }
 
-  // Chamar inicializar() automaticamente de forma lazy
   if (!inicializado.value) {
     inicializar()
   }
 
   const salvarCartaoManual = async (cartao: Cartao) => {
-    await cartaoRepo.salvar(cartao)
+    await localCartaoRepo.salvar(cartao)
     await inicializar()
   }
 
   const excluirCartaoManual = async (id: string) => {
-    await cartaoRepo.excluir(id)
+    await localCartaoRepo.excluir(id)
     await inicializar()
   }
 
   const fecharFaturaManual = async (faturaId: string, responsavelId?: string) => {
-    await faturaService.fecharFatura(faturaId, responsavelId, new Date())
+    await localFaturaService.fecharFatura(faturaId, responsavelId, new Date())
     await inicializar()
   }
 
   const reabrirFaturaManual = async (faturaId: string) => {
-    await faturaService.reabrirFatura(faturaId)
+    await localFaturaService.reabrirFatura(faturaId)
     await inicializar()
   }
 
   const quitarAcertoMembro = async (acertoId: string) => {
-    await acertoService.marcarPago(acertoId, new Date())
+    await localAcertoService.marcarPago(acertoId, new Date())
     await inicializar()
   }
-
 
   const registrarReembolsoParcialManual = async (acertoId: string, valor: Dinheiro) => {
-    await acertoService.registrarReembolsoMembro(acertoId, valor, new Date())
+    await localAcertoService.registrarReembolsoMembro(acertoId, valor, new Date())
     await inicializar()
   }
-
 
   const atualizarGastoCompletoManual = async (
     gastoId: string,
@@ -138,29 +145,7 @@ export function useCartoesEFaturas() {
       installments: number
     }
   ) => {
-    const listGastos = gastos.value
-    const idx = listGastos.findIndex(g => g.id === gastoId)
-    if (idx < 0) return
-
-    const original = listGastos[idx]
-    const novoGasto = new Gasto({
-      id: original.id,
-      faturaId: original.faturaId,
-      descricao: dados.descricao,
-      valorTotal: dados.valorTotal,
-      compradorId: dados.compradorId,
-      divisoes: dados.divisoes,
-      method: dados.method,
-      cardOwner: dados.cardOwner,
-      installments: dados.installments,
-      isLoan: original.isLoan,
-      borrowerId: original.borrowerId,
-      recurringBillId: original.recurringBillId,
-      isSettlement: original.isSettlement,
-      settlementDetails: original.settlementDetails
-    })
-
-    await gastoRepo.salvar(novoGasto)
+    await localGastoService.atualizarGastoCompleto(gastoId, dados)
     await inicializar()
   }
 
@@ -209,4 +194,3 @@ export function useCartoesEFaturas() {
     resetar
   }
 }
-
