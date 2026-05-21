@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onUnmounted } from 'vue'
-import { useBottomSheetState } from '../../composables/useBottomSheetState'
+import { useBottomSheetState } from '../../../viewmodels/useBottomSheetState'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },

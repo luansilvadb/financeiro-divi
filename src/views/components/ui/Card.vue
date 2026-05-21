@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { cn } from '../../shared/utils/cn'
+import { cn } from '../../../shared/utils/cn'
 
 interface Props {
   variant?: 'default' | 'recessed' | 'dark' | 'featured'

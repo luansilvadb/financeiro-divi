@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Gasto } from '../../modules/ledger/model/domain/Gasto'
-import { Dinheiro } from '../../shared/primitives/Dinheiro'
-import { DivisaoDeGasto } from '../../modules/ledger/model/domain/DivisaoDeGasto'
+import { Gasto } from '../../../models/entities/Gasto'
+import { Dinheiro } from '../../../models/entities/Dinheiro'
+import { DivisaoDeGasto } from '../../../models/entities/DivisaoDeGasto'
 import Button from '../ui/Button.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
 import { Check, CreditCard, Wallet, Users, Info, Minus, Plus } from 'lucide-vue-next'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PopupLancarContaFixa from './PopupLancarContaFixa.vue'
-import type { ContaFixa } from '../../modules/ledger/model/domain/ContaFixa'
+import type { ContaFixa } from '../../../models/entities/ContaFixa'
 
 const bill: ContaFixa = {
   id: 'energia',

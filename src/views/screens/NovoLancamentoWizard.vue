@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useNovoLancamentoWizard } from '../../modules/ledger/viewmodels/useNovoLancamentoWizard'
-import { useCartoesEFaturas } from '../../modules/ledger/viewmodels/useCartoesEFaturas'
+import { useNovoLancamentoWizard } from '../../viewmodels/useNovoLancamentoWizard'
+import { useCartoesEFaturas } from '../../viewmodels/useCartoesEFaturas'
 import {
   Wallet,
   CreditCard,

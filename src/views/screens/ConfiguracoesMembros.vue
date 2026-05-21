@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useMembros } from '../../modules/ledger/viewmodels/useMembros'
+import { useMembros } from '../../viewmodels/useMembros'
 import { UserMinus, UserCheck, Users, CreditCard } from 'lucide-vue-next'
-import ConfiguracoesCartoes from './ConfiguracoesCartoes.vue'
-import Card from '../ui/Card.vue'
-import Button from '../ui/Button.vue'
+import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
+import Card from '../components/ui/Card.vue'
+import Button from '../components/ui/Button.vue'
 
 const { membros, adicionarMembro, desativarMembro, ativarMembro } = useMembros()
 const novoNome = ref('')

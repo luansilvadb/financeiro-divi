@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { cn } from '../../shared/utils/cn'
+import { cn } from '../../../shared/utils/cn'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'inverted'

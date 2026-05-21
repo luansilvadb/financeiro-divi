@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import NovoLancamentoWizard from './components/ledger/NovoLancamentoWizard.vue'
-import DashboardSaldos from './components/ledger/DashboardSaldos.vue'
-import ConfiguracoesMembros from './components/ledger/ConfiguracoesMembros.vue'
-import BottomSheet from './components/ui/BottomSheet.vue'
+import NovoLancamentoWizard from './views/screens/NovoLancamentoWizard.vue'
+import DashboardSaldos from './views/screens/DashboardSaldos.vue'
+import ConfiguracoesMembros from './views/screens/ConfiguracoesMembros.vue'
+import BottomSheet from './views/components/ui/BottomSheet.vue'
 import { Plus } from 'lucide-vue-next'
-import { useMembros } from './modules/ledger/viewmodels/useMembros'
-import { useCartoesEFaturas } from './modules/ledger/viewmodels/useCartoesEFaturas'
-import { useStorageSync } from './modules/ledger/viewmodels/useStorageSync'
-import { useBottomSheetState } from './composables/useBottomSheetState'
-import BottomTabBar, { type Tab } from './components/ui/BottomTabBar.vue'
+import { useMembros } from './viewmodels/useMembros'
+import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
+import { useStorageSync } from './viewmodels/useStorageSync'
+import { useBottomSheetState } from './viewmodels/useBottomSheetState'
+import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const activeTab = ref<Tab>('hoje')

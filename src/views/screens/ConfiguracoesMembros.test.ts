@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ConfiguracoesMembros from './ConfiguracoesMembros.vue'
-import { useMembros } from '../../modules/ledger/viewmodels/useMembros'
-import { useCartoesEFaturas } from '../../modules/ledger/viewmodels/useCartoesEFaturas'
+import { useMembros } from '../../viewmodels/useMembros'
+import { useCartoesEFaturas } from '../../viewmodels/useCartoesEFaturas'
 
 // Mock do composable
-vi.mock('../../modules/ledger/viewmodels/useMembros', () => ({
+vi.mock('../../viewmodels/useMembros', () => ({
   useMembros: vi.fn()
 }))
 

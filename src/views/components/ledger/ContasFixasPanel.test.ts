@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ContasFixasPanel from './ContasFixasPanel.vue'
-import type { ContaFixa } from '../../modules/ledger/model/domain/ContaFixa'
-import { Gasto } from '../../modules/ledger/model/domain/Gasto'
-import { DivisaoDeGasto } from '../../modules/ledger/model/domain/DivisaoDeGasto'
-import { Dinheiro } from '../../shared/primitives/Dinheiro'
+import type { ContaFixa } from '../../../models/entities/ContaFixa'
+import { Gasto } from '../../../models/entities/Gasto'
+import { DivisaoDeGasto } from '../../../models/entities/DivisaoDeGasto'
+import { Dinheiro } from '../../../models/entities/Dinheiro'
 
 const contasFixas: ContaFixa[] = [
   {

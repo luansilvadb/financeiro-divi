@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { } from 'vue'
-import type { ContaFixa } from '../../modules/ledger/model/domain/ContaFixa'
-import { Gasto } from '../../modules/ledger/model/domain/Gasto'
+import type { ContaFixa } from '../../../models/entities/ContaFixa'
+import { Gasto } from '../../../models/entities/Gasto'
 import { Repeat, Plus } from 'lucide-vue-next'
 import Card from '../ui/Card.vue'
 import ContasFixasCard from './ContasFixasCard.vue'
