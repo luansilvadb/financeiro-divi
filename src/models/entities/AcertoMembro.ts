@@ -1,13 +1,12 @@
 import { Dinheiro } from './Dinheiro'
 
-export type TipoAcerto = 'MEMBRO_PAGA' | 'RESPONSAVEL_PAGA'
+export type TipoAcerto = 'MEMBRO_PAGA'
 
 export interface AcertoMembroProps {
   id: string
   faturaId: string
   membroId: string
   totalConsumido: Dinheiro
-  totalAntecipado: Dinheiro
   valorPago?: Dinheiro
   pago?: boolean
   dataPagamento?: Date
@@ -18,9 +17,8 @@ export class AcertoMembro {
   public readonly faturaId: string
   public readonly membroId: string
   public readonly totalConsumido: Dinheiro
-  public readonly totalAntecipado: Dinheiro
   public readonly valorAcerto: Dinheiro
-  public readonly tipo: TipoAcerto
+  public readonly tipo: TipoAcerto = 'MEMBRO_PAGA'
   public valorPago: Dinheiro
   public pago: boolean
   public dataPagamento?: Date
@@ -30,13 +28,10 @@ export class AcertoMembro {
     this.faturaId = props.faturaId
     this.membroId = props.membroId
     this.totalConsumido = props.totalConsumido
-    this.totalAntecipado = props.totalAntecipado
     this.valorPago = props.valorPago ?? Dinheiro.deCentavos(0)
     this.dataPagamento = props.dataPagamento
     
-    const diff = props.totalConsumido.centavos - props.totalAntecipado.centavos
-    this.valorAcerto = Dinheiro.deCentavos(Math.abs(diff))
-    this.tipo = diff >= 0 ? 'MEMBRO_PAGA' : 'RESPONSAVEL_PAGA'
+    this.valorAcerto = props.totalConsumido
     this.pago = props.pago ?? (this.valorPago.centavos >= this.valorAcerto.centavos)
   }
 

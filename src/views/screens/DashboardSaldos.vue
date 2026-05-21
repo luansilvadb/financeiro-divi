@@ -32,12 +32,11 @@ interface Props {
   acertosPendentes: any[]
   cartoes: any[]
   calcularConsumo: (faturaId: string, membroId: string) => number
-  gastos?: any[]
   activeTab?: Tab
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['quitarAcerto', 'fecharFatura', 'novoGasto', 'reabrirFatura', 'openSettings', 'periodoStatusChanged'])
+const emit = defineEmits(['openSettings', 'periodoStatusChanged'])
 
 // Instanciação da ViewModel
 const vm = useDashboardViewModel(props, emit)
@@ -89,6 +88,7 @@ const {
   abrirNovoPeriodoBottomSheet,
   confirmarFechamentoFatura,
   confirmarAjusteGasto,
+  reabrirFaturaManual,
   iniciarPix,
   enviarReembolsoPix,
   quitarComAjuste,
@@ -319,7 +319,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
           v-if="faturaSelecionadaTrancada"
           variant="secondary" 
           class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent"
-          @click="$emit('reabrirFatura', faturaAtivaVisualizada.id)"
+          @click="reabrirFaturaManual(faturaAtivaVisualizada.id)"
         >
           Reabrir Mês
         </Button>

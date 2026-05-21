@@ -20,8 +20,7 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
         faturaId: a.faturaId,
         membroId: a.membroId,
         totalConsumidoCentavos: a.totalConsumido.centavos,
-        totalAntecipadoCentavos: a.totalAntecipado.centavos,
-        valorPagoCentavos: a.valorPago.centavos, // <- NOVO
+        valorPagoCentavos: a.valorPago.centavos,
         pago: a.pago,
         dataPagamento: a.dataPagamento ? a.dataPagamento.toISOString() : undefined
       }))
@@ -48,8 +47,7 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
         faturaId: a.faturaId,
         membroId: a.membroId,
         totalConsumidoCentavos: a.totalConsumido.centavos,
-        totalAntecipadoCentavos: a.totalAntecipado.centavos,
-        valorPagoCentavos: a.valorPago.centavos, // <- NOVO
+        valorPagoCentavos: a.valorPago.centavos,
         pago: a.pago,
         dataPagamento: a.dataPagamento ? a.dataPagamento.toISOString() : undefined
       }))
@@ -64,23 +62,25 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
       const raw = JSON.parse(data) as any[]
       return raw.map(a => {
         const totalConsumido = Dinheiro.deCentavos(a.totalConsumidoCentavos)
-        const totalAntecipado = Dinheiro.deCentavos(a.totalAntecipadoCentavos)
         
-        const diff = totalConsumido.centavos - totalAntecipado.centavos
-        const valorAcerto = Dinheiro.deCentavos(Math.abs(diff))
+        // Retrocompatibilidade para quando totalAntecipadoCentavos existia:
+        // O valor real da dívida era consumido - antecipado.
+        // Se a.totalAntecipadoCentavos existe, devemos considerar que a dívida real (valorAcerto)
+        // era o saldo líquido. Porém, como estamos removendo o conceito, o mais seguro
+        // para dados legados é manter o que já estava pago ou assumir que o novo totalConsumido
+        // é o valor de acerto se não houver antecipação.
+        // Mas o plano diz para eliminar totalAntecipado de AcertoMembro.
         
-        // Retrocompatibilidade: Se valorPagoCentavos não existe, infere pelo status pago
-        const valorPago = a.valorPagoCentavos !== undefined
+        let valorPago = a.valorPagoCentavos !== undefined
           ? Dinheiro.deCentavos(a.valorPagoCentavos)
-          : (a.pago ? valorAcerto : Dinheiro.deCentavos(0))
+          : (a.pago ? totalConsumido : Dinheiro.deCentavos(0))
 
         return new AcertoMembro({
           id: a.id,
           faturaId: a.faturaId,
           membroId: a.membroId,
           totalConsumido,
-          totalAntecipado,
-          valorPago, // <- NOVO
+          valorPago,
           pago: a.pago,
           dataPagamento: a.dataPagamento ? new Date(a.dataPagamento) : undefined
         })

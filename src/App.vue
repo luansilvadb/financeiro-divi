@@ -19,9 +19,6 @@ const {
   cartoes,
   acertos,
   inicializar: inicializarCartoes,
-  fecharFaturaManual,
-  reabrirFaturaManual,
-  quitarAcertoMembro,
   faturasAbertas,
   faturasFechadas,
   calcularConsumoMembro
@@ -56,9 +53,6 @@ const isPeriodLocked = ref(false)
           :cartoes="cartoes"
           :calcular-consumo="calcularConsumoMembro"
           :active-tab="activeTab"
-          @quitarAcerto="quitarAcertoMembro"
-          @fecharFatura="fecharFaturaManual"
-          @reabrirFatura="reabrirFaturaManual"
           @openSettings="currentView = 'settings'"
           @periodoStatusChanged="(locked) => isPeriodLocked = locked"
         />

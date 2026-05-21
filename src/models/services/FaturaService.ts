@@ -1,6 +1,5 @@
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import type { IGastoRepository } from '../repositories/IGastoRepository'
-import type { IAntecipacaoRepository } from '../repositories/IAntecipacaoRepository'
 import type { IAcertoMembroRepository } from '../repositories/IAcertoMembroRepository'
 import { AcertoMembro } from '../entities/AcertoMembro'
 import { Dinheiro } from '../entities/Dinheiro'
@@ -11,7 +10,6 @@ export class FaturaService implements IFaturaService {
   constructor(
     private faturaRepo: IFaturaRepository,
     private gastoRepo: IGastoRepository,
-    private antecipacaoRepo: IAntecipacaoRepository,
     private acertoRepo: IAcertoMembroRepository
   ) {}
 
@@ -31,7 +29,6 @@ export class FaturaService implements IFaturaService {
     }
 
     const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
-    const antecipacoes = await this.antecipacaoRepo.buscarPorFatura(faturaId)
 
     const consumoMap = new Map<string, number>()
     gastos.forEach(g => {
@@ -40,26 +37,19 @@ export class FaturaService implements IFaturaService {
       })
     })
 
-    const antMap = new Map<string, number>()
-    antecipacoes.forEach(a => {
-      antMap.set(a.membroId, (antMap.get(a.membroId) || 0) + a.valor.centavos)
-    })
-
-    const membrosIds = new Set([...consumoMap.keys(), ...antMap.keys()])
+    const membrosIds = new Set([...consumoMap.keys()])
     membrosIds.delete(fatura.responsavelId) // Dono não gera acertos para si
 
     await this.acertoRepo.excluirPorFatura(faturaId)
 
     for (const membroId of membrosIds) {
       const consumo = Dinheiro.deCentavos(consumoMap.get(membroId) || 0)
-      const antecipado = Dinheiro.deCentavos(antMap.get(membroId) || 0)
 
       const acerto = new AcertoMembro({
         id: crypto.randomUUID(),
         faturaId: fatura.id,
         membroId,
-        totalConsumido: consumo,
-        totalAntecipado: antecipado
+        totalConsumido: consumo
       })
 
       await this.acertoRepo.salvar(acerto)

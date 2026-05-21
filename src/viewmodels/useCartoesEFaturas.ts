@@ -6,18 +6,15 @@ import { Cartao } from '../models/entities/Cartao'
 import { Fatura } from '../models/entities/Fatura'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
 import { Gasto } from '../models/entities/Gasto'
-import { Antecipacao } from '../models/entities/Antecipacao'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
-import type { IAntecipacaoRepository } from '../models/repositories/IAntecipacaoRepository'
 import type { IAcertoMembroRepository } from '../models/repositories/IAcertoMembroRepository'
 import {
   cartaoRepository,
   gastoRepository,
-  antecipacaoRepository,
   acertoMembroRepository,
   faturaService,
   acertoService,
@@ -28,7 +25,6 @@ const cartoes = ref<Cartao[]>([])
 const faturas = ref<Fatura[]>([])
 const acertos = ref<AcertoMembro[]>([])
 const gastos = ref<Gasto[]>([])
-const antecipacoes = ref<Antecipacao[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
 
@@ -36,7 +32,6 @@ export interface CartoesEFaturasDependencies {
   cartaoRepository?: ICartaoRepository
   faturaRepository?: IFaturaRepository
   gastoRepository?: IGastoRepository
-  antecipacaoRepository?: IAntecipacaoRepository
   acertoMembroRepository?: IAcertoMembroRepository
   faturaService?: IFaturaService
   acertoService?: IAcertoService
@@ -46,7 +41,6 @@ export interface CartoesEFaturasDependencies {
 export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {}) {
   const localCartaoRepo = dependencies.cartaoRepository || cartaoRepository
   const localGastoRepo = dependencies.gastoRepository || gastoRepository
-  const localAntRepo = dependencies.antecipacaoRepository || antecipacaoRepository
   const localAcertoRepo = dependencies.acertoMembroRepository || acertoMembroRepository
 
   const localFaturaService = dependencies.faturaService || faturaService
@@ -69,20 +63,15 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
 
       const todosAcertos: AcertoMembro[] = []
       const todosGastos: Gasto[] = []
-      const todasAnt: Antecipacao[] = []
       for (const f of todasFaturas) {
         const porFaturaAcertos = await localAcertoRepo.buscarPorFatura(f.id)
         todosAcertos.push(...porFaturaAcertos)
 
         const porFaturaGastos = await localGastoRepo.buscarPorFatura(f.id)
         todosGastos.push(...porFaturaGastos)
-
-        const porFaturaAnt = await localAntRepo.buscarPorFatura(f.id)
-        todasAnt.push(...porFaturaAnt)
       }
       acertos.value = todosAcertos
       gastos.value = todosGastos
-      antecipacoes.value = todasAnt
       inicializado.value = true
     }
 
@@ -165,7 +154,6 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     faturas.value = []
     acertos.value = []
     gastos.value = []
-    antecipacoes.value = []
     inicializado.value = false
   }
 
@@ -174,7 +162,6 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     faturas,
     acertos,
     gastos,
-    antecipacoes,
     inicializar,
     salvarCartaoManual,
     excluirCartaoManual,

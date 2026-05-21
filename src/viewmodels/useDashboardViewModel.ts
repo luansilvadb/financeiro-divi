@@ -150,6 +150,7 @@ export function useDashboardViewModel(
   const {
     registrarReembolsoParcialManual,
     fecharFaturaManual,
+    reabrirFaturaManual,
     quitarAcertoMembro,
     atualizarGastoCompletoManual,
     gastos: globalGastos,
@@ -370,6 +371,7 @@ export function useDashboardViewModel(
     abrirNovoPeriodoBottomSheet,
     confirmarFechamentoFatura,
     confirmarAjusteGasto,
+    reabrirFaturaManual,
     iniciarPix,
     enviarReembolsoPix,
     quitarComAjuste,
