@@ -1,5 +1,3 @@
-import { ref } from 'vue'
-import { Gasto } from '../core/domain/Gasto'
 import { Fatura } from '../core/domain/Fatura'
 import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
 import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
@@ -14,28 +12,9 @@ export interface RolloverDependencies {
 }
 
 export function useFaturaRollover(dependencies: RolloverDependencies = {}) {
-  const isMonthLocked = ref(localStorage.getItem('divi_is_month_locked') === 'true')
-
-  const setMonthLocked = (locked: boolean) => {
-    isMonthLocked.value = locked
-    localStorage.setItem('divi_is_month_locked', locked ? 'true' : 'false')
-  }
-
   const fRepo = dependencies.faturaRepository || new LocalStorageFaturaRepository()
   const gRepo = dependencies.gastoRepository || new LocalStorageGastoRepository()
   const rolloverService = dependencies.faturaRolloverService || new FaturaRolloverService(fRepo, gRepo)
-
-  const processarRolloverParcelas = (novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] => {
-    return rolloverService.processarRolloverParcelas(novaFaturaId, gastosAnteriores)
-  }
-
-  const gerarTransacoesNettingSaldoInicial = (
-    novaFaturaId: string,
-    nomePeriodoAnterior: string,
-    saldosAnteriores: Record<string, number>
-  ): Gasto[] => {
-    return rolloverService.gerarTransacoesNettingSaldoInicial(novaFaturaId, nomePeriodoAnterior, saldosAnteriores)
-  }
 
   const executarRolloverPeriodo = async (
     nomeNovoPeriodo: string,
@@ -51,14 +30,9 @@ export function useFaturaRollover(dependencies: RolloverDependencies = {}) {
       saldosAcumulados,
       nomePeriodoAnterior
     })
-    setMonthLocked(false)
   }
 
   return {
-    isMonthLocked,
-    setMonthLocked,
-    processarRolloverParcelas,
-    gerarTransacoesNettingSaldoInicial,
     executarRolloverPeriodo
   }
 }

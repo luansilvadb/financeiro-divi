@@ -1,5 +1,4 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Gasto } from '../core/domain/Gasto'
 import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
 import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
@@ -91,6 +90,17 @@ export function useNovoLancamentoWizard(
   const cartaoRepo = dependencies.cartaoRepository || new LocalStorageCartaoRepository()
   const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
 
+  const obterPeriodoCorrente = (): { mes: number; ano: number } => {
+    const raw = localStorage.getItem('divi_periodo_selecionado')
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (parsed.mes && parsed.ano) return { mes: Number(parsed.mes), ano: Number(parsed.ano) }
+      } catch (_) {}
+    }
+    return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
+  }
+
   // Controle de Fluxo v18
   const wizFlow = ref<'expense' | 'loan' | null>(null)
   const wizPayment = ref<'pix' | 'card' | null>(null)
@@ -168,7 +178,8 @@ export function useNovoLancamentoWizard(
       divisoes,
       installments: installments.value,
       cardOwnerId: wizCardOwner.value,
-      borrowerId: borrowerId.value
+      borrowerId: borrowerId.value,
+      periodo: obterPeriodoCorrente()
     })
 
     reset()

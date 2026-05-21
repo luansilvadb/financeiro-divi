@@ -8,14 +8,10 @@ export interface GastoProps {
   valorTotal: Dinheiro
   compradorId: string
   divisoes: ReadonlyArray<DivisaoDeGasto>
-  
-  // Novos campos (Fase 1)
   installments?: number
-  totalInstallments?: number // <- NOVO
+  totalInstallments?: number
   isLoan?: boolean
   borrowerId?: string | null
-
-  // --- EXTENSÕES SENIOR V18 ---
   recurringBillId?: string | null
   isSettlement?: boolean
   settlementDetails?: {
@@ -23,11 +19,9 @@ export interface GastoProps {
     toMemberId: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
-
-  // --- ADIÇÃO SENIOR V19 ---
   method?: 'pix' | 'card'
   cardOwner?: string | null
-  grupoParcelasId?: string | null // <- NOVO
+  grupoParcelasId?: string | null
 }
 
 export class Gasto {
@@ -37,14 +31,10 @@ export class Gasto {
   public readonly valorTotal: Dinheiro
   public readonly compradorId: string
   public readonly divisoes: ReadonlyArray<DivisaoDeGasto>
-  
-  // Novos campos (Fase 1)
   public readonly installments: number
-  public readonly totalInstallments: number // <- NOVO
+  public readonly totalInstallments: number
   public readonly isLoan: boolean
   public readonly borrowerId: string | null
-
-  // --- EXTENSÕES SENIOR V18 ---
   public readonly recurringBillId: string | null
   public readonly isSettlement: boolean
   public readonly settlementDetails: {
@@ -52,11 +42,9 @@ export class Gasto {
     toMemberId: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
-
-  // --- ADIÇÃO SENIOR V19 ---
   public readonly method: 'pix' | 'card'
   public readonly cardOwner: string | null
-  public readonly grupoParcelasId: string | null // <- NOVO
+  public readonly grupoParcelasId: string | null
 
   constructor(props: GastoProps) {
     if (props.divisoes.length === 0) {
@@ -74,21 +62,15 @@ export class Gasto {
     this.valorTotal = props.valorTotal
     this.compradorId = props.compradorId
     this.divisoes = props.divisoes
-
-    // Inicialização retrocompatível (Fase 1)
     this.installments = props.installments || 1
     this.totalInstallments = props.totalInstallments || props.installments || 1
     this.isLoan = props.isLoan || false
     this.borrowerId = props.borrowerId || null
-
-    // Inicialização retrocompatível (Fase 2-5)
     this.recurringBillId = props.recurringBillId || null
     this.isSettlement = props.isSettlement || false
     this.settlementDetails = props.settlementDetails || null
-
-    // --- ADIÇÃO SENIOR V19 ---
     this.method = props.method || 'pix'
     this.cardOwner = props.cardOwner || null
-    this.grupoParcelasId = props.grupoParcelasId || null // <- NOVO
+    this.grupoParcelasId = props.grupoParcelasId || null
   }
 }

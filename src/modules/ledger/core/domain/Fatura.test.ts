@@ -37,7 +37,7 @@ describe('Fatura', () => {
   it('fechar - deve fechar a fatura corretamente e salvar a data de pagamento', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ABERTA' })
     const dataPagamento = new Date('2026-05-20T10:00:00Z')
-    fatura.fechar(dataPagamento)
+    fatura.fechar({ dataPagamentoBanco: dataPagamento })
     expect(fatura.status).toBe('FECHADA')
     expect(fatura.dataPagamentoBanco).toBe(dataPagamento)
   })

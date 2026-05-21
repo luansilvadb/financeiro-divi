@@ -8,7 +8,7 @@ export interface AcertoMembroProps {
   membroId: string
   totalConsumido: Dinheiro
   totalAntecipado: Dinheiro
-  valorPago?: Dinheiro // <- NOVO
+  valorPago?: Dinheiro
   pago?: boolean
   dataPagamento?: Date
 }
@@ -21,7 +21,7 @@ export class AcertoMembro {
   public readonly totalAntecipado: Dinheiro
   public readonly valorAcerto: Dinheiro
   public readonly tipo: TipoAcerto
-  public valorPago: Dinheiro // <- NOVO
+  public valorPago: Dinheiro
   public pago: boolean
   public dataPagamento?: Date
 
@@ -31,7 +31,7 @@ export class AcertoMembro {
     this.membroId = props.membroId
     this.totalConsumido = props.totalConsumido
     this.totalAntecipado = props.totalAntecipado
-    this.valorPago = props.valorPago ?? Dinheiro.deCentavos(0) // <- NOVO
+    this.valorPago = props.valorPago ?? Dinheiro.deCentavos(0)
     this.dataPagamento = props.dataPagamento
     
     const diff = props.totalConsumido.centavos - props.totalAntecipado.centavos

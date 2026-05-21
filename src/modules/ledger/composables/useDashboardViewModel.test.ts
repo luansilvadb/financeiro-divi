@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { useDashboardViewModel } from './useDashboardViewModel'
+import type { DashboardProps } from './useDashboardViewModel'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 
 // Mocks para os composables de suporte
@@ -21,10 +22,7 @@ const mockContasFixas = {
   lancarGastoContaFixa: vi.fn(),
 }
 
-const mockSaldosUnificados = {
-  calcularSaldosUnificados: vi.fn(() => ({})),
-  calcularTransacoesNetting: vi.fn(() => []),
-}
+
 
 const mockCalculations = {
   getMembroNome: vi.fn((id) => `Membro ${id}`),
@@ -46,9 +44,7 @@ vi.mock('./useContasFixas', () => ({
   useContasFixas: () => mockContasFixas
 }))
 
-vi.mock('./useSaldosUnificados', () => ({
-  useSaldosUnificados: () => mockSaldosUnificados
-}))
+
 
 vi.mock('./useDashboardCalculations', () => ({
   useDashboardCalculations: () => mockCalculations
@@ -65,7 +61,7 @@ const mockFaturaRolloverService = {
 }
 
 describe('useDashboardViewModel', () => {
-  const dummyProps = {
+  const dummyProps: DashboardProps = {
     membros: [{ id: 'm1', nome: 'Luan' }, { id: 'm2', nome: 'Maria' }],
     faturasAbertas: [],
     faturasFechadas: [],
@@ -141,9 +137,9 @@ describe('useDashboardViewModel', () => {
   it('should toggle historical bottom sheet correctly', () => {
     const vm = createViewModel(dummyProps, vi.fn())
     expect(vm.showBottomSheetHistorico.value).toBe(false)
-    vm.abrirHistorico()
+    vm.showBottomSheetHistorico.value = true
     expect(vm.showBottomSheetHistorico.value).toBe(true)
-    vm.fecharHistorico()
+    vm.showBottomSheetHistorico.value = false
     expect(vm.showBottomSheetHistorico.value).toBe(false)
   })
 

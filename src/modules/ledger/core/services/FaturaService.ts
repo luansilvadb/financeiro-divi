@@ -17,7 +17,7 @@ export class FaturaService {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
 
-    fatura.fechar(responsavelId, dataPagamentoBanco)
+    fatura.fechar({ responsavelId, dataPagamentoBanco })
     await this.faturaRepo.salvar(fatura)
   }
 

@@ -3,6 +3,7 @@ import type { IFaturaRepository } from '../ports/IFaturaRepository'
 import type { ICartaoRepository } from '../ports/ICartaoRepository'
 import { Gasto } from '../domain/Gasto'
 import { Dinheiro } from '../../../../shared/primitives/Dinheiro'
+import { DivisaoDeGasto } from '../domain/DivisaoDeGasto'
 import { Fatura } from '../domain/Fatura'
 
 export class GastoService {
@@ -22,10 +23,11 @@ export class GastoService {
     installments: number
     cardOwnerId: string | null
     borrowerId: string | null
+    periodo: { mes: number; ano: number }
   }): Promise<void> {
-    const { flow, paymentMethod, compradorId, valor, descricao, divisoes, installments, cardOwnerId, borrowerId } = dados
+    const { flow, paymentMethod, compradorId, valor, descricao, divisoes, installments, cardOwnerId, borrowerId, periodo } = dados
     const total = Dinheiro.deReais(valor)
-    const faturaAtiva = await this.findActiveFatura(paymentMethod, cardOwnerId, compradorId)
+    const faturaAtiva = await this.findActiveFatura(paymentMethod, cardOwnerId, compradorId, periodo)
 
     if (paymentMethod === 'card' && installments > 1) {
       await this.projetarGastosParcelados({
@@ -57,23 +59,9 @@ export class GastoService {
     }
   }
 
-  private async findActiveFatura(paymentMethod: 'pix' | 'card', cardOwnerId: string | null, compradorId: string): Promise<any> {
-    const { mes, ano } = this.obterPeriodoCorrente()
+  private async findActiveFatura(paymentMethod: 'pix' | 'card', cardOwnerId: string | null, compradorId: string, periodo: { mes: number; ano: number }): Promise<any> {
     const cartaoId = await this.determinarCartaoId(paymentMethod, cardOwnerId, compradorId)
-    return this.obterOuCriarFatura(cartaoId, mes, ano, compradorId)
-  }
-
-  private obterPeriodoCorrente(): { mes: number; ano: number } {
-    const periodoSalvoRaw = localStorage.getItem('divi_periodo_selecionado')
-    if (periodoSalvoRaw) {
-      try {
-        const parsed = JSON.parse(periodoSalvoRaw)
-        if (parsed.mes && parsed.ano) {
-          return { mes: Number(parsed.mes), ano: Number(parsed.ano) }
-        }
-      } catch (e) {}
-    }
-    return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
+    return this.obterOuCriarFatura(cartaoId, periodo.mes, periodo.ano, compradorId)
   }
 
   private async determinarCartaoId(paymentMethod: 'pix' | 'card', cardOwnerId: string | null, compradorId: string): Promise<string> {
@@ -160,5 +148,37 @@ export class GastoService {
       })
       await this.gastoRepo.salvar(gastoFuturo)
     }
+  }
+
+  async excluirGasto(id: string): Promise<void> {
+    await this.gastoRepo.excluir(id)
+  }
+
+  async registrarAcertoNetting(dados: {
+    faturaId: string
+    descricao: string
+    valor: number
+    fromMemberId: string
+    toMemberId: string
+    method: string
+  }): Promise<void> {
+    const total = Dinheiro.deReais(dados.valor)
+    const acertoGasto = new Gasto({
+      id: crypto.randomUUID(),
+      faturaId: dados.faturaId,
+      descricao: dados.descricao,
+      valorTotal: total,
+      compradorId: dados.fromMemberId,
+      divisoes: [new DivisaoDeGasto(dados.toMemberId, total)],
+      isSettlement: true,
+      settlementDetails: {
+        fromMemberId: dados.fromMemberId,
+        toMemberId: dados.toMemberId,
+        method: dados.method as 'pix' | 'cash' | 'mutual'
+      },
+      installments: 1,
+      isLoan: false
+    })
+    await this.gastoRepo.salvar(acertoGasto)
   }
 }

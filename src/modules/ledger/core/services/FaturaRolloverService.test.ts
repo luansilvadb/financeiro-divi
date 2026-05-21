@@ -7,7 +7,7 @@ import { DivisaoDeGasto } from '../domain/DivisaoDeGasto'
 
 describe('FaturaRolloverService', () => {
   it('deve processar rollover de parcelas corretas', () => {
-    const mockFaturaRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), excluirPorFatura: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn() }
     const service = new FaturaRolloverService(mockFaturaRepo, mockGastoRepo)
 
@@ -44,7 +44,7 @@ describe('FaturaRolloverService', () => {
   })
 
   it('deve gerar transacoes de netting de saldo inicial corretamente', () => {
-    const mockFaturaRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), excluirPorFatura: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn() }
     const service = new FaturaRolloverService(mockFaturaRepo, mockGastoRepo)
 
@@ -75,7 +75,7 @@ describe('FaturaRolloverService', () => {
   })
 
   it('deve fechar faturas antigas e criar novas faturas no rollover de periodo', async () => {
-    const mockFaturaRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), excluirPorFatura: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn() }
     const service = new FaturaRolloverService(mockFaturaRepo, mockGastoRepo)
 

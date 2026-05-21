@@ -1,12 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { GastoService } from './GastoService'
 import { Dinheiro } from '../../../../shared/primitives/Dinheiro'
-import { Gasto } from '../domain/Gasto'
 
 describe('GastoService', () => {
   it('deve lancar um gasto simples com sucesso', async () => {
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), excluirPorFatura: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }])
@@ -22,7 +21,8 @@ describe('GastoService', () => {
       divisoes: [{ membroId: 'm1', valor: Dinheiro.deReais(100) }],
       installments: 1,
       cardOwnerId: null,
-      borrowerId: null
+      borrowerId: null,
+      periodo: { mes: 5, ano: 2026 }
     })
 
     expect(mockGastoRepo.salvar).toHaveBeenCalled()

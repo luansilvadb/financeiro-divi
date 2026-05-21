@@ -68,22 +68,15 @@ export class Fatura {
     }
   }
 
-  fechar(responsavelIdOrDate?: string | Date, dataPagamentoBanco?: Date) {
+  fechar(opts?: { responsavelId?: string; dataPagamentoBanco?: Date }) {
     if (this._status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
     this._status = 'FECHADA'
 
-    let responsavelId: string | undefined = undefined
-    let dataPagamento: Date | undefined = dataPagamentoBanco
-
-    if (responsavelIdOrDate instanceof Date) {
-      dataPagamento = responsavelIdOrDate
-    } else if (typeof responsavelIdOrDate === 'string') {
-      responsavelId = responsavelIdOrDate
+    if (opts?.dataPagamentoBanco) {
+      this._dataPagamentoBanco = opts.dataPagamentoBanco
     }
-
-    this._dataPagamentoBanco = dataPagamento
-    if (responsavelId) {
-      this._responsavelId = responsavelId
+    if (opts?.responsavelId) {
+      this._responsavelId = opts.responsavelId
     }
   }
 

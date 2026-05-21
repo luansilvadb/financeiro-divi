@@ -4,6 +4,8 @@ import { Gasto } from '../domain/Gasto'
 import { Fatura } from '../domain/Fatura'
 import { Dinheiro } from '../../../../shared/primitives/Dinheiro'
 import { DivisaoDeGasto } from '../domain/DivisaoDeGasto'
+import { calcularTransacoesNetting } from './NettingService'
+import { NOMES_MESES } from '../../../../shared/utils/meses'
 
 export class FaturaRolloverService {
   constructor(
@@ -36,52 +38,21 @@ export class FaturaRolloverService {
     nomePeriodoAnterior: string,
     saldosAnteriores: Record<string, number>
   ): Gasto[] {
-    const creditors: { id: string; val: number }[] = []
-    const debtors: { id: string; val: number }[] = []
+    const transferencias = calcularTransacoesNetting(saldosAnteriores)
 
-    for (const mId in saldosAnteriores) {
-      const val = saldosAnteriores[mId]
-      if (val > 0.005) {
-        creditors.push({ id: mId, val: val })
-      } else if (val < -0.005) {
-        debtors.push({ id: mId, val: -val })
-      }
-    }
-
-    creditors.sort((a, b) => b.val - a.val)
-    debtors.sort((a, b) => b.val - a.val)
-
-    const carryovers: Gasto[] = []
-    let cIdx = 0
-    let dIdx = 0
-
-    while (cIdx < creditors.length && dIdx < debtors.length) {
-      const creditor = creditors[cIdx]
-      const debtor = debtors[dIdx]
-      const amount = Math.min(creditor.val, debtor.val)
-
-      if (amount > 0.005) {
-        const total = Dinheiro.deReais(amount)
-        carryovers.push(new Gasto({
-          id: `carry_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          faturaId: novaFaturaId,
-          descricao: `Saldo Inicial Pendente (${nomePeriodoAnterior})`,
-          valorTotal: total,
-          compradorId: creditor.id,
-          divisoes: [new DivisaoDeGasto(debtor.id, total)],
-          installments: 1,
-          isSettlement: true
-        }))
-      }
-
-      creditor.val -= amount
-      debtor.val -= amount
-
-      if (creditor.val < 0.005) cIdx++
-      if (debtor.val < 0.005) dIdx++
-    }
-
-    return carryovers
+    return transferencias.map(t => {
+      const total = Dinheiro.deReais(t.val)
+      return new Gasto({
+        id: `carry_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        faturaId: novaFaturaId,
+        descricao: `Saldo Inicial Pendente (${nomePeriodoAnterior})`,
+        valorTotal: total,
+        compradorId: t.to,
+        divisoes: [new DivisaoDeGasto(t.from, total)],
+        installments: 1,
+        isSettlement: true
+      })
+    })
   }
 
   async executarRolloverPeriodo(dados: {
@@ -96,14 +67,13 @@ export class FaturaRolloverService {
 
     // 1. Fechar as faturas abertas do período diretamente via repositório
     for (const f of faturasAbertas) {
-      f.fechar(f.responsavelId, new Date())
+      f.fechar({ responsavelId: f.responsavelId, dataPagamentoBanco: new Date() })
       await this.faturaRepo.salvar(f)
     }
 
     // 2. Criar faturas e período no novo mês
     const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    const mesNum = meses.indexOf(mesStr) + 1 || new Date().getMonth() + 1
+    const mesNum = NOMES_MESES.indexOf(mesStr as typeof NOMES_MESES[number]) + 1 || new Date().getMonth() + 1
     const anoNum = parseInt(anoStr) || new Date().getFullYear()
 
     const novasFaturas: Fatura[] = []

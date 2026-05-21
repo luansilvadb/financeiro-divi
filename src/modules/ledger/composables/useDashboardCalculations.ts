@@ -1,11 +1,11 @@
 import { computed } from 'vue'
 import { Gasto } from '../core/domain/Gasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
+import { NOMES_MESES } from '../../../shared/utils/meses'
 
 export function useDashboardCalculations(
   membros: { id: string; nome: string }[],
   faturasAbertas: any[],
-  _faturasFechadas: any[],
   acertosPendentes: any[],
   globalGastos: any[],
   globalAcertos: any[],
@@ -13,15 +13,7 @@ export function useDashboardCalculations(
 ) {
   const getMembroNome = (id: string) => {
     if (!id) return 'Desconhecido'
-    const membro = membros.find(m => m.id === id)
-    if (!membro && membros.length > 0) {
-      console.warn(`Member ID not found: ${id}. Available members:`, membros.map(m => ({ id: m.id, nome: m.nome })))
-    }
-    return membro?.nome || 'Membro desconhecido'
-  }
-
-  const getConsumo = (faturaId: string, membroId: string) => {
-    return calcularConsumo(faturaId, membroId)
+    return membros.find(m => m.id === id)?.nome || 'Membro desconhecido'
   }
 
   const formatarDinheiro = (centavos: number) => {
@@ -29,21 +21,16 @@ export function useDashboardCalculations(
   }
 
   const calcularTotalFatura = (faturaId: string) => {
-    return membros.reduce((sum: number, m: { id: string }) => sum + getConsumo(faturaId, m.id), 0)
+    return membros.reduce((sum, m) => sum + calcularConsumo(faturaId, m.id), 0)
   }
 
   const acertosDaFatura = (faturaId: string) => {
-    const list = acertosPendentes && acertosPendentes.length > 0
-      ? acertosPendentes
-      : globalAcertos
+    const list = acertosPendentes?.length > 0 ? acertosPendentes : globalAcertos
     return list.filter(a => a.faturaId === faturaId)
   }
 
   const gastosDaFatura = (faturaId: string) => {
-    const list = globalGastos && globalGastos.length > 0
-      ? globalGastos
-      : []
-    return list.filter((g: Gasto) => g.faturaId === faturaId)
+    return (globalGastos || []).filter((g: Gasto) => g.faturaId === faturaId)
   }
 
   const todosOsAcertosQuitados = (faturaId: string) => {
@@ -54,8 +41,7 @@ export function useDashboardCalculations(
   const currentMonthName = computed(() => {
     const fat = faturasAbertas[0]
     if (!fat) return 'Mês'
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    return meses[fat.periodo.mes - 1]
+    return NOMES_MESES[fat.periodo.mes - 1]
   })
 
   const currentYear = computed(() => {
@@ -65,33 +51,27 @@ export function useDashboardCalculations(
   })
 
   const parcelasFuturasDetalhadas = computed(() => {
-    const list: any[] = []
     const fatAtiva = faturasAbertas[0]
-    if (!fatAtiva) return list
+    if (!fatAtiva) return []
 
-    const gastosDaFaturaAtiva = gastosDaFatura(fatAtiva.id)
-
-    gastosDaFaturaAtiva.forEach((g: Gasto) => {
-      if (g.installments > 1) {
+    return gastosDaFatura(fatAtiva.id)
+      .filter((g: Gasto) => g.installments > 1)
+      .map((g: Gasto) => {
         const valorParcela = g.valorTotal.centavos / g.installments
         const parcelasRestantes = g.installments - 1
-        const totalRestante = valorParcela * parcelasRestantes
-        list.push({
+        return {
           id: g.id,
           descricao: g.descricao,
           responsavel: g.cardOwner ? 'Cartão' : 'Pix',
           restantes: parcelasRestantes,
           valorParcela: valorParcela / 100,
-          totalFuturo: totalRestante / 100
-        })
-      }
-    })
-    return list
+          totalFuturo: (valorParcela * parcelasRestantes) / 100
+        }
+      })
   })
 
   return {
     getMembroNome,
-    getConsumo,
     formatarDinheiro,
     calcularTotalFatura,
     acertosDaFatura,

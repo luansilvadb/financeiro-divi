@@ -1,16 +1,17 @@
 import { ref, watch, computed } from 'vue'
 import { Fatura } from '../core/domain/Fatura'
-import { Gasto } from '../core/domain/Gasto'
-import { DivisaoDeGasto } from '../core/domain/DivisaoDeGasto'
 import { Dinheiro } from '../../../shared/primitives/Dinheiro'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useFaturaRollover } from './useFaturaRollover'
-import { useSaldosUnificados } from './useSaldosUnificados'
 import { useDashboardCalculations } from './useDashboardCalculations'
+import { calcularSaldosUnificados, calcularTransacoesNetting } from '../core/services/NettingService'
 import { LocalStorageGastoRepository } from '../adapters/LocalStorageGastoRepository'
 import { LocalStorageFaturaRepository } from '../adapters/LocalStorageFaturaRepository'
+import { LocalStorageCartaoRepository } from '../adapters/LocalStorageCartaoRepository'
+import { GastoService } from '../core/services/GastoService'
 import { FaturaRolloverService } from '../core/services/FaturaRolloverService'
+import { formatarMesAno } from '../../../shared/utils/meses'
 import type { IGastoRepository } from '../core/ports/IGastoRepository'
 import type { IFaturaRepository } from '../core/ports/IFaturaRepository'
 
@@ -21,7 +22,6 @@ export interface DashboardProps {
   acertosPendentes: any[]
   cartoes: any[]
   calcularConsumo: (faturaId: string, membroId: string) => number
-  gastos?: any[]
   activeTab?: any
 }
 
@@ -29,6 +29,24 @@ export interface DashboardDependencies {
   gastoRepository?: IGastoRepository
   faturaRepository?: IFaturaRepository
   faturaRolloverService?: FaturaRolloverService
+  gastoService?: GastoService
+}
+
+const PERIODO_STORAGE_KEY = 'divi_periodo_selecionado'
+
+function obterPeriodoInicial(faturasAbertas: any[], faturasFechadas: any[]): { mes: number; ano: number } {
+  const salvo = localStorage.getItem(PERIODO_STORAGE_KEY)
+  if (salvo) {
+    try {
+      const parsed = JSON.parse(salvo)
+      if (parsed.mes && parsed.ano) return parsed
+    } catch (_) {}
+  }
+  const faturaReferencia = faturasAbertas?.[0] || faturasFechadas?.[0]
+  if (faturaReferencia?.periodo) {
+    return { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
+  }
+  return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
 }
 
 export function useDashboardViewModel(
@@ -38,27 +56,15 @@ export function useDashboardViewModel(
 ) {
   const gastoRepo = dependencies.gastoRepository || new LocalStorageGastoRepository()
   const faturaRepo = dependencies.faturaRepository || new LocalStorageFaturaRepository()
+  const cartaoRepo = new LocalStorageCartaoRepository()
   const rolloverService = dependencies.faturaRolloverService || new FaturaRolloverService(faturaRepo, gastoRepo)
+  const gastoService = dependencies.gastoService || new GastoService(gastoRepo, faturaRepo, cartaoRepo)
 
-  const obterPeriodoInicial = () => {
-    const salvo = localStorage.getItem('divi_periodo_selecionado')
-    if (salvo) {
-      try {
-        const parsed = JSON.parse(salvo)
-        if (parsed.mes && parsed.ano) return parsed
-      } catch (e) {}
-    }
-    const faturaReferencia = props.faturasAbertas?.[0] || props.faturasFechadas?.[0]
-    if (faturaReferencia?.periodo) {
-      return { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
-    }
-    return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
-  }
-
-  const periodoSelecionado = ref<{ mes: number; ano: number }>(obterPeriodoInicial())
+  // --- Estado de Período ---
+  const periodoSelecionado = ref<{ mes: number; ano: number }>(obterPeriodoInicial(props.faturasAbertas, props.faturasFechadas))
 
   watch(periodoSelecionado, (novos) => {
-    localStorage.setItem('divi_periodo_selecionado', JSON.stringify(novos))
+    localStorage.setItem(PERIODO_STORAGE_KEY, JSON.stringify(novos))
   }, { deep: true, immediate: true })
 
   const faturaSelecionadaTrancada = computed(() => {
@@ -85,40 +91,29 @@ export function useDashboardViewModel(
     })
   })
 
+  // --- Seletor de Meses ---
   const listaMesesSeletor = computed(() => {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     const hoje = new Date()
     const list = []
-
     for (let i = -12; i <= 12; i++) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
       const mesIdx = d.getMonth() + 1
       const anoIdx = d.getFullYear()
-      
-      const estaFechada = props.faturasFechadas.some(
-        f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx
-      )
-
+      const estaFechada = props.faturasFechadas.some(f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx)
       list.push({
         mes: mesIdx,
         ano: anoIdx,
-        nome: `${meses[mesIdx - 1]} ${anoIdx}`,
+        nome: formatarMesAno(mesIdx, anoIdx),
         status: estaFechada ? 'FECHADA' : 'ABERTA'
       })
     }
-
     return list
   })
 
-  const mesesAbertosOpcoes = computed(() => {
-    return listaMesesSeletor.value.filter(item => item.status === 'ABERTA')
-  })
+  const mesesAbertosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'ABERTA'))
+  const mesesTrancadosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'FECHADA'))
 
-  const mesesTrancadosOpcoes = computed(() => {
-    return listaMesesSeletor.value.filter(item => item.status === 'FECHADA')
-  })
-
-  // UI States
+  // --- UI States ---
   const showBottomSheetHistorico = ref(false)
   const showBottomSheetFechar = ref(false)
   const faturaParaFechar = ref<any | null>(null)
@@ -137,39 +132,33 @@ export function useDashboardViewModel(
   const valorPixInput = ref(0)
   const isSubmittingPix = ref(false)
 
-  // Toggle Methods
-  const abrirHistorico = () => { showBottomSheetHistorico.value = true }
-  const fecharHistorico = () => { showBottomSheetHistorico.value = false }
-  
+  // --- Toggle Methods (apenas os que são usados no template) ---
   const abrirLancarBill = (bill: any) => {
     billSelecionada.value = bill
     showPopupLancar.value = true
   }
-  const fecharLancarBill = () => { showPopupLancar.value = false }
 
   const abrirConfigurarBill = (bill: any) => {
     billSelecionada.value = bill
     showBottomSheetConfigCF.value = true
   }
+
   const abrirNovoBill = () => {
     billSelecionada.value = null
     showBottomSheetConfigCF.value = true
   }
-  const fecharConfigurarBill = () => { showBottomSheetConfigCF.value = false }
 
   const abrirAjustarGasto = (gasto: any) => {
     gastoParaAjustar.value = gasto
     showBottomSheetAjustar.value = true
   }
-  const fecharAjustarGasto = () => { showBottomSheetAjustar.value = false }
 
   const abrirBottomSheetNetting = (transferencia: any) => {
     nettingTarget.value = transferencia
     showBottomSheetNetting.value = true
   }
-  const fecharBottomSheetNetting = () => { showBottomSheetNetting.value = false }
 
-  // Composables and Services Integration
+  // --- Composables e Services ---
   const cartoesEFaturas = useCartoesEFaturas()
   const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas()
   const { executarRolloverPeriodo } = useFaturaRollover({
@@ -177,7 +166,6 @@ export function useDashboardViewModel(
     gastoRepository: gastoRepo,
     faturaRolloverService: rolloverService
   })
-  const { calcularSaldosUnificados, calcularTransacoesNetting } = useSaldosUnificados()
 
   const {
     registrarReembolsoParcialManual,
@@ -188,18 +176,16 @@ export function useDashboardViewModel(
     acertos: globalAcertos
   } = cartoesEFaturas
 
+  // --- Calculations ---
   const faturasFiltradasCalculations = computed(() => {
     const ativa = faturaAtivaVisualizada.value
-    if (!ativa) return []
-    return [ativa]
+    return ativa ? [ativa] : []
   })
 
-  // Dynamic calculations instance to track changes in globalGastos/globalAcertos
   const calculations = computed(() => {
     return useDashboardCalculations(
       props.membros,
       faturasFiltradasCalculations.value,
-      props.faturasFechadas,
       props.acertosPendentes,
       globalGastos.value,
       globalAcertos.value,
@@ -207,7 +193,6 @@ export function useDashboardViewModel(
     )
   })
 
-  // Proxiers for calculations
   const getMembroNome = (id: string) => calculations.value.getMembroNome(id)
   const formatarDinheiro = (centavos: number) => calculations.value.formatarDinheiro(centavos)
   const calcularTotalFatura = (faturaId: string) => calculations.value.calcularTotalFatura(faturaId)
@@ -218,6 +203,7 @@ export function useDashboardViewModel(
   const currentYear = computed(() => calculations.value.currentYear.value)
   const parcelasFuturasDetalhadas = computed(() => calculations.value.parcelasFuturasDetalhadas.value)
 
+  // --- Dados Derivados ---
   const gastosFaturaSelecionada = computed(() => {
     const fatId = faturaAtivaVisualizada.value?.id
     if (!fatId) return []
@@ -231,9 +217,7 @@ export function useDashboardViewModel(
     return calcularSaldosUnificados(props.membros, gastosPeriodo)
   })
 
-  const nettingTransferencias = computed(() => {
-    return calcularTransacoesNetting(saldosUnificadosAtivos.value)
-  })
+  const nettingTransferencias = computed(() => calcularTransacoesNetting(saldosUnificadosAtivos.value))
 
   const membrosVisiveis = computed(() => {
     return props.membros.filter(m => {
@@ -247,7 +231,7 @@ export function useDashboardViewModel(
     return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)
   })
 
-  // Business Actions
+  // --- Ações de Negócio ---
   const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
     await fecharFaturaManual(faturaId, responsavelId)
     showBottomSheetFechar.value = false
@@ -309,23 +293,21 @@ export function useDashboardViewModel(
     showBottomSheetConfigCF.value = false
   }
 
-  const sugerirProximoPeriodoLocal = (fat: any) => {
-    if (!fat) return ''
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    const mIdx = fat.periodo.mes - 1
-    const proximoMIdx = (mIdx + 1) % 12
-    const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
-    return `${meses[proximoMIdx]} ${proximoAno}`
-  }
-
   const abrirNovoPeriodoBottomSheet = () => {
-    nomeNovoPeriodo.value = sugerirProximoPeriodoLocal(faturaAtivaVisualizada.value)
+    const fat = faturaAtivaVisualizada.value
+    if (fat) {
+      const proximoMIdx = fat.periodo.mes % 12
+      const proximoAno = proximoMIdx === 0 ? fat.periodo.ano + 1 : fat.periodo.ano
+      nomeNovoPeriodo.value = formatarMesAno(proximoMIdx + 1, proximoAno)
+    } else {
+      nomeNovoPeriodo.value = ''
+    }
     showBottomSheetNovoPeriodo.value = true
   }
 
   const executarNovoPeriodo = async (nomeNovoPeriodoVal: string) => {
-    const faturasAbertasVisualizadas = props.faturasAbertas.filter(f => 
-      f.periodo.mes === faturaAtivaVisualizada.value.periodo.mes && 
+    const faturasAbertasVisualizadas = props.faturasAbertas.filter(f =>
+      f.periodo.mes === faturaAtivaVisualizada.value.periodo.mes &&
       f.periodo.ano === faturaAtivaVisualizada.value.periodo.ano
     )
 
@@ -350,31 +332,22 @@ export function useDashboardViewModel(
     const activeFaturaId = faturaAtivaVisualizada.value?.id
     if (!activeFaturaId) return
 
-    const acertoGasto = new Gasto({
-      id: crypto.randomUUID(),
+    await gastoService.registrarAcertoNetting({
       faturaId: activeFaturaId,
       descricao: dados.descricao,
-      valorTotal: Dinheiro.deReais(dados.valor),
-      compradorId: dados.from,
-      divisoes: [new DivisaoDeGasto(dados.to, Dinheiro.deReais(dados.valor))],
-      isSettlement: true,
-      settlementDetails: {
-        fromMemberId: dados.from,
-        toMemberId: dados.to,
-        method: dados.method as any
-      },
-      installments: 1,
-      isLoan: false
+      valor: dados.valor,
+      fromMemberId: dados.from,
+      toMemberId: dados.to,
+      method: dados.method
     })
 
-    await gastoRepo.salvar(acertoGasto)
     showBottomSheetNetting.value = false
     nettingTarget.value = null
     await cartoesEFaturas.inicializar()
   }
 
   const excluirGasto = async (id: string) => {
-    await gastoRepo.excluir(id)
+    await gastoService.excluirGasto(id)
     await cartoesEFaturas.inicializar()
   }
 
@@ -385,11 +358,6 @@ export function useDashboardViewModel(
         await excluirGasto(gasto.id)
       }
     }
-  }
-
-  const formatarMesAno = (mes: number, ano: number) => {
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    return `${meses[mes - 1]} ${ano}`
   }
 
   return {
@@ -431,17 +399,11 @@ export function useDashboardViewModel(
     todosOsAcertosQuitados,
     currentMonthName,
     currentYear,
-    abrirHistorico,
-    fecharHistorico,
     abrirLancarBill,
-    fecharLancarBill,
     abrirConfigurarBill,
     abrirNovoBill,
-    fecharConfigurarBill,
     abrirAjustarGasto,
-    fecharAjustarGasto,
     abrirBottomSheetNetting,
-    fecharBottomSheetNetting,
     abrirNovoPeriodoBottomSheet,
     confirmarFechamentoFatura,
     confirmarAjusteGasto,

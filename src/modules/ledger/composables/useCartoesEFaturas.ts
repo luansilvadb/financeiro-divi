@@ -119,30 +119,12 @@ export function useCartoesEFaturas() {
     await inicializar()
   }
 
-  const registrarAdiantamentoManual = async (antecipacao: Antecipacao) => {
-    await antRepo.salvar(antecipacao)
-    await inicializar()
-  }
-
-  const confirmarAcertosManual = async (faturaId: string) => {
-    await faturaService.confirmarAcertos(faturaId)
-    await inicializar()
-  }
 
   const registrarReembolsoParcialManual = async (acertoId: string, valor: Dinheiro) => {
     await acertoService.registrarReembolsoMembro(acertoId, valor, new Date())
     await inicializar()
   }
 
-  const registrarPagamentoBancoManual = async (faturaId: string) => {
-    await faturaService.registrarPagamentoBanco(faturaId, new Date())
-    await inicializar()
-  }
-
-  const removerPagamentoBancoManual = async (faturaId: string) => {
-    await faturaService.removerPagamentoBanco(faturaId)
-    await inicializar()
-  }
 
   const atualizarGastoCompletoManual = async (
     gastoId: string,
@@ -219,11 +201,7 @@ export function useCartoesEFaturas() {
     fecharFaturaManual,
     reabrirFaturaManual,
     quitarAcertoMembro,
-    registrarAdiantamentoManual,
-    confirmarAcertosManual, // <- NOVO
     registrarReembolsoParcialManual,
-    registrarPagamentoBancoManual,
-    removerPagamentoBancoManual,
     atualizarGastoCompletoManual,
     faturasAbertas,
     faturasFechadas,
