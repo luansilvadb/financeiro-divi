@@ -7,7 +7,7 @@ import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
 import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from './storage/rascunhoWizardStorage'
-import { gastoRepository, faturaRepository, cartaoRepository, gastoService } from '../shared/container'
+import { gastoService } from '../shared/container'
 
 // Helper: Validate loan flow advancement
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
@@ -83,9 +83,6 @@ export function useNovoLancamentoWizard(
   const step = ref(1)
 
   // Dependências injetadas
-  const gastoRepo = dependencies.gastoRepository || gastoRepository
-  const faturaRepo = dependencies.faturaRepository || faturaRepository
-  const cartaoRepo = dependencies.cartaoRepository || cartaoRepository
   const servicoGasto = dependencies.gastoService || gastoService
 
 

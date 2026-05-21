@@ -16,7 +16,6 @@ import type { IAntecipacaoRepository } from '../models/repositories/IAntecipacao
 import type { IAcertoMembroRepository } from '../models/repositories/IAcertoMembroRepository'
 import {
   cartaoRepository,
-  faturaRepository,
   gastoRepository,
   antecipacaoRepository,
   acertoMembroRepository,
@@ -46,7 +45,6 @@ export interface CartoesEFaturasDependencies {
 
 export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {}) {
   const localCartaoRepo = dependencies.cartaoRepository || cartaoRepository
-  const localFaturaRepo = dependencies.faturaRepository || faturaRepository
   const localGastoRepo = dependencies.gastoRepository || gastoRepository
   const localAntRepo = dependencies.antecipacaoRepository || antecipacaoRepository
   const localAcertoRepo = dependencies.acertoMembroRepository || acertoMembroRepository
