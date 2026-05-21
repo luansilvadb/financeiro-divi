@@ -147,4 +147,29 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     expect(g2.totalInstallments).toBe(3)
     expect(g3.totalInstallments).toBe(3)
   })
+
+  it('deve delegar a criacao de gasto para o GastoService injetado', async () => {
+    const mockGastoService = {
+      lancarGastoOuEmprestimo: vi.fn()
+    }
+    const [{ wizFlow, wizPayment, compradorSelecionadoId, valor, finalizarGastoOuEmprestimo }] = withSetup(() => 
+      useNovoLancamentoWizard(['luan'].map(id => ({ id, nome: id })), {
+        gastoService: mockGastoService as any
+      })
+    )
+
+    wizFlow.value = 'expense'
+    wizPayment.value = 'pix'
+    compradorSelecionadoId.value = 'luan'
+    valor.value = 100
+
+    await finalizarGastoOuEmprestimo()
+
+    expect(mockGastoService.lancarGastoOuEmprestimo).toHaveBeenCalledWith(expect.objectContaining({
+      flow: 'expense',
+      paymentMethod: 'pix',
+      compradorId: 'luan',
+      valor: 100
+    }))
+  })
 })
