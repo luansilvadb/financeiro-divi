@@ -1,6 +1,8 @@
 import { ref, watch, computed } from 'vue'
 import { Fatura } from '../models/entities/Fatura'
 import { Dinheiro } from '../models/entities/Dinheiro'
+import { Cartao } from '../models/entities/Cartao'
+import { AcertoMembro } from '../models/entities/AcertoMembro'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
@@ -23,12 +25,12 @@ import {
 
 export interface DashboardProps {
   membros: { id: string; nome: string; ativo?: boolean }[]
-  faturasAbertas: any[]
-  faturasFechadas: any[]
-  acertosPendentes: any[]
-  cartoes: any[]
+  faturasAbertas: Fatura[]
+  faturasFechadas: Fatura[]
+  acertosPendentes: AcertoMembro[]
+  cartoes: Cartao[]
   calcularConsumo: (faturaId: string, membroId: string) => number
-  activeTab?: any
+  activeTab?: string
 }
 
 export interface DashboardDependencies {
@@ -40,7 +42,7 @@ export interface DashboardDependencies {
   gastoService?: IGastoService
 }
 
-function obterPeriodoInicial(faturasAbertas: any[], faturasFechadas: any[]): { mes: number; ano: number } {
+function obterPeriodoInicial(faturasAbertas: Fatura[], faturasFechadas: Fatura[]): { mes: number; ano: number } {
   const faturaReferencia = faturasAbertas?.[0] || faturasFechadas?.[0]
   const fallback = faturaReferencia?.periodo
     ? { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
@@ -50,7 +52,7 @@ function obterPeriodoInicial(faturasAbertas: any[], faturasFechadas: any[]): { m
 
 export function useDashboardViewModel(
   props: DashboardProps,
-  emit: any,
+  emit: (event: any, ...args: any[]) => void,
   dependencies: DashboardDependencies = {}
 ) {
   const gastoRepo = dependencies.gastoRepository || gastoRepository
@@ -130,7 +132,7 @@ export function useDashboardViewModel(
     iniciarPix: uiIniciarPix
   } = uiState
 
-  const iniciarPix = (acerto: any) => uiIniciarPix(acerto, formatarDinheiro)
+  const iniciarPix = (acerto: AcertoMembro) => uiIniciarPix(acerto, formatarDinheiro)
   const abrirNovoPeriodoBottomSheet = () => uiAbrirNovoPeriodoBottomSheet(faturaAtivaVisualizada.value)
 
   // --- Composables e Services ---
@@ -168,7 +170,7 @@ export function useDashboardViewModel(
 
   const acertosDaFatura = (faturaId: string) => {
     const list = props.acertosPendentes?.length > 0 ? props.acertosPendentes : globalAcertos.value
-    return list.filter((a: any) => a.faturaId === faturaId)
+    return list.filter((a: AcertoMembro) => a.faturaId === faturaId)
   }
 
   const gastosDaFatura = (faturaId: string) =>
@@ -176,7 +178,7 @@ export function useDashboardViewModel(
 
   const todosOsAcertosQuitados = (faturaId: string) => {
     const acertos = acertosDaFatura(faturaId)
-    return acertos.length > 0 && acertos.every((a: any) => a.pago)
+    return acertos.length > 0 && acertos.every((a: AcertoMembro) => a.pago)
   }
 
   const currentMonthName = computed(() => {

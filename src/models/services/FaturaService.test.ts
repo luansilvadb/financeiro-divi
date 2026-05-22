@@ -1,9 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { FaturaService } from './FaturaService'
 import { Fatura } from '../entities/Fatura'
-import { Gasto } from '../entities/Gasto'
-import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
-import { Dinheiro } from '../entities/Dinheiro'
 
 describe('FaturaService', () => {
   it('deve fechar a fatura sem gerar acertos', async () => {

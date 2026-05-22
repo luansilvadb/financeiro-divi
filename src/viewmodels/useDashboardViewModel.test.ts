@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import { useDashboardViewModel } from './useDashboardViewModel'
 import type { DashboardProps } from './useDashboardViewModel'
 import { Dinheiro } from '../models/entities/Dinheiro'
+import { Cartao } from '../models/entities/Cartao'
+import { Fatura } from '../models/entities/Fatura'
+import { AcertoMembro } from '../models/entities/AcertoMembro'
 
 // Mocks para os composables de suporte
 const mockCartoesEFaturas = {
@@ -75,7 +78,7 @@ describe('useDashboardViewModel', () => {
     faturasAbertas: [],
     faturasFechadas: [],
     acertosPendentes: [],
-    cartoes: [{ id: 'c1', nome: 'Nubank' }],
+    cartoes: [new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' })],
     calcularConsumo: () => 0
   }
 
@@ -137,9 +140,17 @@ describe('useDashboardViewModel', () => {
   })
 
   it('should identify lock status of selected period', () => {
-    const propsComFaturaFechada = {
+    const propsComFaturaFechada: DashboardProps = {
       ...dummyProps,
-      faturasFechadas: [{ periodo: { mes: 5, ano: 2026 } }]
+      faturasFechadas: [
+        new Fatura({
+          id: 'f-mock-fechada-1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
     }
     localStorage.setItem('divi_periodo_selecionado', JSON.stringify({ mes: 5, ano: 2026 }))
     const emit = vi.fn()
@@ -149,9 +160,17 @@ describe('useDashboardViewModel', () => {
   })
 
   it('should compute month selector list correctly', () => {
-    const propsComFaturaFechada = {
+    const propsComFaturaFechada: DashboardProps = {
       ...dummyProps,
-      faturasFechadas: [{ periodo: { mes: 5, ano: 2026 } }]
+      faturasFechadas: [
+        new Fatura({
+          id: 'f-mock-fechada-2',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
     }
     const vm = createViewModel(propsComFaturaFechada, vi.fn())
     expect(vm.listaMesesSeletor.value.length).toBe(25)
@@ -210,11 +229,13 @@ describe('useDashboardViewModel', () => {
 
   it('should start pix and send reimbursement correctly', async () => {
     const vm = createViewModel(dummyProps, vi.fn())
-    const acertoMock = {
+    const acertoMock = new AcertoMembro({
       id: 'a1',
-      valorAcerto: { centavos: 5000 },
-      valorPago: { centavos: 1000 }
-    }
+      faturaId: 'f1',
+      membroId: 'm1',
+      totalConsumido: Dinheiro.deCentavos(5000),
+      valorPago: Dinheiro.deCentavos(1000)
+    })
 
     vm.iniciarPix(acertoMock)
     expect(vm.acertoPixId.value).toBe('a1')
@@ -259,7 +280,15 @@ describe('useDashboardViewModel', () => {
   it('should NOT launch bill templates if period is locked', async () => {
     const propsWithLockedMonth: DashboardProps = {
       ...dummyProps,
-      faturasFechadas: [{ id: 'f1', periodo: { mes: 5, ano: 2026 } }]
+      faturasFechadas: [
+        new Fatura({
+          id: 'f1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
     }
     // Mockar Date para garantir que Maio/2026 seja o inicial
     vi.setSystemTime(new Date(2026, 4, 1))
@@ -284,13 +313,21 @@ describe('useDashboardViewModel', () => {
   it('should NOT adjust expense if period is locked', async () => {
     const propsWithLockedMonth: DashboardProps = {
       ...dummyProps,
-      faturasFechadas: [{ id: 'f1', periodo: { mes: 5, ano: 2026 } }]
+      faturasFechadas: [
+        new Fatura({
+          id: 'f1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
     }
     vi.setSystemTime(new Date(2026, 4, 1))
     const vm = createViewModel(propsWithLockedMonth, vi.fn())
     
-    vm.gastoParaAjustar.value = { id: 'g1' }
-    await vm.confirmarAjusteGasto({ descricao: 'Novo' })
+    vm.gastoParaAjustar.value = { id: 'g1' } as any
+    await vm.confirmarAjusteGasto({ descricao: 'Novo' } as any)
 
     expect(mockCartoesEFaturas.atualizarGastoCompletoManual).not.toHaveBeenCalled()
     vi.useRealTimers()
@@ -299,7 +336,15 @@ describe('useDashboardViewModel', () => {
   it('should NOT delete expense if period is locked', async () => {
     const propsWithLockedMonth: DashboardProps = {
       ...dummyProps,
-      faturasFechadas: [{ id: 'f1', periodo: { mes: 5, ano: 2026 } }]
+      faturasFechadas: [
+        new Fatura({
+          id: 'f1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
     }
     vi.setSystemTime(new Date(2026, 4, 1))
     const vm = createViewModel(propsWithLockedMonth, vi.fn())
