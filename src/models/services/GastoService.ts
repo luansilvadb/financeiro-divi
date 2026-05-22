@@ -42,6 +42,9 @@ export class GastoService implements IGastoService {
 
     const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : compradorId
     const faturaAtiva = await this.obterOuCriarFatura(cartaoId, periodo.mes, periodo.ano, responsavelFaturaId)
+    if (faturaAtiva && typeof faturaAtiva.validarOperacaoPermitida === 'function') {
+      faturaAtiva.validarOperacaoPermitida()
+    }
 
     if (paymentMethod === 'card' && installments > 1) {
       await this.projetarGastosParcelados({
@@ -169,13 +172,22 @@ export class GastoService implements IGastoService {
 
   async excluirGasto(id: string): Promise<void> {
     const gasto = await this.gastoRepo.buscarPorId(id)
-    if (gasto && gasto.grupoParcelasId) {
+    if (!gasto) return
+
+    if (gasto.grupoParcelasId) {
       const todos = await this.gastoRepo.listarTodos()
       const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
       for (const g of grupo) {
-        await this.gastoRepo.excluir(g.id)
+        const fatura = await this.faturaRepo.buscarPorId(g.faturaId)
+        if (!fatura || fatura.status === 'ABERTA') {
+          await this.gastoRepo.excluir(g.id)
+        }
       }
     } else {
+      const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
+      if (fatura && typeof fatura.validarOperacaoPermitida === 'function') {
+        fatura.validarOperacaoPermitida()
+      }
       await this.gastoRepo.excluir(id)
     }
   }
@@ -249,7 +261,7 @@ export class GastoService implements IGastoService {
     const original = await this.gastoRepo.buscarPorId(gastoId)
     if (!original) throw new Error('Gasto não encontrado')
 
-    const todosCartoes = await this.cartaoRepo.listarTodos()
+    const todosCartoes = (await this.cartaoRepo.listarTodos()) || []
     let cartaoReal: any = null
     if (dados.method === 'card' && dados.cardOwner) {
       cartaoReal = todosCartoes.find(c => c.id === dados.cardOwner || c.responsavelPadraoId === dados.cardOwner)
@@ -261,12 +273,28 @@ export class GastoService implements IGastoService {
       const todosGastos = await this.gastoRepo.listarTodos()
       const gastosDoGrupo = todosGastos.filter(g => g.grupoParcelasId === original.grupoParcelasId)
 
+      // Identificar faturas e classificá-las
+      const statusFaturas = await Promise.all(
+        gastosDoGrupo.map(async g => {
+          const fat = await this.faturaRepo.buscarPorId(g.faturaId)
+          return { gasto: g, fatura: fat }
+        })
+      )
+
+      const possuiFechada = statusFaturas.some(sf => sf.fatura && sf.fatura.status !== 'ABERTA')
+
       // Se mudou o número total de parcelas ou o método de pagamento
       if (original.totalInstallments !== dados.installments || original.method !== dados.method) {
+        if (possuiFechada) {
+          throw new Error('Não é possível alterar o parcelamento ou método de pagamento de um gasto que possui parcelas em faturas fechadas')
+        }
+
         // Encontrar a primeira parcela para saber o período inicial
         const primeiraParcela = gastosDoGrupo.reduce((prev, curr) => curr.installments > prev.installments ? curr : prev, gastosDoGrupo[0] || original)
         const faturaOriginal = await this.faturaRepo.buscarPorId(primeiraParcela.faturaId)
-        if (!faturaOriginal) throw new Error('Fatura original não encontrada')
+        if (faturaOriginal && typeof faturaOriginal.validarOperacaoPermitida === 'function') {
+          faturaOriginal.validarOperacaoPermitida()
+        }
 
         // Excluir todos do grupo
         for (const g of gastosDoGrupo) {
@@ -274,6 +302,7 @@ export class GastoService implements IGastoService {
         }
 
         // Relançar do período inicial
+        const periodoInicial = faturaOriginal ? faturaOriginal.periodo : { mes: 1, ano: 2026 } // Fallback seguro
         await this.lancarGastoOuEmprestimo({
           flow: original.isLoan ? 'loan' : 'expense',
           paymentMethod: dados.method,
@@ -284,19 +313,27 @@ export class GastoService implements IGastoService {
           installments: dados.installments,
           cardOwnerId: dados.cardOwner,
           borrowerId: original.borrowerId,
-          periodo: faturaOriginal.periodo
+          periodo: periodoInicial
         })
       } else {
-        // Se as parcelas e o método continuam iguais, atualizar todos do grupo mantendo os IDs e parcelamento individual
-        for (const g of gastosDoGrupo) {
-          const faturaG = await this.faturaRepo.buscarPorId(g.faturaId)
+        // Atualizar apenas parcelas em faturas abertas
+        for (const sf of statusFaturas) {
+          if (sf.fatura && sf.fatura.status !== 'ABERTA') {
+            continue // Ignora parcelas passadas fechadas
+          }
+
+          const g = sf.gasto
           let novaFaturaId = g.faturaId
-          if (faturaG) {
+
+          if (sf.fatura) {
             const cartaoId = (dados.method === 'card')
               ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'))
               : 'PIX_DEFAULT_ID'
             const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
-            const novaFatura = await this.obterOuCriarFatura(cartaoId, faturaG.periodo.mes, faturaG.periodo.ano, responsavelFaturaId)
+            const novaFatura = await this.obterOuCriarFatura(cartaoId, sf.fatura.periodo.mes, sf.fatura.periodo.ano, responsavelFaturaId)
+            if (novaFatura && typeof novaFatura.validarOperacaoPermitida === 'function') {
+              novaFatura.validarOperacaoPermitida()
+            }
             novaFaturaId = novaFatura.id
           }
 
@@ -325,12 +362,15 @@ export class GastoService implements IGastoService {
     // Caso 2: Gasto original era simples, mas editado para parcelado
     else if (dados.method === 'card' && dados.installments > 1) {
       const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
-      if (!faturaOriginal) throw new Error('Fatura original não encontrada')
+      if (faturaOriginal && typeof faturaOriginal.validarOperacaoPermitida === 'function') {
+        faturaOriginal.validarOperacaoPermitida()
+      }
 
       // Deleta original
       await this.gastoRepo.excluir(original.id)
 
       // Relança parcelado
+      const periodoInicial = faturaOriginal ? faturaOriginal.periodo : { mes: 1, ano: 2026 } // Fallback seguro
       await this.lancarGastoOuEmprestimo({
         flow: original.isLoan ? 'loan' : 'expense',
         paymentMethod: dados.method,
@@ -341,25 +381,32 @@ export class GastoService implements IGastoService {
         installments: dados.installments,
         cardOwnerId: dados.cardOwner,
         borrowerId: original.borrowerId,
-        periodo: faturaOriginal.periodo
+        periodo: periodoInicial
       })
     }
     // Caso 3: Gasto simples para gasto simples
     else {
-      let faturaId = original.faturaId
       const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+      if (faturaOriginal && typeof faturaOriginal.validarOperacaoPermitida === 'function') {
+        faturaOriginal.validarOperacaoPermitida()
+      }
+
+      let novaFaturaId = original.faturaId
       if (faturaOriginal) {
         const cartaoId = (dados.method === 'card')
           ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'))
           : 'PIX_DEFAULT_ID'
         const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
         const novaFatura = await this.obterOuCriarFatura(cartaoId, faturaOriginal.periodo.mes, faturaOriginal.periodo.ano, responsavelFaturaId)
-        faturaId = novaFatura.id
+        if (novaFatura && typeof novaFatura.validarOperacaoPermitida === 'function') {
+          novaFatura.validarOperacaoPermitida()
+        }
+        novaFaturaId = novaFatura.id
       }
 
       const novoGasto = new Gasto({
         id: original.id,
-        faturaId: faturaId,
+        faturaId: novaFaturaId,
         descricao: dados.descricao,
         valorTotal: dados.valorTotal,
         compradorId: dados.compradorId,
