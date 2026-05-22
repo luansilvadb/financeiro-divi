@@ -3,10 +3,15 @@ import type { IAcertoMembroRepository } from '../repositories/IAcertoMembroRepos
 import { Fatura } from '../entities/Fatura'
 import type { IFaturaService } from './IFaturaService'
 
+import type { IGastoRepository } from '../repositories/IGastoRepository'
+import { Dinheiro } from '../entities/Dinheiro'
+import { AcertoMembro } from '../entities/AcertoMembro'
+
 export class FaturaService implements IFaturaService {
   constructor(
     private faturaRepo: IFaturaRepository,
-    private acertoRepo: IAcertoMembroRepository
+    private acertoRepo: IAcertoMembroRepository,
+    private gastoRepo: IGastoRepository
   ) {}
 
   async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco?: Date): Promise<void> {
@@ -15,6 +20,33 @@ export class FaturaService implements IFaturaService {
 
     fatura.fechar({ responsavelId, dataPagamentoBanco })
     await this.faturaRepo.salvar(fatura)
+
+    await this.acertoRepo.excluirPorFatura(faturaId)
+
+    const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
+    const consumoMembros: Record<string, number> = {}
+
+    for (const g of gastos) {
+      if (g.isSettlement) continue
+
+      const divisor = g.totalInstallments || g.installments || 1
+      for (const div of g.divisoes) {
+        const valorParcelaCentavos = Math.round(div.valor.centavos / divisor)
+        consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcelaCentavos
+      }
+    }
+
+    for (const [membroId, centavos] of Object.entries(consumoMembros)) {
+      if (centavos > 0) {
+        const acerto = new AcertoMembro({
+          id: crypto.randomUUID(),
+          faturaId,
+          membroId,
+          totalConsumido: Dinheiro.deCentavos(centavos)
+        })
+        await this.acertoRepo.salvar(acerto)
+      }
+    }
   }
 
   async reabrirFatura(faturaId: string): Promise<void> {
@@ -34,8 +66,22 @@ export class FaturaService implements IFaturaService {
     const todasFaturas = await this.faturaRepo.listarTodas()
     const faturasAtualizadas = [...todasFaturas]
 
+    // Garantir fatura de Pix default
+    const temFaturaPix = todasFaturas.some(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === mes && f.periodo.ano === ano)
+    if (!temFaturaPix) {
+      const novaFaturaPix = new Fatura({
+        id: crypto.randomUUID(),
+        cartaoId: 'PIX_DEFAULT_ID',
+        periodo: { mes, ano },
+        responsavelId: 'PIX_SYSTEM_OWNER',
+        status: 'ABERTA'
+      })
+      await this.faturaRepo.salvar(novaFaturaPix)
+      faturasAtualizadas.push(novaFaturaPix)
+    }
+
     for (const card of cartoes) {
-      const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.status === 'ABERTA')
+      const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.periodo.mes === mes && f.periodo.ano === ano)
       if (!temFatura) {
         const novaFatura = new Fatura({
           id: crypto.randomUUID(),

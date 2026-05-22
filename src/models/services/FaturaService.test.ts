@@ -1,20 +1,67 @@
 import { describe, it, expect, vi } from 'vitest'
 import { FaturaService } from './FaturaService'
 import { Fatura } from '../entities/Fatura'
+import { Gasto } from '../entities/Gasto'
+import { Dinheiro } from '../entities/Dinheiro'
+import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 
 describe('FaturaService', () => {
-  it('deve fechar a fatura sem gerar acertos', async () => {
+  it('deve fechar a fatura e gerar acertos para membros envolvidos nos gastos', async () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
 
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
     const acertoRepo = { excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const gastoRepo = {
+      buscarPorFatura: vi.fn().mockResolvedValue([
+        new Gasto({
+          id: 'g1',
+          faturaId: 'f1',
+          descricao: 'Gasto Simples',
+          valorTotal: Dinheiro.deReais(100),
+          compradorId: 'm1',
+          divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(5000)), new DivisaoDeGasto('m2', Dinheiro.deCentavos(5000))],
+          installments: 1
+        }),
+        new Gasto({
+          id: 'g2',
+          faturaId: 'f1',
+          descricao: 'Parcela',
+          valorTotal: Dinheiro.deReais(120),
+          compradorId: 'm1',
+          divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(6000)), new DivisaoDeGasto('m2', Dinheiro.deCentavos(6000))],
+          installments: 2,
+          totalInstallments: 3
+        }),
+        new Gasto({
+          id: 'g3',
+          faturaId: 'f1',
+          descricao: 'Netting',
+          valorTotal: Dinheiro.deReais(50),
+          compradorId: 'm1',
+          divisoes: [new DivisaoDeGasto('m2', Dinheiro.deCentavos(5000))],
+          installments: 1,
+          isSettlement: true
+        })
+      ])
+    }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.fecharFatura('f1', undefined, new Date())
 
     expect(fatura.status).toBe('FECHADA')
     expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
-    expect(acertoRepo.salvar).not.toHaveBeenCalled()
+    expect(acertoRepo.excluirPorFatura).toHaveBeenCalledWith('f1')
+    expect(acertoRepo.salvar).toHaveBeenCalledTimes(2)
+    expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      faturaId: 'f1',
+      membroId: 'm1',
+      totalConsumido: expect.objectContaining({ centavos: 7000 })
+    }))
+    expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: expect.objectContaining({ centavos: 7000 })
+    }))
   })
 
   it('deve fechar a fatura com override de responsavelId', async () => {
@@ -22,8 +69,9 @@ describe('FaturaService', () => {
 
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
     const acertoRepo = { excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]) }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.fecharFatura('f1', 'm2', new Date())
 
     expect(fatura.status).toBe('FECHADA')
@@ -36,8 +84,9 @@ describe('FaturaService', () => {
 
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn() }
     const acertoRepo = { buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn() }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.reabrirFatura('f1')
 
     expect(fatura.status).toBe('ABERTA')
@@ -48,7 +97,8 @@ describe('FaturaService', () => {
 
   it('deve assegurar faturas abertas para cartoes cadastrados', async () => {
     const faturasExistentes = [
-      new Fatura({ id: 'f_existente', cartaoId: 'c_existente', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+      new Fatura({ id: 'f_existente', cartaoId: 'c_existente', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }),
+      new Fatura({ id: 'f_pix_default', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
     ]
 
     const faturaRepo = {
@@ -57,7 +107,7 @@ describe('FaturaService', () => {
       salvar: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, {} as any)
+    const service = new FaturaService(faturaRepo as any, {} as any, {} as any)
 
     const cartoes = [
       { id: 'c_existente', responsavelPadraoId: 'm1' },
@@ -66,9 +116,31 @@ describe('FaturaService', () => {
 
     const result = await service.assegurarFaturasAbertas(cartoes, 5, 2026)
 
-    // Deve criar apenas para o c_novo porque c_existente já tem fatura aberta no período
     expect(faturaRepo.salvar).toHaveBeenCalledTimes(1)
     expect(faturaRepo.salvar.mock.calls[0][0].cartaoId).toBe('c_novo')
-    expect(result.length).toBe(2)
+    expect(result.length).toBe(3)
+  })
+
+  it('deve criar fatura aberta para o mes atual mesmo se existir fatura aberta futura para o mesmo cartao', async () => {
+    const faturasExistentes = [
+      new Fatura({ id: 'f_futura', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }),
+      new Fatura({ id: 'f_pix_default', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    ]
+
+    const faturaRepo = {
+      buscarPorId: vi.fn(),
+      listarTodas: vi.fn().mockResolvedValue(faturasExistentes),
+      salvar: vi.fn()
+    }
+
+    const service = new FaturaService(faturaRepo as any, {} as any, {} as any)
+    const cartoes = [{ id: 'c1', responsavelPadraoId: 'm1' }]
+
+    const result = await service.assegurarFaturasAbertas(cartoes, 5, 2026)
+
+    expect(faturaRepo.salvar).toHaveBeenCalledTimes(1)
+    expect(faturaRepo.salvar.mock.calls[0][0].cartaoId).toBe('c1')
+    expect(faturaRepo.salvar.mock.calls[0][0].periodo).toEqual({ mes: 5, ano: 2026 })
+    expect(result.length).toBe(3)
   })
 })
