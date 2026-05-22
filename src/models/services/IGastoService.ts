@@ -46,4 +46,5 @@ export interface IGastoService {
       installments: number
     }
   ): Promise<void>
+  removerAssociacaoContaFixa(contaFixaId: string): Promise<void>
 }

@@ -107,4 +107,16 @@ describe('useContasFixas', () => {
       participantes: ['luciana', 'luan']
     })
   })
+
+  it('deve chamar removerAssociacaoContaFixa do GastoService ao excluir um template de conta fixa', async () => {
+    const mockGastoService = {
+      lancarGastoContaFixa: vi.fn(),
+      removerAssociacaoContaFixa: vi.fn()
+    }
+    const { excluirContaFixa } = useContasFixas({ gastoService: mockGastoService as any })
+    await esperarTick()
+
+    await excluirContaFixa('aluguel')
+    expect(mockGastoService.removerAssociacaoContaFixa).toHaveBeenCalledWith('aluguel')
+  })
 })

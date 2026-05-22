@@ -63,6 +63,7 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
   const excluirContaFixa = async (id: string) => {
     contasFixas.value = contasFixas.value.filter(c => c.id !== id)
     await contaFixaRepo.excluir(id)
+    await servicoGasto.removerAssociacaoContaFixa(id)
   }
 
   const verificarStatusPaga = (conta: ContaFixa, gastos: Gasto[]) => {
