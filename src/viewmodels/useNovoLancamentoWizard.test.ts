@@ -17,6 +17,7 @@ function withSetup<T>(composable: () => T) {
 describe('useNovoLancamentoWizard - Sênior v18', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     vi.useRealTimers()
   })
 
