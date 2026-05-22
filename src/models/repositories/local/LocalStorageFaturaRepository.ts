@@ -41,16 +41,31 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
     if (!data) return []
     try {
       const raw = JSON.parse(data) as any[]
-      const faturas = raw.map(f => new Fatura({
+      return raw.map(f => new Fatura({
         ...f,
         dataPagamentoBanco: f.dataPagamentoBanco ? new Date(f.dataPagamentoBanco) : undefined
       }))
-      
-      return await this.desduplicarEMigrarFaturas(faturas)
     } catch (e) {
       console.error(e)
       return []
     }
+  }
+
+  async executarMigracoesEDesduplicacao(): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_faturas_migration', async () => {
+      const data = localStorage.getItem(this.STORAGE_KEY)
+      if (!data) return
+      try {
+        const raw = JSON.parse(data) as any[]
+        const faturas = raw.map(f => new Fatura({
+          ...f,
+          dataPagamentoBanco: f.dataPagamentoBanco ? new Date(f.dataPagamentoBanco) : undefined
+        }))
+        await this.desduplicarEMigrarFaturas(faturas)
+      } catch (e) {
+        console.error('[Migration Error]', e)
+      }
+    })
   }
 
   private salvarListaFaturasFisicamente(faturas: Fatura[]): void {

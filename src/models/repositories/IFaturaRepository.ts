@@ -6,4 +6,5 @@ export interface IFaturaRepository {
   buscarPorCartaoEPeriodo(cartaoId: string, periodo: FaturaPeriodo): Promise<Fatura | null>
   salvar(fatura: Fatura): Promise<void>
   listarTodas(): Promise<Fatura[]>
+  executarMigracoesEDesduplicacao(): Promise<void>
 }

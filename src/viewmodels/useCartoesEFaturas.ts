@@ -14,6 +14,7 @@ import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import type { IAcertoMembroRepository } from '../models/repositories/IAcertoMembroRepository'
 import {
   cartaoRepository,
+  faturaRepository,
   gastoRepository,
   acertoMembroRepository,
   faturaService,
@@ -40,6 +41,7 @@ export interface CartoesEFaturasDependencies {
 
 export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {}) {
   const localCartaoRepo = dependencies.cartaoRepository || cartaoRepository
+  const localFaturaRepo = dependencies.faturaRepository || faturaRepository
   const localGastoRepo = dependencies.gastoRepository || gastoRepository
   const localAcertoRepo = dependencies.acertoMembroRepository || acertoMembroRepository
 
@@ -51,6 +53,10 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     if (promiseInicializacao) return promiseInicializacao
     
     const carregar = async () => {
+      if (typeof localFaturaRepo.executarMigracoesEDesduplicacao === 'function') {
+        await localFaturaRepo.executarMigracoesEDesduplicacao()
+      }
+
       const todosCartoes = await localCartaoRepo.listarTodos()
       cartoes.value = todosCartoes
 
@@ -61,15 +67,8 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
       const todasFaturas = await localFaturaService.assegurarFaturasAbertas(todosCartoes, mesAtual, anoAtual)
       faturas.value = todasFaturas
 
-      const todosAcertos: AcertoMembro[] = []
-      const todosGastos: Gasto[] = []
-      for (const f of todasFaturas) {
-        const porFaturaAcertos = await localAcertoRepo.buscarPorFatura(f.id)
-        todosAcertos.push(...porFaturaAcertos)
-
-        const porFaturaGastos = await localGastoRepo.buscarPorFatura(f.id)
-        todosGastos.push(...porFaturaGastos)
-      }
+      const todosAcertos = await localAcertoRepo.listarTodos()
+      const todosGastos = await localGastoRepo.listarTodos()
       acertos.value = todosAcertos
       gastos.value = todosGastos
       inicializado.value = true
@@ -153,7 +152,7 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     gastosDaFatura.forEach(g => {
       g.divisoes.forEach(d => {
         if (d.membroId === membroId) {
-          total += d.valor.centavos / g.installments
+          total += d.valor.centavos / g.totalInstallments
         }
       })
     })
