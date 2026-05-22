@@ -71,6 +71,10 @@ export class Dinheiro {
 
   distribuirPorPesos(pesos: number[]): Dinheiro[] {
     const totalPesos = pesos.reduce((acc, p) => acc + p, 0)
+    if (totalPesos === 0) {
+      throw new Error('A soma dos pesos deve ser maior que zero')
+    }
+
     let centavosRestantes = this.centavos
 
     const valores = pesos.map(p => {
@@ -79,13 +83,22 @@ export class Dinheiro {
       return valor
     })
 
-    // Distribuir o resto (centavos órfãos) pelos primeiros pesos
-    for (let i = 0; i < Math.abs(centavosRestantes); i++) {
-      if (centavosRestantes > 0) {
-        valores[i]++
-      } else {
-        valores[i]--
+    // Distribuir o resto (centavos órfãos) pelos primeiros pesos maiores que 0
+    let i = 0
+    let centavosAlocados = 0
+    const totalCentavosRestantes = Math.abs(centavosRestantes)
+
+    while (centavosAlocados < totalCentavosRestantes) {
+      const idx = i % pesos.length
+      if (pesos[idx] > 0) {
+        if (centavosRestantes > 0) {
+          valores[idx]++
+        } else {
+          valores[idx]--
+        }
+        centavosAlocados++
       }
+      i++
     }
 
     return valores.map(c => new Dinheiro(c))

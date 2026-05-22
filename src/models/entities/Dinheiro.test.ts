@@ -106,6 +106,15 @@ describe('Dinheiro Value Object', () => {
       expect(partes.reduce((acc, p) => acc + p.centavos, 0)).toBe(5)
     })
 
+    it('deve distribuir por pesos pulando membros com peso 0', () => {
+      const d = Dinheiro.deCentavos(1001) // R$ 10,01
+      const partes = d.distribuirPorPesos([0, 1, 1])
+      expect(partes[0].centavos).toBe(0)
+      expect(partes[1].centavos + partes[2].centavos).toBe(1001)
+      expect(partes[1].centavos).toBe(501)
+      expect(partes[2].centavos).toBe(500)
+    })
+
     describe('Property-Based Constraints (Invariantes)', () => {
       const cenarios = [
         { total: 1000, partes: 3 },   // R$ 10,00 por 3
