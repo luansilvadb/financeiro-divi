@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onUnmounted } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
 import { Gasto } from '../../../models/entities/Gasto'
 import { Repeat, Plus } from 'lucide-vue-next'
@@ -35,6 +36,88 @@ const obterStatusGasto = (conta: ContaFixa) => {
 const obterNomeMembro = (id?: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
+
+// --- Lógica de Ripple para o botão Novo ---
+const addButtonRef = ref<HTMLElement | null>(null)
+
+interface RippleState {
+  active: boolean
+  x: number
+  y: number
+  radius: number
+  opacity: number
+  scale: number
+  type: 'tap' | 'long'
+}
+
+const ripple = ref<RippleState>({
+  active: false,
+  x: 0,
+  y: 0,
+  radius: 0,
+  opacity: 0,
+  scale: 0,
+  type: 'tap'
+})
+
+let isHolding = false
+let animationFrameId: number | null = null
+
+const onPointerDown = (e: PointerEvent) => {
+  if (props.isMonthLocked) return
+  
+  const el = addButtonRef.value
+  if (!el) return
+
+  const rect = el.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  isHolding = true
+
+  const dx = Math.max(x, rect.width - x)
+  const dy = Math.max(y, rect.height - y)
+  const maxRadius = Math.sqrt(dx * dx + dy * dy)
+
+  ripple.value.active = true
+  ripple.value.type = 'tap' // Botão novo é sempre tap rápido visualmente
+  ripple.value.x = x
+  ripple.value.y = y
+  ripple.value.radius = maxRadius
+  ripple.value.scale = 0
+  ripple.value.opacity = 0.25
+}
+
+const onPointerUp = () => {
+  if (!isHolding) return
+  
+  requestAnimationFrame(() => {
+    ripple.value.scale = 1
+    ripple.value.opacity = 0
+  })
+
+  setTimeout(() => {
+    ripple.value.active = false
+  }, 300)
+  
+  isHolding = false
+}
+
+const onPointerLeave = () => {
+  if (isHolding) {
+    ripple.value.active = false
+    isHolding = false
+  }
+}
+
+const handleClick = () => {
+  if (props.isMonthLocked) return
+  emit('novo')
+}
+
+onUnmounted(() => {
+  if (animationFrameId) cancelAnimationFrame(animationFrameId)
+})
 </script>
 
 <template>
@@ -98,14 +181,36 @@ const obterNomeMembro = (id?: string) => {
 
       <!-- Adicionar Nova Conta -->
       <div class="flex flex-col items-center gap-2 mt-2">
-        <button 
-          @click="$emit('novo')" 
+        <button
+          ref="addButtonRef"
+          @pointerdown="onPointerDown"
+          @pointerup="onPointerUp"
+          @pointerleave="onPointerLeave"
+          @pointercancel="onPointerLeave"
+          @click="handleClick"
           :disabled="isMonthLocked"
-          class="group w-full flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone hover:border-ember hover:bg-ember/5 transition-all duration-300 text-ash hover:text-ember font-bold text-xs uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-stone disabled:hover:text-ash"
+          :class="[
+            'relative overflow-hidden group w-full flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone bg-transparent text-ash font-bold text-xs uppercase tracking-widest transition-all duration-300 select-none cursor-pointer',
+            isMonthLocked ? 'opacity-40 cursor-not-allowed' : 'hover:border-ember hover:bg-ember/5 active:scale-[0.98]'
+          ]"
           data-testid="nova-conta-fixa"
         >
-          <Plus class="w-4 h-4 transition-transform group-hover:scale-110" />
-          <span>Adicionar conta fixa</span>
+          <!-- Ripple overlay -->
+          <div 
+            v-if="ripple.active"
+            class="absolute rounded-full bg-ember/20 pointer-events-none ripple-transition"
+            :style="{
+              left: ripple.x + 'px',
+              top: ripple.y + 'px',
+              width: ripple.radius * 2 + 'px',
+              height: ripple.radius * 2 + 'px',
+              transform: `translate(-50%, -50%) scale(${ripple.scale})`,
+              opacity: ripple.opacity
+            }"
+          ></div>
+
+          <Plus class="w-4 h-4 transition-transform group-hover:scale-110 text-ash group-hover:text-ember" />
+          <span class="text-ash group-hover:text-ember font-bold text-xs uppercase tracking-widest">Adicionar conta fixa</span>
         </button>
         <p v-if="isMonthLocked" class="text-[9px] text-ash animate-in fade-in">
           Reabra o mês para gerenciar contas fixas
@@ -114,3 +219,9 @@ const obterNomeMembro = (id?: string) => {
     </div>
   </Card>
 </template>
+
+<style scoped>
+.ripple-transition {
+  transition: transform 300ms cubic-bezier(0.1, 0.8, 0.3, 1), opacity 250ms ease-out;
+}
+</style>

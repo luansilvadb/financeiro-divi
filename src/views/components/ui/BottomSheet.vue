@@ -5,7 +5,7 @@
       <div
         v-if="modelValue"
         class="fixed inset-0 z-[998] bg-black/40 transition-opacity duration-300"
-        @click="close"
+        @click="onBackdropClick"
       />
     </Transition>
 
@@ -73,6 +73,15 @@ const emit = defineEmits(['update:modelValue'])
 
 const close = () => emit('update:modelValue', false)
 
+let mountTime = 0
+const onBackdropClick = () => {
+  // Ignora cliques que acontecem nos primeiros 300ms de montagem do BottomSheet.
+  // Isso evita que eventos sintéticos de 'click' gerados pelo navegador após
+  // gestos de touch/tap sejam capturados pelo backdrop recém-renderizado.
+  if (Date.now() - mountTime < 300) return
+  close()
+}
+
 const { registerOpen, registerClose, isAnyBottomSheetOpen } = useBottomSheetState()
 
 // Lock body scroll and compensate scrollbar width to prevent layout shifts
@@ -99,6 +108,7 @@ const unlockScroll = () => {
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
+    mountTime = Date.now()
     lockScroll()
   } else {
     // Registra o fechamento lógico no início da transição para liberar o FAB sem delay

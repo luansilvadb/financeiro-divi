@@ -6,11 +6,11 @@ import type { IGastoService } from '../models/services/IGastoService'
 import { contaFixaRepository, gastoService } from '../shared/container'
 
 const CONTAS_PADRAO: ContaFixa[] = [
-  { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValue: 1500.00, defaultSplit: ['luciana', 'luan', 'joao'] },
-  { id: 'luz', name: 'Energia (Luz)', icon: '💡', fixedValue: null, defaultSplit: ['luciana', 'luan', 'joao'] },
-  { id: 'agua', name: 'Água', icon: '💧', fixedValue: null, defaultSplit: ['luciana', 'luan', 'joao'] },
-  { id: 'internet', name: 'Internet', icon: '🌐', fixedValue: 120.00, defaultSplit: ['luciana', 'luan', 'joao'] },
-  { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValue: null, defaultSplit: ['luciana', 'luan'] }
+  { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValue: 1500.00, defaultSplit: [] },
+  { id: 'luz', name: 'Energia (Luz)', icon: '💡', fixedValue: null, defaultSplit: [] },
+  { id: 'agua', name: 'Água', icon: '💧', fixedValue: null, defaultSplit: [] },
+  { id: 'internet', name: 'Internet', icon: '🌐', fixedValue: 120.00, defaultSplit: [] },
+  { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValue: null, defaultSplit: [] }
 ]
 
 const contasFixas = ref<ContaFixa[]>([])

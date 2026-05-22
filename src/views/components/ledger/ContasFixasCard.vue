@@ -137,34 +137,36 @@ const onPointerDown = (e: PointerEvent) => {
 }
 
 const onPointerUp = () => {
-  if (!isHolding || hasTriggered) return
-
-  const elapsed = performance.now() - startTime
-
-  if (elapsed < 220) {
-    // Foi um Toque Rápido (Tap) -> Ativa transição de GPU (CSS) para espalhar e sumir instantaneamente
-    ripple.value.type = 'tap'
-    
-    // Dispara a ação lógica de lançamento imediatamente no clique! Zero latência!
-    triggerTapAction()
-
-    // Agenda a meta visual de escala e opacidade no mesmo frame para o CSS transicionar
-    requestAnimationFrame(() => {
-      ripple.value.scale = 1
-      ripple.value.opacity = 0
-    })
-
-    // Remove do DOM após completar a transição de 300ms do CSS
-    setTimeout(() => {
-      if (ripple.value.type === 'tap') {
-        ripple.value.active = false
-      }
-    }, 300)
-  } else {
-    // Soltou no meio do long press -> Cancela e some
-    cancelInteraction()
+  if (!isHolding || hasTriggered) {
+    isHolding = false
+    return
   }
+
+  // Se soltou antes de disparar o long-press, é considerado um Tap.
+  // Eliminamos o "dead zone" entre 220ms e 800ms que ignorava a interação.
+  ripple.value.type = 'tap'
+  
+  // Dispara a ação lógica imediatamente
+  triggerTapAction()
+
+  // Feedback visual do ripple (expande e some)
+  requestAnimationFrame(() => {
+    ripple.value.scale = 1
+    ripple.value.opacity = 0
+  })
+
+  // Limpeza do estado visual
+  setTimeout(() => {
+    if (ripple.value.type === 'tap') {
+      ripple.value.active = false
+    }
+  }, 300)
+  
   isHolding = false
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
 }
 
 const onPointerLeave = () => {

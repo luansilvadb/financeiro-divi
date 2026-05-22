@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Fatura } from '../../../../models/entities/Fatura'
-import SeletorMembros from '../shared/SeletorMembros.vue'
+import SeletorMembros from '../SeletorMembros.vue'
 import Button from '../../ui/Button.vue'
 import SectionLabel from '../../ui/SectionLabel.vue'
 import { X, Info } from 'lucide-vue-next'

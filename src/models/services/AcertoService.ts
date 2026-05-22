@@ -28,7 +28,6 @@ export class AcertoService implements IAcertoService {
     }
   }
 
-  // Retrocompatibilidade
   async marcarPago(acertoId: string, dataPagamento: Date = new Date()): Promise<void> {
     const acerto = await this.acertoRepo.buscarPorId(acertoId)
     if (!acerto) throw new Error('Acerto não encontrado')

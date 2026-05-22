@@ -21,14 +21,12 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
 
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
-  // ✅ Usado para sincronismo: sempre relê do disco
   const carregar = async () => {
     let lista = await repo.listarTodos()
     membros.value = lista
     inicializado.value = true
   }
 
-  // ✅ Usado no boot: garante apenas uma leitura simultânea no carregamento inicial
   const inicializar = async () => {
     if (promiseInicializacao) return promiseInicializacao
     promiseInicializacao = carregar()
@@ -50,7 +48,6 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
     await carregar()
   }
 
-  // Garantir carregamento inicial lazy
   if (!inicializado.value) {
     inicializar()
   }

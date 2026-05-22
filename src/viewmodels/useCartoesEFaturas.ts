@@ -7,7 +7,6 @@ import { Fatura } from '../models/entities/Fatura'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
 import { Gasto } from '../models/entities/Gasto'
 import { Dinheiro } from '../models/entities/Dinheiro'
-import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
@@ -87,6 +86,17 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     inicializar()
   }
 
+  const adicionarCartao = async (nome: string, diaFechamento: number, responsavelPadraoId: string) => {
+    const novo = new Cartao({
+      id: crypto.randomUUID(),
+      nome,
+      diaFechamento,
+      responsavelPadraoId
+    })
+    await localCartaoRepo.salvar(novo)
+    await inicializar()
+  }
+
   const salvarCartaoManual = async (cartao: Cartao) => {
     await localCartaoRepo.salvar(cartao)
     await inicializar()
@@ -163,6 +173,7 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     acertos,
     gastos,
     inicializar,
+    adicionarCartao,
     salvarCartaoManual,
     excluirCartaoManual,
     fecharFaturaManual,

@@ -12,7 +12,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['desfazerGasto', 'ajustarGasto'])
+const emit = defineEmits(['excluir', 'ajustar'])
 
 const sortedGastos = computed(() => {
   return [...props.gastos].sort((a, b) => b.id.localeCompare(a.id))
@@ -25,12 +25,6 @@ const getMembroNome = (id: string) => {
     console.warn(`Member ID not found in ActivityFeed: ${id}. Available members:`, props.membros.map(m => ({ id: m.id, nome: m.nome })))
   }
   return membro?.nome || 'Membro desconhecido'
-}
-
-const handleDelete = (id: string) => {
-  if (confirm('Deseja realmente apagar/desfazer este lançamento?')) {
-    emit('desfazerGasto', id)
-  }
 }
 </script>
 
@@ -118,7 +112,7 @@ const handleDelete = (id: string) => {
                 variant="secondary"
                 size="sm"
                 class="h-8 px-3 text-[10px] border border-stone"
-                @click="emit('ajustarGasto', g.id)"
+                @click="emit('ajustar', g)"
                 :disabled="props.isMonthLocked"
               >
                 <Edit3 class="w-3.5 h-3.5 mr-1.5" />
@@ -128,15 +122,15 @@ const handleDelete = (id: string) => {
                 variant="secondary"
                 size="sm"
                 class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
-                @click="handleDelete(g.id)"
+                @click="emit('excluir', g)"
                 :disabled="props.isMonthLocked"
               >
                 <Trash2 class="w-3.5 h-3.5 mr-1.5" />
-                Excluir
+                Estornar
               </Button>
             </div>
             <p v-if="props.isMonthLocked" class="text-[9px] text-ash mt-1 animate-in fade-in">
-              Reabra o mês para editar ou excluir
+              Reabra o mês para ajustar ou estornar
             </p>
           </div>
         </div>

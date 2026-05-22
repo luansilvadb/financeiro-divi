@@ -20,6 +20,23 @@ export function useDashboardUIState() {
   const valorPixInput = ref(0)
   const isSubmittingPix = ref(false)
 
+  // --- Confirmação de Estorno ---
+  const showBottomSheetConfirmacaoEstorno = ref(false)
+  const itemParaEstornar = ref<any | null>(null)
+  const itemTypeParaEstornar = ref('')
+
+  const abrirConfirmacaoEstornoGasto = (gasto: any) => {
+    itemParaEstornar.value = gasto
+    itemTypeParaEstornar.value = 'Lançamento'
+    showBottomSheetConfirmacaoEstorno.value = true
+  }
+
+  const abrirConfirmacaoEstornoBill = (bill: any) => {
+    itemParaEstornar.value = bill
+    itemTypeParaEstornar.value = 'Conta Fixa'
+    showBottomSheetConfirmacaoEstorno.value = true
+  }
+
   const abrirLancarBill = (bill: any) => {
     billSelecionada.value = bill
     showPopupLancar.value = true
@@ -79,6 +96,11 @@ export function useDashboardUIState() {
     acertoPixId,
     valorPixInput,
     isSubmittingPix,
+    showBottomSheetConfirmacaoEstorno,
+    itemParaEstornar,
+    itemTypeParaEstornar,
+    abrirConfirmacaoEstornoGasto,
+    abrirConfirmacaoEstornoBill,
     abrirLancarBill,
     abrirConfigurarBill,
     abrirNovoBill,

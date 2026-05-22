@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import { Cartao } from '../../../models/entities/Cartao'
 import { useCartoesEFaturas } from '../../../viewmodels/useCartoesEFaturas'
 import { useMembros } from '../../../viewmodels/useMembros'
 import Card from '../ui/Card.vue'
@@ -8,7 +7,7 @@ import Button from '../ui/Button.vue'
 import { Trash2, CreditCard, Calendar, User, ChevronDown } from 'lucide-vue-next'
 
 const { ativos } = useMembros()
-const { cartoes, salvarCartaoManual, excluirCartaoManual } = useCartoesEFaturas()
+const { cartoes, adicionarCartao, excluirCartaoManual } = useCartoesEFaturas()
 
 const nome = ref('')
 const diaFechamento = ref<number>(10)
@@ -47,13 +46,7 @@ const toggleResponsavelDropdown = async () => {
 
 const adicionarCard = async () => {
   if (!nome.value || !responsavelId.value) return
-  const novo = new Cartao({
-    id: crypto.randomUUID(),
-    nome: nome.value,
-    diaFechamento: diaFechamento.value,
-    responsavelPadraoId: responsavelId.value
-  })
-  await salvarCartaoManual(novo)
+  await adicionarCartao(nome.value, diaFechamento.value, responsavelId.value)
   nome.value = ''
   responsavelId.value = ''
 }

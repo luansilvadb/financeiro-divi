@@ -9,6 +9,7 @@ import BottomSheetFecharFatura from '../components/ledger/dashboard/BottomSheetF
 import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
 import ActivityFeed from '../components/ledger/ActivityFeed.vue'
 import BottomSheetAjustarGasto from '../components/ledger/BottomSheetAjustarGasto.vue'
+import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfirmacaoEstorno.vue'
 import DetalhamentoSaldosCard from '../components/ledger/dashboard/DetalhamentoSaldosCard.vue'
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
@@ -58,6 +59,9 @@ const {
   billSelecionada,
   showBottomSheetNovoPeriodo,
   nomeNovoPeriodo,
+  showBottomSheetConfirmacaoEstorno,
+  itemParaEstornar,
+  itemTypeParaEstornar,
   showBottomSheetNetting,
   nettingTarget,
   showParcelasFuturas,
@@ -84,6 +88,8 @@ const {
   abrirConfigurarBill,
   abrirNovoBill,
   abrirAjustarGasto,
+  abrirConfirmacaoEstornoGasto,
+  abrirConfirmacaoEstornoBill,
   abrirBottomSheetNetting,
   abrirNovoPeriodoBottomSheet,
   confirmarFechamentoFatura,
@@ -94,13 +100,11 @@ const {
   quitarComAjuste,
   confirmarLancarBill,
   confirmarSalvarTemplate,
-  confirmarDeletarTemplate,
   confirmarNovoPeriodo,
   confirmarBaixaNetting,
-  excluirGasto,
+  confirmarEstorno,
   estornarContaFixa,
-  formatarMesAno
-} = vm
+  formatarMesAno} = vm
 
 // Lógica de scroll para o item selecionado (única lógica de UI pura/DOM mantida na View)
 const itemSelecionadoRef = ref<any>(null)
@@ -299,8 +303,8 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
         :gastos="gastosFaturaSelecionada"
         :membros="props.membros"
         :is-month-locked="faturaSelecionadaTrancada"
-        @desfazerGasto="excluirGasto"
-        @ajustarGasto="abrirAjustarGasto"
+        @excluir="abrirConfirmacaoEstornoGasto"
+        @ajustar="abrirAjustarGasto"
       />
     </section>
     </div><!-- /isHoje -->
@@ -440,9 +444,6 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
         </div>
       </section>
 
-
-
-
     <!-- Painel de Parcelas Futuras (Minimalist Modern) -->
     <section v-if="totalFuturasVencer > 0" class="space-y-4">
       <Card class="overflow-hidden">
@@ -514,7 +515,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
       :bill="billSelecionada"
       :membros="props.membros"
       @save="confirmarSalvarTemplate"
-      @delete="confirmarDeletarTemplate"
+      @delete="abrirConfirmacaoEstornoBill"
       @cancel="showBottomSheetConfigCF = false"
     />
 
@@ -705,5 +706,15 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
         <Button variant="secondary" class="w-full" @click="showBottomSheetHistorico = false">Fechar</Button>
       </div>
     </BottomSheet>
+
+    <!-- BottomSheet de Confirmação de Estorno (Shared) -->
+    <BottomSheetConfirmacaoEstorno 
+      :visible="showBottomSheetConfirmacaoEstorno"
+      :item-type="itemTypeParaEstornar"
+      :item-name="itemParaEstornar?.descricao || itemParaEstornar?.name"
+      :item-value="itemParaEstornar?.valorTotal ? itemParaEstornar?.valorTotal.centavos / 100 : itemParaEstornar?.defaultAmount"
+      @cancel="showBottomSheetConfirmacaoEstorno = false"
+      @confirm="confirmarEstorno"
+    />
   </div>
 </template>

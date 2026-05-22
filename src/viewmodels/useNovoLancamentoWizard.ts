@@ -1,15 +1,11 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
-import { obterPeriodoSelecionado } from './storage/periodoStorage'
+import { obterPeriodoSelecionado } from '../shared/utils/periodoStorage'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import type { IGastoService } from '../models/services/IGastoService'
-import type { IGastoRepository } from '../models/repositories/IGastoRepository'
-import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
-import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
-import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from './storage/rascunhoWizardStorage'
+import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from '../shared/utils/rascunhoWizardStorage'
 import { gastoService } from '../shared/container'
 
-// Helper: Validate loan flow advancement
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
   const rules: Record<number, () => boolean> = {
     2: () => !!compradorId,
@@ -20,7 +16,6 @@ function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | 
   return rules[step]?.() ?? false
 }
 
-// Helper: Validate expense flow advancement
 function canAdvanceExpense(
   step: number,
   compradorId: string,
@@ -45,7 +40,6 @@ function canAdvanceExpense(
   return rules[step]?.() ?? false
 }
 
-// Helper: Build divisoes based on flow type
 function buildDivisoes(
   flow: 'expense' | 'loan',
   total: any,
@@ -70,9 +64,6 @@ function buildDivisoes(
 }
 
 export interface WizardDependencies {
-  gastoRepository?: IGastoRepository
-  faturaRepository?: IFaturaRepository
-  cartaoRepository?: ICartaoRepository
   gastoService?: IGastoService
 }
 
@@ -82,17 +73,12 @@ export function useNovoLancamentoWizard(
 ) {
   const step = ref(1)
 
-  // Dependências injetadas
   const servicoGasto = dependencies.gastoService || gastoService
 
-
-
-  // Controle de Fluxo v18
   const wizFlow = ref<'expense' | 'loan' | null>(null)
   const wizPayment = ref<'pix' | 'card' | null>(null)
   const wizCardOwner = ref<string | null>(null)
 
-  // Dados do Lançamento
   const valor = ref(0)
   const descricao = ref('')
   const compradorSelecionadoId = ref('')

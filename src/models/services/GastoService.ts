@@ -90,6 +90,26 @@ export class GastoService implements IGastoService {
     return fatura
   }
 
+  private construirGasto(dados: {
+    faturaId: string
+    descricao: string
+    valorTotal: Dinheiro
+    compradorId: string
+    divisoes: any[]
+    installments: number
+    totalInstallments: number
+    isLoan: boolean
+    borrowerId?: string | null
+    method: 'pix' | 'card'
+    cardOwner?: string | null
+    grupoParcelasId?: string | null
+  }): Gasto {
+    return new Gasto({
+      id: crypto.randomUUID(),
+      ...dados
+    })
+  }
+
   private async projetarGastosParcelados(dados: {
     total: Dinheiro
     divisoes: any[]
@@ -101,10 +121,8 @@ export class GastoService implements IGastoService {
   }): Promise<void> {
     const { total, divisoes, faturaAtiva, descricao, compradorId, installments, cardOwner } = dados
     const grupoParcelasId = crypto.randomUUID()
-    
-    // Salvar primeira parcela
-    const primeiroGasto = new Gasto({
-      id: crypto.randomUUID(),
+
+    const primeiroGasto = this.construirGasto({
       faturaId: faturaAtiva.id,
       descricao,
       valorTotal: total,
@@ -120,20 +138,18 @@ export class GastoService implements IGastoService {
     })
     await this.gastoRepo.salvar(primeiroGasto)
 
-    // Salvar parcelas futuras
     let currentMes = faturaAtiva.periodo.mes
     let currentAno = faturaAtiva.periodo.ano
-    
+
     for (let i = 2; i <= installments; i++) {
       currentMes++
       if (currentMes > 12) {
         currentMes = 1
         currentAno++
       }
-      
+
       const faturaFutura = await this.obterOuCriarFatura(faturaAtiva.cartaoId, currentMes, currentAno, compradorId)
-      const gastoFuturo = new Gasto({
-        id: crypto.randomUUID(),
+      const gastoFuturo = this.construirGasto({
         faturaId: faturaFutura.id,
         descricao,
         valorTotal: total,

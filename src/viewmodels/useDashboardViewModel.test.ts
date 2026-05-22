@@ -310,7 +310,7 @@ describe('useDashboardViewModel', () => {
     vi.useRealTimers()
   })
 
-  it('should save and delete bill templates', () => {
+  it('should save and delete bill templates via confirmation', async () => {
     const vm = createViewModel(dummyProps, vi.fn())
     vm.showBottomSheetConfigCF.value = true
 
@@ -319,10 +319,13 @@ describe('useDashboardViewModel', () => {
     expect(mockContasFixas.salvarContaFixa).toHaveBeenCalledWith(templateMock)
     expect(vm.showBottomSheetConfigCF.value).toBe(false)
 
-    vm.showBottomSheetConfigCF.value = true
-    vm.confirmarDeletarTemplate('b1')
+    // Simula abertura de confirmação a partir do componente de configuração
+    vm.abrirConfirmacaoEstornoBill(templateMock)
+    expect(vm.showBottomSheetConfirmacaoEstorno.value).toBe(true)
+    
+    await vm.confirmarEstorno()
     expect(mockContasFixas.excluirContaFixa).toHaveBeenCalledWith('b1')
-    expect(vm.showBottomSheetConfigCF.value).toBe(false)
+    expect(vm.showBottomSheetConfirmacaoEstorno.value).toBe(false)
   })
 
   it('should execute rollover on confirm new period', async () => {
@@ -362,13 +365,17 @@ describe('useDashboardViewModel', () => {
       { id: 'g-recur', faturaId: activeFaturaId, recurringBillId: 'b1' }
     ] as any
 
-    const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => true)
-
     await vm.estornarContaFixa({ id: 'b1', name: 'Internet' })
 
-    expect(confirmSpy).toHaveBeenCalled()
+    // Agora deve abrir o BottomSheet em vez de confirm()
+    expect(vm.showBottomSheetConfirmacaoEstorno.value).toBe(true)
+    expect(vm.itemParaEstornar.value).toEqual({ id: 'g-recur', faturaId: activeFaturaId, recurringBillId: 'b1' })
+
+    await vm.confirmarEstorno()
+
     expect(mockGastoService.excluirGasto).toHaveBeenCalledWith('g-recur')
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
+    expect(vm.showBottomSheetConfirmacaoEstorno.value).toBe(false)
   })
 
   it('should inject dependencies into sub-composables correctly', () => {

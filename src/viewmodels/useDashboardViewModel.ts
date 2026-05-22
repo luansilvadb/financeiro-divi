@@ -3,14 +3,12 @@ import { Fatura } from '../models/entities/Fatura'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
-import { useFaturaRollover } from './useFaturaRollover'
-import { useDashboardCalculations } from './useDashboardCalculations'
 import { useDashboardUIState } from './useDashboardUIState'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
-import { formatarMesAno, gerarListaMesesSeletor } from '../shared/utils/meses'
-import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from './storage/periodoStorage'
+import { formatarMesAno, gerarListaMesesSeletor, NOMES_MESES } from '../shared/utils/meses'
+import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from '../shared/utils/periodoStorage'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
@@ -111,6 +109,9 @@ export function useDashboardViewModel(
     billSelecionada,
     showBottomSheetNovoPeriodo,
     nomeNovoPeriodo,
+    showBottomSheetConfirmacaoEstorno,
+    itemParaEstornar,
+    itemTypeParaEstornar,
     showBottomSheetNetting,
     nettingTarget,
     showParcelasFuturas,
@@ -118,6 +119,8 @@ export function useDashboardViewModel(
     acertoPixId,
     valorPixInput,
     isSubmittingPix,
+    abrirConfirmacaoEstornoGasto,
+    abrirConfirmacaoEstornoBill,
     abrirLancarBill,
     abrirConfigurarBill,
     abrirNovoBill,
@@ -141,11 +144,6 @@ export function useDashboardViewModel(
     contaFixaRepository: dependencies.contaFixaRepository,
     gastoService: localGastoService
   })
-  const { executarRolloverPeriodo } = useFaturaRollover({
-    faturaRepository: faturaRepo,
-    gastoRepository: gastoRepo,
-    faturaRolloverService: rolloverService
-  })
 
   const {
     registrarReembolsoParcialManual,
@@ -157,32 +155,60 @@ export function useDashboardViewModel(
     acertos: globalAcertos
   } = cartoesEFaturas
 
-  // --- Calculations ---
-  const faturasFiltradasCalculations = computed(() => {
-    const ativa = faturaAtivaVisualizada.value
-    return ativa ? [ativa] : []
+  // --- Funções de cálculo (puras, inline) ---
+  const getMembroNome = (id: string) => {
+    if (!id) return 'Desconhecido'
+    return props.membros.find(m => m.id === id)?.nome || 'Membro desconhecido'
+  }
+
+  const formatarDinheiro = (centavos: number) => Dinheiro.deCentavos(centavos).centavos / 100
+
+  const calcularTotalFatura = (faturaId: string) =>
+    props.membros.reduce((sum, m) => sum + props.calcularConsumo(faturaId, m.id), 0)
+
+  const acertosDaFatura = (faturaId: string) => {
+    const list = props.acertosPendentes?.length > 0 ? props.acertosPendentes : globalAcertos.value
+    return list.filter((a: any) => a.faturaId === faturaId)
+  }
+
+  const gastosDaFatura = (faturaId: string) =>
+    globalGastos.value.filter(g => g.faturaId === faturaId)
+
+  const todosOsAcertosQuitados = (faturaId: string) => {
+    const acertos = acertosDaFatura(faturaId)
+    return acertos.length > 0 && acertos.every((a: any) => a.pago)
+  }
+
+  const currentMonthName = computed(() => {
+    const fat = faturaAtivaVisualizada.value
+    if (!fat) return 'Mês'
+    return NOMES_MESES[fat.periodo.mes - 1]
   })
 
-  const calculations = computed(() => {
-    return useDashboardCalculations(
-      props.membros,
-      faturasFiltradasCalculations.value,
-      props.acertosPendentes,
-      globalGastos.value,
-      globalAcertos.value,
-      props.calcularConsumo
-    )
+  const currentYear = computed(() => {
+    const fat = faturaAtivaVisualizada.value
+    if (!fat) return 'Atual'
+    return fat.periodo.ano.toString()
   })
 
-  const getMembroNome = (id: string) => calculations.value.getMembroNome(id)
-  const formatarDinheiro = (centavos: number) => calculations.value.formatarDinheiro(centavos)
-  const calcularTotalFatura = (faturaId: string) => calculations.value.calcularTotalFatura(faturaId)
-  const acertosDaFatura = (faturaId: string) => calculations.value.acertosDaFatura(faturaId)
-  const gastosDaFatura = (faturaId: string) => calculations.value.gastosDaFatura(faturaId)
-  const todosOsAcertosQuitados = (faturaId: string) => calculations.value.todosOsAcertosQuitados(faturaId)
-  const currentMonthName = computed(() => calculations.value.currentMonthName.value)
-  const currentYear = computed(() => calculations.value.currentYear.value)
-  const parcelasFuturasDetalhadas = computed(() => calculations.value.parcelasFuturasDetalhadas.value)
+  const parcelasFuturasDetalhadas = computed(() => {
+    const fatAtiva = faturaAtivaVisualizada.value
+    if (!fatAtiva) return []
+    return gastosDaFatura(fatAtiva.id)
+      .filter(g => g.installments > 1)
+      .map(g => {
+        const valorParcela = g.valorTotal.centavos / g.installments
+        const parcelasRestantes = g.installments - 1
+        return {
+          id: g.id,
+          descricao: g.descricao,
+          responsavel: g.cardOwner ? 'Cartão' : 'Pix',
+          restantes: parcelasRestantes,
+          valorParcela: valorParcela / 100,
+          totalFuturo: (valorParcela * parcelasRestantes) / 100
+        }
+      })
+  })
 
   // --- Dados Derivados ---
   const gastosFaturaSelecionada = computed(() => {
@@ -270,25 +296,19 @@ export function useDashboardViewModel(
     showBottomSheetConfigCF.value = false
   }
 
-  const confirmarDeletarTemplate = (id: string) => {
-    if (faturaSelecionadaTrancada.value) return
-    excluirContaFixa(id)
-    showBottomSheetConfigCF.value = false
-  }
-
   const executarNovoPeriodo = async (nomeNovoPeriodoVal: string) => {
     const faturasAbertasVisualizadas = props.faturasAbertas.filter(f =>
       f.periodo.mes === faturaAtivaVisualizada.value.periodo.mes &&
       f.periodo.ano === faturaAtivaVisualizada.value.periodo.ano
     )
 
-    await executarRolloverPeriodo(
-      nomeNovoPeriodoVal,
-      faturasAbertasVisualizadas,
-      props.cartoes,
-      saldosUnificadosAtivos.value,
-      currentMonthName.value
-    )
+    await rolloverService.executarRolloverPeriodo({
+      nomeNovoPeriodo: nomeNovoPeriodoVal,
+      faturasAbertas: faturasAbertasVisualizadas,
+      cartoes: props.cartoes,
+      saldosAcumulados: saldosUnificadosAtivos.value,
+      nomePeriodoAnterior: currentMonthName.value
+    })
 
     await cartoesEFaturas.inicializar()
   }
@@ -324,12 +344,23 @@ export function useDashboardViewModel(
     await cartoesEFaturas.inicializar()
   }
 
+  const confirmarEstorno = async () => {
+    if (!itemParaEstornar.value) return
+
+    const handlers: Record<string, () => Promise<void>> = {
+      'Lançamento': () => excluirGasto(itemParaEstornar.value!.id),
+      'Conta Fixa': () => excluirContaFixa(itemParaEstornar.value!.id)
+    }
+    await handlers[itemTypeParaEstornar.value]?.()
+
+    showBottomSheetConfirmacaoEstorno.value = false
+    itemParaEstornar.value = null
+  }
+
   const estornarContaFixa = async (bill: any) => {
     const gasto = gastosFaturaSelecionada.value.find(g => g.recurringBillId === bill.id)
     if (gasto) {
-      if (confirm(`Deseja realmente estornar o pagamento de ${bill.name}?`)) {
-        await excluirGasto(gasto.id)
-      }
+      abrirConfirmacaoEstornoGasto(gasto)
     }
   }
 
@@ -350,6 +381,9 @@ export function useDashboardViewModel(
     billSelecionada,
     showBottomSheetNovoPeriodo,
     nomeNovoPeriodo,
+    showBottomSheetConfirmacaoEstorno,
+    itemParaEstornar,
+    itemTypeParaEstornar,
     showBottomSheetNetting,
     nettingTarget,
     showParcelasFuturas,
@@ -376,6 +410,8 @@ export function useDashboardViewModel(
     abrirConfigurarBill,
     abrirNovoBill,
     abrirAjustarGasto,
+    abrirConfirmacaoEstornoGasto,
+    abrirConfirmacaoEstornoBill,
     abrirBottomSheetNetting,
     abrirNovoPeriodoBottomSheet,
     confirmarFechamentoFatura,
@@ -386,9 +422,9 @@ export function useDashboardViewModel(
     quitarComAjuste,
     confirmarLancarBill,
     confirmarSalvarTemplate,
-    confirmarDeletarTemplate,
     confirmarNovoPeriodo,
     confirmarBaixaNetting,
+    confirmarEstorno,
     excluirGasto,
     estornarContaFixa,
     formatarMesAno
