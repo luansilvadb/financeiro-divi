@@ -1,12 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import NovoLancamentoWizard from './NovoLancamentoWizard.vue'
+
+const mockCartoes = ref<any[]>([])
+const mockFaturasFechadas = ref<any[]>([])
+const mockPeriodo = ref({ mes: 5, ano: 2026 })
+
+vi.mock('../../viewmodels/useCartoesEFaturas', () => ({
+  useCartoesEFaturas: () => ({
+    cartoes: mockCartoes,
+    faturasFechadas: mockFaturasFechadas,
+    inicializar: vi.fn()
+  })
+}))
+
+vi.mock('../../shared/utils/periodoStorage', () => ({
+  obterPeriodoSelecionado: () => mockPeriodo.value
+}))
 
 describe('NovoLancamentoWizard - Senior v18', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
     vi.useFakeTimers()
+    mockCartoes.value = []
+    mockFaturasFechadas.value = []
+    mockPeriodo.value = { mes: 5, ano: 2026 }
   })
 
   afterEach(() => {
@@ -74,5 +94,33 @@ describe('NovoLancamentoWizard - Senior v18', () => {
     await avancarButton!.trigger('click')
 
     expect(semAcentos(wrapper.text())).toContain('Valor invalido')
+  })
+
+  it('desabilita cartoes cuja fatura esteja fechada no periodo e exibe o badge FATURA FECHADA', async () => {
+    mockCartoes.value = [
+      { id: 'c1', nome: 'Nubank' },
+      { id: 'c2', nome: 'Itaú' }
+    ]
+    mockFaturasFechadas.value = [
+      { cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, status: 'FECHADA' }
+    ]
+
+    const wrapper = mount(NovoLancamentoWizard, {
+      props: { membros }
+    })
+
+    const buttons = wrapper.findAll('button')
+    
+    // Procura o botão do Nubank
+    const nubankBtn = buttons.find(b => b.text().includes('Cartão Nubank'))
+    expect(nubankBtn).toBeDefined()
+    expect(nubankBtn!.attributes('disabled')).toBeDefined()
+    expect(nubankBtn!.text()).toContain('FATURA FECHADA')
+
+    // Procura o botão do Itaú
+    const itauBtn = buttons.find(b => b.text().includes('Cartão Itaú'))
+    expect(itauBtn).toBeDefined()
+    expect(itauBtn!.attributes('disabled')).toBeUndefined()
+    expect(itauBtn!.text()).not.toContain('FATURA FECHADA')
   })
 })

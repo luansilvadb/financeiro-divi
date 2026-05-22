@@ -57,4 +57,14 @@ describe('Fatura', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ABERTA' })
     expect(() => fatura.marcarAcertada()).toThrow('Apenas faturas FECHADAS podem ser acertadas')
   })
+
+  it('determinarPeriodoFatura - compra feita perto do final do dia local deve usar o dia local', () => {
+    // 21 de Maio às 23:00 (hora local da máquina).
+    // Se o fechamento do cartão é no dia 22, este gasto deve pertencer à fatura do próprio mês de Maio (mês 5), 
+    // mesmo que em UTC a data já tenha virado dia 22.
+    const dataGasto = new Date(2026, 4, 21, 23, 0, 0) // Mês 4 é Maio (0-indexed)
+    const periodo = determinarPeriodoFatura(dataGasto, 22)
+    expect(periodo.mes).toBe(5)
+    expect(periodo.ano).toBe(2026)
+  })
 })

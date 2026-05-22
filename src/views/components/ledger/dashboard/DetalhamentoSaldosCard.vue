@@ -32,7 +32,7 @@ const detailedBreakdown = computed(() => {
   })
 
   props.gastos.forEach(g => {
-    const valorParcela = g.valorTotal.centavos / g.installments
+    const valorParcela = g.valorTotal.centavos / g.totalInstallments
     
     if (g.isLoan) {
       if (g.compradorId && breakdown[g.compradorId]) {
@@ -49,7 +49,7 @@ const detailedBreakdown = computed(() => {
         }
         g.divisoes.forEach(d => {
           if (breakdown[d.membroId]) {
-            breakdown[d.membroId].pixConsumo += d.valor.centavos / g.installments
+            breakdown[d.membroId].pixConsumo += d.valor.centavos / g.totalInstallments
           }
         })
       } else {
@@ -60,7 +60,7 @@ const detailedBreakdown = computed(() => {
         }
         g.divisoes.forEach(d => {
           if (breakdown[d.membroId]) {
-            breakdown[d.membroId].cardConsumo += d.valor.centavos / g.installments
+            breakdown[d.membroId].cardConsumo += d.valor.centavos / g.totalInstallments
           }
         })
       }

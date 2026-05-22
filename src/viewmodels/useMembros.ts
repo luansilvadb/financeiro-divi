@@ -3,6 +3,7 @@ import { Membro } from '../models/entities/Membro'
 import type { IMembroRepository } from '../models/repositories/IMembroRepository'
 import type { IMembroService } from '../models/services/IMembroService'
 import { membroRepository, membroService } from '../shared/container'
+import { obterPeriodoSelecionado } from '../shared/utils/periodoStorage'
 
 export interface MembrosDependencies {
   membroRepository?: IMembroRepository
@@ -39,7 +40,8 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
   }
 
   const desativarMembro = async (id: string) => {
-    await service.desativarMembro(id)
+    const periodo = obterPeriodoSelecionado()
+    await service.desativarMembro(id, periodo)
     await carregar()
   }
 

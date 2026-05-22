@@ -8,10 +8,13 @@ import { calcularTransacoesNetting } from './NettingService'
 import { NOMES_MESES } from '../../shared/utils/meses'
 import type { IFaturaRolloverService } from './IFaturaRolloverService'
 
+import type { IFaturaService } from './IFaturaService'
+
 export class FaturaRolloverService implements IFaturaRolloverService {
   constructor(
     private faturaRepo: IFaturaRepository,
-    private gastoRepo: IGastoRepository
+    private gastoRepo: IGastoRepository,
+    private faturaService: IFaturaService
   ) {}
 
   processarRolloverParcelas(novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] {
@@ -66,10 +69,9 @@ export class FaturaRolloverService implements IFaturaRolloverService {
     const { nomeNovoPeriodo, faturasAbertas, cartoes, saldosAcumulados, nomePeriodoAnterior } = dados
     if (faturasAbertas.length === 0) return
 
-    // 1. Fechar as faturas abertas do período diretamente via repositório
+    // 1. Fechar as faturas abertas do período via FaturaService para gerar acertos
     for (const f of faturasAbertas) {
-      f.fechar({ responsavelId: f.responsavelId, dataPagamentoBanco: new Date() })
-      await this.faturaRepo.salvar(f)
+      await this.faturaService.fecharFatura(f.id, f.responsavelId, new Date())
     }
 
     // 2. Criar faturas e período no novo mês
@@ -78,6 +80,17 @@ export class FaturaRolloverService implements IFaturaRolloverService {
     const anoNum = parseInt(anoStr) || new Date().getFullYear()
 
     const novasFaturas: Fatura[] = []
+
+    // Criar fatura de Pix default no novo período
+    const novaFaturaPix = new Fatura({
+      id: crypto.randomUUID(),
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: mesNum, ano: anoNum },
+      responsavelId: 'PIX_SYSTEM_OWNER',
+      status: 'ABERTA'
+    })
+    await this.faturaRepo.salvar(novaFaturaPix)
+    novasFaturas.push(novaFaturaPix)
 
     for (const card of cartoes) {
       const novaFatura = new Fatura({
@@ -91,7 +104,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
       novasFaturas.push(novaFatura)
     }
 
-    const novaFaturaIdPrincipal = novasFaturas[0]?.id
+    const novaFaturaIdPrincipal = novasFaturas.find(f => f.cartaoId === 'PIX_DEFAULT_ID')?.id || novasFaturas[0]?.id
 
     if (novaFaturaIdPrincipal) {
       // 3. Decrementar parcelas ativas

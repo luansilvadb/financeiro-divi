@@ -26,7 +26,7 @@ describe('useCartoesEFaturas', () => {
     
     // Salvar um cartão para garantir uma fatura aberta válida
     const { Cartao } = await import('../models/entities/Cartao')
-    const novoCard = new Cartao({ id: 'c-teste', nome: 'Nubank Teste', diaFechamento: 15, responsavelPadraoId: 'm1' })
+    const novoCard = new Cartao({ id: 'c-teste', nome: 'Nubank Teste', diaFechamento: 15, responsavelPadraoId: 'luan' })
     await salvarCartaoManual(novoCard)
 
     const faturaValida = faturas.value.find(f => f.cartaoId === 'c-teste' && f.status === 'ABERTA')
@@ -75,5 +75,32 @@ describe('useCartoesEFaturas', () => {
     expect(atualizado?.method).toBe('card')
     expect(atualizado?.cardOwner).toBe('luan')
     expect(atualizado?.divisoes.length).toBe(2)
+  })
+
+  it('deve carregar gastos associados a faturas virtuais que nao estao explicitamente salvas no banco de faturas', async () => {
+    const { inicializar, gastos } = useCartoesEFaturas()
+    
+    // Cria um gasto direto com faturaId virtual no repositório local
+    const { LocalStorageGastoRepository } = await import('../models/repositories/local/LocalStorageGastoRepository')
+    const gRepo = new LocalStorageGastoRepository()
+    const { Dinheiro } = await import('../models/entities/Dinheiro')
+    const { Gasto } = await import('../models/entities/Gasto')
+    const { DivisaoDeGasto } = await import('../models/entities/DivisaoDeGasto')
+
+    const virtualGasto = new Gasto({
+      id: 'g-virtual-teste',
+      faturaId: 'virtual-pix-6-2026', // Fatura virtual de PIX futura
+      descricao: 'Gasto virtual futuro',
+      valorTotal: Dinheiro.deCentavos(5000),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(5000))]
+    })
+    await gRepo.salvar(virtualGasto)
+
+    // Inicializa o viewmodel
+    await inicializar()
+
+    // O gasto deve ser carregado globalmente
+    expect(gastos.value.some(g => g.id === 'g-virtual-teste')).toBe(true)
   })
 })

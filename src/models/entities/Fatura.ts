@@ -18,9 +18,9 @@ export function determinarPeriodoFatura(dataGasto: Date, diaFechamento: number):
   if (diaFechamento < 1 || diaFechamento > 31) {
     throw new Error('diaFechamento deve ser entre 1 e 31')
   }
-  const diaGasto = dataGasto.getUTCDate()
-  let mes = dataGasto.getUTCMonth() + 1
-  let ano = dataGasto.getUTCFullYear()
+  const diaGasto = dataGasto.getDate()
+  let mes = dataGasto.getMonth() + 1
+  let ano = dataGasto.getFullYear()
 
   // Se o dia do gasto for maior ou igual ao dia de fechamento, cai na fatura do mês seguinte
   if (diaGasto >= diaFechamento) {

@@ -91,7 +91,7 @@ const adicionarCard = async () => {
                 class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
               >
                 <div 
-                  v-for="d in 28" 
+                  v-for="d in 31" 
                   :key="d" 
                   @mousedown.prevent="diaFechamento = d; isDiaDropdownOpen = false" 
                   class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors"

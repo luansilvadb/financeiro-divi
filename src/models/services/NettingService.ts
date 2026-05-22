@@ -14,27 +14,38 @@ export function calcularSaldosUnificados(
   membros: { id: string }[],
   gastos: Gasto[]
 ): Record<string, number> {
-  const saldos: Record<string, number> = {}
-  membros.forEach(m => { saldos[m.id] = 0 })
+  const saldosCentavos: Record<string, number> = {}
+  membros.forEach(m => { saldosCentavos[m.id] = 0 })
 
   gastos.forEach(g => {
-    const valorParcela = g.valorTotal.centavos / g.installments
+    // O total de parcelas e parcelas restantes define qual índice de parcela estamos processando (0-indexed)
+    const parcelaAtualIdx = g.totalInstallments - g.installments
 
     if (g.isLoan) {
-      if (g.compradorId) saldos[g.compradorId] += valorParcela / 100
-      if (g.borrowerId) saldos[g.borrowerId] -= valorParcela / 100
+      const parcelasEmprestimo = g.valorTotal.distribuir(g.totalInstallments)
+      const valorParcelaCentavos = parcelasEmprestimo[parcelaAtualIdx].centavos
+      if (g.compradorId) saldosCentavos[g.compradorId] += valorParcelaCentavos
+      if (g.borrowerId) saldosCentavos[g.borrowerId] -= valorParcelaCentavos
     } else {
       const pagadorId = (g.method === 'card' && g.cardOwner) ? g.cardOwner : g.compradorId
-      if (pagadorId) saldos[pagadorId] += valorParcela / 100
 
+      let totalDebitosCentavos = 0
       g.divisoes.forEach(div => {
-        saldos[div.membroId] -= (div.valor.centavos / g.installments) / 100
+        const distribuicaoDiv = div.valor.distribuir(g.totalInstallments)
+        const valorDebitoCentavos = distribuicaoDiv[parcelaAtualIdx].centavos
+        saldosCentavos[div.membroId] -= valorDebitoCentavos
+        totalDebitosCentavos += valorDebitoCentavos
       })
+
+      if (pagadorId) {
+        saldosCentavos[pagadorId] += totalDebitosCentavos
+      }
     }
   })
 
-  for (const key in saldos) {
-    saldos[key] = Math.round(saldos[key] * 100) / 100
+  const saldos: Record<string, number> = {}
+  for (const key in saldosCentavos) {
+    saldos[key] = Math.round(saldosCentavos[key]) / 100
   }
 
   return saldos

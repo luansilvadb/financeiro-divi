@@ -18,6 +18,14 @@ const handleAdicionar = async () => {
     novoNome.value = ''
   }
 }
+
+const handleDesativar = async (id: string) => {
+  try {
+    await desativarMembro(id)
+  } catch (error: any) {
+    alert(error.message || 'Erro ao desativar morador')
+  }
+}
 </script>
 
 <template>
@@ -125,7 +133,7 @@ const handleAdicionar = async () => {
             v-if="membro.ativo"
             variant="secondary"
             size="icon"
-            @click="desativarMembro(membro.id)"
+            @click="handleDesativar(membro.id)"
             class="bg-coral/10 text-coral hover:bg-coral/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
             title="Desativar morador"
           >

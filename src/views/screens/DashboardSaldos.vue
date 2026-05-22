@@ -104,7 +104,10 @@ const {
   confirmarBaixaNetting,
   confirmarEstorno,
   estornarContaFixa,
-  formatarMesAno} = vm
+  formatarMesAno,
+  totalPeriodoSelecionado,
+  totalLancamentosPeriodoSelecionado,
+  reabrirPeriodoSelecionado} = vm
 
 // Lógica de scroll para o item selecionado (única lógica de UI pura/DOM mantida na View)
 const itemSelecionadoRef = ref<any>(null)
@@ -323,7 +326,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
           v-if="faturaSelecionadaTrancada"
           variant="secondary" 
           class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent"
-          @click="reabrirFaturaManual(faturaAtivaVisualizada.id)"
+          @click="reabrirPeriodoSelecionado"
         >
           Reabrir Mês
         </Button>
@@ -534,8 +537,8 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
         <div v-if="faturaAtivaVisualizada" class="grid grid-cols-2 gap-3">
           <div class="bg-parchment p-4 rounded-xl border border-stone">
             <p class="text-[10px] font-bold uppercase text-ash tracking-widest mb-1">Total do Mês</p>
-            <p class="text-2xl font-display text-charcoal break-words">R$ {{ formatarDinheiro(calcularTotalFatura(faturaAtivaVisualizada.id)).toFixed(2).replace('.', ',') }}</p>
-            <p class="text-[10px] text-ash font-medium mt-1">{{ gastosDaFatura(faturaAtivaVisualizada.id).length }} lançamentos registrados</p>
+            <p class="text-2xl font-display text-charcoal break-words">R$ {{ formatarDinheiro(totalPeriodoSelecionado).toFixed(2).replace('.', ',') }}</p>
+            <p class="text-[10px] text-ash font-medium mt-1">{{ totalLancamentosPeriodoSelecionado }} lançamentos registrados</p>
           </div>
           
           <div class="bg-parchment p-4 rounded-xl border border-stone">
@@ -545,7 +548,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
           </div>
         </div>
 
-        <div v-if="faturaAtivaVisualizada && contasFixas.some(c => !gastosDaFatura(faturaAtivaVisualizada.id).some(g => g.recurringBillId === c.id))" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start">
+        <div v-if="faturaAtivaVisualizada && contasFixas.some(c => !gastosFaturaSelecionada.some(g => g.recurringBillId === c.id))" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start">
           <div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
             <AlertTriangle class="w-3.5 h-3.5 text-amber-600" />
           </div>
@@ -585,6 +588,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
       :gasto="gastoParaAjustar"
       :membros="props.membros"
       :cartoes="props.cartoes"
+      :faturas="[...props.faturasAbertas, ...props.faturasFechadas]"
       @cancel="showBottomSheetAjustar = false"
       @save="confirmarAjusteGasto"
     />

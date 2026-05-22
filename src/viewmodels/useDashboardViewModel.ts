@@ -68,8 +68,70 @@ export function useDashboardViewModel(
     salvarPeriodoSelecionado(novos)
   }, { deep: true, immediate: true })
 
+  const faturasPeriodoSelecionado = computed(() => {
+    const p = periodoSelecionado.value
+    const faturasExistentes = [
+      ...props.faturasAbertas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano),
+      ...props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    ]
+    if (faturasExistentes.length === 0) {
+      return [
+        new Fatura({
+          id: `virtual-${p.mes}-${p.ano}`,
+          cartaoId: props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
+          periodo: { mes: p.mes, ano: p.ano },
+          responsavelId: props.membros[0]?.id || 'virtual-member',
+          status: 'ABERTA'
+        })
+      ]
+    }
+    return faturasExistentes
+  })
+
+  const faturasPeriodoIds = computed(() => {
+    const ids = faturasPeriodoSelecionado.value.map(f => f.id)
+    const pixId = faturaPixPeriodoSelecionado.value?.id
+    if (pixId && !ids.includes(pixId)) {
+      ids.push(pixId)
+    }
+    return ids
+  })
+
+  const faturaPixPeriodoSelecionado = computed(() => {
+    const p = periodoSelecionado.value
+    const faturaPix = props.faturasAbertas.find(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === p.mes && f.periodo.ano === p.ano) ||
+                      props.faturasFechadas.find(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    if (faturaPix) return faturaPix
+
+    return new Fatura({
+      id: `virtual-pix-${p.mes}-${p.ano}`,
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: p.mes, ano: p.ano },
+      responsavelId: 'PIX_SYSTEM_OWNER',
+      status: 'ABERTA'
+    })
+  })
+
   const faturaSelecionadaTrancada = computed(() => {
     const p = periodoSelecionado.value
+    const temFaturaPixAberta = props.faturasAbertas.some(f =>
+      f.cartaoId === 'PIX_DEFAULT_ID' &&
+      f.periodo.mes === p.mes &&
+      f.periodo.ano === p.ano
+    )
+
+    if (props.cartoes.length > 0) {
+      const todosCartoesFechados = props.cartoes.every(cartao =>
+        props.faturasFechadas.some(f =>
+          f.cartaoId === cartao.id &&
+          f.periodo.mes === p.mes &&
+          f.periodo.ano === p.ano
+        )
+      )
+      if (temFaturaPixAberta) return false
+      return todosCartoesFechados
+    }
+
     return props.faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
   })
 
@@ -85,7 +147,7 @@ export function useDashboardViewModel(
 
     return new Fatura({
       id: `virtual-${p.mes}-${p.ano}`,
-      cartaoId: props.cartoes[0]?.id || 'virtual-card',
+      cartaoId: props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
       periodo: { mes: p.mes, ano: p.ano },
       responsavelId: props.membros[0]?.id || 'virtual-member',
       status: 'ABERTA'
@@ -194,12 +256,12 @@ export function useDashboardViewModel(
   })
 
   const parcelasFuturasDetalhadas = computed(() => {
-    const fatAtiva = faturaAtivaVisualizada.value
-    if (!fatAtiva) return []
-    return gastosDaFatura(fatAtiva.id)
+    const ids = faturasPeriodoIds.value
+    const gastosDoPeriodo = globalGastos.value.filter(g => ids.includes(g.faturaId))
+    return gastosDoPeriodo
       .filter(g => g.installments > 1)
       .map(g => {
-        const valorParcela = g.valorTotal.centavos / g.installments
+        const valorParcela = g.valorTotal.centavos / g.totalInstallments
         const parcelasRestantes = g.installments - 1
         return {
           id: g.id,
@@ -214,15 +276,12 @@ export function useDashboardViewModel(
 
   // --- Dados Derivados ---
   const gastosFaturaSelecionada = computed(() => {
-    const fatId = faturaAtivaVisualizada.value?.id
-    if (!fatId) return []
-    return globalGastos.value.filter(g => g.faturaId === fatId)
+    const ids = faturasPeriodoIds.value
+    return globalGastos.value.filter(g => ids.includes(g.faturaId))
   })
 
   const saldosUnificadosAtivos = computed(() => {
-    const activeFaturaId = faturaAtivaVisualizada.value?.id
-    if (!activeFaturaId) return {}
-    const gastosPeriodo = globalGastos.value.filter(g => g.faturaId === activeFaturaId)
+    const gastosPeriodo = gastosFaturaSelecionada.value
     return calcularSaldosUnificados(props.membros, gastosPeriodo)
   })
 
@@ -285,7 +344,7 @@ export function useDashboardViewModel(
 
   const confirmarLancarBill = async (dados: { valorReal: number; compradorId: string; splitIds: string[] }) => {
     if (faturaSelecionadaTrancada.value) return
-    const activeFaturaId = faturaAtivaVisualizada.value?.id
+    const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
     await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
     showPopupLancar.value = false
@@ -323,7 +382,7 @@ export function useDashboardViewModel(
 
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
     if (faturaSelecionadaTrancada.value) return
-    const activeFaturaId = faturaAtivaVisualizada.value?.id
+    const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
 
     await localGastoService.registrarAcertoNetting({
@@ -366,10 +425,34 @@ export function useDashboardViewModel(
     }
   }
 
+  const totalPeriodoSelecionado = computed(() => {
+    const ids = faturasPeriodoIds.value
+    return ids.reduce((sum, id) => sum + calcularTotalFatura(id), 0)
+  })
+
+  const totalLancamentosPeriodoSelecionado = computed(() => {
+    return gastosFaturaSelecionada.value.length
+  })
+
+  const reabrirPeriodoSelecionado = async () => {
+    const p = periodoSelecionado.value
+    const faturasDoPeriodo = props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    for (const fatura of faturasDoPeriodo) {
+      await reabrirFaturaManual(fatura.id)
+    }
+    await cartoesEFaturas.inicializar()
+  }
+
   return {
     periodoSelecionado,
     faturaSelecionadaTrancada,
     faturaAtivaVisualizada,
+    faturasPeriodoSelecionado,
+    faturasPeriodoIds,
+    faturaPixPeriodoSelecionado,
+    totalPeriodoSelecionado,
+    totalLancamentosPeriodoSelecionado,
+    reabrirPeriodoSelecionado,
     listaMesesSeletor,
     mesesAbertosOpcoes,
     mesesTrancadosOpcoes,

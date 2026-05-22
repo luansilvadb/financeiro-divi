@@ -5,4 +5,5 @@ export interface IGastoRepository {
   buscarPorId(id: string): Promise<Gasto | null>
   salvar(gasto: Gasto): Promise<void>
   excluir(id: string): Promise<void>
+  listarTodos(): Promise<Gasto[]>
 }

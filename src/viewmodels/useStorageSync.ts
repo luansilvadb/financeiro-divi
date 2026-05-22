@@ -25,6 +25,8 @@ const handleStorage = (e: StorageEvent) => {
     reloadCartoes()
   } else if (e.key === 'divi_contas_fixas_templates_v18') {
     reloadContasFixas()
+  } else if (e.key === 'divi_periodo_selecionado') {
+    window.location.reload()
   }
 }
 

@@ -9,7 +9,8 @@ describe('FaturaRolloverService', () => {
   it('deve processar rollover de parcelas corretas', () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const service = new FaturaRolloverService(mockFaturaRepo, mockGastoRepo)
+    const mockFaturaService = { fecharFatura: vi.fn(), reabrirFatura: vi.fn(), assegurarFaturasAbertas: vi.fn() }
+    const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
 
     const gastoParcelado = new Gasto({
       id: 'g1',
@@ -36,7 +37,6 @@ describe('FaturaRolloverService', () => {
 
     const novosGastos = service.processarRolloverParcelas('f-nova', [gastoParcelado, gastoGrupoParcela])
 
-    // Deve processar apenas o gasto que NÃO tem grupoParcelasId
     expect(novosGastos.length).toBe(1)
     expect(novosGastos[0].faturaId).toBe('f-nova')
     expect(novosGastos[0].installments).toBe(2)
@@ -46,20 +46,19 @@ describe('FaturaRolloverService', () => {
   it('deve gerar transacoes de netting de saldo inicial corretamente', () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const service = new FaturaRolloverService(mockFaturaRepo, mockGastoRepo)
+    const mockFaturaService = { fecharFatura: vi.fn(), reabrirFatura: vi.fn(), assegurarFaturasAbertas: vi.fn() }
+    const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
 
     const saldos = {
-      m1: 100, // Credor (a receber)
-      m2: -60,  // Devedor (a pagar)
-      m3: -40   // Devedor (a pagar)
+      m1: 100,
+      m2: -60,
+      m3: -40
     }
 
     const carryovers = service.gerarTransacoesNettingSaldoInicial('f-nova', 'Maio 2026', saldos)
 
     expect(carryovers.length).toBe(2)
 
-    // O credor (m1) deve constar como compradorId (quem paga/recebe na modelagem do carryover)
-    // O devedor deve constar na divisão
     const carry1 = carryovers.find(c => c.divisoes[0].membroId === 'm2')
     const carry2 = carryovers.find(c => c.divisoes[0].membroId === 'm3')
 
@@ -77,8 +76,7 @@ describe('FaturaRolloverService', () => {
   it('deve fechar faturas antigas e criar novas faturas no rollover de periodo', async () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const service = new FaturaRolloverService(mockFaturaRepo, mockGastoRepo)
-
+    
     const faturaAntiga = new Fatura({
       id: 'f-antiga',
       cartaoId: 'c1',
@@ -86,6 +84,16 @@ describe('FaturaRolloverService', () => {
       responsavelId: 'm1',
       status: 'ABERTA'
     })
+
+    const mockFaturaService = {
+      fecharFatura: vi.fn().mockImplementation(async (id, respId, date) => {
+        faturaAntiga.fechar({ responsavelId: respId, dataPagamentoBanco: date })
+      }),
+      reabrirFatura: vi.fn(),
+      assegurarFaturasAbertas: vi.fn()
+    }
+
+    const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
 
     mockGastoRepo.buscarPorFatura.mockResolvedValue([])
 
@@ -97,8 +105,8 @@ describe('FaturaRolloverService', () => {
       nomePeriodoAnterior: 'Maio 2026'
     })
 
-    // Deve fechar fatura antiga
+    expect(mockFaturaService.fecharFatura).toHaveBeenCalledWith('f-antiga', 'm1', expect.any(Date))
     expect(faturaAntiga.status).toBe('FECHADA')
-    expect(mockFaturaRepo.salvar).toHaveBeenCalledTimes(2) // 1 para fechar, 1 para salvar a nova fatura
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledTimes(2) // 1 para Pix default, 1 para a nova do cartão (a antiga é fechada via faturaService)
   })
 })

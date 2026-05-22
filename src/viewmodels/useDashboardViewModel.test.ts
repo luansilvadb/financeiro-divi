@@ -11,6 +11,7 @@ import { AcertoMembro } from '../models/entities/AcertoMembro'
 const mockCartoesEFaturas = {
   registrarReembolsoParcialManual: vi.fn(),
   fecharFaturaManual: vi.fn(),
+  reabrirFaturaManual: vi.fn(),
   quitarAcertoMembro: vi.fn(),
   atualizarGastoCompletoManual: vi.fn(),
   gastos: ref([]),
@@ -155,6 +156,61 @@ describe('useDashboardViewModel', () => {
     localStorage.setItem('divi_periodo_selecionado', JSON.stringify({ mes: 5, ano: 2026 }))
     const emit = vi.fn()
     const vm = createViewModel(propsComFaturaFechada, emit)
+    expect(vm.faturaSelecionadaTrancada.value).toBe(true)
+    expect(emit).toHaveBeenCalledWith('periodoStatusChanged', true)
+  })
+
+  it('should not lock period if one of multiple cards has its invoice closed and others are open', () => {
+    const propsComMultiplosCartoes: DashboardProps = {
+      ...dummyProps,
+      cartoes: [
+        new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' }),
+        new Cartao({ id: 'c2', nome: 'Inter', diaFechamento: 15, responsavelPadraoId: 'm1' })
+      ],
+      faturasFechadas: [
+        new Fatura({
+          id: 'f-mock-fechada-1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
+    }
+    localStorage.setItem('divi_periodo_selecionado', JSON.stringify({ mes: 5, ano: 2026 }))
+    const emit = vi.fn()
+    const vm = createViewModel(propsComMultiplosCartoes, emit)
+    expect(vm.faturaSelecionadaTrancada.value).toBe(false)
+    expect(emit).toHaveBeenCalledWith('periodoStatusChanged', false)
+  })
+
+  it('should lock period if all of multiple cards have their invoices closed', () => {
+    const propsComTodosFechados: DashboardProps = {
+      ...dummyProps,
+      cartoes: [
+        new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' }),
+        new Cartao({ id: 'c2', nome: 'Inter', diaFechamento: 15, responsavelPadraoId: 'm1' })
+      ],
+      faturasFechadas: [
+        new Fatura({
+          id: 'f-mock-fechada-1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        }),
+        new Fatura({
+          id: 'f-mock-fechada-2',
+          cartaoId: 'c2',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ]
+    }
+    localStorage.setItem('divi_periodo_selecionado', JSON.stringify({ mes: 5, ano: 2026 }))
+    const emit = vi.fn()
+    const vm = createViewModel(propsComTodosFechados, emit)
     expect(vm.faturaSelecionadaTrancada.value).toBe(true)
     expect(emit).toHaveBeenCalledWith('periodoStatusChanged', true)
   })
@@ -439,5 +495,64 @@ describe('useDashboardViewModel', () => {
     expect(mockUseContasFixasSpy).toHaveBeenCalledWith(expect.objectContaining({
       contaFixaRepository: customContaFixaRepo
     }))
+  })
+
+  it('should consolidate expenses from multiple invoices of the same period in gastosFaturaSelecionada', () => {
+    const propsComMultiplasFaturas: DashboardProps = {
+      ...dummyProps,
+      faturasAbertas: [
+        new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }),
+        new Fatura({ id: 'f2', cartaoId: 'c2', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+      ]
+    }
+    mockCartoesEFaturas.gastos.value = [
+      { id: 'g1', faturaId: 'f1', descricao: 'Gasto Cartão 1', divisoes: [] },
+      { id: 'g2', faturaId: 'f2', descricao: 'Gasto Cartão 2', divisoes: [] },
+      { id: 'g3', faturaId: 'f3', descricao: 'Gasto de Outro Mes', divisoes: [] }
+    ] as any
+
+    const vm = createViewModel(propsComMultiplasFaturas, vi.fn())
+    vm.periodoSelecionado.value = { mes: 5, ano: 2026 }
+
+    expect(vm.gastosFaturaSelecionada.value.length).toBe(2)
+    expect(vm.gastosFaturaSelecionada.value.map((g: any) => g.id)).toContain('g1')
+    expect(vm.gastosFaturaSelecionada.value.map((g: any) => g.id)).toContain('g2')
+  })
+
+  it('should call reabrirFaturaManual for all closed invoices of the period on reabrirPeriodoSelecionado', async () => {
+    const propsComFaturasFechadas: DashboardProps = {
+      ...dummyProps,
+      faturasFechadas: [
+        new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' }),
+        new Fatura({ id: 'f2', cartaoId: 'c2', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+      ]
+    }
+    const vm = createViewModel(propsComFaturasFechadas, vi.fn())
+    vm.periodoSelecionado.value = { mes: 5, ano: 2026 }
+
+    await vm.reabrirPeriodoSelecionado()
+
+    expect(mockCartoesEFaturas.reabrirFaturaManual).toHaveBeenCalledWith('f1')
+    expect(mockCartoesEFaturas.reabrirFaturaManual).toHaveBeenCalledWith('f2')
+    expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
+  })
+
+  it('should include virtual pix invoice expenses in gastosFaturaSelecionada even if no database invoice exists', () => {
+    const propsSemFaturas: DashboardProps = {
+      ...dummyProps,
+      faturasAbertas: [],
+      faturasFechadas: []
+    }
+    
+    mockCartoesEFaturas.gastos.value = [
+      { id: 'g-pix-virtual', faturaId: 'virtual-pix-6-2026', descricao: 'Reprepasse Netting', divisoes: [] }
+    ] as any
+
+    const vm = createViewModel(propsSemFaturas, vi.fn())
+    vm.periodoSelecionado.value = { mes: 6, ano: 2026 }
+
+    expect(vm.faturasPeriodoIds.value).toContain('virtual-pix-6-2026')
+    expect(vm.gastosFaturaSelecionada.value.length).toBe(1)
+    expect(vm.gastosFaturaSelecionada.value[0].id).toBe('g-pix-virtual')
   })
 })

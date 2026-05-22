@@ -27,17 +27,24 @@ export class FaturaService implements IFaturaService {
     const consumoMembros: Record<string, number> = {}
 
     for (const g of gastos) {
-      if (g.isSettlement) continue
-
-      const divisor = g.totalInstallments || g.installments || 1
-      for (const div of g.divisoes) {
-        const valorParcelaCentavos = Math.round(div.valor.centavos / divisor)
-        consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcelaCentavos
+      if (g.isSettlement) {
+        consumoMembros[g.compradorId] = (consumoMembros[g.compradorId] || 0) - g.valorTotal.centavos
+        for (const div of g.divisoes) {
+          consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + div.valor.centavos
+        }
+      } else {
+        const divisor = g.totalInstallments || g.installments || 1
+        const index = divisor - g.installments
+        for (const div of g.divisoes) {
+          const parcelas = div.valor.distribuir(divisor)
+          const valorParcelaCentavos = parcelas[index].centavos
+          consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcelaCentavos
+        }
       }
     }
 
     for (const [membroId, centavos] of Object.entries(consumoMembros)) {
-      if (centavos > 0) {
+      if (centavos !== 0) {
         const acerto = new AcertoMembro({
           id: crypto.randomUUID(),
           faturaId,

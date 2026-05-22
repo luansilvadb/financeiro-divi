@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../viewmodels/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../viewmodels/useCartoesEFaturas'
+import { obterPeriodoSelecionado } from '../../shared/utils/periodoStorage'
 import {
   Wallet,
   CreditCard,
@@ -18,11 +19,20 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['salvar', 'cancelar'])
 
-const { cartoes, inicializar: inicializarCartoes } = useCartoesEFaturas()
+const { cartoes, faturasFechadas, inicializar: inicializarCartoes } = useCartoesEFaturas()
 
 onMounted(async () => {
   await inicializarCartoes()
 })
+
+const isCartaoTrancado = (cartaoId: string) => {
+  const p = obterPeriodoSelecionado()
+  return faturasFechadas.value.some(f =>
+    f.cartaoId === cartaoId &&
+    f.periodo.mes === p.mes &&
+    f.periodo.ano === p.ano
+  )
+}
 
 const {
   step,
@@ -191,14 +201,18 @@ const handleGravar = async () => {
             <button
               v-for="c in cartoes"
               :key="c.id"
-              @click="selecionarFluxo('expense', 'card', c.responsavelPadraoId)"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
+              :disabled="isCartaoTrancado(c.id)"
+              @click="selecionarFluxo('expense', 'card', c.id)"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
                 <CreditCard class="w-5 h-5" />
               </div>
-              <div class="min-w-0">
-                <strong class="block text-[15px] font-semibold text-charcoal tracking-[-0.2px]">Cartão {{ c.nome }}</strong>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <strong class="text-[15px] font-semibold text-charcoal tracking-[-0.2px]">Cartão {{ c.nome }}</strong>
+                  <span v-if="isCartaoTrancado(c.id)" class="text-[9px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded border border-coral/20 shrink-0">FATURA FECHADA</span>
+                </div>
                 <span class="text-xs text-ash">Despesa sob fatura</span>
               </div>
             </button>

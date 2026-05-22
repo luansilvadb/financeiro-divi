@@ -12,6 +12,7 @@ interface Props {
   gasto: Gasto | null
   membros: { id: string; nome: string }[]
   cartoes: { id: string; nome: string; responsavelPadraoId: string }[]
+  faturas?: { id: string; cartaoId: string }[]
 }
 
 const props = defineProps<Props>()
@@ -32,7 +33,24 @@ watch(() => props.gasto, (newG) => {
     valorInput.value = newG.valorTotal.centavos / 100
     quemPaga.value = newG.compradorId
     activeMethod.value = newG.method
-    activeCardOwner.value = newG.cardOwner
+    
+    let cardIdResolved: string | null = null
+    if (newG.method === 'card') {
+      if (newG.faturaId && props.faturas) {
+        const fat = props.faturas.find(f => f.id === newG.faturaId)
+        if (fat) {
+          cardIdResolved = fat.cartaoId
+        }
+      }
+      if (!cardIdResolved && newG.cardOwner) {
+        const card = props.cartoes.find(c => c.id === newG.cardOwner || c.responsavelPadraoId === newG.cardOwner)
+        if (card) {
+          cardIdResolved = card.id
+        }
+      }
+    }
+    activeCardOwner.value = cardIdResolved
+
     selectedSplit.value = newG.divisoes.map(d => d.membroId)
     installmentsInput.value = newG.installments || 1
   }
@@ -197,9 +215,9 @@ const handleConfirm = () => {
               <button 
                 v-for="c in props.cartoes"
                 :key="c.id"
-                @click="selectMethod('card', c.responsavelPadraoId)"
+                @click="selectMethod('card', c.id)"
                 class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === c.responsavelPadraoId ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
+                :class="activeMethod === 'card' && activeCardOwner === c.id ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
               >
                 <CreditCard class="w-4 h-4" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.nome }}</span>

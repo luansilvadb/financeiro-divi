@@ -54,7 +54,8 @@ export class GastoService implements IGastoService {
         descricao,
         compradorId,
         installments,
-        cardOwner: resolvedCardOwner
+        cardOwner: resolvedCardOwner,
+        responsavelFaturaId
       })
     } else {
       const novoGasto = new Gasto({
@@ -121,8 +122,9 @@ export class GastoService implements IGastoService {
     compradorId: string
     installments: number
     cardOwner: string | null
+    responsavelFaturaId: string
   }): Promise<void> {
-    const { total, divisoes, faturaAtiva, descricao, compradorId, installments, cardOwner } = dados
+    const { total, divisoes, faturaAtiva, descricao, compradorId, installments, cardOwner, responsavelFaturaId } = dados
     const grupoParcelasId = crypto.randomUUID()
 
     const primeiroGasto = this.construirGasto({
@@ -151,7 +153,7 @@ export class GastoService implements IGastoService {
         currentAno++
       }
 
-      const faturaFutura = await this.obterOuCriarFatura(faturaAtiva.cartaoId, currentMes, currentAno, compradorId)
+      const faturaFutura = await this.obterOuCriarFatura(faturaAtiva.cartaoId, currentMes, currentAno, responsavelFaturaId)
       const gastoFuturo = this.construirGasto({
         faturaId: faturaFutura.id,
         descricao,

@@ -55,7 +55,7 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
     })
   }
 
-  private async listarTodos(): Promise<AcertoMembro[]> {
+  async listarTodos(): Promise<AcertoMembro[]> {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
     try {

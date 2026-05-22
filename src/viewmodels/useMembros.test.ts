@@ -87,7 +87,7 @@ describe('useMembros', () => {
 
     await desativarMembro('m-ativo')
 
-    expect(mockService.desativarMembro).toHaveBeenCalledWith('m-ativo')
+    expect(mockService.desativarMembro).toHaveBeenCalledWith('m-ativo', expect.any(Object))
     expect(ativos.value.length).toBe(0)
   })
 })

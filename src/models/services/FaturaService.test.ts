@@ -55,12 +55,12 @@ describe('FaturaService', () => {
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
       faturaId: 'f1',
       membroId: 'm1',
-      totalConsumido: expect.objectContaining({ centavos: 7000 })
+      totalConsumido: expect.objectContaining({ centavos: 2000 })
     }))
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
       faturaId: 'f1',
       membroId: 'm2',
-      totalConsumido: expect.objectContaining({ centavos: 7000 })
+      totalConsumido: expect.objectContaining({ centavos: 12000 })
     }))
   })
 
