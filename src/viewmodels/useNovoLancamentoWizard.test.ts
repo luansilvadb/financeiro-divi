@@ -254,7 +254,7 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
   })
 
   it('deve tolerar diferenca de ate 1 centavo por arredondamento em divisao manual', () => {
-    const [{ step, wizFlow, compradorSelecionadoId, valor, descricao, modoDivisaoWizard, participantesDivisao, valoresDivisaoWizard, canAdvance, next }] = withSetup(() => 
+    const [{ step, wizFlow, compradorSelecionadoId, valor, descricao, modoDivisaoWizard, participantesDivisao, valoresDivisaoWizard, canAdvance }] = withSetup(() => 
       useNovoLancamentoWizard(['luan', 'maria', 'joao'].map(id => ({ id, nome: id })))
     )
 
