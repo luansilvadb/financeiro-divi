@@ -304,18 +304,27 @@ export function useDashboardViewModel(
     return globalGastos.value.filter(g => ids.includes(g.faturaId))
   })
 
-  const saldosUnificadosAtivos = computed(() => {
+  const saldosUnificadosAtivosCentavos = computed(() => {
     const gastosPeriodo = gastosFaturaSelecionada.value
     return calcularSaldosUnificados(props.membros, gastosPeriodo)
   })
 
-  const nettingTransferencias = computed(() => calcularTransacoesNetting(saldosUnificadosAtivos.value))
+  const saldosUnificadosAtivos = computed(() => {
+    const centavos = saldosUnificadosAtivosCentavos.value
+    const reais: Record<string, number> = {}
+    for (const key in centavos) {
+      reais[key] = centavos[key] / 100
+    }
+    return reais
+  })
+
+  const nettingTransferencias = computed(() => calcularTransacoesNetting(saldosUnificadosAtivosCentavos.value))
 
   const membrosVisiveis = computed(() => {
     return props.membros.filter(m => {
       if (m.ativo !== false) return true
-      const saldo = saldosUnificadosAtivos.value[m.id] || 0
-      return Math.abs(saldo) > 0.005
+      const saldoCentavos = saldosUnificadosAtivosCentavos.value[m.id] || 0
+      return Math.abs(saldoCentavos) > 0
     })
   })
 
@@ -389,7 +398,7 @@ export function useDashboardViewModel(
       nomeNovoPeriodo: nomeNovoPeriodoVal,
       faturasAbertas: faturasAbertasVisualizadas,
       cartoes: props.cartoes,
-      saldosAcumulados: saldosUnificadosAtivos.value,
+      saldosAcumulados: saldosUnificadosAtivosCentavos.value,
       nomePeriodoAnterior: currentMonthName.value
     })
 

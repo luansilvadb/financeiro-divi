@@ -63,27 +63,23 @@ export function calcularSaldosUnificados(
     }
   })
 
-  const saldos: Record<string, number> = {}
-  for (const key in saldosCentavos) {
-    saldos[key] = Math.round(saldosCentavos[key]) / 100
-  }
-
-  return saldos
+  // Retorna diretamente o saldo em centavos para preservar precisão absoluta
+  return saldosCentavos
 }
 
 /**
  * Algoritmo guloso de netting: gera o conjunto mínimo de transferências
- * para zerar os saldos entre membros.
+ * para zerar os saldos entre membros trabalhando em centavos inteiros absolutos.
  */
-export function calcularTransacoesNetting(saldos: Record<string, number>): TransferenciaNetting[] {
+export function calcularTransacoesNetting(saldosCentavos: Record<string, number>): TransferenciaNetting[] {
   const creditors: { id: string; val: number }[] = []
   const debtors: { id: string; val: number }[] = []
 
-  for (const mId in saldos) {
-    const val = saldos[mId]
-    if (val > 0.005) {
+  for (const mId in saldosCentavos) {
+    const val = saldosCentavos[mId]
+    if (val > 0) {
       creditors.push({ id: mId, val })
-    } else if (val < -0.005) {
+    } else if (val < 0) {
       debtors.push({ id: mId, val: -val })
     }
   }
@@ -100,19 +96,19 @@ export function calcularTransacoesNetting(saldos: Record<string, number>): Trans
     const debtor = debtors[dIdx]
     const amount = Math.min(creditor.val, debtor.val)
 
-    if (amount > 0.005) {
+    if (amount > 0) {
       transferencias.push({
         from: debtor.id,
         to: creditor.id,
-        val: Math.round(amount * 100) / 100
+        val: amount / 100 // Exposto em Reais para a visualização externa
       })
     }
 
     creditor.val -= amount
     debtor.val -= amount
 
-    if (creditor.val < 0.005) cIdx++
-    if (debtor.val < 0.005) dIdx++
+    if (creditor.val === 0) cIdx++
+    if (debtor.val === 0) dIdx++
   }
 
   return transferencias

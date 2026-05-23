@@ -47,9 +47,9 @@ describe('NettingService', () => {
 
     const saldos = calcularSaldosUnificados(membros, gastosList)
     
-    expect(saldos['luciana']).toBeCloseTo(10.00, 2)
-    expect(saldos['luan']).toBeCloseTo(80.00, 2)
-    expect(saldos['joao']).toBeCloseTo(-90.00, 2)
+    expect(saldos['luciana']).toBe(1000)
+    expect(saldos['luan']).toBe(8000)
+    expect(saldos['joao']).toBe(-9000)
 
     const transferencias = calcularTransacoesNetting(saldos)
     expect(transferencias.length).toBe(2)
@@ -82,9 +82,9 @@ describe('NettingService', () => {
 
     const saldos = calcularSaldosUnificados(membros, [gastoParcelado])
 
-    // Deve cobrar/creditar apenas o valor da parcela (R$ 50) e suas divisões (R$ 25 cada)
-    expect(saldos['luan']).toBeCloseTo(25.00, 2)
-    expect(saldos['joao']).toBeCloseTo(-25.00, 2)
+    // Deve cobrar/creditar apenas o valor da parcela (R$ 50) e suas divisões (R$ 25 cada) em centavos
+    expect(saldos['luan']).toBe(2500)
+    expect(saldos['joao']).toBe(-2500)
   })
 
   it('deve retornar transferencias vazias quando todos os saldos são zero', () => {
@@ -118,10 +118,10 @@ describe('NettingService', () => {
 
     const saldos1 = calcularSaldosUnificados(membros, [gasto1])
     const soma1 = Object.values(saldos1).reduce((acc, v) => acc + v, 0)
-    expect(soma1).toBe(0) // Deve ser exatamente 0.00
-    expect(saldos1['A']).toBe(0.34) // Crédito de 0.51 (B:0.17 + C:0.17) - 0.17 (sua parte) = 0.34
-    expect(saldos1['B']).toBe(-0.17)
-    expect(saldos1['C']).toBe(-0.17)
+    expect(soma1).toBe(0) // Deve ser exatamente 0 em centavos
+    expect(saldos1['A']).toBe(34) // Crédito de 34 centavos
+    expect(saldos1['B']).toBe(-17)
+    expect(saldos1['C']).toBe(-17)
 
     // Segunda parcela (installments = 1, totalInstallments = 2)
     const gasto2 = new Gasto({
@@ -144,10 +144,10 @@ describe('NettingService', () => {
 
     const saldos2 = calcularSaldosUnificados(membros, [gasto2])
     const soma2 = Object.values(saldos2).reduce((acc, v) => acc + v, 0)
-    expect(soma2).toBe(0) // Deve ser exatamente 0.00
-    expect(saldos2['A']).toBe(0.32) // Crédito de 0.49 (B:0.16 + C:0.16) - 0.17 (sua parte) = 0.32
-    expect(saldos2['B']).toBe(-0.16)
-    expect(saldos2['C']).toBe(-0.16)
+    expect(soma2).toBe(0) // Deve ser exatamente 0 em centavos
+    expect(saldos2['A']).toBe(32) // Crédito de 32 centavos
+    expect(saldos2['B']).toBe(-16)
+    expect(saldos2['C']).toBe(-16)
   })
 
   it('deve lidar com indices invalidos (installments > totalInstallments) sem quebrar e tratar como 0', () => {
@@ -165,8 +165,8 @@ describe('NettingService', () => {
 
     // Não deve lançar erro
     const saldos = calcularSaldosUnificados(membros, [gastoInvalido])
-    expect(saldos['A']).toBe(5)
-    expect(saldos['B']).toBe(-5)
+    expect(saldos['A']).toBe(500)
+    expect(saldos['B']).toBe(-500)
   })
 
   it('deve lidar com membros ausentes ou desativados inicializando-os na lista de saldos para evitar NaN', () => {
@@ -182,7 +182,7 @@ describe('NettingService', () => {
     })
 
     const saldos = calcularSaldosUnificados(membrosAtivos, [gasto])
-    expect(saldos['A']).toBe(10)
-    expect(saldos['B']).toBe(-10) // B foi inserido dinamicamente no mapa de saldos sem gerar NaN
+    expect(saldos['A']).toBe(1000)
+    expect(saldos['B']).toBe(-1000) // B foi inserido dinamicamente no mapa de saldos sem gerar NaN
   })
 })
