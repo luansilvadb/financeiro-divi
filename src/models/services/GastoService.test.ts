@@ -294,7 +294,7 @@ describe('GastoService', () => {
     expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
   })
 
-  it('deve excluir todos os gastos do grupo (em cascata) quando um gasto do grupo eh excluido', async () => {
+  it('deve impedir exclusão da parcela mãe se existirem parcelas subsequentes ativas', async () => {
     const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const mockFaturaRepo = criarMockFaturaRepo()
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
@@ -305,7 +305,7 @@ describe('GastoService', () => {
       descricao: 'Original 1/2',
       valorTotal: Dinheiro.deReais(100),
       compradorId: 'm1',
-      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(5000)), new DivisaoDeGasto('m2', Dinheiro.deCentavos(5000))],
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
       method: 'card',
       cardOwner: 'm1',
       installments: 2,
@@ -319,7 +319,7 @@ describe('GastoService', () => {
       descricao: 'Original 2/2',
       valorTotal: Dinheiro.deReais(100),
       compradorId: 'm1',
-      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(5000)), new DivisaoDeGasto('m2', Dinheiro.deCentavos(5000))],
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
       method: 'card',
       cardOwner: 'm1',
       installments: 1,
@@ -327,13 +327,18 @@ describe('GastoService', () => {
       grupoParcelasId: 'grupo-x'
     })
 
-    mockGastoRepo.buscarPorId.mockResolvedValue(g1)
+    mockGastoRepo.buscarPorId.mockImplementation(async (id) => {
+      if (id === 'g1') return g1
+      if (id === 'g2') return g2
+      return null
+    })
     mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
 
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
-    await service.excluirGasto('g1')
-
-    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g1', 'g2'])
+    
+    await expect(service.excluirGasto('g1')).rejects.toThrow(
+      'Não é possível excluir esta parcela pois existem parcelas subsequentes ativas. Exclua as parcelas futuras deste gasto primeiro.'
+    )
   })
 
   it('deve remover a associacao de conta fixa anulando o recurringBillId de gastos correspondentes', async () => {
@@ -402,7 +407,7 @@ describe('GastoService', () => {
     await expect(service.excluirGasto('g1')).rejects.toThrow('Fatura não está ABERTA')
   })
 
-  it('deve excluir apenas parcelas em faturas abertas ao excluir grupo de parcelas', async () => {
+  it('deve permitir a exclusão individual de uma parcela se ela for a última e bloquear se a fatura estiver fechada', async () => {
     const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const mockFaturaRepo = criarMockFaturaRepo()
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
@@ -413,8 +418,11 @@ describe('GastoService', () => {
     const faturaFechada = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     const faturaAberta = new Fatura({ id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
 
-    mockGastoRepo.buscarPorId.mockResolvedValue(g1)
-    mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
+    mockGastoRepo.buscarPorId.mockImplementation(async (id) => {
+      if (id === 'g1') return g1
+      if (id === 'g2') return g2
+      return null
+    })
     
     mockFaturaRepo.buscarPorId.mockImplementation(async (id) => {
       if (id === 'f1') return faturaFechada
@@ -422,10 +430,15 @@ describe('GastoService', () => {
       return null
     })
 
+    // 1. Excluir g2 (a última, aberta) -> deve ser permitido individualmente
+    mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
-    await service.excluirGasto('g1')
+    await service.excluirGasto('g2')
+    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g2')
 
-    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g2'])
+    // 2. Tentar excluir g1 (agora sem g2 na lista) -> deve ser bloqueado porque a fatura está FECHADA
+    mockGastoRepo.listarTodos.mockResolvedValue([g1])
+    await expect(service.excluirGasto('g1')).rejects.toThrow('Fatura não está ABERTA')
   })
 
   it('deve lancar erro ao tentar atualizar gasto simples em fatura fechada', async () => {
@@ -908,6 +921,39 @@ describe('GastoService', () => {
     })).rejects.toThrow(
       'Este lançamento faz parte de um parcelamento. Para editá-lo, acesse a primeira parcela no período de origem do gasto.'
     )
+  })
+
+  it('deve impedir a exclusão de uma parcela se houver parcelas subsequentes ativas no grupo', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const g1 = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'P1', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 2, totalInstallments: 2 })
+    const g2 = new Gasto({ id: 'g2', faturaId: 'f2', descricao: 'P2', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 1, totalInstallments: 2 })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(g1)
+    mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
+
+    const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
+    await expect(service.excluirGasto('g1')).rejects.toThrow(
+      'Não é possível excluir esta parcela pois existem parcelas subsequentes ativas. Exclua as parcelas futuras deste gasto primeiro.'
+    )
+  })
+
+  it('deve permitir a exclusão individual de uma parcela se ela for a última ativa no grupo', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const g1 = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'P1', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 2, totalInstallments: 2 })
+    const g2 = new Gasto({ id: 'g2', faturaId: 'f2', descricao: 'P2', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 1, totalInstallments: 2 })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(g2)
+    mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
+
+    const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
+    await service.excluirGasto('g2')
+    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g2')
   })
 })
 

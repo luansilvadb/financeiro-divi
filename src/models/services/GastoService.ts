@@ -235,25 +235,23 @@ export class GastoService implements IGastoService {
     }
 
     if (gasto.grupoParcelasId) {
-      const todos = await this.gastoRepo.listarTodos()
+      const todos = (await this.gastoRepo.listarTodos()) || []
       const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
-      const idsParaDeletar: string[] = []
-      const periodosAfetados: { mes: number; ano: number }[] = []
 
-      for (const g of grupo) {
-        const fatura = await this.faturaRepo.buscarPorId(g.faturaId)
-        if (!fatura || fatura.status === 'ABERTA') {
-          idsParaDeletar.push(g.id)
-          if (fatura) {
-            periodosAfetados.push({ mes: fatura.periodo.mes, ano: fatura.periodo.ano })
-          }
-        }
+      const temSubsequente = grupo.some(g => g.id !== gasto.id && g.installments < gasto.installments)
+      if (temSubsequente) {
+        throw new Error(
+          'Não é possível excluir esta parcela pois existem parcelas subsequentes ativas. Exclua as parcelas futuras deste gasto primeiro.'
+        )
       }
-      if (idsParaDeletar.length > 0) {
-        await this.gastoRepo.excluirMuitos(idsParaDeletar)
-        for (const p of periodosAfetados) {
-          await this.limparNettingDoPeriodo(p.mes, p.ano)
-        }
+
+      const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
+      if (fatura && typeof fatura.validarOperacaoPermitida === 'function') {
+        fatura.validarOperacaoPermitida()
+      }
+      await this.gastoRepo.excluir(id)
+      if (fatura) {
+        await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
       }
     } else {
       const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
