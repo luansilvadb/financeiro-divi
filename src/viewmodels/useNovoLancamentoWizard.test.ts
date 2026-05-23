@@ -107,6 +107,12 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
   })
 
   it('deve projetar parcelas futuras imediatamente ao salvar um gasto parcelado no cartão', async () => {
+    const { LocalStorageMembroRepository } = await import('../models/repositories/local/LocalStorageMembroRepository')
+    const mRepo = new LocalStorageMembroRepository()
+    const { Membro } = await import('../models/entities/Membro')
+    await mRepo.salvar(new Membro({ id: 'luan', nome: 'Luan', ativo: true }))
+    await mRepo.salvar(new Membro({ id: 'maria', nome: 'Maria', ativo: true }))
+
     const [{ wizFlow, wizPayment, wizCardOwner, compradorSelecionadoId, valor, descricao, installments, finalizarGastoOuEmprestimo }] = withSetup(() => 
       useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id })))
     )

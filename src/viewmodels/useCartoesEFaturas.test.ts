@@ -21,6 +21,13 @@ describe('useCartoesEFaturas', () => {
   })
 
   it('deve atualizar um gasto completo e persistir as alterações no repositório', async () => {
+    const { LocalStorageMembroRepository } = await import('../models/repositories/local/LocalStorageMembroRepository')
+    const mRepo = new LocalStorageMembroRepository()
+    const { Membro } = await import('../models/entities/Membro')
+    await mRepo.salvar(new Membro({ id: 'm1', nome: 'Membro Um', ativo: true }))
+    await mRepo.salvar(new Membro({ id: 'm2', nome: 'Membro Dois', ativo: true }))
+    await mRepo.salvar(new Membro({ id: 'luan', nome: 'Luan Silva', ativo: true }))
+
     const { inicializar, faturas, gastos, salvarCartaoManual, atualizarGastoCompletoManual } = useCartoesEFaturas()
     await inicializar()
     
