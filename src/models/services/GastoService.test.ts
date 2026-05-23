@@ -582,7 +582,7 @@ describe('GastoService', () => {
     mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
     mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoPendente])
 
-    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, mockAcertoRepo as any)
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
     
     await service.registrarAcertoNetting({
       faturaId: 'f-fevereiro',
@@ -659,6 +659,126 @@ describe('GastoService', () => {
     expect(mockFaturaRepo.assegurarObterOuCriarFatura).toHaveBeenCalledTimes(2)
     // Mas devido à atomicidade física local simulada do mock, o array físico faturasMock deve conter apenas UMA fatura única
     expect(faturasMock.length).toBe(1)
+  })
+
+  it('deve excluir transacoes de acertos de netting (isSettlement) do mesmo periodo ao excluir um gasto', async () => {
+    const mockGastoRepo = {
+      salvar: vi.fn(),
+      salvarMuitos: vi.fn(),
+      buscarPorFatura: vi.fn(),
+      excluir: vi.fn(),
+      excluirMuitos: vi.fn(),
+      listarTodos: vi.fn(),
+      buscarPorId: vi.fn()
+    }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const faturaPix = new Fatura({ id: 'fatura-pix-id', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const gastoNormal = new Gasto({ id: 'g-normal', faturaId: 'fatura-pix-id', descricao: 'Aluguel', compradorId: 'm1', valorTotal: Dinheiro.deReais(100), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))] })
+    const gastoNetting = new Gasto({ id: 'g-netting', faturaId: 'fatura-pix-id', descricao: 'Acerto de Contas', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(50))], isSettlement: true })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(gastoNormal)
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaPix)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaPix])
+    mockGastoRepo.listarTodos.mockResolvedValue([gastoNormal, gastoNetting])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.excluirGasto('g-normal')
+
+    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g-normal')
+    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g-netting'])
+  })
+
+  it('deve excluir transacoes de acertos de netting (isSettlement) do mesmo periodo ao atualizar um gasto', async () => {
+    const mockGastoRepo = {
+      salvar: vi.fn(),
+      salvarMuitos: vi.fn(),
+      buscarPorFatura: vi.fn(),
+      excluir: vi.fn(),
+      excluirMuitos: vi.fn(),
+      listarTodos: vi.fn(),
+      buscarPorId: vi.fn()
+    }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const faturaPix = new Fatura({ id: 'fatura-pix-id', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const gastoNormal = new Gasto({ id: 'g-normal', faturaId: 'fatura-pix-id', descricao: 'Aluguel antigo', compradorId: 'm1', valorTotal: Dinheiro.deReais(100), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))] })
+    const gastoNetting = new Gasto({ id: 'g-netting', faturaId: 'fatura-pix-id', descricao: 'Acerto de Contas', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(50))], isSettlement: true })
+
+    mockGastoRepo.buscarPorId.mockImplementation(async (id) => {
+      if (id === 'g-normal') return gastoNormal
+      return null
+    })
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaPix)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaPix])
+    mockGastoRepo.listarTodos.mockResolvedValue([gastoNormal, gastoNetting])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.atualizarGastoCompleto('g-normal', {
+      descricao: 'Aluguel novo',
+      valorTotal: Dinheiro.deReais(120),
+      compradorId: 'm1',
+      method: 'pix',
+      cardOwner: null,
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(120))],
+      installments: 1
+    })
+
+    expect(mockGastoRepo.salvar).toHaveBeenCalled()
+    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g-netting'])
+  })
+
+  it('deve lançar erro se tentar lançar gasto envolvendo morador inativo ou inexistente', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    
+    mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }])
+    mockFaturaRepo.listarTodas.mockResolvedValue([new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })])
+
+    const mockMembroRepo = {
+      buscarPorId: vi.fn(async (id: string) => {
+        if (id === 'inativo') {
+          return { id, nome: 'Inativo', ativo: false }
+        }
+        if (id === 'ativo') {
+          return { id, nome: 'Ativo', ativo: true }
+        }
+        return null
+      }),
+      listarTodos: vi.fn(),
+      salvar: vi.fn()
+    }
+
+    const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo, mockMembroRepo as any)
+
+    await expect(service.lancarGastoOuEmprestimo({
+      flow: 'expense',
+      paymentMethod: 'pix',
+      compradorId: 'inativo',
+      valor: 100,
+      descricao: 'Mercado',
+      divisoes: [new DivisaoDeGasto('ativo', Dinheiro.deReais(100))],
+      installments: 1,
+      cardOwnerId: null,
+      borrowerId: null,
+      periodo: { mes: 5, ano: 2026 }
+    })).rejects.toThrow('Não é possível associar gastos a moradores inativos ou inexistentes.')
+
+    await expect(service.lancarGastoOuEmprestimo({
+      flow: 'expense',
+      paymentMethod: 'pix',
+      compradorId: 'ativo',
+      valor: 100,
+      descricao: 'Mercado',
+      divisoes: [new DivisaoDeGasto('inexistente', Dinheiro.deReais(100))],
+      installments: 1,
+      cardOwnerId: null,
+      borrowerId: null,
+      periodo: { mes: 5, ano: 2026 }
+    })).rejects.toThrow('Não é possível associar gastos a moradores inativos ou inexistentes.')
   })
 })
 

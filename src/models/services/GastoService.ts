@@ -2,6 +2,7 @@ import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../repositories/ICartaoRepository'
 import type { IAcertoMembroRepository } from '../repositories/IAcertoMembroRepository'
+import type { IMembroRepository } from '../repositories/IMembroRepository'
 import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
@@ -15,11 +16,24 @@ export class GastoService implements IGastoService {
     private gastoRepo: IGastoRepository,
     private faturaRepo: IFaturaRepository,
     private cartaoRepo: ICartaoRepository,
+    private membroRepo?: IMembroRepository,
     private acertoRepo?: IAcertoMembroRepository
   ) {}
 
   async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
     const { flow, paymentMethod, compradorId, valor, descricao, divisoes, installments, cardOwnerId, borrowerId, periodo } = dados
+
+    const membrosEnvolvidos = [compradorId]
+    if (borrowerId) {
+      membrosEnvolvidos.push(borrowerId)
+    }
+    divisoes.forEach(d => {
+      if (!membrosEnvolvidos.includes(d.membroId)) {
+        membrosEnvolvidos.push(d.membroId)
+      }
+    })
+    await this.validarMembrosAtivos(membrosEnvolvidos)
+
     const total = Dinheiro.deReais(valor)
 
     const todosCartoes = await this.cartaoRepo.listarTodos()
@@ -202,14 +216,22 @@ export class GastoService implements IGastoService {
       const todos = await this.gastoRepo.listarTodos()
       const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
       const idsParaDeletar: string[] = []
+      const periodosAfetados: { mes: number; ano: number }[] = []
+
       for (const g of grupo) {
         const fatura = await this.faturaRepo.buscarPorId(g.faturaId)
         if (!fatura || fatura.status === 'ABERTA') {
           idsParaDeletar.push(g.id)
+          if (fatura) {
+            periodosAfetados.push({ mes: fatura.periodo.mes, ano: fatura.periodo.ano })
+          }
         }
       }
       if (idsParaDeletar.length > 0) {
         await this.gastoRepo.excluirMuitos(idsParaDeletar)
+        for (const p of periodosAfetados) {
+          await this.limparNettingDoPeriodo(p.mes, p.ano)
+        }
       }
     } else {
       const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
@@ -217,6 +239,9 @@ export class GastoService implements IGastoService {
         fatura.validarOperacaoPermitida()
       }
       await this.gastoRepo.excluir(id)
+      if (fatura) {
+        await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
+      }
     }
   }
 
@@ -331,8 +356,33 @@ export class GastoService implements IGastoService {
       installments: number
     }
   ): Promise<void> {
+    const membrosEnvolvidos = [dados.compradorId]
+    dados.divisoes.forEach(d => {
+      if (!membrosEnvolvidos.includes(d.membroId)) {
+        membrosEnvolvidos.push(d.membroId)
+      }
+    })
+    await this.validarMembrosAtivos(membrosEnvolvidos)
+
     const original = await this.gastoRepo.buscarPorId(gastoId)
     if (!original) throw new Error('Gasto não encontrado')
+
+    const periodosOriginal: { mes: number; ano: number }[] = []
+    if (original.grupoParcelasId) {
+      const todosGastos = await this.gastoRepo.listarTodos()
+      const gastosDoGrupo = todosGastos.filter(g => g.grupoParcelasId === original.grupoParcelasId)
+      for (const g of gastosDoGrupo) {
+        const fat = await this.faturaRepo.buscarPorId(g.faturaId)
+        if (fat) {
+          periodosOriginal.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+        }
+      }
+    } else {
+      const fat = await this.faturaRepo.buscarPorId(original.faturaId)
+      if (fat) {
+        periodosOriginal.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+      }
+    }
 
     const todosCartoes = (await this.cartaoRepo.listarTodos()) || []
     let cartaoReal: Cartao | undefined = undefined
@@ -531,6 +581,35 @@ export class GastoService implements IGastoService {
 
       await this.gastoRepo.salvar(novoGasto)
     }
+
+    const periodosDepois: { mes: number; ano: number }[] = []
+    const atualizado = await this.gastoRepo.buscarPorId(gastoId)
+    if (atualizado) {
+      if (atualizado.grupoParcelasId) {
+        const todosGastos = await this.gastoRepo.listarTodos()
+        const gastosDoGrupo = todosGastos.filter(g => g.grupoParcelasId === atualizado.grupoParcelasId)
+        for (const g of gastosDoGrupo) {
+          const fat = await this.faturaRepo.buscarPorId(g.faturaId)
+          if (fat) {
+            periodosDepois.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+          }
+        }
+      } else {
+        const fat = await this.faturaRepo.buscarPorId(atualizado.faturaId)
+        if (fat) {
+          periodosDepois.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+        }
+      }
+    }
+
+    const todosPeriodos = [...periodosOriginal, ...periodosDepois]
+    const periodosUnicos = todosPeriodos.filter((p, index, self) =>
+      self.findIndex(item => item.mes === p.mes && item.ano === p.ano) === index
+    )
+
+    for (const p of periodosUnicos) {
+      await this.limparNettingDoPeriodo(p.mes, p.ano)
+    }
   }
 
   async removerAssociacaoContaFixa(contaFixaId: string): Promise<void> {
@@ -556,6 +635,33 @@ export class GastoService implements IGastoService {
         grupoParcelasId: g.grupoParcelasId
       })
       await this.gastoRepo.salvar(novoGasto)
+    }
+  }
+
+  private async limparNettingDoPeriodo(mes: number, ano: number): Promise<void> {
+    const faturas = await this.faturaRepo.listarTodas()
+    const faturaPix = faturas.find(
+      f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === mes && f.periodo.ano === ano
+    )
+    if (!faturaPix) return
+
+    const todosGastos = await this.gastoRepo.listarTodos()
+    const nettingGastos = todosGastos.filter(
+      g => g.faturaId === faturaPix.id && g.isSettlement === true
+    )
+
+    if (nettingGastos.length > 0) {
+      await this.gastoRepo.excluirMuitos(nettingGastos.map(g => g.id))
+    }
+  }
+
+  private async validarMembrosAtivos(membroIds: string[]): Promise<void> {
+    if (!this.membroRepo) return
+    for (const mId of membroIds) {
+      const membro = await this.membroRepo.buscarPorId(mId)
+      if (!membro || !membro.ativo) {
+        throw new Error('Não é possível associar gastos a moradores inativos ou inexistentes.')
+      }
     }
   }
 }

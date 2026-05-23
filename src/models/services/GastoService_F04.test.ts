@@ -25,7 +25,7 @@ describe('GastoService F-04 Fix', () => {
     mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
     mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoPendente])
 
-    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, mockAcertoRepo as any)
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
     
     await service.registrarAcertoNetting({
       faturaId: 'f-fevereiro',
