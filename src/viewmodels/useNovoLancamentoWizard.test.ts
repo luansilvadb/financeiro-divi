@@ -297,4 +297,32 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     await Promise.resolve() // Watch tick do Vue
     expect(participantesDivisao.value).toEqual(['luan'])
   })
+
+  it('deve bloquear chamadas simultaneas concorrentes de finalizacao (double-submit)', async () => {
+    const mockGastoService = {
+      lancarGastoOuEmprestimo: vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)))
+    }
+    const [hookInstance] = withSetup(() => 
+      useNovoLancamentoWizard(['luan'].map(id => ({ id, nome: id })), {
+        gastoService: mockGastoService as any
+      })
+    )
+
+    hookInstance.wizFlow.value = 'expense'
+    hookInstance.wizPayment.value = 'pix'
+    hookInstance.compradorSelecionadoId.value = 'luan'
+    hookInstance.valor.value = 100
+
+    // Dispara em paralelo
+    const p1 = hookInstance.finalizarGastoOuEmprestimo()
+    const p2 = hookInstance.finalizarGastoOuEmprestimo()
+    
+    expect(hookInstance.isSubmitting.value).toBe(true)
+    
+    await Promise.all([p1, p2])
+    
+    expect(mockGastoService.lancarGastoOuEmprestimo).toHaveBeenCalledTimes(1)
+    expect(hookInstance.isSubmitting.value).toBe(false)
+  })
 })
+

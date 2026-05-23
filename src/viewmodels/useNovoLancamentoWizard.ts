@@ -73,6 +73,7 @@ export function useNovoLancamentoWizard(
   dependencies: WizardDependencies = {}
 ) {
   const step = ref(1)
+  const isSubmitting = ref(false)
 
   const membrosComputed = computed(() => {
     if (typeof membros === 'function') return membros()
@@ -146,37 +147,43 @@ export function useNovoLancamentoWizard(
   })
 
   const finalizarGastoOuEmprestimo = async () => {
+    if (isSubmitting.value) return
     if (!wizFlow.value || !wizPayment.value) throw new Error('Fluxo de pagamento não selecionado')
     if (!compradorSelecionadoId.value) throw new Error('Selecione quem pagou/emprestou')
     if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
 
-    const flow = wizFlow.value as 'expense' | 'loan'
-    const payment = wizPayment.value as 'pix' | 'card'
+    isSubmitting.value = true
+    try {
+      const flow = wizFlow.value as 'expense' | 'loan'
+      const payment = wizPayment.value as 'pix' | 'card'
 
-    const total = Dinheiro.deReais(Number(valor.value))
-    const divisoes = buildDivisoes(
-      flow,
-      total,
-      borrowerId.value,
-      participantesDivisao.value,
-      modoDivisaoWizard.value,
-      valoresDivisaoWizard.value
-    )
+      const total = Dinheiro.deReais(Number(valor.value))
+      const divisoes = buildDivisoes(
+        flow,
+        total,
+        borrowerId.value,
+        participantesDivisao.value,
+        modoDivisaoWizard.value,
+        valoresDivisaoWizard.value
+      )
 
-    await servicoGasto.lancarGastoOuEmprestimo({
-      flow,
-      paymentMethod: payment,
-      compradorId: compradorSelecionadoId.value,
-      valor: Number(valor.value),
-      descricao: descricao.value,
-      divisoes,
-      installments: installments.value,
-      cardOwnerId: wizCardOwner.value,
-      borrowerId: borrowerId.value,
-      periodo: obterPeriodoSelecionado()
-    })
+      await servicoGasto.lancarGastoOuEmprestimo({
+        flow,
+        paymentMethod: payment,
+        compradorId: compradorSelecionadoId.value,
+        valor: Number(valor.value),
+        descricao: descricao.value,
+        divisoes,
+        installments: installments.value,
+        cardOwnerId: wizCardOwner.value,
+        borrowerId: borrowerId.value,
+        periodo: obterPeriodoSelecionado()
+      })
 
-    reset()
+      reset()
+    } finally {
+      isSubmitting.value = false
+    }
   }
 
   const reset = () => {
@@ -265,6 +272,7 @@ export function useNovoLancamentoWizard(
     next,
     prev,
     reset,
-    finalizarGastoOuEmprestimo
+    finalizarGastoOuEmprestimo,
+    isSubmitting
   }
 }
