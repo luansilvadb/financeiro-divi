@@ -150,6 +150,8 @@ export class GastoService implements IGastoService {
     let currentMes = faturaAtiva.periodo.mes
     let currentAno = faturaAtiva.periodo.ano
 
+    const todasFaturasPersistidas = await this.faturaRepo.listarTodas()
+
     for (let i = 2; i <= installments; i++) {
       currentMes++
       if (currentMes > 12) {
@@ -162,7 +164,8 @@ export class GastoService implements IGastoService {
         currentMes,
         currentAno,
         responsavelFaturaId,
-        faturasParaSalvar
+        faturasParaSalvar,
+        todasFaturasPersistidas
       )
 
       const gastoFuturo = this.construirGasto({
@@ -193,12 +196,11 @@ export class GastoService implements IGastoService {
     mes: number,
     ano: number,
     responsavelId: string,
-    acumuladorMemoria: Fatura[]
+    acumuladorMemoria: Fatura[],
+    todasFaturasPersistidas: Fatura[]
   ): Promise<Fatura> {
-    const todasFaturas = await this.faturaRepo.listarTodas()
-    
-    // Primeiro procura nas faturas persistidas
-    let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+    // Primeiro procura nas faturas persistidas passadas no cache
+    let fatura = todasFaturasPersistidas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
     if (fatura) return fatura
 
     // Depois procura no acumulador temporário
@@ -434,6 +436,8 @@ export class GastoService implements IGastoService {
         const faturasParaSalvar: Fatura[] = []
         const gastosParaSalvar: Gasto[] = []
 
+        const todasFaturasPersistidas = await this.faturaRepo.listarTodas()
+
         for (const sf of statusFaturas) {
           if (sf.fatura && sf.fatura.status !== 'ABERTA') {
             continue // Ignora parcelas passadas fechadas
@@ -447,7 +451,7 @@ export class GastoService implements IGastoService {
               ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'))
               : 'PIX_DEFAULT_ID'
             const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
-            const novaFatura = await this.obterOuCriarFaturaMemoria(cartaoId, sf.fatura.periodo.mes, sf.fatura.periodo.ano, responsavelFaturaId, faturasParaSalvar)
+            const novaFatura = await this.obterOuCriarFaturaMemoria(cartaoId, sf.fatura.periodo.mes, sf.fatura.periodo.ano, responsavelFaturaId, faturasParaSalvar, todasFaturasPersistidas)
             if (novaFatura && typeof novaFatura.validarOperacaoPermitida === 'function') {
               novaFatura.validarOperacaoPermitida()
             }
