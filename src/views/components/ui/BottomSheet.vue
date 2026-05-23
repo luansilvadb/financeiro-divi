@@ -199,14 +199,14 @@ const onTouchEnd = (e: TouchEvent) => {
     close()
   } else {
     // Volta suavemente para o topo
-    currentTarget.style.transition = 'transform 0.25s cubic-bezier(0.19, 1, 0.22, 1)'
+    currentTarget.style.transition = 'transform 0.4s var(--ease-spring)'
     currentTarget.style.transform = 'translateY(0px)'
     setTimeout(() => {
       if (props.modelValue) {
         currentTarget.style.transition = ''
         currentTarget.style.transform = ''
       }
-    }, 250)
+    }, 400)
   }
 }
 
@@ -235,14 +235,14 @@ const onMouseDown = (e: MouseEvent) => {
       currentTarget.style.transform = 'translateY(100%)'
       close()
     } else {
-      currentTarget.style.transition = 'transform 0.25s cubic-bezier(0.19, 1, 0.22, 1)'
+      currentTarget.style.transition = 'transform 0.4s var(--ease-spring)'
       currentTarget.style.transform = 'translateY(0px)'
       setTimeout(() => {
         if (props.modelValue) {
           currentTarget.style.transition = ''
           currentTarget.style.transform = ''
         }
-      }, 250)
+      }, 400)
     }
     
     window.removeEventListener('mousemove', onMove)
@@ -258,7 +258,7 @@ const onMouseDown = (e: MouseEvent) => {
 /* Transição limpa padrão de slide-up e slide-down */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s var(--ease-spring);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {

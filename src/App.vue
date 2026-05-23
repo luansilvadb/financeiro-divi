@@ -70,7 +70,7 @@ const isPeriodLocked = ref(false)
       >
         <button
           :disabled="isPeriodLocked"
-          class="w-14 h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-zinc-800 to-black hover:from-zinc-700 hover:to-zinc-950 text-white border border-zinc-700/50 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:from-zinc-900 disabled:to-zinc-950 disabled:text-zinc-600 disabled:border-zinc-850 disabled:scale-100 disabled:shadow-none pointer-events-auto"
+          class="w-14 h-14 rounded-full shadow-lg active:scale-95 flex items-center justify-center transition-all duration-300 bg-midnight hover:bg-charcoal text-white border-none focus:outline-none disabled:opacity-40 disabled:scale-100 disabled:shadow-none pointer-events-auto"
           @click="currentView = 'wizard'"
           data-testid="novo-lancamento-fab"
         >
@@ -114,7 +114,7 @@ const isPeriodLocked = ref(false)
 /* Smooth transitions between views */
 .v-enter-active,
 .v-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s var(--ease-spring);
 }
 
 .v-enter-from,
@@ -125,7 +125,7 @@ const isPeriodLocked = ref(false)
 /* Zoom effect for FAB */
 .fab-zoom-enter-active,
 .fab-zoom-leave-active {
-  transition: transform 0.25s ease-out, opacity 0.2s ease;
+  transition: transform 0.4s var(--ease-spring), opacity 0.3s var(--ease-spring);
   transform-origin: center center;
 }
 

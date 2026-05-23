@@ -17,6 +17,7 @@ import DetalhamentoSaldosCard from '../components/ledger/dashboard/DetalhamentoS
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
 import BottomSheet from '../components/ui/BottomSheet.vue'
+import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 import { 
   ArrowUpRight, 
   TrendingUp, 
@@ -153,14 +154,19 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
           </span>
           <div class="flex items-center gap-2">
             <span class="text-2xl font-black text-charcoal tracking-tighter group-hover:text-ember transition-colors">{{ currentMonthName }}</span>
+            <Lock v-if="faturaSelecionadaTrancada" class="w-4 h-4 text-ash/60 animate-in zoom-in-50 duration-300" />
           </div>
         </div>
       </div>
 
       <!-- Coluna Central: Brand -->
-      <div class="flex-1 flex flex-col items-center justify-center text-center">
-        <span class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] block leading-none mb-1.5">Finanças Residenciais</span>
-        <h1 class="text-3xl font-black text-charcoal tracking-[-0.05em] leading-none">
+      <div class="flex-1 flex flex-col items-center justify-center text-center relative">
+        <!-- Mascote do Header (Wobble) -->
+        <div class="absolute -top-4 -right-1 transform rotate-12 animate-wobble z-0 opacity-80 pointer-events-none">
+          <IllustrationMascot variant="ember" :size="32" mood="happy" />
+        </div>
+        <span class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] block leading-none mb-1.5 relative z-10">Finanças Residenciais</span>
+        <h1 class="text-3xl font-black text-charcoal tracking-[-0.05em] leading-none relative z-10">
           DIVI<span class="text-ember">.</span>
         </h1>
       </div>
@@ -180,6 +186,19 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
 
     <!-- GROUP: HOJE -->
     <div v-show="isHoje" class="space-y-12">
+      <!-- ESTADO VAZIO (Chill Mascot) -->
+      <div v-if="totalLancamentosPeriodoSelecionado === 0" class="py-12 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in duration-700">
+        <div class="animate-float">
+          <IllustrationMascot variant="sky" :size="120" mood="chill" />
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-2xl font-display text-charcoal">Tudo calmo por aqui...</h3>
+          <p class="text-sm text-ash max-w-[280px] mx-auto leading-relaxed">
+            Nenhum lançamento registrado neste período. Que tal começar adicionando um gasto ou conferindo as contas fixas?
+          </p>
+        </div>
+      </div>
+
     <!-- Painel de Saldo Real Unificado (Design System Family) -->
     <section class="space-y-4">
       <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
@@ -226,7 +245,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     </section>
 
     <!-- Painel de Compensação Otimizada (Design System Family) -->
-    <section v-if="nettingTransferencias.length > 0" class="space-y-4">
+    <section v-if="nettingTransferencias.length > 0" class="space-y-4" :class="{ 'opacity-70 grayscale-[0.3] pointer-events-none transition-all duration-500': faturaSelecionadaTrancada }">
       <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite border-l-4 border-l-ember">
         <!-- Cabeçalho Padronizado -->
         <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
@@ -287,7 +306,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     </section>
 
     <!-- Checklist de Contas Fixas (Design System Family) -->
-    <section class="space-y-4">
+    <section class="space-y-4" :class="{ 'opacity-70 grayscale-[0.3] pointer-events-none transition-all duration-500': faturaSelecionadaTrancada }">
       <ContasFixasPanel 
         :contasFixas="contasFixas"
         :gastos="gastosFaturaSelecionada"
@@ -301,7 +320,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     </section>
 
     <!-- Feed de Lançamentos Recentes (Design System Family) -->
-    <section class="space-y-4">
+    <section class="space-y-4" :class="{ 'opacity-70 grayscale-[0.3] pointer-events-none transition-all duration-500': faturaSelecionadaTrancada }">
       <ActivityFeed 
         :gastos="gastosFaturaSelecionada"
         :membros="props.membros"
@@ -315,17 +334,22 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     <!-- GROUP: FATURAS -->
     <div v-show="isFaturas" class="space-y-12">
       <!-- Banner de Gerenciamento do Período Dinâmico -->
-      <Card class="mt-6 p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-midnight text-white border-none shadow-lg">
-        <div>
-          <h3 class="font-bold text-lg leading-tight">Mês de Referência: {{ currentMonthName }}</h3>
-          <p class="text-xs text-stone-300 mt-1">
-            {{ faturaSelecionadaTrancada ? 'Este mês está arquivado. Para fazer novos lançamentos, reabra o período.' : 'Encerre este mês para gerar as faturas e iniciar o próximo período.' }}
-          </p>
+      <Card class="mt-6 p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-midnight text-white border-none shadow-lg rounded-card-lg transition-all duration-500">
+        <div class="flex items-center gap-4">
+          <div v-if="faturaSelecionadaTrancada" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 animate-in zoom-in duration-700">
+            <Lock class="w-5 h-5 text-white/80" />
+          </div>
+          <div>
+            <h3 class="font-bold text-lg leading-tight">Mês de Referência: {{ currentMonthName }}</h3>
+            <p class="text-xs text-stone-300 mt-1">
+              {{ faturaSelecionadaTrancada ? 'Este mês está arquivado. Para fazer novos lançamentos, reabra o período.' : 'Encerre este mês para gerar as faturas e iniciar o próximo período.' }}
+            </p>
+          </div>
         </div>
         <Button 
           v-if="faturaSelecionadaTrancada"
           variant="secondary" 
-          class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent"
+          class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent animate-pulse"
           @click="reabrirPeriodoSelecionado"
         >
           Reabrir Mês

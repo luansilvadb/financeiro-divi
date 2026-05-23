@@ -1,4 +1,4 @@
-import type { WizardDraft } from '../models/entities/WizardDraft'
+import type { WizardDraft } from '../../models/entities/WizardDraft'
 
 const STORAGE_KEY = 'divi_wizard_draft_senior'
 

@@ -3,8 +3,6 @@ import { Fatura } from '../models/entities/Fatura'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { Cartao } from '../models/entities/Cartao'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
-import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
-import { ContaFixa } from '../models/entities/ContaFixa'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
@@ -55,7 +53,7 @@ function obterPeriodoInicial(faturasAbertas: Fatura[], faturasFechadas: Fatura[]
 
 export function useDashboardViewModel(
   props: DashboardProps,
-  emit: (event: string, ...args: any[]) => void,
+  emit: (event: any, ...args: any[]) => void,
   dependencies: DashboardDependencies = {}
 ) {
   const gastoRepo = dependencies.gastoRepository || gastoRepository

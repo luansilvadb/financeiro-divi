@@ -37,9 +37,9 @@ export class Fatura {
   public readonly id: string
   public readonly cartaoId: string
   public readonly periodo: FaturaPeriodo
-  private _responsavelId: string
-  private _status: FaturaStatus
-  private _dataPagamentoBanco?: Date
+  public _responsavelId: string
+  public _status: FaturaStatus
+  public _dataPagamentoBanco?: Date
 
   constructor(props: FaturaProps) {
     this.id = props.id
