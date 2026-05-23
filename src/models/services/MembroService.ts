@@ -3,6 +3,7 @@ import type { IMembroRepository } from '../repositories/IMembroRepository'
 import type { ICartaoRepository } from '../repositories/ICartaoRepository'
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
+import type { IAcertoMembroRepository } from '../repositories/IAcertoMembroRepository'
 import type { IMembroService } from './IMembroService'
 import { calcularSaldosUnificados } from './NettingService'
 
@@ -11,7 +12,8 @@ export class MembroService implements IMembroService {
     private repository: IMembroRepository,
     private cartaoRepo?: ICartaoRepository,
     private gastoRepo?: IGastoRepository,
-    private faturaRepo?: IFaturaRepository
+    private faturaRepo?: IFaturaRepository,
+    private acertoRepo?: IAcertoMembroRepository
   ) {}
 
   async adicionarMembro(nome: string): Promise<Membro> {
@@ -67,6 +69,14 @@ export class MembroService implements IMembroService {
       const saldoMembro = saldos[id] || 0
       if (Math.abs(saldoMembro) > 0.005) {
         throw new Error('Não é possível desativar um morador com saldo ativo diferente de zero no período atual.')
+      }
+    }
+
+    if (this.acertoRepo) {
+      const todosAcertos = await this.acertoRepo.listarTodos()
+      const possuiAcertosPendentes = todosAcertos.some(a => a.membroId === id && !a.pago)
+      if (possuiAcertosPendentes) {
+        throw new Error('Não é possível desativar um morador com acertos pendentes de faturas anteriores.')
       }
     }
 

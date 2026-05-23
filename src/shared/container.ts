@@ -24,7 +24,7 @@ export const acertoMembroRepository = new LocalStorageAcertoMembroRepository()
 export const eventStore = new LocalStorageEventStore()
 
 // Instanciamento dos Serviços de Domínio (Injetando dependências)
-export const membroService = new MembroService(membroRepository, cartaoRepository, gastoRepository, faturaRepository)
+export const membroService = new MembroService(membroRepository, cartaoRepository, gastoRepository, faturaRepository, acertoMembroRepository)
 export const gastoService = new GastoService(gastoRepository, faturaRepository, cartaoRepository, acertoMembroRepository)
 export const faturaService = new FaturaService(faturaRepository, acertoMembroRepository, gastoRepository)
 export const faturaRolloverService = new FaturaRolloverService(faturaRepository, gastoRepository, faturaService)

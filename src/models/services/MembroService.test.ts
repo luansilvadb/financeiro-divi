@@ -166,4 +166,24 @@ describe('MembroService', () => {
       service.desativarMembro('membro-saldo', { mes: 5, ano: 2026 })
     ).rejects.toThrow('Não é possível desativar um morador com saldo ativo diferente de zero no período atual.')
   })
+
+  it('deve lancar erro se o membro tiver acertos pendentes de faturas anteriores', async () => {
+    const membro = new Membro({ id: 'membro-acerto', nome: 'Membro com Acerto', ativo: true })
+    const mockMembroRepo = {
+      salvar: vi.fn(),
+      listarTodos: vi.fn(),
+      buscarPorId: vi.fn().mockResolvedValue(membro)
+    }
+    const mockAcertoRepo = {
+      listarTodos: vi.fn().mockResolvedValue([
+        { id: 'a1', membroId: 'membro-acerto', pago: false, valorAcerto: Dinheiro.deCentavos(5000), valorPago: Dinheiro.deCentavos(0) }
+      ]),
+      buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn()
+    }
+
+    const service = new MembroService(mockMembroRepo, undefined, undefined, undefined, mockAcertoRepo as any)
+    await expect(service.desativarMembro('membro-acerto')).rejects.toThrow(
+      'Não é possível desativar um morador com acertos pendentes de faturas anteriores.'
+    )
+  })
 })
