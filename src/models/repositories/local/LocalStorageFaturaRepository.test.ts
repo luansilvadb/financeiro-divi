@@ -63,4 +63,19 @@ describe('LocalStorageFaturaRepository', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     await expect(repo.salvar(fatura)).rejects.toThrow('Banco de dados local de faturas corrompido')
   })
+
+  it('deve assegurar obter ou criar faturas concorrentemente de forma atomica retornando mesmo ID', async () => {
+    const repo = new LocalStorageFaturaRepository()
+    
+    // Executar chamadas concorrentes paralelas simulando abas
+    const promises = Array.from({ length: 5 }).map(() => 
+      repo.assegurarObterOuCriarFatura('cartao-race', 5, 2026, 'membro-a')
+    )
+    const resultados = await Promise.all(promises)
+    
+    const primeiroId = resultados[0].id
+    resultados.forEach(f => {
+      expect(f.id).toBe(primeiroId) // Todos devem apontar para a mesma fatura física
+    })
+  })
 })

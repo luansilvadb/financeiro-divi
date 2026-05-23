@@ -187,6 +187,25 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
       return listaLimpa
     }
 
-    return todasFaturas
+    return todasFaturas;
+  }
+
+  async assegurarObterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<Fatura> {
+    return await StorageLock.executarAtomico('lock_divi_faturas', async () => {
+      const todas = this.listarTodasInternal()
+      let fatura = todas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+      if (!fatura) {
+        fatura = new Fatura({
+          id: crypto.randomUUID(),
+          cartaoId,
+          periodo: { mes, ano },
+          responsavelId,
+          status: 'ABERTA'
+        })
+        todas.push(fatura)
+        this.salvarListaFaturasFisicamente(todas)
+      }
+      return fatura
+    })
   }
 }
