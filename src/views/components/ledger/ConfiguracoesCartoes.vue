@@ -50,6 +50,14 @@ const adicionarCard = async () => {
   nome.value = ''
   responsavelId.value = ''
 }
+
+const handleExcluir = async (id: string) => {
+  try {
+    await excluirCartaoManual(id)
+  } catch (error: any) {
+    alert(error.message || 'Erro ao excluir cartão')
+  }
+}
 </script>
 
 <template>
@@ -177,7 +185,7 @@ const adicionarCard = async () => {
           <Button 
             variant="secondary"
             size="icon"
-            @click="excluirCartaoManual(c.id)" 
+            @click="handleExcluir(c.id)" 
             class="bg-coral/10 text-coral hover:bg-coral/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <Trash2 class="w-4 h-4" />

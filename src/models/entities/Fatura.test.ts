@@ -77,4 +77,23 @@ describe('Fatura', () => {
     expect(periodo.mes).toBe(5)
     expect(periodo.ano).toBe(2026)
   })
+
+  it('reabrir - deve reabrir uma fatura FECHADA com sucesso', () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'FECHADA', dataPagamentoBanco: new Date() })
+    fatura.reabrir()
+    expect(fatura.status).toBe('ABERTA')
+    expect(fatura.dataPagamentoBanco).toBeUndefined()
+  })
+
+  it('reabrir - deve reabrir uma fatura ACERTADA com sucesso', () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ACERTADA', dataPagamentoBanco: new Date() })
+    fatura.reabrir()
+    expect(fatura.status).toBe('ABERTA')
+    expect(fatura.dataPagamentoBanco).toBeUndefined()
+  })
+
+  it('reabrir - deve falhar se a fatura ja estiver ABERTA', () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ABERTA' })
+    expect(() => fatura.reabrir()).toThrow('Apenas faturas FECHADAS ou ACERTADAS podem ser reabertas')
+  })
 })

@@ -188,4 +188,26 @@ describe('FaturaService', () => {
       pago: false
     }))
   })
+
+  it('deve ser idempotente ao tentar fechar uma fatura que ja esta fechada ou acertada', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const acertoRepo = { buscarPorFatura: vi.fn(), excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn() }
+
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    await expect(service.fecharFatura('f1')).resolves.not.toThrow()
+    expect(faturaRepo.salvar).not.toHaveBeenCalled()
+  })
+
+  it('deve ser idempotente ao tentar reabrir uma fatura que ja esta aberta', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const acertoRepo = { buscarPorFatura: vi.fn(), excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn() }
+
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    await expect(service.reabrirFatura('f1')).resolves.not.toThrow()
+    expect(faturaRepo.salvar).not.toHaveBeenCalled()
+  })
 })

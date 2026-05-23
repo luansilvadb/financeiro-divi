@@ -18,6 +18,10 @@ export class FaturaService implements IFaturaService {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
 
+    if (fatura.status !== 'ABERTA') {
+      return
+    }
+
     fatura.fechar({ responsavelId, dataPagamentoBanco })
     await this.faturaRepo.salvar(fatura)
 
@@ -69,6 +73,10 @@ export class FaturaService implements IFaturaService {
   async reabrirFatura(faturaId: string): Promise<void> {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
+
+    if (fatura.status === 'ABERTA') {
+      return
+    }
 
     fatura.reabrir()
     await this.faturaRepo.salvar(fatura)

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Gasto } from '../../../../models/entities/Gasto'
 import Card from '../../ui/Card.vue'
-import { Wallet, CreditCard, Handshake, Search } from 'lucide-vue-next'
+import { Wallet, CreditCard, Handshake, Search, ChevronDown, ChevronUp, History } from 'lucide-vue-next'
+import { ExtratoService } from '../../../../models/services/ExtratoService'
+import ItemExtratoCard from './ItemExtratoCard.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -11,6 +13,20 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const expandedMemberId = ref<string | null>(null)
+
+const toggleExtrato = (id: string) => {
+  if (expandedMemberId.value === id) {
+    expandedMemberId.value = null
+  } else {
+    expandedMemberId.value = id
+  }
+}
+
+const getExtrato = (id: string) => {
+  return ExtratoService.obterExtratoMembro(id, props.gastos)
+}
 
 const formatarBRL = (centavos: number) => {
   return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -174,6 +190,40 @@ const detailedBreakdown = computed(() => {
                 <span class="text-[15px] font-semibold tracking-[-0.2px] text-coral">-R$ {{ formatarBRL(detailedBreakdown[m.id]?.loanTomou || 0) }}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Botão para Expandir Extrato -->
+        <div class="flex justify-center pt-2">
+          <button 
+            @click="toggleExtrato(m.id)"
+            class="flex items-center gap-2 text-[11px] font-bold text-ash hover:text-ember transition-colors uppercase tracking-widest bg-stone/30 px-4 py-2 rounded-lg"
+          >
+            <History class="w-3.5 h-3.5" />
+            {{ expandedMemberId === m.id ? 'Ocultar Extrato' : 'Ver Extrato Detalhado' }}
+            <component :is="expandedMemberId === m.id ? ChevronUp : ChevronDown" class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Lista de Extrato (Condicional) -->
+        <div 
+          v-if="expandedMemberId === m.id" 
+          class="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300"
+        >
+          <div class="flex items-center gap-2 mb-2">
+            <div class="h-[1px] flex-1 bg-stone" />
+            <span class="text-[10px] font-bold text-ash uppercase tracking-widest">Histórico do Período</span>
+            <div class="h-[1px] flex-1 bg-stone" />
+          </div>
+          
+          <ItemExtratoCard 
+            v-for="item in getExtrato(m.id)" 
+            :key="item.id" 
+            :item="item" 
+          />
+
+          <div v-if="getExtrato(m.id).length === 0" class="text-center py-8 text-ash text-[11px] italic">
+            Nenhum lançamento individual encontrado para este membro.
           </div>
         </div>
       </div>

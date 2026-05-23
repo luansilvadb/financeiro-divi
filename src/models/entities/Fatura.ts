@@ -104,7 +104,9 @@ export class Fatura {
   }
 
   reabrir() {
-    if (this._status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser reabertas')
+    if (this._status !== 'FECHADA' && this._status !== 'ACERTADA') {
+      throw new Error('Apenas faturas FECHADAS ou ACERTADAS podem ser reabertas')
+    }
     this._status = 'ABERTA'
     this._dataPagamentoBanco = undefined
   }

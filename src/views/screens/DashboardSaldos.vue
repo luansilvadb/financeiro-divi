@@ -130,6 +130,18 @@ watch(isDropdownAbertosOpen, async (aberto) => {
 // Helpers locais para a renderização das Tabs
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
+const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
+
+const membrosDisponiveisParaAjustar = computed(() => {
+  if (!gastoParaAjustar.value) return membrosAtivos.value
+  const compradorId = gastoParaAjustar.value.compradorId
+  const splitIds = gastoParaAjustar.value.divisoes.map(d => d.membroId)
+  return props.membros.filter(m => 
+    m.ativo !== false || 
+    m.id === compradorId || 
+    splitIds.includes(m.id)
+  )
+})
 </script>
 
 <template>
@@ -523,7 +535,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     <BottomSheetFecharFatura 
       :show="showBottomSheetFechar"
       :fatura="faturaParaFechar"
-      :membros="props.membros"
+      :membros="membrosAtivos"
       @close="showBottomSheetFechar = false"
       @confirmar="confirmarFechamentoFatura"
     />
@@ -532,7 +544,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     <PopupLancarContaFixa 
       :visible="showPopupLancar"
       :bill="billSelecionada"
-      :membros="props.membros"
+      :membros="membrosAtivos"
       @confirm="confirmarLancarBill"
       @cancel="showPopupLancar = false"
     />
@@ -540,7 +552,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     <BottomSheetConfigurarContaFixa 
       :visible="showBottomSheetConfigCF"
       :bill="billSelecionada"
-      :membros="props.membros"
+      :membros="membrosAtivos"
       @save="confirmarSalvarTemplate"
       @delete="abrirConfirmacaoEstornoBill"
       @cancel="showBottomSheetConfigCF = false"
@@ -610,7 +622,7 @@ const isFaturas = computed(() => !props.activeTab || props.activeTab === 'fatura
     <BottomSheetAjustarGasto 
       :visible="showBottomSheetAjustar"
       :gasto="gastoParaAjustar"
-      :membros="props.membros"
+      :membros="membrosDisponiveisParaAjustar"
       :cartoes="props.cartoes"
       :faturas="[...props.faturasAbertas, ...props.faturasFechadas]"
       @cancel="showBottomSheetAjustar = false"

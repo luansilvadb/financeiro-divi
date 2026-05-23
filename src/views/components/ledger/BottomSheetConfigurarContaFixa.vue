@@ -21,7 +21,15 @@ watch(() => props.bill, (newBill) => {
     name.value = newBill.name
     icon.value = newBill.icon
     fixedValue.value = newBill.fixedValue
-    defaultSplit.value = [...newBill.defaultSplit]
+    
+    const validSplitIds = newBill.defaultSplit.filter(id => 
+      props.membros.some(m => m.id === id)
+    )
+    if (validSplitIds.length > 0) {
+      defaultSplit.value = [...validSplitIds]
+    } else {
+      defaultSplit.value = props.membros.map(m => m.id)
+    }
   } else {
     name.value = ''
     icon.value = '💡'
