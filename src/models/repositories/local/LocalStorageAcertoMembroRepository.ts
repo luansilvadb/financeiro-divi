@@ -86,8 +86,8 @@ export class LocalStorageAcertoMembroRepository implements IAcertoMembroReposito
         })
       })
     } catch (e) {
-      console.error(e)
-      return []
+      console.error('Erro grave de integridade no banco de dados local de acertos de membros:', e)
+      throw new Error('Banco de dados local de acertos de membros corrompido. Operação abortada para evitar perda de dados.')
     }
   }
 }

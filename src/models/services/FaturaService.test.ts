@@ -10,7 +10,7 @@ describe('FaturaService', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
 
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
-    const acertoRepo = { excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), excluirPorFatura: vi.fn(), salvar: vi.fn() }
     const gastoRepo = {
       buscarPorFatura: vi.fn().mockResolvedValue([
         new Gasto({
@@ -68,7 +68,7 @@ describe('FaturaService', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
 
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
-    const acertoRepo = { excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), excluirPorFatura: vi.fn(), salvar: vi.fn() }
     const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]) }
 
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
@@ -142,5 +142,50 @@ describe('FaturaService', () => {
     expect(faturaRepo.salvar.mock.calls[0][0].cartaoId).toBe('c1')
     expect(faturaRepo.salvar.mock.calls[0][0].periodo).toEqual({ mes: 5, ano: 2026 })
     expect(result.length).toBe(3)
+  })
+
+  it('deve preservar historico de pagamentos (valorPago e pago) ao fechar novamente a fatura', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    const acertoAntigo = {
+      id: 'acerto_old_1',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deReais(100),
+      valorPago: Dinheiro.deReais(40),
+      pago: false,
+      dataPagamento: undefined
+    }
+
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const acertoRepo = {
+      buscarPorFatura: vi.fn().mockResolvedValue([acertoAntigo]),
+      excluirPorFatura: vi.fn(),
+      salvar: vi.fn()
+    }
+    const gastoRepo = {
+      buscarPorFatura: vi.fn().mockResolvedValue([
+        new Gasto({
+          id: 'g1',
+          faturaId: 'f1',
+          descricao: 'Gasto Simples',
+          valorTotal: Dinheiro.deReais(100),
+          compradorId: 'm1',
+          divisoes: [new DivisaoDeGasto('m2', Dinheiro.deCentavos(10000))],
+          installments: 1
+        })
+      ])
+    }
+
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    await service.fecharFatura('f1', undefined, new Date())
+
+    expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'acerto_old_1', // deve reter o mesmo ID
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: expect.objectContaining({ centavos: 10000 }),
+      valorPago: expect.objectContaining({ centavos: 4000 }), // preserva pagamento de R$ 40
+      pago: false
+    }))
   })
 })

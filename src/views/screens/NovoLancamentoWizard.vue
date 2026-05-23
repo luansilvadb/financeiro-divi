@@ -51,7 +51,7 @@ const {
   prev,
   reset,
   finalizarGastoOuEmprestimo
-} = useNovoLancamentoWizard(props.membros)
+} = useNovoLancamentoWizard(() => props.membros)
 
 onUnmounted(() => {
   reset()

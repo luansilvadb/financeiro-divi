@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createApp, defineComponent } from 'vue'
+import { createApp, defineComponent, ref } from 'vue'
 import { useNovoLancamentoWizard } from './useNovoLancamentoWizard'
 
 function withSetup<T>(composable: () => T) {
@@ -205,5 +205,96 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     expect(wizFlow2.value).toBe('expense')
     expect(compradorSelecionadoId2.value).toBe('luan')
     expect(valor2.value).toBe(100)
+  })
+
+  it('deve salvar e carregar rascunho incluindo divisoes customizadas e modo de divisao', async () => {
+    vi.useFakeTimers()
+    const [{ wizFlow, compradorSelecionadoId, valor, modoDivisaoWizard, participantesDivisao, valoresDivisaoWizard }, app] = withSetup(() => 
+      useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id })))
+    )
+
+    wizFlow.value = 'expense'
+    compradorSelecionadoId.value = 'luan'
+    valor.value = 100
+    modoDivisaoWizard.value = 'MANUAL'
+    participantesDivisao.value = ['luan', 'maria']
+    valoresDivisaoWizard.value = { luan: 40, maria: 60 }
+
+    // Aguardar o watcher do Vue rodar para agendar o setTimeout
+    await Promise.resolve()
+
+    // Esperar rodar o watch e o timeout
+    vi.advanceTimersByTime(600)
+
+    // Desmontar para simular nova sessão
+    app.unmount()
+    vi.useRealTimers()
+
+    // Instanciar novo
+    const [{ 
+      wizFlow: wizFlow2, 
+      compradorSelecionadoId: compradorSelecionadoId2, 
+      valor: valor2,
+      modoDivisaoWizard: modoDivisaoWizard2,
+      participantesDivisao: participantesDivisao2,
+      valoresDivisaoWizard: valoresDivisaoWizard2
+    }] = withSetup(() => 
+      useNovoLancamentoWizard(['luan', 'maria'].map(id => ({ id, nome: id })))
+    )
+
+    // Aguardar Mounted tick
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(wizFlow2.value).toBe('expense')
+    expect(compradorSelecionadoId2.value).toBe('luan')
+    expect(valor2.value).toBe(100)
+    expect(modoDivisaoWizard2.value).toBe('MANUAL')
+    expect(participantesDivisao2.value).toEqual(['luan', 'maria'])
+    expect(valoresDivisaoWizard2.value).toEqual({ luan: 40, maria: 60 })
+  })
+
+  it('deve tolerar diferenca de ate 1 centavo por arredondamento em divisao manual', () => {
+    const [{ step, wizFlow, compradorSelecionadoId, valor, descricao, modoDivisaoWizard, participantesDivisao, valoresDivisaoWizard, canAdvance, next }] = withSetup(() => 
+      useNovoLancamentoWizard(['luan', 'maria', 'joao'].map(id => ({ id, nome: id })))
+    )
+
+    wizFlow.value = 'expense'
+    compradorSelecionadoId.value = 'luan'
+    valor.value = 10.00
+    descricao.value = 'Lanche'
+    modoDivisaoWizard.value = 'MANUAL'
+    participantesDivisao.value = ['luan', 'maria', 'joao']
+    
+    // Divisão de R$ 10.00 por 3 pessoas = R$ 3.33 + R$ 3.33 + R$ 3.34 = R$ 10.00
+    valoresDivisaoWizard.value = { luan: 3.33, maria: 3.33, joao: 3.34 }
+
+    step.value = 5 // Passo de rateio
+    expect(canAdvance.value).toBe(true)
+
+    // Divisão com arredondamento divergente em 1 centavo a menos (R$ 3.33 + R$ 3.33 + R$ 3.33 = R$ 9.99)
+    valoresDivisaoWizard.value = { luan: 3.33, maria: 3.33, joao: 3.33 }
+    expect(canAdvance.value).toBe(true) // Tolerância de 1 centavo
+
+    // Divisão com arredondamento divergente em 2 centavos (R$ 3.32 + R$ 3.32 + R$ 3.32 = R$ 9.96)
+    valoresDivisaoWizard.value = { luan: 3.32, maria: 3.32, joao: 3.32 }
+    expect(canAdvance.value).toBe(false) // Fora da tolerância
+  })
+
+  it('deve sincronizar dinamicamente a prop de membros e higienizar deletados', async () => {
+    const membrosRef = ref<{ id: string; nome: string }[]>([])
+    const [{ participantesDivisao }] = withSetup(() => useNovoLancamentoWizard(() => membrosRef.value))
+
+    // Inicia vazia
+    expect(participantesDivisao.value.length).toBe(0)
+
+    // Simula membros carregados assincronamente
+    membrosRef.value = ['luan', 'maria'].map(id => ({ id, nome: id }))
+    await Promise.resolve() // Watch tick do Vue
+    expect(participantesDivisao.value).toEqual(['luan', 'maria'])
+
+    // Simula remoção de um membro (higienização)
+    membrosRef.value = [{ id: 'luan', nome: 'luan' }]
+    await Promise.resolve() // Watch tick do Vue
+    expect(participantesDivisao.value).toEqual(['luan'])
   })
 })

@@ -64,4 +64,15 @@ describe('LocalStorageGastoRepository', () => {
     expect(recuperado!.isLoan).toBe(true)
     expect(recuperado!.borrowerId).toBe('m2')
   })
+
+  it('deve lancar erro grave e recusar salvar/listar se os dados locais de gastos estiverem corrompidos', async () => {
+    localStorage.setItem('divi_gastos_cartao', '{invalid-json')
+    await expect(repo.listarTodos()).rejects.toThrow('Banco de dados local de gastos corrompido')
+
+    const total = Dinheiro.deCentavos(5000)
+    const divisoes = [new DivisaoDeGasto('m1', Dinheiro.deCentavos(5000))]
+    const gasto = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Carrefour', valorTotal: total, compradorId: 'm1', divisoes })
+
+    await expect(repo.salvar(gasto)).rejects.toThrow('Banco de dados local de gastos corrompido')
+  })
 })

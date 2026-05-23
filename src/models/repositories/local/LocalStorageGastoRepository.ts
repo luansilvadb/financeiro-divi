@@ -38,6 +38,39 @@ export class LocalStorageGastoRepository implements IGastoRepository {
     })
   }
 
+  async salvarMuitos(gastos: Gasto[]): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
+      const todos = await this.listarTodos()
+      for (const gasto of gastos) {
+        const index = todos.findIndex(g => g.id === gasto.id)
+        if (index >= 0) {
+          todos[index] = gasto
+        } else {
+          todos.push(gasto)
+        }
+      }
+      const dtos = todos.map(g => ({
+        id: g.id,
+        faturaId: g.faturaId,
+        descricao: g.descricao,
+        valorTotalCentavos: g.valorTotal.centavos,
+        compradorId: g.compradorId,
+        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
+        installments: g.installments,
+        totalInstallments: g.totalInstallments,
+        isLoan: g.isLoan,
+        borrowerId: g.borrowerId,
+        recurringBillId: g.recurringBillId,
+        isSettlement: g.isSettlement,
+        settlementDetails: g.settlementDetails,
+        method: g.method,
+        cardOwner: g.cardOwner,
+        grupoParcelasId: g.grupoParcelasId
+      }))
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+    })
+  }
+
   async buscarPorFatura(faturaId: string): Promise<Gasto[]> {
     const todos = await this.listarTodos()
     return todos.filter(g => g.faturaId === faturaId)
@@ -74,6 +107,32 @@ export class LocalStorageGastoRepository implements IGastoRepository {
     })
   }
 
+  async excluirMuitos(ids: string[]): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
+      const todos = await this.listarTodos()
+      const filtrados = todos.filter(g => !ids.includes(g.id))
+      const dtos = filtrados.map(g => ({
+        id: g.id,
+        faturaId: g.faturaId,
+        descricao: g.descricao,
+        valorTotalCentavos: g.valorTotal.centavos,
+        compradorId: g.compradorId,
+        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
+        installments: g.installments,
+        totalInstallments: g.totalInstallments,
+        isLoan: g.isLoan,
+        borrowerId: g.borrowerId,
+        recurringBillId: g.recurringBillId,
+        isSettlement: g.isSettlement,
+        settlementDetails: g.settlementDetails,
+        method: g.method,
+        cardOwner: g.cardOwner,
+        grupoParcelasId: g.grupoParcelasId
+      }))
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+    })
+  }
+
   async listarTodos(): Promise<Gasto[]> {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
@@ -105,8 +164,8 @@ export class LocalStorageGastoRepository implements IGastoRepository {
         })
       })
     } catch (e) {
-      console.error(e)
-      return []
+      console.error('Erro grave de integridade no banco de dados local de gastos:', e)
+      throw new Error('Banco de dados local de gastos corrompido. Operação abortada para evitar perda de dados.')
     }
   }
 }

@@ -26,6 +26,26 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
     })
   }
 
+  async salvarMuitas(faturas: Fatura[]): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_faturas', async () => {
+      const todas = await this.listarTodas()
+      for (const fatura of faturas) {
+        const index = todas.findIndex(f => f.id === fatura.id)
+        if (index >= 0) {
+          todas[index] = fatura
+        } else {
+          const dupIdx = todas.findIndex(f => f.cartaoId === fatura.cartaoId && f.periodo.mes === fatura.periodo.mes && f.periodo.ano === fatura.periodo.ano)
+          if (dupIdx >= 0) {
+            todas[dupIdx] = fatura
+          } else {
+            todas.push(fatura)
+          }
+        }
+      }
+      this.salvarListaFaturasFisicamente(todas)
+    })
+  }
+
   async buscarPorId(id: string): Promise<Fatura | null> {
     const todas = await this.listarTodas()
     return todas.find(f => f.id === id) || null
@@ -46,8 +66,8 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
         dataPagamentoBanco: f.dataPagamentoBanco ? new Date(f.dataPagamentoBanco) : undefined
       }))
     } catch (e) {
-      console.error(e)
-      return []
+      console.error('Erro grave de integridade no banco de dados local de faturas:', e)
+      throw new Error('Banco de dados local de faturas corrompido. Operação abortada para evitar perda de dados.')
     }
   }
 

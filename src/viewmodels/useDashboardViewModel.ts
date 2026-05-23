@@ -318,7 +318,6 @@ export function useDashboardViewModel(
   }
 
   const enviarReembolsoPix = async (acertoId: string) => {
-    if (faturaSelecionadaTrancada.value) return
     if (valorPixInput.value <= 0) return
     isSubmittingPix.value = true
     try {
@@ -331,7 +330,6 @@ export function useDashboardViewModel(
   }
 
   const quitarComAjuste = async (acertoId: string) => {
-    if (faturaSelecionadaTrancada.value) return
     isSubmittingPix.value = true
     try {
       await quitarAcertoMembro(acertoId)
@@ -374,10 +372,17 @@ export function useDashboardViewModel(
     await cartoesEFaturas.inicializar()
   }
 
+  const isExecutingRollover = ref(false)
+
   const confirmarNovoPeriodo = async () => {
-    if (!nomeNovoPeriodo.value.trim()) return
-    await executarNovoPeriodo(nomeNovoPeriodo.value)
-    showBottomSheetNovoPeriodo.value = false
+    if (!nomeNovoPeriodo.value.trim() || isExecutingRollover.value) return
+    isExecutingRollover.value = true
+    try {
+      await executarNovoPeriodo(nomeNovoPeriodo.value)
+      showBottomSheetNovoPeriodo.value = false
+    } finally {
+      isExecutingRollover.value = false
+    }
   }
 
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
@@ -508,6 +513,7 @@ export function useDashboardViewModel(
     confirmarLancarBill,
     confirmarSalvarTemplate,
     confirmarNovoPeriodo,
+    isExecutingRollover,
     confirmarBaixaNetting,
     confirmarEstorno,
     excluirGasto,

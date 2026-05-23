@@ -103,4 +103,20 @@ describe('useCartoesEFaturas', () => {
     // O gasto deve ser carregado globalmente
     expect(gastos.value.some(g => g.id === 'g-virtual-teste')).toBe(true)
   })
+
+  it('deve incluir faturas com status ACERTADA na listagem de faturasFechadas', async () => {
+    const { faturas, faturasFechadas, inicializar } = useCartoesEFaturas()
+    
+    const { LocalStorageFaturaRepository } = await import('../models/repositories/local/LocalStorageFaturaRepository')
+    const fRepo = new LocalStorageFaturaRepository()
+    const { Fatura } = await import('../models/entities/Fatura')
+    
+    const faturaAcertada = new Fatura({ id: 'f_acertada', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ACERTADA' })
+    await fRepo.salvar(faturaAcertada)
+    
+    await inicializar()
+    
+    expect(faturas.value.some(f => f.id === 'f_acertada')).toBe(true)
+    expect(faturasFechadas.value.some(f => f.id === 'f_acertada')).toBe(true)
+  })
 })

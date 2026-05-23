@@ -74,4 +74,76 @@ describe('AcertoService', () => {
     expect(acerto.pago).toBe(true)
     expect(fatura.status).toBe('FECHADA') // Continua FECHADA pois banco não foi pago!
   })
+
+  it('deve sincronizar com carryovers na fatura do periodo seguinte e reduzi-los ou exclui-los', async () => {
+    const acerto = new AcertoMembro({
+      id: 'a-antigo',
+      faturaId: 'f-antiga',
+      membroId: 'membro-devedor',
+      totalConsumido: Dinheiro.deCentavos(5000)
+    })
+    
+    const faturaAntiga = new Fatura({
+      id: 'f-antiga',
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: 5, ano: 2026 },
+      responsavelId: 'membro-credor',
+      status: 'FECHADA'
+    })
+
+    const faturaPixProx = new Fatura({
+      id: 'f-nova-pix',
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: 6, ano: 2026 },
+      responsavelId: 'PIX_SYSTEM_OWNER',
+      status: 'ABERTA'
+    })
+
+    const { Gasto } = await import('../entities/Gasto')
+    const { DivisaoDeGasto } = await import('../entities/DivisaoDeGasto')
+
+    const carryoverGasto = new Gasto({
+      id: 'carry-1',
+      faturaId: 'f-nova-pix',
+      descricao: 'Saldo Inicial Pendente (Maio)',
+      valorTotal: Dinheiro.deCentavos(5000),
+      compradorId: 'membro-credor',
+      divisoes: [new DivisaoDeGasto('membro-devedor', Dinheiro.deCentavos(5000))],
+      isSettlement: true,
+      installments: 1
+    })
+
+    const acertoRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(acerto),
+      buscarPorFatura: vi.fn().mockResolvedValue([acerto]),
+      salvar: vi.fn()
+    }
+    const faturaRepo = {
+      buscarPorId: vi.fn().mockImplementation(async (id) => {
+        if (id === 'f-antiga') return faturaAntiga
+        if (id === 'f-nova-pix') return faturaPixProx
+        return null
+      }),
+      listarTodas: vi.fn().mockResolvedValue([faturaAntiga, faturaPixProx]),
+      salvar: vi.fn()
+    }
+    const gastoRepo = {
+      buscarPorFatura: vi.fn().mockResolvedValue([carryoverGasto]),
+      excluir: vi.fn(),
+      salvar: vi.fn()
+    }
+
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any, gastoRepo as any)
+    
+    // Quita parcialmente (abate carryover)
+    await service.registrarReembolsoMembro('a-antigo', Dinheiro.deCentavos(3000))
+    
+    expect(gastoRepo.salvar).toHaveBeenCalled()
+    const callArgs = gastoRepo.salvar.mock.calls[0][0] as any
+    expect(callArgs.valorTotal.centavos).toBe(2000) // 5000 - 3000
+
+    // Quita totalmente (deve excluir carryover)
+    await service.registrarReembolsoMembro('a-antigo', Dinheiro.deCentavos(2000))
+    expect(gastoRepo.excluir).toHaveBeenCalledWith('carry-1')
+  })
 })

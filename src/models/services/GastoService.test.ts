@@ -7,8 +7,8 @@ import { Fatura } from '../entities/Fatura'
 
 describe('GastoService', () => {
   it('deve lancar um gasto simples com sucesso', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }])
@@ -32,8 +32,8 @@ describe('GastoService', () => {
   })
 
   it('deve lancar gasto de conta fixa com sucesso', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
@@ -49,8 +49,8 @@ describe('GastoService', () => {
   })
 
   it('deve atualizar um gasto completo com sucesso', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const originalGasto = new Gasto({
@@ -83,8 +83,8 @@ describe('GastoService', () => {
   })
 
   it('deve resolver corretamente o dono do cartao e salvar com o responsavel do cartao quando o comprador for diferente', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     // Membro B é o dono do cartão. Membro A é o comprador.
@@ -119,8 +119,8 @@ describe('GastoService', () => {
   })
 
   it('deve atualizar todas as parcelas do mesmo grupo mantendo os IDs e faturas quando installments permanece igual', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const g1 = new Gasto({
@@ -167,32 +167,33 @@ describe('GastoService', () => {
       installments: 2
     })
 
-    expect(mockGastoRepo.salvar).toHaveBeenCalledTimes(2)
+    expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
     
-    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'g1',
-      faturaId: 'f1',
-      descricao: 'Atualizado',
-      valorTotal: expect.objectContaining({ centavos: 12000 }),
-      installments: 2,
-      totalInstallments: 2,
-      grupoParcelasId: 'grupo-x'
-    }))
-
-    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'g2',
-      faturaId: 'f2',
-      descricao: 'Atualizado',
-      valorTotal: expect.objectContaining({ centavos: 12000 }),
-      installments: 1,
-      totalInstallments: 2,
-      grupoParcelasId: 'grupo-x'
-    }))
+    expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'g1',
+        faturaId: 'f1',
+        descricao: 'Atualizado',
+        valorTotal: expect.objectContaining({ centavos: 12000 }),
+        installments: 2,
+        totalInstallments: 2,
+        grupoParcelasId: 'grupo-x'
+      }),
+      expect.objectContaining({
+        id: 'g2',
+        faturaId: 'f2',
+        descricao: 'Atualizado',
+        valorTotal: expect.objectContaining({ centavos: 12000 }),
+        installments: 1,
+        totalInstallments: 2,
+        grupoParcelasId: 'grupo-x'
+      })
+    ]))
   })
 
   it('deve recriar as parcelas (excluir e relancar) quando o total de parcelas ou metodo muda', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const g1 = new Gasto({
@@ -249,15 +250,14 @@ describe('GastoService', () => {
       installments: 3
     })
 
-    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g1')
-    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g2')
+    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g1', 'g2'])
 
-    expect(mockGastoRepo.salvar).toHaveBeenCalledTimes(3)
+    expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
   })
 
   it('deve excluir todos os gastos do grupo (em cascata) quando um gasto do grupo eh excluido', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const g1 = new Gasto({
@@ -294,13 +294,12 @@ describe('GastoService', () => {
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     await service.excluirGasto('g1')
 
-    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g1')
-    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g2')
+    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g1', 'g2'])
   })
 
   it('deve remover a associacao de conta fixa anulando o recurringBillId de gastos correspondentes', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const gastoComContaFixa = new Gasto({
@@ -325,8 +324,8 @@ describe('GastoService', () => {
   })
 
   it('deve lancar erro ao tentar lancar um gasto em fatura fechada ou acertada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const faturaFechada = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
@@ -350,8 +349,8 @@ describe('GastoService', () => {
   })
 
   it('deve lancar erro ao tentar excluir um gasto simples em fatura fechada ou acertada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const gasto = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Gasto', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))] })
@@ -366,8 +365,8 @@ describe('GastoService', () => {
   })
 
   it('deve excluir apenas parcelas em faturas abertas ao excluir grupo de parcelas', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const g1 = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'P1', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 2, totalInstallments: 2 })
@@ -388,13 +387,12 @@ describe('GastoService', () => {
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     await service.excluirGasto('g1')
 
-    expect(mockGastoRepo.excluir).not.toHaveBeenCalledWith('g1')
-    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g2')
+    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g2'])
   })
 
   it('deve lancar erro ao tentar atualizar gasto simples em fatura fechada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const gasto = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Gasto', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))] })
@@ -417,8 +415,8 @@ describe('GastoService', () => {
   })
 
   it('deve lancar erro ao tentar alterar parcelamento de grupo com parcelas em faturas fechadas', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const g1 = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'P1', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 2, totalInstallments: 2 })
@@ -446,12 +444,12 @@ describe('GastoService', () => {
       cardOwner: 'c1',
       divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
       installments: 3
-    })).rejects.toThrow('Não é possível alterar o parcelamento ou método de pagamento de um gasto que possui parcelas em faturas fechadas')
+    })).rejects.toThrow('Não é possível alterar o valor, parcelamento, comprador ou divisões de um gasto que possui parcelas em faturas fechadas')
   })
 
   it('deve atualizar apenas parcelas em faturas abertas de um grupo de parcelas', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     const g1 = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'P1', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 2, totalInstallments: 2, method: 'card', cardOwner: 'm1' })
@@ -475,19 +473,93 @@ describe('GastoService', () => {
 
     await service.atualizarGastoCompleto('g1', {
       descricao: 'Atualizado',
-      valorTotal: Dinheiro.deReais(100),
+      valorTotal: Dinheiro.deReais(50), // mantemos o valor para permitir edição apenas cosmética
+      compradorId: 'm1',
+      method: 'card',
+      cardOwner: 'c1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], // mantemos a divisão
+      installments: 2
+    })
+
+    expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
+    expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'g2',
+        descricao: 'Atualizado'
+      })
+    ]))
+  })
+
+  it('deve lancar erro ao tentar alterar valor ou rateio de grupo de parcelas com alguma fechada', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const g1 = new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'P1', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 2, totalInstallments: 2, method: 'card', cardOwner: 'm1' })
+    const g2 = new Gasto({ id: 'g2', faturaId: 'f2', descricao: 'P2', compradorId: 'm1', valorTotal: Dinheiro.deReais(50), divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))], grupoParcelasId: 'grupo-x', installments: 1, totalInstallments: 2, method: 'card', cardOwner: 'm1' })
+
+    const faturaFechada = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const faturaAberta = new Fatura({ id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(g1)
+    mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
+    mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }])
+
+    mockFaturaRepo.buscarPorId.mockImplementation(async (id) => {
+      if (id === 'f1') return faturaFechada
+      if (id === 'f2') return faturaAberta
+      return null
+    })
+
+    const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
+
+    await expect(service.atualizarGastoCompleto('g1', {
+      descricao: 'Atualizado',
+      valorTotal: Dinheiro.deReais(100), // Alterou o valor
       compradorId: 'm1',
       method: 'card',
       cardOwner: 'c1',
       divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
       installments: 2
+    })).rejects.toThrow('Não é possível alterar o valor, parcelamento, comprador ou divisões de um gasto que possui parcelas em faturas fechadas')
+  })
+
+  it('deve reconciliar e dar baixa em acertos de membros pendentes do periodo anterior ao registrar netting', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    const mockAcertoRepo = { buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn(), listarTodos: vi.fn() }
+
+    const faturaAtual = new Fatura({ id: 'f-fevereiro', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 2, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const faturaAnterior = new Fatura({ id: 'f-janeiro', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 1, ano: 2026 }, responsavelId: 'membro-credor', status: 'FECHADA', dataPagamentoBanco: new Date() })
+
+    const { AcertoMembro } = await import('../entities/AcertoMembro')
+    const acertoPendente = new AcertoMembro({
+      id: 'a-janeiro',
+      faturaId: 'f-janeiro',
+      membroId: 'membro-devedor',
+      totalConsumido: Dinheiro.deCentavos(5000)
     })
 
-    expect(mockGastoRepo.salvar).toHaveBeenCalledTimes(1)
-    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'g2',
-      descricao: 'Atualizado'
-    }))
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaAtual)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
+    mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoPendente])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, mockAcertoRepo as any)
+    
+    await service.registrarAcertoNetting({
+      faturaId: 'f-fevereiro',
+      descricao: 'Acerto de Saldo',
+      valor: 50,
+      fromMemberId: 'membro-devedor',
+      toMemberId: 'membro-credor',
+      method: 'pix'
+    })
+
+    expect(mockAcertoRepo.salvar).toHaveBeenCalled()
+    expect(acertoPendente.pago).toBe(true)
+    expect(faturaAnterior.status).toBe('ACERTADA')
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(faturaAnterior)
   })
 })
 

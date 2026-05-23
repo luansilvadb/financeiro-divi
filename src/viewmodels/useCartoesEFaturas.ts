@@ -22,11 +22,26 @@ import {
   gastoService
 } from '../shared/container'
 
-const cartoes = ref<Cartao[]>([])
-const faturas = ref<Fatura[]>([])
-const acertos = ref<AcertoMembro[]>([])
-const gastos = ref<Gasto[]>([])
-const inicializado = ref(false)
+export interface CartoesEFaturasState {
+  cartoes: Cartao[]
+  faturas: Fatura[]
+  acertos: AcertoMembro[]
+  gastos: Gasto[]
+  inicializado: boolean
+  estaCarregando: boolean
+  erroInicializacao: string | null
+}
+
+const state = ref<CartoesEFaturasState>({
+  cartoes: [],
+  faturas: [],
+  acertos: [],
+  gastos: [],
+  inicializado: false,
+  estaCarregando: false,
+  erroInicializacao: null
+})
+
 let promiseInicializacao: Promise<void> | null = null
 
 export interface CartoesEFaturasDependencies {
@@ -52,26 +67,36 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
   const inicializar = async () => {
     if (promiseInicializacao) return promiseInicializacao
     
+    state.value.estaCarregando = true
+    state.value.erroInicializacao = null
+
     const carregar = async () => {
-      if (typeof localFaturaRepo.executarMigracoesEDesduplicacao === 'function') {
-        await localFaturaRepo.executarMigracoesEDesduplicacao()
+      try {
+        if (typeof localFaturaRepo.executarMigracoesEDesduplicacao === 'function') {
+          await localFaturaRepo.executarMigracoesEDesduplicacao()
+        }
+
+        const todosCartoes = await localCartaoRepo.listarTodos()
+        state.value.cartoes = todosCartoes
+
+        const hoje = new Date()
+        const mesAtual = hoje.getMonth() + 1
+        const anoAtual = hoje.getFullYear()
+
+        const todasFaturas = await localFaturaService.assegurarFaturasAbertas(todosCartoes, mesAtual, anoAtual)
+        state.value.faturas = todasFaturas
+
+        const todosAcertos = await localAcertoRepo.listarTodos()
+        const todosGastos = await localGastoRepo.listarTodos()
+        state.value.acertos = todosAcertos
+        state.value.gastos = todosGastos
+        state.value.inicializado = true
+      } catch (err: any) {
+        state.value.erroInicializacao = err?.message || 'Falha de leitura'
+        throw err
+      } finally {
+        state.value.estaCarregando = false
       }
-
-      const todosCartoes = await localCartaoRepo.listarTodos()
-      cartoes.value = todosCartoes
-
-      const hoje = new Date()
-      const mesAtual = hoje.getMonth() + 1
-      const anoAtual = hoje.getFullYear()
-
-      const todasFaturas = await localFaturaService.assegurarFaturasAbertas(todosCartoes, mesAtual, anoAtual)
-      faturas.value = todasFaturas
-
-      const todosAcertos = await localAcertoRepo.listarTodos()
-      const todosGastos = await localGastoRepo.listarTodos()
-      acertos.value = todosAcertos
-      gastos.value = todosGastos
-      inicializado.value = true
     }
 
     promiseInicializacao = carregar()
@@ -80,10 +105,6 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     } finally {
       promiseInicializacao = null
     }
-  }
-
-  if (!inicializado.value) {
-    inicializar()
   }
 
   const adicionarCartao = async (nome: string, diaFechamento: number, responsavelPadraoId: string) => {
@@ -143,16 +164,37 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     await inicializar()
   }
 
-  const faturasAbertas = computed(() => faturas.value.filter(f => f.status === 'ABERTA'))
-  const faturasFechadas = computed(() => faturas.value.filter(f => f.status === 'FECHADA'))
+  const cartoes = computed({
+    get: () => state.value.cartoes,
+    set: (val) => { state.value.cartoes = val }
+  })
+  const faturas = computed({
+    get: () => state.value.faturas,
+    set: (val) => { state.value.faturas = val }
+  })
+  const acertos = computed({
+    get: () => state.value.acertos,
+    set: (val) => { state.value.acertos = val }
+  })
+  const gastos = computed({
+    get: () => state.value.gastos,
+    set: (val) => { state.value.gastos = val }
+  })
+  const faturasAbertas = computed(() => state.value.faturas.filter(f => f.status === 'ABERTA'))
+  const faturasFechadas = computed(() => state.value.faturas.filter(f => f.status === 'FECHADA' || f.status === 'ACERTADA'))
 
   const calcularConsumoMembro = (faturaId: string, membroId: string) => {
-    const gastosDaFatura = gastos.value.filter(g => g.faturaId === faturaId)
+    const gastosDaFatura = state.value.gastos.filter(g => g.faturaId === faturaId)
     let total = 0
     gastosDaFatura.forEach(g => {
+      const divisor = g.totalInstallments || g.installments || 1
+      const index = Math.max(0, divisor - g.installments)
       g.divisoes.forEach(d => {
         if (d.membroId === membroId) {
-          total += d.valor.centavos / g.totalInstallments
+          const parcelas = d.valor.distribuir(divisor)
+          if (index < parcelas.length) {
+            total += parcelas[index].centavos
+          }
         }
       })
     })
@@ -160,11 +202,16 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
   }
 
   const resetar = () => {
-    cartoes.value = []
-    faturas.value = []
-    acertos.value = []
-    gastos.value = []
-    inicializado.value = false
+    state.value = {
+      cartoes: [],
+      faturas: [],
+      acertos: [],
+      gastos: [],
+      inicializado: false,
+      estaCarregando: false,
+      erroInicializacao: null
+    }
+    promiseInicializacao = null
   }
 
   return {
@@ -172,6 +219,8 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     faturas,
     acertos,
     gastos,
+    estaCarregando: computed(() => state.value.estaCarregando),
+    erroInicializacao: computed(() => state.value.erroInicializacao),
     inicializar,
     adicionarCartao,
     salvarCartaoManual,

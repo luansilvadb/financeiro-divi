@@ -23,12 +23,16 @@ export class LocalStorageMembroRepository implements IMembroRepository {
   async listarTodos(): Promise<Membro[]> {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
-    
-    const raw = JSON.parse(data)
-    return raw.map((m: any) => new Membro({
-      ...m,
-      dataCriacao: new Date(m.dataCriacao)
-    }))
+    try {
+      const raw = JSON.parse(data)
+      return raw.map((m: any) => new Membro({
+        ...m,
+        dataCriacao: new Date(m.dataCriacao)
+      }))
+    } catch (e) {
+      console.error('Erro grave de integridade no banco de dados local de membros:', e)
+      throw new Error('Banco de dados local de membros corrompido. Operação abortada para evitar perda de dados.')
+    }
   }
 
   async buscarPorId(id: string): Promise<Membro | null> {

@@ -115,6 +115,13 @@ describe('Dinheiro Value Object', () => {
       expect(partes[2].centavos).toBe(500)
     })
 
+    it('deve lancar erro ao tentar distribuir por pesos com soma menor ou igual a zero ou peso negativo', () => {
+      const d = Dinheiro.deReais(10)
+      expect(() => d.distribuirPorPesos([-1, 1])).toThrow('Os pesos não podem conter valores negativos')
+      expect(() => d.distribuirPorPesos([0, 0])).toThrow('A soma dos pesos deve ser maior que zero')
+      expect(() => d.distribuirPorPesos([-2, -2])).toThrow('Os pesos não podem conter valores negativos')
+    })
+
     describe('Property-Based Constraints (Invariantes)', () => {
       const cenarios = [
         { total: 1000, partes: 3 },   // R$ 10,00 por 3

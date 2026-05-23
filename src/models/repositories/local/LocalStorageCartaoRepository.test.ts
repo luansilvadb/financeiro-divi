@@ -29,4 +29,9 @@ describe('LocalStorageCartaoRepository', () => {
     listados = await repo.listarTodos()
     expect(listados.some(c => c.id === 'c99')).toBe(false)
   })
+
+  it('deve lançar erro se o banco de dados local estiver corrompido', async () => {
+    localStorage.setItem('divi_cartoes', '{invalid-json}')
+    await expect(repo.listarTodos()).rejects.toThrow('Banco de dados local de cartões corrompido')
+  })
 })

@@ -1,6 +1,7 @@
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../repositories/ICartaoRepository'
+import type { IAcertoMembroRepository } from '../repositories/IAcertoMembroRepository'
 import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
@@ -11,7 +12,8 @@ export class GastoService implements IGastoService {
   constructor(
     private gastoRepo: IGastoRepository,
     private faturaRepo: IFaturaRepository,
-    private cartaoRepo: ICartaoRepository
+    private cartaoRepo: ICartaoRepository,
+    private acertoRepo?: IAcertoMembroRepository
   ) {}
 
   async lancarGastoOuEmprestimo(dados: {
@@ -126,6 +128,8 @@ export class GastoService implements IGastoService {
   }): Promise<void> {
     const { total, divisoes, faturaAtiva, descricao, compradorId, installments, cardOwner, responsavelFaturaId } = dados
     const grupoParcelasId = crypto.randomUUID()
+    const faturasParaSalvar: Fatura[] = []
+    const gastosParaSalvar: Gasto[] = []
 
     const primeiroGasto = this.construirGasto({
       faturaId: faturaAtiva.id,
@@ -141,7 +145,7 @@ export class GastoService implements IGastoService {
       cardOwner,
       grupoParcelasId
     })
-    await this.gastoRepo.salvar(primeiroGasto)
+    gastosParaSalvar.push(primeiroGasto)
 
     let currentMes = faturaAtiva.periodo.mes
     let currentAno = faturaAtiva.periodo.ano
@@ -153,7 +157,14 @@ export class GastoService implements IGastoService {
         currentAno++
       }
 
-      const faturaFutura = await this.obterOuCriarFatura(faturaAtiva.cartaoId, currentMes, currentAno, responsavelFaturaId)
+      const faturaFutura = await this.obterOuCriarFaturaMemoria(
+        faturaAtiva.cartaoId,
+        currentMes,
+        currentAno,
+        responsavelFaturaId,
+        faturasParaSalvar
+      )
+
       const gastoFuturo = this.construirGasto({
         faturaId: faturaFutura.id,
         descricao,
@@ -168,8 +179,42 @@ export class GastoService implements IGastoService {
         cardOwner,
         grupoParcelasId
       })
-      await this.gastoRepo.salvar(gastoFuturo)
+      gastosParaSalvar.push(gastoFuturo)
     }
+
+    if (faturasParaSalvar.length > 0) {
+      await this.faturaRepo.salvarMuitas(faturasParaSalvar)
+    }
+    await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+  }
+
+  private async obterOuCriarFaturaMemoria(
+    cartaoId: string,
+    mes: number,
+    ano: number,
+    responsavelId: string,
+    acumuladorMemoria: Fatura[]
+  ): Promise<Fatura> {
+    const todasFaturas = await this.faturaRepo.listarTodas()
+    
+    // Primeiro procura nas faturas persistidas
+    let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+    if (fatura) return fatura
+
+    // Depois procura no acumulador temporário
+    fatura = acumuladorMemoria.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+    if (fatura) return fatura
+
+    // Cria nova se não existir em nenhum lugar
+    const novaFatura = new Fatura({
+      id: crypto.randomUUID(),
+      cartaoId,
+      periodo: { mes, ano },
+      responsavelId,
+      status: 'ABERTA'
+    })
+    acumuladorMemoria.push(novaFatura)
+    return novaFatura
   }
 
   async excluirGasto(id: string): Promise<void> {
@@ -179,11 +224,15 @@ export class GastoService implements IGastoService {
     if (gasto.grupoParcelasId) {
       const todos = await this.gastoRepo.listarTodos()
       const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
+      const idsParaDeletar: string[] = []
       for (const g of grupo) {
         const fatura = await this.faturaRepo.buscarPorId(g.faturaId)
         if (!fatura || fatura.status === 'ABERTA') {
-          await this.gastoRepo.excluir(g.id)
+          idsParaDeletar.push(g.id)
         }
+      }
+      if (idsParaDeletar.length > 0) {
+        await this.gastoRepo.excluirMuitos(idsParaDeletar)
       }
     } else {
       const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
@@ -220,6 +269,49 @@ export class GastoService implements IGastoService {
       isLoan: false
     })
     await this.gastoRepo.salvar(acertoGasto)
+
+    // Reconciliar acertos devedores pendentes do período anterior
+    const faturaAtual = await this.faturaRepo.buscarPorId(dados.faturaId)
+    if (faturaAtual && this.acertoRepo) {
+      let anteriorMes = faturaAtual.periodo.mes - 1
+      let anteriorAno = faturaAtual.periodo.ano
+      if (anteriorMes < 1) {
+        anteriorMes = 12
+        anteriorAno -= 1
+      }
+
+      const todasFaturas = await this.faturaRepo.listarTodas()
+      const faturasAnterioresFechadas = todasFaturas.filter(
+        f => f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno && f.status === 'FECHADA'
+      )
+
+      let nettingRestanteCentavos = total.centavos
+
+      for (const fatAnterior of faturasAnterioresFechadas) {
+        if (nettingRestanteCentavos <= 0) break
+
+        const acertosMembro = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
+        const acertoPendente = acertosMembro.find(a => a.membroId === dados.fromMemberId && !a.pago)
+
+        if (acertoPendente) {
+          const faltaPagarCentavos = acertoPendente.valorAcerto.centavos - acertoPendente.valorPago.centavos
+          if (faltaPagarCentavos > 0) {
+            const valorAbateCentavos = Math.min(nettingRestanteCentavos, faltaPagarCentavos)
+            acertoPendente.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
+            await this.acertoRepo.salvar(acertoPendente)
+            nettingRestanteCentavos -= valorAbateCentavos
+
+            // Se todos os acertos da fatura anterior forem pagos, marca ela como ACERTADA
+            const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
+            const todosQuitados = acertosAtualizados.every(a => a.pago)
+            if (todosQuitados && fatAnterior.dataPagamentoBanco) {
+              fatAnterior.marcarAcertada()
+              await this.faturaRepo.salvar(fatAnterior)
+            }
+          }
+        }
+      }
+    }
   }
 
   async lancarGastoContaFixa(dados: {
@@ -285,6 +377,28 @@ export class GastoService implements IGastoService {
 
       const possuiFechada = statusFaturas.some(sf => sf.fatura && sf.fatura.status !== 'ABERTA')
 
+      if (possuiFechada) {
+        const valorMudou = !original.valorTotal.equals(dados.valorTotal)
+        const totalInstallmentsMudou = original.totalInstallments !== dados.installments
+        const methodMudou = original.method !== dados.method
+        const compradorMudou = original.compradorId !== dados.compradorId
+        
+        let divisoesMudaram = original.divisoes.length !== dados.divisoes.length
+        if (!divisoesMudaram) {
+          for (const dOriginal of original.divisoes) {
+            const dNova = dados.divisoes.find(dn => dn.membroId === dOriginal.membroId)
+            if (!dNova || !dNova.valor.equals(dOriginal.valor)) {
+              divisoesMudaram = true
+              break
+            }
+          }
+        }
+
+        if (valorMudou || totalInstallmentsMudou || methodMudou || compradorMudou || divisoesMudaram) {
+          throw new Error('Não é possível alterar o valor, parcelamento, comprador ou divisões de um gasto que possui parcelas em faturas fechadas. Reabra as faturas anteriores para ajustar o rateio histórico.')
+        }
+      }
+
       // Se mudou o número total de parcelas ou o método de pagamento
       if (original.totalInstallments !== dados.installments || original.method !== dados.method) {
         if (possuiFechada) {
@@ -299,9 +413,7 @@ export class GastoService implements IGastoService {
         }
 
         // Excluir todos do grupo
-        for (const g of gastosDoGrupo) {
-          await this.gastoRepo.excluir(g.id)
-        }
+        await this.gastoRepo.excluirMuitos(gastosDoGrupo.map(g => g.id))
 
         // Relançar do período inicial
         const periodoInicial = faturaOriginal ? faturaOriginal.periodo : { mes: 1, ano: 2026 } // Fallback seguro
@@ -319,6 +431,9 @@ export class GastoService implements IGastoService {
         })
       } else {
         // Atualizar apenas parcelas em faturas abertas
+        const faturasParaSalvar: Fatura[] = []
+        const gastosParaSalvar: Gasto[] = []
+
         for (const sf of statusFaturas) {
           if (sf.fatura && sf.fatura.status !== 'ABERTA') {
             continue // Ignora parcelas passadas fechadas
@@ -332,7 +447,7 @@ export class GastoService implements IGastoService {
               ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'))
               : 'PIX_DEFAULT_ID'
             const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
-            const novaFatura = await this.obterOuCriarFatura(cartaoId, sf.fatura.periodo.mes, sf.fatura.periodo.ano, responsavelFaturaId)
+            const novaFatura = await this.obterOuCriarFaturaMemoria(cartaoId, sf.fatura.periodo.mes, sf.fatura.periodo.ano, responsavelFaturaId, faturasParaSalvar)
             if (novaFatura && typeof novaFatura.validarOperacaoPermitida === 'function') {
               novaFatura.validarOperacaoPermitida()
             }
@@ -357,7 +472,14 @@ export class GastoService implements IGastoService {
             isSettlement: g.isSettlement,
             settlementDetails: g.settlementDetails
           })
-          await this.gastoRepo.salvar(novoG)
+          gastosParaSalvar.push(novoG)
+        }
+
+        if (faturasParaSalvar.length > 0) {
+          await this.faturaRepo.salvarMuitas(faturasParaSalvar)
+        }
+        if (gastosParaSalvar.length > 0) {
+          await this.gastoRepo.salvarMuitos(gastosParaSalvar)
         }
       }
     }

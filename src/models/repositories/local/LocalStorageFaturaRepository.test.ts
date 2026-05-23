@@ -55,4 +55,12 @@ describe('LocalStorageFaturaRepository', () => {
     expect(gastosAtualizados.length).toBe(1)
     expect(gastosAtualizados[0].faturaId).toBe('f_rem')
   })
+
+  it('deve lancar erro grave e recusar salvar/listar se os dados locais de faturas estiverem corrompidos', async () => {
+    localStorage.setItem('divi_faturas', '{invalid-json')
+    await expect(repo.listarTodas()).rejects.toThrow('Banco de dados local de faturas corrompido')
+
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    await expect(repo.salvar(fatura)).rejects.toThrow('Banco de dados local de faturas corrompido')
+  })
 })

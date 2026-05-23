@@ -21,6 +21,8 @@ export class FaturaService implements IFaturaService {
     fatura.fechar({ responsavelId, dataPagamentoBanco })
     await this.faturaRepo.salvar(fatura)
 
+    // Buscar acertos antigos antes de excluir para preservar dados de pagamento
+    const acertosAntigos = await this.acertoRepo.buscarPorFatura(faturaId)
     await this.acertoRepo.excluirPorFatura(faturaId)
 
     const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
@@ -34,22 +36,30 @@ export class FaturaService implements IFaturaService {
         }
       } else {
         const divisor = g.totalInstallments || g.installments || 1
-        const index = divisor - g.installments
+        const index = Math.max(0, divisor - g.installments)
         for (const div of g.divisoes) {
           const parcelas = div.valor.distribuir(divisor)
-          const valorParcelaCentavos = parcelas[index].centavos
-          consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcelaCentavos
+          if (index < parcelas.length) {
+            const valorParcelaCentavos = parcelas[index].centavos
+            consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcelaCentavos
+          }
         }
       }
     }
 
     for (const [membroId, centavos] of Object.entries(consumoMembros)) {
       if (centavos !== 0) {
+        // Localizar se já existia um acerto pago/reembolsado para esse membro
+        const antigo = acertosAntigos.find(a => a.membroId === membroId)
+
         const acerto = new AcertoMembro({
-          id: crypto.randomUUID(),
+          id: antigo?.id || crypto.randomUUID(),
           faturaId,
           membroId,
-          totalConsumido: Dinheiro.deCentavos(centavos)
+          totalConsumido: Dinheiro.deCentavos(centavos),
+          valorPago: antigo?.valorPago,
+          pago: antigo?.pago,
+          dataPagamento: antigo?.dataPagamento
         })
         await this.acertoRepo.salvar(acerto)
       }

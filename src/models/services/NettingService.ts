@@ -18,26 +18,46 @@ export function calcularSaldosUnificados(
   membros.forEach(m => { saldosCentavos[m.id] = 0 })
 
   gastos.forEach(g => {
-    // O total de parcelas e parcelas restantes define qual índice de parcela estamos processando (0-indexed)
-    const parcelaAtualIdx = g.totalInstallments - g.installments
+    const divisor = g.totalInstallments || g.installments || 1
+    const parcelaAtualIdx = Math.max(0, divisor - g.installments)
 
     if (g.isLoan) {
-      const parcelasEmprestimo = g.valorTotal.distribuir(g.totalInstallments)
-      const valorParcelaCentavos = parcelasEmprestimo[parcelaAtualIdx].centavos
-      if (g.compradorId) saldosCentavos[g.compradorId] += valorParcelaCentavos
-      if (g.borrowerId) saldosCentavos[g.borrowerId] -= valorParcelaCentavos
+      const parcelasEmprestimo = g.valorTotal.distribuir(divisor)
+      if (parcelaAtualIdx < parcelasEmprestimo.length) {
+        const valorParcelaCentavos = parcelasEmprestimo[parcelaAtualIdx].centavos
+        if (g.compradorId) {
+          if (saldosCentavos[g.compradorId] === undefined) {
+            saldosCentavos[g.compradorId] = 0
+          }
+          saldosCentavos[g.compradorId] += valorParcelaCentavos
+        }
+        if (g.borrowerId) {
+          if (saldosCentavos[g.borrowerId] === undefined) {
+            saldosCentavos[g.borrowerId] = 0
+          }
+          saldosCentavos[g.borrowerId] -= valorParcelaCentavos
+        }
+      }
     } else {
       const pagadorId = (g.method === 'card' && g.cardOwner) ? g.cardOwner : g.compradorId
 
       let totalDebitosCentavos = 0
       g.divisoes.forEach(div => {
-        const distribuicaoDiv = div.valor.distribuir(g.totalInstallments)
-        const valorDebitoCentavos = distribuicaoDiv[parcelaAtualIdx].centavos
-        saldosCentavos[div.membroId] -= valorDebitoCentavos
-        totalDebitosCentavos += valorDebitoCentavos
+        const distribuicaoDiv = div.valor.distribuir(divisor)
+        if (parcelaAtualIdx < distribuicaoDiv.length) {
+          const valorDebitoCentavos = distribuicaoDiv[parcelaAtualIdx].centavos
+          if (saldosCentavos[div.membroId] === undefined) {
+            saldosCentavos[div.membroId] = 0
+          }
+          saldosCentavos[div.membroId] -= valorDebitoCentavos
+          totalDebitosCentavos += valorDebitoCentavos
+        }
       })
 
       if (pagadorId) {
+        if (saldosCentavos[pagadorId] === undefined) {
+          saldosCentavos[pagadorId] = 0
+        }
         saldosCentavos[pagadorId] += totalDebitosCentavos
       }
     }

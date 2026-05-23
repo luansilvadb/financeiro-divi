@@ -45,4 +45,9 @@ describe('LocalStorageAcertoMembroRepository', () => {
     expect(recovered!.valorPago.centavos).toBe(10000) // totalConsumido
     expect(recovered!.pago).toBe(true)
   })
+
+  it('deve lançar erro se o banco de dados local estiver corrompido', async () => {
+    localStorage.setItem('divi_acertos_membro', '{invalid-json}')
+    await expect(repo.listarTodos()).rejects.toThrow('Banco de dados local de acertos de membros corrompido')
+  })
 })

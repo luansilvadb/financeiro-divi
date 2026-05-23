@@ -1,4 +1,4 @@
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, isRef, type Ref } from 'vue'
 import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import { obterPeriodoSelecionado } from '../shared/utils/periodoStorage'
 import { Dinheiro } from '../models/entities/Dinheiro'
@@ -33,8 +33,9 @@ function canAdvanceExpense(
       if (modoDivisao === 'IGUAL') {
         return participantes.length > 0
       }
-      const soma = participantes.reduce((acc, id) => acc + (valoresDivisao[id] || 0), 0)
-      return Math.abs(soma - valor) < 0.01
+      const valorCentavos = Math.round(valor * 100)
+      const somaCentavos = participantes.reduce((acc, id) => acc + Math.round((valoresDivisao[id] || 0) * 100), 0)
+      return Math.abs(somaCentavos - valorCentavos) <= 1
     }
   }
   return rules[step]?.() ?? false
@@ -68,10 +69,16 @@ export interface WizardDependencies {
 }
 
 export function useNovoLancamentoWizard(
-  membros: { id: string; nome: string }[] = [],
+  membros: { id: string; nome: string }[] | Ref<{ id: string; nome: string }[]> | (() => { id: string; nome: string }[]) = [],
   dependencies: WizardDependencies = {}
 ) {
   const step = ref(1)
+
+  const membrosComputed = computed(() => {
+    if (typeof membros === 'function') return membros()
+    if (isRef(membros)) return membros.value
+    return membros
+  })
 
   const servicoGasto = dependencies.gastoService || gastoService
 
@@ -86,9 +93,24 @@ export function useNovoLancamentoWizard(
   const installments = ref(1)
 
   // Divisão Imediata
-  const participantesDivisao = ref<string[]>(membros.map(m => m.id))
+  const participantesDivisao = ref<string[]>([])
   const modoDivisaoWizard = ref<'IGUAL' | 'MANUAL'>('IGUAL')
   const valoresDivisaoWizard = ref<Record<string, number>>({})
+
+  // Watch dinâmico para inicializar e higienizar participantesDivisao a partir de props assíncronas
+  watch(
+    membrosComputed,
+    (novosMembros) => {
+      const idsNovos = (novosMembros || []).map(m => m.id)
+      if (participantesDivisao.value.length === 0) {
+        participantesDivisao.value = idsNovos
+      } else {
+        // Higieniza mantendo apenas membros que ainda existem na prop atualizada
+        participantesDivisao.value = participantesDivisao.value.filter(id => idsNovos.includes(id))
+      }
+    },
+    { immediate: true, deep: true }
+  )
 
   // Trilha uniforme de 5 passos para ambos os fluxos
   const totalSteps = computed(() => 5)
@@ -167,7 +189,7 @@ export function useNovoLancamentoWizard(
     compradorSelecionadoId.value = ''
     borrowerId.value = null
     installments.value = 1
-    participantesDivisao.value = membros.map(m => m.id)
+    participantesDivisao.value = membrosComputed.value.map(m => m.id)
     modoDivisaoWizard.value = 'IGUAL'
     valoresDivisaoWizard.value = {}
     limparRascunhoWizard()
@@ -187,6 +209,9 @@ export function useNovoLancamentoWizard(
         if (data.compradorSelecionadoId !== undefined) compradorSelecionadoId.value = data.compradorSelecionadoId
         if (data.borrowerId !== undefined) borrowerId.value = data.borrowerId
         if (data.installments !== undefined) installments.value = data.installments
+        if (data.participantesDivisao !== undefined) participantesDivisao.value = data.participantesDivisao
+        if (data.modoDivisaoWizard !== undefined) modoDivisaoWizard.value = data.modoDivisaoWizard
+        if (data.valoresDivisaoWizard !== undefined) valoresDivisaoWizard.value = data.valoresDivisaoWizard
       } catch (e) {
         console.error('Erro ao carregar rascunho sênior:', e)
       }
@@ -204,7 +229,10 @@ export function useNovoLancamentoWizard(
       descricao: descricao.value,
       compradorSelecionadoId: compradorSelecionadoId.value,
       borrowerId: borrowerId.value,
-      installments: installments.value
+      installments: installments.value,
+      participantesDivisao: participantesDivisao.value,
+      modoDivisaoWizard: modoDivisaoWizard.value,
+      valoresDivisaoWizard: valoresDivisaoWizard.value
     }),
     (state) => {
       clearTimeout(saveTimeout)

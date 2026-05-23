@@ -25,8 +25,9 @@ export class LocalStorageContaFixaRepository implements IContaFixaRepository {
     if (!data) return []
     try {
       return JSON.parse(data) as ContaFixa[]
-    } catch {
-      return []
+    } catch (e) {
+      console.error('Erro grave de integridade no banco de dados local de contas fixas:', e)
+      throw new Error('Banco de dados local de contas fixas corrompido. Operação abortada para evitar perda de dados.')
     }
   }
 

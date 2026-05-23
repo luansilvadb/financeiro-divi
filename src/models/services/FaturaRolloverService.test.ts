@@ -86,7 +86,7 @@ describe('FaturaRolloverService', () => {
     })
 
     const mockFaturaService = {
-      fecharFatura: vi.fn().mockImplementation(async (id, respId, date) => {
+      fecharFatura: vi.fn().mockImplementation(async (_id, respId, date) => {
         faturaAntiga.fechar({ responsavelId: respId, dataPagamentoBanco: date })
       }),
       reabrirFatura: vi.fn(),

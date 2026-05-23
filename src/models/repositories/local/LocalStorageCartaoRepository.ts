@@ -30,8 +30,8 @@ export class LocalStorageCartaoRepository implements ICartaoRepository {
       const raw = JSON.parse(data) as any[]
       return raw.map(c => new Cartao(c))
     } catch (e) {
-      console.error(e)
-      return []
+      console.error('Erro grave de integridade no banco de dados local de cartões:', e)
+      throw new Error('Banco de dados local de cartões corrompido. Operação abortada para evitar perda de dados.')
     }
   }
 

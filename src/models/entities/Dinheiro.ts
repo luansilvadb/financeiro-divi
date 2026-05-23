@@ -70,8 +70,11 @@ export class Dinheiro {
   }
 
   distribuirPorPesos(pesos: number[]): Dinheiro[] {
+    if (pesos.some(p => p < 0)) {
+      throw new Error('Os pesos não podem conter valores negativos')
+    }
     const totalPesos = pesos.reduce((acc, p) => acc + p, 0)
-    if (totalPesos === 0) {
+    if (totalPesos <= 0) {
       throw new Error('A soma dos pesos deve ser maior que zero')
     }
 

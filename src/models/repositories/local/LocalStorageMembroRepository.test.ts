@@ -45,4 +45,9 @@ describe('LocalStorageMembroRepository', () => {
     expect(todos).toHaveLength(1)
     expect(todos[0].nome).toBe('Luan Editado')
   })
+
+  it('deve lançar erro se o banco de dados local estiver corrompido', async () => {
+    localStorage.setItem('divi_membros', '{invalid-json}')
+    await expect(repo.listarTodos()).rejects.toThrow('Banco de dados local de membros corrompido')
+  })
 })

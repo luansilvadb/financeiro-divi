@@ -149,4 +149,40 @@ describe('NettingService', () => {
     expect(saldos2['B']).toBe(-0.16)
     expect(saldos2['C']).toBe(-0.16)
   })
+
+  it('deve lidar com indices invalidos (installments > totalInstallments) sem quebrar e tratar como 0', () => {
+    const membros = [{ id: 'A' }, { id: 'B' }]
+    const gastoInvalido = new Gasto({
+      id: 'g-invalido',
+      faturaId: 'f1',
+      descricao: 'Gasto Invalido',
+      valorTotal: Dinheiro.deReais(10),
+      compradorId: 'A',
+      installments: 3,       // parcelas restantes maior que total
+      totalInstallments: 2,  // total
+      divisoes: [new DivisaoDeGasto('B', Dinheiro.deReais(10))]
+    })
+
+    // Não deve lançar erro
+    const saldos = calcularSaldosUnificados(membros, [gastoInvalido])
+    expect(saldos['A']).toBe(5)
+    expect(saldos['B']).toBe(-5)
+  })
+
+  it('deve lidar com membros ausentes ou desativados inicializando-os na lista de saldos para evitar NaN', () => {
+    const membrosAtivos = [{ id: 'A' }] // B está desativado/ausente da lista de membros ativos passados
+    const gasto = new Gasto({
+      id: 'g1',
+      faturaId: 'f1',
+      descricao: 'Gasto Com Membro Ausente',
+      valorTotal: Dinheiro.deReais(10),
+      compradorId: 'A',
+      installments: 1,
+      divisoes: [new DivisaoDeGasto('B', Dinheiro.deReais(10))]
+    })
+
+    const saldos = calcularSaldosUnificados(membrosAtivos, [gasto])
+    expect(saldos['A']).toBe(10)
+    expect(saldos['B']).toBe(-10) // B foi inserido dinamicamente no mapa de saldos sem gerar NaN
+  })
 })
