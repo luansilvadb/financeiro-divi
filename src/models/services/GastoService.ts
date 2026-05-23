@@ -10,7 +10,6 @@ import { Cartao } from '../entities/Cartao'
 import type { IGastoService, LancarGastoInput } from './IGastoService'
 
 export class GastoService implements IGastoService {
-  private faturasEmCriacao = new Map<string, Promise<Fatura>>()
 
   constructor(
     private gastoRepo: IGastoRepository,
@@ -35,7 +34,7 @@ export class GastoService implements IGastoService {
     const resolvedCardOwner = cartaoReal ? cartaoReal.responsavelPadraoId : null
 
     const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : compradorId
-    const faturaAtiva = await this.obterOuCriarFatura(cartaoId, periodo.mes, periodo.ano, responsavelFaturaId)
+    const faturaAtiva = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, periodo.mes, periodo.ano, responsavelFaturaId)
     if (faturaAtiva && typeof faturaAtiva.validarOperacaoPermitida === 'function') {
       faturaAtiva.validarOperacaoPermitida()
     }
@@ -71,31 +70,6 @@ export class GastoService implements IGastoService {
     }
   }
 
-
-  private async obterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<Fatura> {
-    const chave = `${cartaoId}_${mes}_${ano}`
-    const existing = this.faturasEmCriacao.get(chave)
-    if (existing) return existing
-
-    const promessa = (async () => {
-      const todasFaturas = await this.faturaRepo.listarTodas()
-      let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
-      if (!fatura) {
-        fatura = new Fatura({
-          id: crypto.randomUUID(),
-          cartaoId,
-          periodo: { mes, ano },
-          responsavelId,
-          status: 'ABERTA'
-        })
-        await this.faturaRepo.salvar(fatura)
-      }
-      return fatura
-    })()
-
-    this.faturasEmCriacao.set(chave, promessa)
-    return promessa
-  }
 
   private construirGasto(dados: {
     faturaId: string
@@ -255,8 +229,9 @@ export class GastoService implements IGastoService {
     method: string
   }): Promise<void> {
     const total = Dinheiro.deReais(dados.valor)
+    const deterministicId = `netting-${dados.faturaId}-${dados.fromMemberId}-${dados.toMemberId}-${dados.valor}`
     const acertoGasto = new Gasto({
-      id: crypto.randomUUID(),
+      id: deterministicId,
       faturaId: dados.faturaId,
       descricao: dados.descricao,
       valorTotal: total,
@@ -328,8 +303,9 @@ export class GastoService implements IGastoService {
     const partes = total.distribuir(dados.participantes.length)
     const divisoes = dados.participantes.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
 
+    const deterministicId = `bill-${dados.faturaId}-${dados.conta.id}`
     const novoGasto = new Gasto({
-      id: crypto.randomUUID(),
+      id: deterministicId,
       faturaId: dados.faturaId,
       descricao: `Talão: ${dados.conta.name}`,
       valorTotal: total,
@@ -528,7 +504,7 @@ export class GastoService implements IGastoService {
           ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'))
           : 'PIX_DEFAULT_ID'
         const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
-        const novaFatura = await this.obterOuCriarFatura(cartaoId, faturaOriginal.periodo.mes, faturaOriginal.periodo.ano, responsavelFaturaId)
+        const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, faturaOriginal.periodo.mes, faturaOriginal.periodo.ano, responsavelFaturaId)
         if (novaFatura && typeof novaFatura.validarOperacaoPermitida === 'function') {
           novaFatura.validarOperacaoPermitida()
         }
