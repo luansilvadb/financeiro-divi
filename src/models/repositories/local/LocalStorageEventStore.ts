@@ -1,5 +1,5 @@
-import { IEventStore } from '../IEventStore';
-import { LedgerEvent } from '../../entities/LedgerEvent';
+import type { IEventStore } from '../IEventStore';
+import type { LedgerEvent } from '../../entities/LedgerEvent';
 
 export class LocalStorageEventStore implements IEventStore {
   private readonly STORAGE_KEY = 'divi_event_stream';

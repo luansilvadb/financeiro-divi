@@ -1,4 +1,4 @@
-import { LedgerEvent } from './LedgerEvent';
+import type { LedgerEvent } from './LedgerEvent';
 
 export class LedgerAggregate {
   private closedFaturas = new Set<string>();

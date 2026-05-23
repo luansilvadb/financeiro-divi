@@ -1,4 +1,4 @@
-import { LedgerEvent } from '../entities/LedgerEvent';
+import type { LedgerEvent } from '../entities/LedgerEvent';
 
 export class LedgerProjections {
   static computeSaldos(events: LedgerEvent[]): Record<string, number> {
