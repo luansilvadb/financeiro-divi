@@ -78,4 +78,40 @@ describe('LocalStorageFaturaRepository', () => {
       expect(f.id).toBe(primeiroId) // Todos devem apontar para a mesma fatura física
     })
   })
+
+  it('deve excluir faturas abertas sem gastos associados por cartão', async () => {
+    const f1 = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    const f2 = new Fatura({ id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    const f3 = new Fatura({ id: 'f3', cartaoId: 'c1', periodo: { mes: 7, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const f4 = new Fatura({ id: 'f4', cartaoId: 'c2', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    
+    await repo.salvarMuitas([f1, f2, f3, f4])
+
+    const { LocalStorageGastoRepository } = await import('./LocalStorageGastoRepository')
+    const { Gasto } = await import('../../entities/Gasto')
+    const { Dinheiro } = await import('../../entities/Dinheiro')
+    const { DivisaoDeGasto } = await import('../../entities/DivisaoDeGasto')
+    
+    const gastoRepo = new LocalStorageGastoRepository()
+    const gasto = new Gasto({
+      id: 'g1',
+      faturaId: 'f2',
+      descricao: 'Gasto Teste',
+      valorTotal: Dinheiro.deReais(10),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(10))]
+    })
+    await gastoRepo.salvar(gasto)
+
+    const repoComGasto = new LocalStorageFaturaRepository(gastoRepo)
+    
+    await repoComGasto.excluirFaturasAbertasSemGastosPorCartao('c1')
+
+    const faturasRestantes = await repoComGasto.listarTodas()
+    
+    expect(faturasRestantes.find(f => f.id === 'f1')).toBeUndefined()
+    expect(faturasRestantes.find(f => f.id === 'f2')).not.toBeUndefined()
+    expect(faturasRestantes.find(f => f.id === 'f3')).not.toBeUndefined()
+    expect(faturasRestantes.find(f => f.id === 'f4')).not.toBeUndefined()
+  })
 })

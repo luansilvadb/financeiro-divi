@@ -119,4 +119,41 @@ describe('useCartoesEFaturas', () => {
     expect(faturas.value.some(f => f.id === 'f_acertada')).toBe(true)
     expect(faturasFechadas.value.some(f => f.id === 'f_acertada')).toBe(true)
   })
+
+  it('excluirCartaoManual - deve permitir exclusao se nao houver movimentacao e bloquear se houver', async () => {
+    const { faturas, gastos, inicializar, salvarCartaoManual, excluirCartaoManual } = useCartoesEFaturas()
+    
+    const card = new Cartao({ id: 'c-exclusao', nome: 'Excluir-me', diaFechamento: 15, responsavelPadraoId: 'luan' })
+    await salvarCartaoManual(card)
+    await inicializar()
+    
+    await expect(excluirCartaoManual('c-exclusao')).resolves.not.toThrow()
+    expect(faturas.value.some(f => f.cartaoId === 'c-exclusao')).toBe(false)
+    
+    const cardBloqueado = new Cartao({ id: 'c-bloqueado', nome: 'Bloqueado', diaFechamento: 15, responsavelPadraoId: 'luan' })
+    await salvarCartaoManual(cardBloqueado)
+    await inicializar()
+    
+    const fatura = faturas.value.find(f => f.cartaoId === 'c-bloqueado' && f.status === 'ABERTA')
+    expect(fatura).toBeDefined()
+    
+    const { LocalStorageGastoRepository } = await import('../models/repositories/local/LocalStorageGastoRepository')
+    const gRepo = new LocalStorageGastoRepository()
+    const { Dinheiro } = await import('../models/entities/Dinheiro')
+    const { Gasto } = await import('../models/entities/Gasto')
+    const { DivisaoDeGasto } = await import('../models/entities/DivisaoDeGasto')
+    
+    const gasto = new Gasto({
+      id: 'g-teste-bloqueio',
+      faturaId: fatura!.id,
+      descricao: 'Teste bloqueio',
+      valorTotal: Dinheiro.deCentavos(1000),
+      compradorId: 'luan',
+      divisoes: [new DivisaoDeGasto('luan', Dinheiro.deCentavos(1000))]
+    })
+    await gRepo.salvar(gasto)
+    await inicializar()
+    
+    await expect(excluirCartaoManual('c-bloqueado')).rejects.toThrow('Não é possível excluir um cartão que possui movimentações')
+  })
 })

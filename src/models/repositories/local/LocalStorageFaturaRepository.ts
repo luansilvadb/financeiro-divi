@@ -208,4 +208,21 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
       return fatura
     })
   }
+
+  async excluirFaturasAbertasSemGastosPorCartao(cartaoId: string): Promise<void> {
+    await StorageLock.executarAtomico('lock_divi_faturas', async () => {
+      const todas = this.listarTodasInternal()
+      const gastoRepo = this.gastoRepo || new LocalStorageGastoRepository()
+      const todosGastos = await gastoRepo.listarTodos()
+
+      const filtradas = todas.filter(f => {
+        if (f.cartaoId !== cartaoId) return true
+        if (f.status !== 'ABERTA') return true
+        const temGastos = todosGastos.some(g => g.faturaId === f.id)
+        return temGastos
+      })
+
+      this.salvarListaFaturasFisicamente(filtradas)
+    })
+  }
 }

@@ -133,7 +133,19 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
   }
 
   const excluirCartaoManual = async (id: string) => {
+    const faturasDoCartao = state.value.faturas.filter(f => f.cartaoId === id)
+    const faturaIds = faturasDoCartao.map(f => f.id)
+    const temGastos = state.value.gastos.some(g => faturaIds.includes(g.faturaId))
+    const temFaturaFechada = faturasDoCartao.some(f => f.status !== 'ABERTA')
+
+    if (temGastos || temFaturaFechada) {
+      throw new Error('Não é possível excluir um cartão que possui movimentações (gastos ou faturas fechadas).')
+    }
+
     await localCartaoRepo.excluir(id)
+    await localFaturaRepo.excluirFaturasAbertasSemGastosPorCartao(id)
+    state.value.cartoes = state.value.cartoes.filter(c => c.id !== id)
+    state.value.faturas = state.value.faturas.filter(f => f.cartaoId !== id)
     await inicializar()
   }
 
@@ -221,6 +233,10 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
       erroInicializacao: null
     }
     promiseInicializacao = null
+  }
+
+  if (!state.value.inicializado) {
+    inicializar()
   }
 
   return {
