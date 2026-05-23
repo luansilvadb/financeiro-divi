@@ -18,9 +18,18 @@ export function determinarPeriodoFatura(dataGasto: Date, diaFechamento: number):
   if (diaFechamento < 1 || diaFechamento > 31) {
     throw new Error('diaFechamento deve ser entre 1 e 31')
   }
-  const diaGasto = dataGasto.getDate()
-  let mes = dataGasto.getMonth() + 1
-  let ano = dataGasto.getFullYear()
+
+  // Obter partes da data no fuso de São Paulo / Brasília
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  })
+  const partes = formatter.formatToParts(dataGasto)
+  const diaGasto = parseInt(partes.find(p => p.type === 'day')!.value)
+  let mes = parseInt(partes.find(p => p.type === 'month')!.value)
+  let ano = parseInt(partes.find(p => p.type === 'year')!.value)
 
   // Se o dia do gasto for maior ou igual ao dia de fechamento, cai na fatura do mês seguinte
   if (diaGasto >= diaFechamento) {

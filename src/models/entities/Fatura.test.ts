@@ -67,4 +67,14 @@ describe('Fatura', () => {
     expect(periodo.mes).toBe(5)
     expect(periodo.ano).toBe(2026)
   })
+
+  it('deve determinar o mesmo periodo de fatura independente do timezone local do dispositivo', () => {
+    // 2026-05-20T02:30:00Z -> equivale a 19/05/2026 23:30 em Brasília (UTC-3)
+    const dataGasto = new Date('2026-05-20T02:30:00.000Z')
+    const periodo = determinarPeriodoFatura(dataGasto, 20)
+    
+    // Como em Brasília é dia 19, e 19 < 20, deve cair em Maio (mês 5)
+    expect(periodo.mes).toBe(5)
+    expect(periodo.ano).toBe(2026)
+  })
 })
