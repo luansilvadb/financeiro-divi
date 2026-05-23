@@ -78,6 +78,33 @@ export class FaturaService implements IFaturaService {
       return
     }
 
+    if (fatura.status === 'ACERTADA') {
+      let proximoMes = fatura.periodo.mes + 1
+      let proximoAno = fatura.periodo.ano
+      if (proximoMes > 12) {
+        proximoMes = 1
+        proximoAno += 1
+      }
+
+      const faturasProximo = (await this.faturaRepo.listarTodas()) || []
+      const faturaPixProximo = faturasProximo.find(
+        f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === proximoMes && f.periodo.ano === proximoAno
+      )
+
+      if (faturaPixProximo) {
+        const todosGastos = (await this.gastoRepo.listarTodos()) || []
+        const temNettingNoProximoPeriodo = todosGastos.some(
+          g => g.faturaId === faturaPixProximo.id && g.isSettlement === true
+        )
+
+        if (temNettingNoProximoPeriodo) {
+          throw new Error(
+            'Não é possível reabrir esta fatura pois já existem acertos de contas (Pix) confirmados no período seguinte. Estorne os acertos primeiro.'
+          )
+        }
+      }
+    }
+
     fatura.reabrir()
     await this.faturaRepo.salvar(fatura)
     await this.acertoRepo.excluirPorFatura(faturaId)

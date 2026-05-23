@@ -210,4 +210,66 @@ describe('FaturaService', () => {
     await expect(service.reabrirFatura('f1')).resolves.not.toThrow()
     expect(faturaRepo.salvar).not.toHaveBeenCalled()
   })
+
+  it('deve impedir a reabertura de uma fatura se houver netting confirmado no período seguinte', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ACERTADA' })
+    const faturaPixProximo = new Fatura({ id: 'f-pix-proximo', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 6, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    
+    const faturaRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(fatura),
+      listarTodas: vi.fn().mockResolvedValue([fatura, faturaPixProximo]),
+      salvar: vi.fn()
+    }
+    const acertoRepo = { buscarPorFatura: vi.fn(), excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    
+    const gastoNettingProximo = new Gasto({
+      id: 'g-netting',
+      faturaId: 'f-pix-proximo',
+      descricao: 'Acerto Pix',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'm2',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))],
+      isSettlement: true
+    })
+    const gastoRepo = {
+      buscarPorFatura: vi.fn(),
+      listarTodos: vi.fn().mockResolvedValue([gastoNettingProximo])
+    }
+
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    
+    await expect(service.reabrirFatura('f1')).rejects.toThrow(
+      'Não é possível reabrir esta fatura pois já existem acertos de contas (Pix) confirmados no período seguinte. Estorne os acertos primeiro.'
+    )
+  })
+
+  it('deve permitir a reabertura de uma fatura se não houver netting confirmado no período seguinte', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ACERTADA' })
+    const faturaPixProximo = new Fatura({ id: 'f-pix-proximo', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 6, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    
+    const faturaRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(fatura),
+      listarTodas: vi.fn().mockResolvedValue([fatura, faturaPixProximo]),
+      salvar: vi.fn()
+    }
+    const acertoRepo = { buscarPorFatura: vi.fn(), excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    
+    const gastoNormalProximo = new Gasto({
+      id: 'g-normal',
+      faturaId: 'f-pix-proximo',
+      descricao: 'Padaria',
+      valorTotal: Dinheiro.deReais(10),
+      compradorId: 'm2',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(10))]
+    })
+    const gastoRepo = {
+      buscarPorFatura: vi.fn(),
+      listarTodos: vi.fn().mockResolvedValue([gastoNormalProximo])
+    }
+
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    
+    await expect(service.reabrirFatura('f1')).resolves.not.toThrow()
+    expect(fatura.status).toBe('ABERTA')
+  })
 })
