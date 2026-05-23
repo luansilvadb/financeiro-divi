@@ -12,6 +12,7 @@ import { FaturaRolloverService } from '../models/services/FaturaRolloverService'
 import { FaturaService } from '../models/services/FaturaService'
 import { AcertoService } from '../models/services/AcertoService'
 import { LedgerService } from '../models/services/LedgerService'
+import { BootstrapEventGenerator } from '../models/services/BootstrapEventGenerator'
 
 // Instanciamento dos Repositórios Físicos
 export const membroRepository = new LocalStorageMembroRepository()
@@ -29,3 +30,4 @@ export const faturaService = new FaturaService(faturaRepository, acertoMembroRep
 export const faturaRolloverService = new FaturaRolloverService(faturaRepository, gastoRepository, faturaService)
 export const acertoService = new AcertoService(acertoMembroRepository, faturaRepository, gastoRepository)
 export const ledgerService = new LedgerService(eventStore)
+export const bootstrapEventGenerator = new BootstrapEventGenerator(eventStore, gastoRepository)

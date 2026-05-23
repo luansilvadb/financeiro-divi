@@ -1,5 +1,11 @@
 import { createApp } from 'vue'
 import './main.css'
 import App from './App.vue'
+import { bootstrapEventGenerator } from './shared/container'
 
-createApp(App).mount('#app')
+async function init() {
+  await bootstrapEventGenerator.migrate()
+  createApp(App).mount('#app')
+}
+
+init()
