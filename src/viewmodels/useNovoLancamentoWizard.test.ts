@@ -345,6 +345,34 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     expect(obterRascunhoWizard()).toBeNull()
     vi.useRealTimers()
   })
+
+  it('deve ignorar campos corrompidos ao carregar rascunho (F-10)', async () => {
+    const corruptedData = {
+      step: 'invalid', // should be number
+      wizFlow: 'garbage', // should be expense/loan/null
+      valor: '100', // should be number
+      descricao: 123, // should be string
+      participantesDivisao: 'not-an-array' // should be array
+    }
+    
+    // Simula dados corrompidos no storage
+    const { salvarRascunhoWizard } = await import('../shared/utils/rascunhoWizardStorage')
+    salvarRascunhoWizard(corruptedData as any)
+
+    const [{ step, wizFlow, valor, descricao, participantesDivisao }] = withSetup(() => 
+      useNovoLancamentoWizard([])
+    )
+
+    // Aguardar Mounted tick
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Devem manter os valores padrão
+    expect(step.value).toBe(1)
+    expect(wizFlow.value).toBeNull()
+    expect(valor.value).toBe(0)
+    expect(descricao.value).toBe('')
+    expect(participantesDivisao.value).toEqual([])
+  })
 })
 
 

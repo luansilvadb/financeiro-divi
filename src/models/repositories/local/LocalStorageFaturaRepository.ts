@@ -1,4 +1,5 @@
 import type { IFaturaRepository } from '../IFaturaRepository'
+import type { IGastoRepository } from '../IGastoRepository'
 import { Fatura } from '../../entities/Fatura'
 import type { FaturaPeriodo } from '../../entities/Fatura'
 import { StorageLock } from '../../../shared/utils/StorageLock'
@@ -8,9 +9,11 @@ import { Gasto } from '../../entities/Gasto'
 export class LocalStorageFaturaRepository implements IFaturaRepository {
   private readonly STORAGE_KEY = 'divi_faturas'
 
+  constructor(private gastoRepo?: IGastoRepository) {}
+
   async salvar(fatura: Fatura): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_faturas', async () => {
-      const todas = await this.listarTodas()
+      const todas = this.listarTodasInternal()
       const index = todas.findIndex(f => f.id === fatura.id)
       if (index >= 0) {
         todas[index] = fatura
@@ -28,7 +31,7 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
 
   async salvarMuitas(faturas: Fatura[]): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_faturas', async () => {
-      const todas = await this.listarTodas()
+      const todas = this.listarTodasInternal()
       for (const fatura of faturas) {
         const index = todas.findIndex(f => f.id === fatura.id)
         if (index >= 0) {
@@ -57,6 +60,12 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
   }
 
   async listarTodas(): Promise<Fatura[]> {
+    return await StorageLock.executarAtomico('lock_divi_faturas', async () => {
+      return this.listarTodasInternal()
+    })
+  }
+
+  private listarTodasInternal(): Fatura[] {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
     try {
@@ -73,18 +82,9 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
 
   async executarMigracoesEDesduplicacao(): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_faturas_migration', async () => {
-      const data = localStorage.getItem(this.STORAGE_KEY)
-      if (!data) return
-      try {
-        const raw = JSON.parse(data) as any[]
-        const faturas = raw.map(f => new Fatura({
-          ...f,
-          dataPagamentoBanco: f.dataPagamentoBanco ? new Date(f.dataPagamentoBanco) : undefined
-        }))
-        await this.desduplicarEMigrarFaturas(faturas)
-      } catch (e) {
-        console.error('[Migration Error]', e)
-      }
+      const faturas = this.listarTodasInternal()
+      if (faturas.length === 0) return
+      await this.desduplicarEMigrarFaturas(faturas)
     })
   }
 
@@ -151,7 +151,7 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
 
     if (faturasParaRemover.length > 0) {
       console.warn(`[Divi Migration] Detectadas ${faturasParaRemover.length} faturas duplicadas. Iniciando migração...`)
-      const gastoRepo = new LocalStorageGastoRepository()
+      const gastoRepo = this.gastoRepo || new LocalStorageGastoRepository()
       const todosGastos = await gastoRepo.listarTodos()
       
       for (const fRem of faturasParaRemover) {
@@ -168,13 +168,15 @@ export class LocalStorageFaturaRepository implements IFaturaRepository {
             compradorId: g.compradorId,
             divisoes: g.divisoes,
             installments: g.installments,
+            totalInstallments: g.totalInstallments,
             isLoan: g.isLoan,
             borrowerId: g.borrowerId,
             recurringBillId: g.recurringBillId,
             isSettlement: g.isSettlement,
             settlementDetails: g.settlementDetails,
             method: g.method,
-            cardOwner: g.cardOwner
+            cardOwner: g.cardOwner,
+            grupoParcelasId: g.grupoParcelasId
           })
           await gastoRepo.salvar(novoGasto)
         }

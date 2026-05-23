@@ -9,38 +9,20 @@ export class LocalStorageGastoRepository implements IGastoRepository {
 
   async salvar(gasto: Gasto): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
-      const todos = await this.listarTodos()
+      const todos = this.listarTodosInternal()
       const index = todos.findIndex(g => g.id === gasto.id)
       if (index >= 0) {
         todos[index] = gasto
       } else {
         todos.push(gasto)
       }
-      const dtos = todos.map(g => ({
-        id: g.id,
-        faturaId: g.faturaId,
-        descricao: g.descricao,
-        valorTotalCentavos: g.valorTotal.centavos,
-        compradorId: g.compradorId,
-        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
-        installments: g.installments,
-        totalInstallments: g.totalInstallments,
-        isLoan: g.isLoan,
-        borrowerId: g.borrowerId,
-        recurringBillId: g.recurringBillId,
-        isSettlement: g.isSettlement,
-        settlementDetails: g.settlementDetails,
-        method: g.method,
-        cardOwner: g.cardOwner,
-        grupoParcelasId: g.grupoParcelasId // <- NOVO
-      }))
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+      this.persistirInternal(todos)
     })
   }
 
   async salvarMuitos(gastos: Gasto[]): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
-      const todos = await this.listarTodos()
+      const todos = this.listarTodosInternal()
       for (const gasto of gastos) {
         const index = todos.findIndex(g => g.id === gasto.id)
         if (index >= 0) {
@@ -49,25 +31,7 @@ export class LocalStorageGastoRepository implements IGastoRepository {
           todos.push(gasto)
         }
       }
-      const dtos = todos.map(g => ({
-        id: g.id,
-        faturaId: g.faturaId,
-        descricao: g.descricao,
-        valorTotalCentavos: g.valorTotal.centavos,
-        compradorId: g.compradorId,
-        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
-        installments: g.installments,
-        totalInstallments: g.totalInstallments,
-        isLoan: g.isLoan,
-        borrowerId: g.borrowerId,
-        recurringBillId: g.recurringBillId,
-        isSettlement: g.isSettlement,
-        settlementDetails: g.settlementDetails,
-        method: g.method,
-        cardOwner: g.cardOwner,
-        grupoParcelasId: g.grupoParcelasId
-      }))
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+      this.persistirInternal(todos)
     })
   }
 
@@ -83,57 +47,27 @@ export class LocalStorageGastoRepository implements IGastoRepository {
 
   async excluir(id: string): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
-      const todos = await this.listarTodos()
+      const todos = this.listarTodosInternal()
       const filtrados = todos.filter(g => g.id !== id)
-      const dtos = filtrados.map(g => ({
-        id: g.id,
-        faturaId: g.faturaId,
-        descricao: g.descricao,
-        valorTotalCentavos: g.valorTotal.centavos,
-        compradorId: g.compradorId,
-        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
-        installments: g.installments,
-        totalInstallments: g.totalInstallments,
-        isLoan: g.isLoan,
-        borrowerId: g.borrowerId,
-        recurringBillId: g.recurringBillId,
-        isSettlement: g.isSettlement,
-        settlementDetails: g.settlementDetails,
-        method: g.method,
-        cardOwner: g.cardOwner,
-        grupoParcelasId: g.grupoParcelasId // <- NOVO
-      }))
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+      this.persistirInternal(filtrados)
     })
   }
 
   async excluirMuitos(ids: string[]): Promise<void> {
     await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
-      const todos = await this.listarTodos()
+      const todos = this.listarTodosInternal()
       const filtrados = todos.filter(g => !ids.includes(g.id))
-      const dtos = filtrados.map(g => ({
-        id: g.id,
-        faturaId: g.faturaId,
-        descricao: g.descricao,
-        valorTotalCentavos: g.valorTotal.centavos,
-        compradorId: g.compradorId,
-        divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
-        installments: g.installments,
-        totalInstallments: g.totalInstallments,
-        isLoan: g.isLoan,
-        borrowerId: g.borrowerId,
-        recurringBillId: g.recurringBillId,
-        isSettlement: g.isSettlement,
-        settlementDetails: g.settlementDetails,
-        method: g.method,
-        cardOwner: g.cardOwner,
-        grupoParcelasId: g.grupoParcelasId
-      }))
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
+      this.persistirInternal(filtrados)
     })
   }
 
   async listarTodos(): Promise<Gasto[]> {
+    return await StorageLock.executarAtomico('lock_divi_gastos_cartao', async () => {
+      return this.listarTodosInternal()
+    })
+  }
+
+  private listarTodosInternal(): Gasto[] {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
     try {
@@ -160,12 +94,34 @@ export class LocalStorageGastoRepository implements IGastoRepository {
           settlementDetails: g.settlementDetails || null,
           method: g.method || 'pix',
           cardOwner: g.cardOwner || null,
-          grupoParcelasId: g.grupoParcelasId || null // <- NOVO
+          grupoParcelasId: g.grupoParcelasId || null
         })
       })
     } catch (e) {
       console.error('Erro grave de integridade no banco de dados local de gastos:', e)
       throw new Error('Banco de dados local de gastos corrompido. Operação abortada para evitar perda de dados.')
     }
+  }
+
+  private persistirInternal(todos: Gasto[]): void {
+    const dtos = todos.map(g => ({
+      id: g.id,
+      faturaId: g.faturaId,
+      descricao: g.descricao,
+      valorTotalCentavos: g.valorTotal.centavos,
+      compradorId: g.compradorId,
+      divisoes: g.divisoes.map(d => ({ membroId: d.membroId, centavos: d.valor.centavos })),
+      installments: g.installments,
+      totalInstallments: g.totalInstallments,
+      isLoan: g.isLoan,
+      borrowerId: g.borrowerId,
+      recurringBillId: g.recurringBillId,
+      isSettlement: g.isSettlement,
+      settlementDetails: g.settlementDetails,
+      method: g.method,
+      cardOwner: g.cardOwner,
+      grupoParcelasId: g.grupoParcelasId
+    }))
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dtos))
   }
 }

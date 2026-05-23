@@ -19,6 +19,8 @@ export class FaturaRolloverService implements IFaturaRolloverService {
 
   processarRolloverParcelas(novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] {
     return gastosAnteriores
+      // Filtramos !grupoParcelasId pois gastos do novo fluxo já projetam todas as parcelas antecipadamente.
+      // O rollover só deve processar gastos parcelados legados (sem grupoParcelasId).
       .filter(g => g.installments > 1 && !g.grupoParcelasId)
       .map(g => {
         return new Gasto({
@@ -47,7 +49,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
     return transferencias.map(t => {
       const total = Dinheiro.deReais(t.val)
       return new Gasto({
-        id: `carry_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        id: crypto.randomUUID(),
         faturaId: novaFaturaId,
         descricao: `Saldo Inicial Pendente (${nomePeriodoAnterior})`,
         valorTotal: total,

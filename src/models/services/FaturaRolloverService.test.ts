@@ -73,6 +73,18 @@ describe('FaturaRolloverService', () => {
     expect(carry2?.isSettlement).toBe(true)
   })
 
+  it('deve gerar carryovers com IDs UUID (Fix F-07)', () => {
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaService = { fecharFatura: vi.fn(), reabrirFatura: vi.fn(), assegurarFaturasAbertas: vi.fn() }
+    const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
+
+    const saldos = { m1: 100, m2: -100 }
+    const carryovers = service.gerarTransacoesNettingSaldoInicial('f-nova', 'Maio 2026', saldos)
+
+    expect(carryovers[0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  })
+
   it('deve fechar faturas antigas e criar novas faturas no rollover de periodo', async () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }

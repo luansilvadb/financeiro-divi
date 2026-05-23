@@ -20,7 +20,8 @@ import {
   faturaRepository,
   cartaoRepository,
   faturaRolloverService,
-  gastoService
+  gastoService,
+  contaFixaRepository
 } from '../shared/container'
 
 export interface DashboardProps {
@@ -58,6 +59,7 @@ export function useDashboardViewModel(
   const gastoRepo = dependencies.gastoRepository || gastoRepository
   const faturaRepo = dependencies.faturaRepository || faturaRepository
   const cartaoRepo = dependencies.cartaoRepository || cartaoRepository
+  const contaFixaRepo = dependencies.contaFixaRepository || contaFixaRepository
   const rolloverService = dependencies.faturaRolloverService || faturaRolloverService
   const localGastoService = dependencies.gastoService || gastoService
 
@@ -114,6 +116,8 @@ export function useDashboardViewModel(
 
   const faturaSelecionadaTrancada = computed(() => {
     const p = periodoSelecionado.value
+
+    // Se não há faturas no período, tecnicamente não está trancado
     const temFaturaPixAberta = props.faturasAbertas.some(f =>
       f.cartaoId === 'PIX_DEFAULT_ID' &&
       f.periodo.mes === p.mes &&
@@ -121,13 +125,17 @@ export function useDashboardViewModel(
     )
 
     if (props.cartoes.length > 0) {
-      const todosCartoesFechados = props.cartoes.every(cartao =>
-        props.faturasFechadas.some(f =>
-          f.cartaoId === cartao.id &&
-          f.periodo.mes === p.mes &&
-          f.periodo.ano === p.ano
-        )
-      )
+      const todosCartoesFechados = props.cartoes.every(cartao => {
+        const fechada = props.faturasFechadas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+        if (fechada) return true
+
+        const aberta = props.faturasAbertas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+        if (aberta) return false
+
+        // Se não tem fatura, consideramos "aberto" para permitir o lançamento que irá criá-la
+        return false
+      })
+
       if (temFaturaPixAberta) return false
       return todosCartoesFechados
     }
@@ -205,7 +213,7 @@ export function useDashboardViewModel(
     gastoService: localGastoService
   })
   const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas({
-    contaFixaRepository: dependencies.contaFixaRepository,
+    contaFixaRepository: contaFixaRepo,
     gastoService: localGastoService
   })
 

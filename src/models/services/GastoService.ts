@@ -84,9 +84,8 @@ export class GastoService implements IGastoService {
 
   private async obterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<any> {
     const chave = `${cartaoId}_${mes}_${ano}`
-    if (this.faturasEmCriacao.has(chave)) {
-      return this.faturasEmCriacao.get(chave)
-    }
+    const existing = this.faturasEmCriacao.get(chave)
+    if (existing) return existing
 
     const promessa = (async () => {
       const todasFaturas = await this.faturaRepo.listarTodas()
@@ -105,11 +104,7 @@ export class GastoService implements IGastoService {
     })()
 
     this.faturasEmCriacao.set(chave, promessa)
-    try {
-      return await promessa
-    } finally {
-      this.faturasEmCriacao.delete(chave)
-    }
+    return promessa
   }
 
   private construirGasto(dados: {
@@ -322,7 +317,7 @@ export class GastoService implements IGastoService {
             // Se todos os acertos da fatura anterior forem pagos, marca ela como ACERTADA
             const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
             const todosQuitados = acertosAtualizados.every(a => a.pago)
-            if (todosQuitados && fatAnterior.dataPagamentoBanco) {
+            if (todosQuitados && fatAnterior.dataPagamentoBanco && fatAnterior.status !== 'ACERTADA') {
               fatAnterior.marcarAcertada()
               await this.faturaRepo.salvar(fatAnterior)
             }
@@ -434,7 +429,8 @@ export class GastoService implements IGastoService {
         await this.gastoRepo.excluirMuitos(gastosDoGrupo.map(g => g.id))
 
         // Relançar do período inicial
-        const periodoInicial = faturaOriginal ? faturaOriginal.periodo : { mes: 1, ano: 2026 } // Fallback seguro
+        if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${gastoId}`)
+        const periodoInicial = faturaOriginal.periodo
         await this.lancarGastoOuEmprestimo({
           flow: original.isLoan ? 'loan' : 'expense',
           paymentMethod: dados.method,
@@ -514,7 +510,8 @@ export class GastoService implements IGastoService {
       await this.gastoRepo.excluir(original.id)
 
       // Relança parcelado
-      const periodoInicial = faturaOriginal ? faturaOriginal.periodo : { mes: 1, ano: 2026 } // Fallback seguro
+      if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${gastoId}`)
+      const periodoInicial = faturaOriginal.periodo
       await this.lancarGastoOuEmprestimo({
         flow: original.isLoan ? 'loan' : 'expense',
         paymentMethod: dados.method,

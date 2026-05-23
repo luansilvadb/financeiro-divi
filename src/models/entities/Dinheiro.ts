@@ -91,7 +91,7 @@ export class Dinheiro {
     let centavosAlocados = 0
     const totalCentavosRestantes = Math.abs(centavosRestantes)
 
-    while (centavosAlocados < totalCentavosRestantes) {
+    while (centavosAlocados < totalCentavosRestantes && i < pesos.length * 10) {
       const idx = i % pesos.length
       if (pesos[idx] > 0) {
         if (centavosRestantes > 0) {

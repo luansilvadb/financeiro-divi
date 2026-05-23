@@ -148,12 +148,13 @@ export function useNovoLancamentoWizard(
 
   const finalizarGastoOuEmprestimo = async () => {
     if (isSubmitting.value) return
-    if (!wizFlow.value || !wizPayment.value) throw new Error('Fluxo de pagamento não selecionado')
-    if (!compradorSelecionadoId.value) throw new Error('Selecione quem pagou/emprestou')
-    if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
-
     isSubmitting.value = true
+
     try {
+      if (!wizFlow.value || !wizPayment.value) throw new Error('Fluxo de pagamento não selecionado')
+      if (!compradorSelecionadoId.value) throw new Error('Selecione quem pagou/emprestou')
+      if (!valor.value || isNaN(Number(valor.value))) throw new Error('Valor inválido')
+
       const flow = wizFlow.value as 'expense' | 'loan'
       const payment = wizPayment.value as 'pix' | 'card'
 
@@ -215,18 +216,20 @@ export function useNovoLancamentoWizard(
     const data = obterRascunhoWizard()
     if (data) {
       try {
-        if (data.step !== undefined) step.value = data.step
-        if (data.wizFlow !== undefined) wizFlow.value = data.wizFlow
-        if (data.wizPayment !== undefined) wizPayment.value = data.wizPayment
-        if (data.wizCardOwner !== undefined) wizCardOwner.value = data.wizCardOwner
-        if (data.valor !== undefined) valor.value = data.valor
-        if (data.descricao !== undefined) descricao.value = data.descricao
-        if (data.compradorSelecionadoId !== undefined) compradorSelecionadoId.value = data.compradorSelecionadoId
-        if (data.borrowerId !== undefined) borrowerId.value = data.borrowerId
-        if (data.installments !== undefined) installments.value = data.installments
-        if (data.participantesDivisao !== undefined) participantesDivisao.value = data.participantesDivisao
-        if (data.modoDivisaoWizard !== undefined) modoDivisaoWizard.value = data.modoDivisaoWizard
-        if (data.valoresDivisaoWizard !== undefined) valoresDivisaoWizard.value = data.valoresDivisaoWizard
+        if (data.step !== undefined && typeof data.step === 'number') step.value = data.step
+        if (data.wizFlow !== undefined && ['expense', 'loan', null].includes(data.wizFlow)) wizFlow.value = data.wizFlow
+        if (data.wizPayment !== undefined && ['pix', 'card', null].includes(data.wizPayment)) wizPayment.value = data.wizPayment
+        if (data.wizCardOwner !== undefined && (typeof data.wizCardOwner === 'string' || data.wizCardOwner === null)) wizCardOwner.value = data.wizCardOwner
+        if (data.valor !== undefined && typeof data.valor === 'number') valor.value = data.valor
+        if (data.descricao !== undefined && typeof data.descricao === 'string') descricao.value = data.descricao
+        if (data.compradorSelecionadoId !== undefined && typeof data.compradorSelecionadoId === 'string') compradorSelecionadoId.value = data.compradorSelecionadoId
+        if (data.borrowerId !== undefined && (typeof data.borrowerId === 'string' || data.borrowerId === null)) borrowerId.value = data.borrowerId
+        if (data.installments !== undefined && typeof data.installments === 'number') installments.value = data.installments
+        if (data.participantesDivisao !== undefined && Array.isArray(data.participantesDivisao)) participantesDivisao.value = data.participantesDivisao
+        if (data.modoDivisaoWizard !== undefined && ['IGUAL', 'MANUAL'].includes(data.modoDivisaoWizard)) modoDivisaoWizard.value = data.modoDivisaoWizard
+        if (data.valoresDivisaoWizard !== undefined && typeof data.valoresDivisaoWizard === 'object' && data.valoresDivisaoWizard !== null) {
+          valoresDivisaoWizard.value = data.valoresDivisaoWizard
+        }
       } catch (e) {
         console.error('Erro ao carregar rascunho sênior:', e)
       }
@@ -250,7 +253,7 @@ export function useNovoLancamentoWizard(
       valoresDivisaoWizard: valoresDivisaoWizard.value
     }),
     (state) => {
-      if (isResetting) return
+      if (isResetting.value) return
       clearTimeout(saveTimeout)
       saveTimeout = setTimeout(() => {
         salvarRascunhoWizard(state)

@@ -184,6 +184,29 @@ describe('useDashboardViewModel', () => {
     expect(emit).toHaveBeenCalledWith('periodoStatusChanged', false)
   })
 
+  it('should NOT lock period if a card has no invoice record for the period (F-11)', () => {
+    const propsComCardSemFatura: DashboardProps = {
+      ...dummyProps,
+      cartoes: [
+        new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' }),
+        new Cartao({ id: 'c2', nome: 'Inter', diaFechamento: 15, responsavelPadraoId: 'm1' })
+      ],
+      faturasFechadas: [
+        new Fatura({
+          id: 'f-mock-fechada-1',
+          cartaoId: 'c1',
+          periodo: { mes: 5, ano: 2026 },
+          responsavelId: 'm1',
+          status: 'FECHADA'
+        })
+      ],
+      faturasAbertas: [] // Card c2 has NO invoice
+    }
+    localStorage.setItem('divi_periodo_selecionado', JSON.stringify({ mes: 5, ano: 2026 }))
+    const vm = createViewModel(propsComCardSemFatura, vi.fn())
+    expect(vm.faturaSelecionadaTrancada.value).toBe(false)
+  })
+
   it('should lock period if all of multiple cards have their invoices closed', () => {
     const propsComTodosFechados: DashboardProps = {
       ...dummyProps,
