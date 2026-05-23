@@ -65,7 +65,7 @@ describe('App FAB', () => {
     expect(fabButton.classes()).toContain('w-14')
     expect(fabButton.classes()).toContain('h-14')
     expect(fabButton.classes()).toContain('rounded-full')
-    expect(fabButton.classes()).toContain('bg-gradient-to-br')
+    expect(fabButton.classes()).toContain('bg-midnight')
   })
 })
 

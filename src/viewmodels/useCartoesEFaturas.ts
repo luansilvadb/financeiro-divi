@@ -43,6 +43,7 @@ const state = ref<CartoesEFaturasState>({
 })
 
 let promiseInicializacao: Promise<void> | null = null
+let inicializacaoPendente = false
 
 export interface CartoesEFaturasDependencies {
   cartaoRepository?: ICartaoRepository
@@ -65,7 +66,10 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
   const localGastoService = dependencies.gastoService || gastoService
 
   const inicializar = async () => {
-    if (promiseInicializacao) return promiseInicializacao
+    if (promiseInicializacao) {
+      inicializacaoPendente = true
+      return promiseInicializacao
+    }
     
     state.value.estaCarregando = true
     state.value.erroInicializacao = null
@@ -104,6 +108,11 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
       await promiseInicializacao
     } finally {
       promiseInicializacao = null
+      if (inicializacaoPendente) {
+        inicializacaoPendente = false
+        // Se houve chamada concorrente, executa novo ciclo para sincronizar com as ultimas escritas
+        await inicializar()
+      }
     }
   }
 

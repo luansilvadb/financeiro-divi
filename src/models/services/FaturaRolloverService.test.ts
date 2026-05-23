@@ -50,9 +50,9 @@ describe('FaturaRolloverService', () => {
     const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
 
     const saldos = {
-      m1: 100,
-      m2: -60,
-      m3: -40
+      m1: 10000,
+      m2: -6000,
+      m3: -4000
     }
 
     const carryovers = service.gerarTransacoesNettingSaldoInicial('f-nova', 'Maio 2026', saldos)
@@ -73,16 +73,18 @@ describe('FaturaRolloverService', () => {
     expect(carry2?.isSettlement).toBe(true)
   })
 
-  it('deve gerar carryovers com IDs UUID (Fix F-07)', () => {
+  it('deve gerar carryovers com IDs deterministicos e desduplicáveis (Fix F-07)', () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const mockFaturaService = { fecharFatura: vi.fn(), reabrirFatura: vi.fn(), assegurarFaturasAbertas: vi.fn() }
     const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
 
-    const saldos = { m1: 100, m2: -100 }
-    const carryovers = service.gerarTransacoesNettingSaldoInicial('f-nova', 'Maio 2026', saldos)
+    const saldos = { m1: 10000, m2: -10000 }
+    const carryovers1 = service.gerarTransacoesNettingSaldoInicial('f-nova', 'Maio 2026', saldos)
+    const carryovers2 = service.gerarTransacoesNettingSaldoInicial('f-nova', 'Maio 2026', saldos)
 
-    expect(carryovers[0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    expect(carryovers1[0].id).toBe('carryover-f-nova-m2-m1-10000')
+    expect(carryovers1[0].id).toBe(carryovers2[0].id)
   })
 
   it('deve fechar faturas antigas e criar novas faturas no rollover de periodo', async () => {

@@ -23,15 +23,17 @@ export class FaturaRolloverService implements IFaturaRolloverService {
       // O rollover só deve processar gastos parcelados legados (sem grupoParcelasId).
       .filter(g => g.installments > 1 && !g.grupoParcelasId)
       .map(g => {
+        const divisor = g.totalInstallments || g.installments
+        const deterministicId = `rollover-legacy-${novaFaturaId}-${g.id}`
         return new Gasto({
-          id: crypto.randomUUID(),
+          id: deterministicId,
           faturaId: novaFaturaId,
           descricao: g.descricao,
           valorTotal: g.valorTotal,
           compradorId: g.compradorId,
           divisoes: [...g.divisoes],
           installments: g.installments - 1,
-          totalInstallments: g.totalInstallments || g.installments,
+          totalInstallments: divisor, // Preserva o divisor original
           isLoan: g.isLoan,
           borrowerId: g.borrowerId,
           recurringBillId: g.recurringBillId
@@ -42,14 +44,15 @@ export class FaturaRolloverService implements IFaturaRolloverService {
   gerarTransacoesNettingSaldoInicial(
     novaFaturaId: string,
     nomePeriodoAnterior: string,
-    saldosAnteriores: Record<string, number>
+    saldosAnterioresCentavos: Record<string, number>
   ): Gasto[] {
-    const transferencias = calcularTransacoesNetting(saldosAnteriores)
+    const transferencias = calcularTransacoesNetting(saldosAnterioresCentavos)
 
     return transferencias.map(t => {
       const total = Dinheiro.deReais(t.val)
+      const deterministicId = `carryover-${novaFaturaId}-${t.from}-${t.to}-${total.centavos}`
       return new Gasto({
-        id: crypto.randomUUID(),
+        id: deterministicId,
         faturaId: novaFaturaId,
         descricao: `Saldo Inicial Pendente (${nomePeriodoAnterior})`,
         valorTotal: total,
