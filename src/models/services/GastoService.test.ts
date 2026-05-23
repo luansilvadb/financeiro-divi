@@ -5,19 +5,18 @@ import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import { Gasto } from '../entities/Gasto'
 import { Fatura } from '../entities/Fatura'
 
-const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
 function criarMockFaturaRepo(faturasIniciais: Fatura[] = []) {
   const faturas = [...faturasIniciais]
   const repo = {
-    buscarPorId: vi.fn(async (id) => faturas.find(f => f.id === id) || null),
-    buscarPorCartaoEPeriodo: vi.fn(async (cartaoId, p) => faturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === p.mes && f.periodo.ano === p.ano) || null),
-    salvar: vi.fn(async (f) => {
+    buscarPorId: vi.fn(async (id: string) => faturas.find(f => f.id === id) || null),
+    buscarPorCartaoEPeriodo: vi.fn(async (cartaoId: string, p: { mes: number; ano: number }) => faturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === p.mes && f.periodo.ano === p.ano) || null),
+    salvar: vi.fn(async (f: Fatura) => {
       const idx = faturas.findIndex(item => item.id === f.id)
       if (idx >= 0) faturas[idx] = f
       else faturas.push(f)
     }),
-    salvarMuitas: vi.fn(async (lista) => {
-      lista.forEach(f => {
+    salvarMuitas: vi.fn(async (lista: Fatura[]) => {
+      lista.forEach((f: Fatura) => {
         const idx = faturas.findIndex(item => item.id === f.id)
         if (idx >= 0) faturas[idx] = f
         else faturas.push(f)
@@ -51,7 +50,7 @@ describe('GastoService', () => {
     const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
 
     mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }])
-    mockFaturaRepo.listarTodas.mockResolvedValue([{ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }])
+    mockFaturaRepo.listarTodas.mockResolvedValue([new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })])
 
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     await service.lancarGastoOuEmprestimo({
@@ -268,13 +267,13 @@ describe('GastoService', () => {
     mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }])
     
     mockFaturaRepo.buscarPorId.mockImplementation(async (id) => {
-      if (id === 'f1') return { id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }
-      if (id === 'f2') return { id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }
+      if (id === 'f1') return new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+      if (id === 'f2') return new Fatura({ id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
       return null
     })
     mockFaturaRepo.listarTodas.mockResolvedValue([
-      { id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' },
-      { id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }
+      new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }),
+      new Fatura({ id: 'f2', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     ])
 
     const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)

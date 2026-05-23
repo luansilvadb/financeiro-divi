@@ -7,7 +7,6 @@ import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
-import { LedgerProjections } from '../models/services/LedgerProjections'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
 import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
@@ -22,8 +21,7 @@ import {
   cartaoRepository,
   faturaRolloverService,
   gastoService,
-  contaFixaRepository,
-  eventStore
+  contaFixaRepository
 } from '../shared/container'
 
 export interface DashboardProps {
@@ -64,14 +62,6 @@ export function useDashboardViewModel(
   const contaFixaRepo = dependencies.contaFixaRepository || contaFixaRepository
   const rolloverService = dependencies.faturaRolloverService || faturaRolloverService
   const localGastoService = dependencies.gastoService || gastoService
-
-  const eventStream = ref<any[]>([])
-  const carregarStream = async () => {
-    eventStream.value = await eventStore.getStream()
-  }
-
-  // Carregar stream inicial e observar mudanças
-  carregarStream()
 
   // --- Estado de Período ---
   const periodoSelecionado = ref<{ mes: number; ano: number }>(obterPeriodoInicial(props.faturasAbertas, props.faturasFechadas))
@@ -315,21 +305,12 @@ export function useDashboardViewModel(
   })
 
   const saldosUnificadosAtivosCentavos = computed(() => {
-    // Projeção baseada em eventos (Nova Fonte da Verdade)
-    const saldosLedger = LedgerProjections.computeSaldos(eventStream.value)
-    
     // Cálculo legado para garantir retrocompatibilidade durante transição
     const gastosPeriodo = gastosFaturaSelecionada.value
     const saldosCalculados = calcularSaldosUnificados(props.membros, gastosPeriodo)
 
     // Se temos dados no ledger, priorizamos eles para os membros presentes
     const finalSaldos: Record<string, number> = { ...saldosCalculados }
-    Object.keys(saldosLedger).forEach(membroId => {
-      // Nota: LedgerProjections computa saldos GLOBAIS. 
-      // Para o Dashboard, idealmente queremos saldos do período ou acumulados.
-      // Por enquanto, mantemos a lógica legada mas deixamos o gancho para a nova.
-      // finalSaldos[membroId] = saldosLedger[membroId];
-    })
 
     return finalSaldos
   })
