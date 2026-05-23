@@ -874,6 +874,41 @@ describe('GastoService', () => {
       'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
     )
   })
+
+  it('deve impedir a edição de um gasto parcelado a partir de uma parcela filha', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const gastoFilha = new Gasto({
+      id: 'g-filha',
+      faturaId: 'f2',
+      descricao: 'Original 2/2',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
+      method: 'card',
+      cardOwner: 'm1',
+      installments: 1,
+      totalInstallments: 2,
+      grupoParcelasId: 'grupo-x'
+    })
+    mockGastoRepo.buscarPorId.mockResolvedValue(gastoFilha)
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+
+    await expect(service.atualizarGastoCompleto('g-filha', {
+      descricao: 'Editado',
+      valorTotal: Dinheiro.deReais(120),
+      compradorId: 'm1',
+      method: 'card',
+      cardOwner: 'c1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(120))],
+      installments: 2
+    })).rejects.toThrow(
+      'Este lançamento faz parte de um parcelamento. Para editá-lo, acesse a primeira parcela no período de origem do gasto.'
+    )
+  })
 })
 
 

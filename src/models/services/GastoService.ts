@@ -389,6 +389,12 @@ export class GastoService implements IGastoService {
     const original = await this.gastoRepo.buscarPorId(gastoId)
     if (!original) throw new Error('Gasto não encontrado')
 
+    if (original.grupoParcelasId && original.installments !== original.totalInstallments) {
+      throw new Error(
+        'Este lançamento faz parte de um parcelamento. Para editá-lo, acesse a primeira parcela no período de origem do gasto.'
+      )
+    }
+
     if (!original.isSettlement) {
       let faturaIds: string[] = []
       if (original.grupoParcelasId) {
