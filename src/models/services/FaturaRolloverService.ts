@@ -6,7 +6,7 @@ import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import { calcularTransacoesNetting } from './NettingService'
 import { NOMES_MESES } from '../../shared/utils/meses'
-import type { IFaturaRolloverService } from './IFaturaRolloverService'
+import type { IFaturaRolloverService, RolloverCartao } from './IFaturaRolloverService'
 
 import type { IFaturaService } from './IFaturaService'
 
@@ -64,7 +64,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
   async executarRolloverPeriodo(dados: {
     nomeNovoPeriodo: string
     faturasAbertas: Fatura[]
-    cartoes: any[]
+    cartoes: RolloverCartao[]
     saldosAcumulados: Record<string, number>
     nomePeriodoAnterior: string
   }): Promise<void> {

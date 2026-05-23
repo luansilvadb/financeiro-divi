@@ -3,13 +3,15 @@ import { Fatura } from '../models/entities/Fatura'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { Cartao } from '../models/entities/Cartao'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
+import { ContaFixa } from '../models/entities/ContaFixa'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
-import { formatarMesAno, gerarListaMesesSeletor, NOMES_MESES } from '../shared/utils/meses'
+import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
 import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from '../shared/utils/periodoStorage'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
@@ -53,7 +55,7 @@ function obterPeriodoInicial(faturasAbertas: Fatura[], faturasFechadas: Fatura[]
 
 export function useDashboardViewModel(
   props: DashboardProps,
-  emit: (event: any, ...args: any[]) => void,
+  emit: (event: string, ...args: any[]) => void,
   dependencies: DashboardDependencies = {}
 ) {
   const gastoRepo = dependencies.gastoRepository || gastoRepository
@@ -163,7 +165,23 @@ export function useDashboardViewModel(
   })
 
   // --- Seletor de Meses ---
-  const listaMesesSeletor = computed(() => gerarListaMesesSeletor(props.faturasFechadas))
+  const listaMesesSeletor = computed(() => {
+    const hoje = new Date()
+    const list = []
+    for (let i = -12; i <= 12; i++) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
+      const mesIdx = d.getMonth() + 1
+      const anoIdx = d.getFullYear()
+      const estaFechada = props.faturasFechadas.some(f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx)
+      list.push({
+        mes: mesIdx,
+        ano: anoIdx,
+        nome: formatarMesAno(mesIdx, anoIdx),
+        status: (estaFechada ? 'FECHADA' : 'ABERTA') as 'FECHADA' | 'ABERTA'
+      })
+    }
+    return list
+  })
 
   const mesesAbertosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'ABERTA'))
   const mesesTrancadosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'FECHADA'))

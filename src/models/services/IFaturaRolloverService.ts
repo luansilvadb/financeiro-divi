@@ -1,6 +1,11 @@
 import type { Fatura } from '../entities/Fatura'
 import type { Gasto } from '../entities/Gasto'
 
+export interface RolloverCartao {
+  id: string
+  responsavelPadraoId: string
+}
+
 export interface IFaturaRolloverService {
   processarRolloverParcelas(novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[]
   gerarTransacoesNettingSaldoInicial(
@@ -11,7 +16,7 @@ export interface IFaturaRolloverService {
   executarRolloverPeriodo(dados: {
     nomeNovoPeriodo: string
     faturasAbertas: Fatura[]
-    cartoes: any[]
+    cartoes: RolloverCartao[]
     saldosAcumulados: Record<string, number>
     nomePeriodoAnterior: string
   }): Promise<void>

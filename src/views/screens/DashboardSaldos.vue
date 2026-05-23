@@ -2,6 +2,9 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import type { Tab } from '../components/ui/BottomTabBar.vue'
 import { useDashboardViewModel } from '../../viewmodels/useDashboardViewModel'
+import type { Fatura } from '../../models/entities/Fatura'
+import type { AcertoMembro } from '../../models/entities/AcertoMembro'
+import type { Cartao } from '../../models/entities/Cartao'
 import ContasFixasPanel from '../components/ledger/ContasFixasPanel.vue'
 import PopupLancarContaFixa from '../components/ledger/PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from '../components/ledger/BottomSheetConfigurarContaFixa.vue'
@@ -28,10 +31,10 @@ import {
 
 interface Props {
   membros: { id: string; nome: string; ativo?: boolean }[]
-  faturasAbertas: any[]
-  faturasFechadas: any[]
-  acertosPendentes: any[]
-  cartoes: any[]
+  faturasAbertas: Fatura[]
+  faturasFechadas: Fatura[]
+  acertosPendentes: AcertoMembro[]
+  cartoes: Cartao[]
   calcularConsumo: (faturaId: string, membroId: string) => number
   activeTab?: Tab
 }

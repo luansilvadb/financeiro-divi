@@ -7,7 +7,7 @@ export interface LancarGastoInput {
   compradorId: string
   valor: number
   descricao: string
-  divisoes: any[]
+  divisoes: DivisaoDeGasto[]
   installments: number
   cardOwnerId: string | null
   borrowerId: string | null

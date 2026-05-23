@@ -79,7 +79,7 @@ export class FaturaService implements IFaturaService {
     cartoes: { id: string; responsavelPadraoId: string }[],
     mes: number,
     ano: number
-  ): Promise<any[]> {
+  ): Promise<Fatura[]> {
     const todasFaturas = await this.faturaRepo.listarTodas()
     const faturasAtualizadas = [...todasFaturas]
 

@@ -1,16 +1,18 @@
-const STORAGE_KEY = 'divi_rascunho_novo_lancamento_v18'
+import type { WizardDraft } from '../models/entities/WizardDraft'
 
-export function obterRascunhoWizard(): any | null {
+const STORAGE_KEY = 'divi_wizard_draft_senior'
+
+export function obterRascunhoWizard(): WizardDraft | null {
   const data = sessionStorage.getItem(STORAGE_KEY)
   if (!data) return null
   try {
-    return JSON.parse(data)
-  } catch {
+    return JSON.parse(data) as WizardDraft
+  } catch (e) {
     return null
   }
 }
 
-export function salvarRascunhoWizard(state: any): void {
+export function salvarRascunhoWizard(state: WizardDraft): void {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 }
 

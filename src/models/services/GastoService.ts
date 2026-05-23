@@ -6,10 +6,11 @@ import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import { Fatura } from '../entities/Fatura'
-import type { IGastoService } from './IGastoService'
+import { Cartao } from '../entities/Cartao'
+import type { IGastoService, LancarGastoInput } from './IGastoService'
 
 export class GastoService implements IGastoService {
-  private faturasEmCriacao = new Map<string, Promise<any>>()
+  private faturasEmCriacao = new Map<string, Promise<Fatura>>()
 
   constructor(
     private gastoRepo: IGastoRepository,
@@ -18,23 +19,12 @@ export class GastoService implements IGastoService {
     private acertoRepo?: IAcertoMembroRepository
   ) {}
 
-  async lancarGastoOuEmprestimo(dados: {
-    flow: 'expense' | 'loan'
-    paymentMethod: 'pix' | 'card'
-    compradorId: string
-    valor: number
-    descricao: string
-    divisoes: any[]
-    installments: number
-    cardOwnerId: string | null
-    borrowerId: string | null
-    periodo: { mes: number; ano: number }
-  }): Promise<void> {
+  async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
     const { flow, paymentMethod, compradorId, valor, descricao, divisoes, installments, cardOwnerId, borrowerId, periodo } = dados
     const total = Dinheiro.deReais(valor)
 
     const todosCartoes = await this.cartaoRepo.listarTodos()
-    let cartaoReal: any = null
+    let cartaoReal: Cartao | undefined = undefined
     if (paymentMethod === 'card' && cardOwnerId) {
       cartaoReal = todosCartoes.find(c => c.id === cardOwnerId || c.responsavelPadraoId === cardOwnerId)
     }
@@ -82,7 +72,7 @@ export class GastoService implements IGastoService {
   }
 
 
-  private async obterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<any> {
+  private async obterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<Fatura> {
     const chave = `${cartaoId}_${mes}_${ano}`
     const existing = this.faturasEmCriacao.get(chave)
     if (existing) return existing
@@ -112,7 +102,7 @@ export class GastoService implements IGastoService {
     descricao: string
     valorTotal: Dinheiro
     compradorId: string
-    divisoes: any[]
+    divisoes: ReadonlyArray<DivisaoDeGasto>
     installments: number
     totalInstallments: number
     isLoan: boolean
@@ -129,8 +119,8 @@ export class GastoService implements IGastoService {
 
   private async projetarGastosParcelados(dados: {
     total: Dinheiro
-    divisoes: any[]
-    faturaAtiva: any
+    divisoes: ReadonlyArray<DivisaoDeGasto>
+    faturaAtiva: Fatura
     descricao: string
     compradorId: string
     installments: number
@@ -369,7 +359,7 @@ export class GastoService implements IGastoService {
     if (!original) throw new Error('Gasto não encontrado')
 
     const todosCartoes = (await this.cartaoRepo.listarTodos()) || []
-    let cartaoReal: any = null
+    let cartaoReal: Cartao | undefined = undefined
     if (dados.method === 'card' && dados.cardOwner) {
       cartaoReal = todosCartoes.find(c => c.id === dados.cardOwner || c.responsavelPadraoId === dados.cardOwner)
     }

@@ -5,6 +5,7 @@ import { Dinheiro } from '../models/entities/Dinheiro'
 import type { IGastoService } from '../models/services/IGastoService'
 import { obterRascunhoWizard, salvarRascunhoWizard, limparRascunhoWizard } from '../shared/utils/rascunhoWizardStorage'
 import { gastoService } from '../shared/container'
+import type { WizardDraft } from '../models/entities/WizardDraft'
 
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
   const rules: Record<number, () => boolean> = {
@@ -214,25 +215,25 @@ export function useNovoLancamentoWizard(
   // Persistência de Rascunho no LocalStorage
   onMounted(async () => {
     const data = obterRascunhoWizard()
-    if (data) {
-      try {
-        if (data.step !== undefined && typeof data.step === 'number') step.value = data.step
-        if (data.wizFlow !== undefined && ['expense', 'loan', null].includes(data.wizFlow)) wizFlow.value = data.wizFlow
-        if (data.wizPayment !== undefined && ['pix', 'card', null].includes(data.wizPayment)) wizPayment.value = data.wizPayment
-        if (data.wizCardOwner !== undefined && (typeof data.wizCardOwner === 'string' || data.wizCardOwner === null)) wizCardOwner.value = data.wizCardOwner
-        if (data.valor !== undefined && typeof data.valor === 'number') valor.value = data.valor
-        if (data.descricao !== undefined && typeof data.descricao === 'string') descricao.value = data.descricao
-        if (data.compradorSelecionadoId !== undefined && typeof data.compradorSelecionadoId === 'string') compradorSelecionadoId.value = data.compradorSelecionadoId
-        if (data.borrowerId !== undefined && (typeof data.borrowerId === 'string' || data.borrowerId === null)) borrowerId.value = data.borrowerId
-        if (data.installments !== undefined && typeof data.installments === 'number') installments.value = data.installments
-        if (data.participantesDivisao !== undefined && Array.isArray(data.participantesDivisao)) participantesDivisao.value = data.participantesDivisao
-        if (data.modoDivisaoWizard !== undefined && ['IGUAL', 'MANUAL'].includes(data.modoDivisaoWizard)) modoDivisaoWizard.value = data.modoDivisaoWizard
-        if (data.valoresDivisaoWizard !== undefined && typeof data.valoresDivisaoWizard === 'object' && data.valoresDivisaoWizard !== null) {
-          valoresDivisaoWizard.value = data.valoresDivisaoWizard
-        }
-      } catch (e) {
-        console.error('Erro ao carregar rascunho sênior:', e)
+    if (!data) return
+
+    try {
+      if (typeof data.step === 'number') step.value = data.step
+      if (['expense', 'loan', null].includes(data.wizFlow)) wizFlow.value = data.wizFlow
+      if (['pix', 'card', null].includes(data.wizPayment)) wizPayment.value = data.wizPayment
+      if (typeof data.wizCardOwner === 'string' || data.wizCardOwner === null) wizCardOwner.value = data.wizCardOwner
+      if (typeof data.valor === 'number') valor.value = data.valor
+      if (typeof data.descricao === 'string') descricao.value = data.descricao
+      if (typeof data.compradorSelecionadoId === 'string') compradorSelecionadoId.value = data.compradorSelecionadoId
+      if (typeof data.borrowerId === 'string' || data.borrowerId === null) borrowerId.value = data.borrowerId
+      if (typeof data.installments === 'number') installments.value = data.installments
+      if (Array.isArray(data.participantesDivisao)) participantesDivisao.value = data.participantesDivisao
+      if (['IGUAL', 'MANUAL'].includes(data.modoDivisaoWizard)) modoDivisaoWizard.value = data.modoDivisaoWizard
+      if (data.valoresDivisaoWizard && typeof data.valoresDivisaoWizard === 'object') {
+        valoresDivisaoWizard.value = data.valoresDivisaoWizard
       }
+    } catch (e) {
+      console.error('Erro ao carregar rascunho sênior:', e)
     }
   })
 
@@ -252,8 +253,8 @@ export function useNovoLancamentoWizard(
       modoDivisaoWizard: modoDivisaoWizard.value,
       valoresDivisaoWizard: valoresDivisaoWizard.value
     }),
-    (state) => {
-      if (isResetting.value) return
+    (state: WizardDraft) => {
+      if (isResetting) return
       clearTimeout(saveTimeout)
       saveTimeout = setTimeout(() => {
         salvarRascunhoWizard(state)
