@@ -9,6 +9,8 @@ import { Fatura } from '../entities/Fatura'
 import type { IGastoService } from './IGastoService'
 
 export class GastoService implements IGastoService {
+  private faturasEmCriacao = new Map<string, Promise<any>>()
+
   constructor(
     private gastoRepo: IGastoRepository,
     private faturaRepo: IFaturaRepository,
@@ -81,19 +83,33 @@ export class GastoService implements IGastoService {
 
 
   private async obterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<any> {
-    const todasFaturas = await this.faturaRepo.listarTodas()
-    let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
-    if (!fatura) {
-      fatura = new Fatura({
-        id: crypto.randomUUID(),
-        cartaoId,
-        periodo: { mes, ano },
-        responsavelId,
-        status: 'ABERTA'
-      })
-      await this.faturaRepo.salvar(fatura)
+    const chave = `${cartaoId}_${mes}_${ano}`
+    if (this.faturasEmCriacao.has(chave)) {
+      return this.faturasEmCriacao.get(chave)
     }
-    return fatura
+
+    const promessa = (async () => {
+      const todasFaturas = await this.faturaRepo.listarTodas()
+      let fatura = todasFaturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano)
+      if (!fatura) {
+        fatura = new Fatura({
+          id: crypto.randomUUID(),
+          cartaoId,
+          periodo: { mes, ano },
+          responsavelId,
+          status: 'ABERTA'
+        })
+        await this.faturaRepo.salvar(fatura)
+      }
+      return fatura
+    })()
+
+    this.faturasEmCriacao.set(chave, promessa)
+    try {
+      return await promessa
+    } finally {
+      this.faturasEmCriacao.delete(chave)
+    }
   }
 
   private construirGasto(dados: {

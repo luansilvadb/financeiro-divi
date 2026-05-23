@@ -561,5 +561,52 @@ describe('GastoService', () => {
     expect(faturaAnterior.status).toBe('ACERTADA')
     expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(faturaAnterior)
   })
+
+  it('deve assegurar que chamadas concorrentes simultaneas para obterOuCriarFatura nao dupliquem a fatura', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    mockCartaoRepo.listarTodos.mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'luan' }])
+    
+    // Simula atraso na listagem de faturas para forçar a corrida assíncrona
+    let faturasMock: any[] = []
+    mockFaturaRepo.listarTodas.mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      return faturasMock
+    })
+    
+    mockFaturaRepo.salvar.mockImplementation(async (fat) => {
+      await new Promise(resolve => setTimeout(resolve, 20))
+      faturasMock.push(fat)
+    })
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+
+    const dados1 = {
+      flow: 'expense' as const,
+      paymentMethod: 'card' as const,
+      compradorId: 'luan',
+      valor: 100,
+      descricao: 'Gasto 1',
+      divisoes: [{ membroId: 'luan', valor: Dinheiro.deReais(100) }],
+      installments: 1,
+      cardOwnerId: 'c1',
+      borrowerId: null,
+      periodo: { mes: 5, ano: 2026 }
+    }
+    const dados2 = { ...dados1, descricao: 'Gasto 2', valor: 200, divisoes: [{ membroId: 'luan', valor: Dinheiro.deReais(200) }] }
+
+    // Roda em paralelo concorrentemente
+    await Promise.all([
+      service.lancarGastoOuEmprestimo(dados1),
+      service.lancarGastoOuEmprestimo(dados2)
+    ])
+
+    // Deve ter chamado mockFaturaRepo.salvar exatamente uma vez para criar a fatura do período
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledTimes(1)
+  })
 })
+
+
 
