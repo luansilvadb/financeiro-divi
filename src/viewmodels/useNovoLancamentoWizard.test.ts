@@ -324,5 +324,27 @@ describe('useNovoLancamentoWizard - Sênior v18', () => {
     expect(mockGastoService.lancarGastoOuEmprestimo).toHaveBeenCalledTimes(1)
     expect(hookInstance.isSubmitting.value).toBe(false)
   })
+
+  it('nao deve salvar rascunho com dados vazios no localStorage apos a chamada do reset', async () => {
+    vi.useFakeTimers()
+    const [{ wizFlow, compradorSelecionadoId, valor, reset }] = withSetup(() => 
+      useNovoLancamentoWizard(['luan'].map(id => ({ id, nome: id })))
+    )
+
+    wizFlow.value = 'expense'
+    compradorSelecionadoId.value = 'luan'
+    valor.value = 100
+
+    await Promise.resolve() // watch tick
+    reset()
+
+    // Avança timers
+    vi.advanceTimersByTime(600)
+    
+    const { obterRascunhoWizard } = await import('../shared/utils/rascunhoWizardStorage')
+    expect(obterRascunhoWizard()).toBeNull()
+    vi.useRealTimers()
+  })
 })
+
 

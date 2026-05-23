@@ -186,7 +186,11 @@ export function useNovoLancamentoWizard(
     }
   }
 
+  let isResetting = false
+
   const reset = () => {
+    isResetting = true
+    clearTimeout(saveTimeout)
     step.value = 1
     wizFlow.value = null
     wizPayment.value = null
@@ -200,6 +204,10 @@ export function useNovoLancamentoWizard(
     modoDivisaoWizard.value = 'IGUAL'
     valoresDivisaoWizard.value = {}
     limparRascunhoWizard()
+    
+    Promise.resolve().then(() => {
+      isResetting = false
+    })
   }
 
   // Persistência de Rascunho no LocalStorage
@@ -242,6 +250,7 @@ export function useNovoLancamentoWizard(
       valoresDivisaoWizard: valoresDivisaoWizard.value
     }),
     (state) => {
+      if (isResetting) return
       clearTimeout(saveTimeout)
       saveTimeout = setTimeout(() => {
         salvarRascunhoWizard(state)
