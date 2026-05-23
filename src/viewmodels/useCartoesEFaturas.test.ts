@@ -128,7 +128,7 @@ describe('useCartoesEFaturas', () => {
   })
 
   it('excluirCartaoManual - deve permitir exclusao se nao houver movimentacao e bloquear se houver', async () => {
-    const { faturas, gastos, inicializar, salvarCartaoManual, excluirCartaoManual } = useCartoesEFaturas()
+    const { faturas, inicializar, salvarCartaoManual, excluirCartaoManual } = useCartoesEFaturas()
     
     const card = new Cartao({ id: 'c-exclusao', nome: 'Excluir-me', diaFechamento: 15, responsavelPadraoId: 'luan' })
     await salvarCartaoManual(card)

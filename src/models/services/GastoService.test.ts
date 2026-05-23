@@ -38,7 +38,8 @@ function criarMockFaturaRepo(faturasIniciais: Fatura[] = []) {
         await repo.salvar(fatura)
       }
       return fatura
-    })
+    }),
+    excluirFaturasAbertasSemGastosPorCartao: vi.fn(async () => {})
   }
   return repo
 }
