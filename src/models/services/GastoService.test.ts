@@ -662,7 +662,7 @@ describe('GastoService', () => {
     expect(faturasMock.length).toBe(1)
   })
 
-  it('deve excluir transacoes de acertos de netting (isSettlement) do mesmo periodo ao excluir um gasto', async () => {
+  it('deve impedir exclusão de gasto comum se houver transações de acertos de netting no mesmo período', async () => {
     const mockGastoRepo = {
       salvar: vi.fn(),
       salvarMuitos: vi.fn(),
@@ -685,13 +685,13 @@ describe('GastoService', () => {
     mockGastoRepo.listarTodos.mockResolvedValue([gastoNormal, gastoNetting])
 
     const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
-    await service.excluirGasto('g-normal')
-
-    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g-normal')
-    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g-netting'])
+    
+    await expect(service.excluirGasto('g-normal')).rejects.toThrow(
+      'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+    )
   })
 
-  it('deve excluir transacoes de acertos de netting (isSettlement) do mesmo periodo ao atualizar um gasto', async () => {
+  it('deve impedir atualização de gasto comum se houver transações de acertos de netting no mesmo período', async () => {
     const mockGastoRepo = {
       salvar: vi.fn(),
       salvarMuitos: vi.fn(),
@@ -717,7 +717,8 @@ describe('GastoService', () => {
     mockGastoRepo.listarTodos.mockResolvedValue([gastoNormal, gastoNetting])
 
     const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
-    await service.atualizarGastoCompleto('g-normal', {
+    
+    await expect(service.atualizarGastoCompleto('g-normal', {
       descricao: 'Aluguel novo',
       valorTotal: Dinheiro.deReais(120),
       compradorId: 'm1',
@@ -725,10 +726,9 @@ describe('GastoService', () => {
       cardOwner: null,
       divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(120))],
       installments: 1
-    })
-
-    expect(mockGastoRepo.salvar).toHaveBeenCalled()
-    expect(mockGastoRepo.excluirMuitos).toHaveBeenCalledWith(['g-netting'])
+    })).rejects.toThrow(
+      'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+    )
   })
 
   it('deve lançar erro se tentar lançar gasto envolvendo morador inativo ou inexistente', async () => {
@@ -780,6 +780,99 @@ describe('GastoService', () => {
       borrowerId: null,
       periodo: { mes: 5, ano: 2026 }
     })).rejects.toThrow('Não é possível associar gastos a moradores inativos ou inexistentes.')
+  })
+
+  it('deve impedir a exclusão de um gasto comum se houver acerto de netting confirmado no mesmo período', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    mockFaturaRepo.buscarPorId.mockResolvedValue(fatura)
+
+    const gastoComum = new Gasto({
+      id: 'g-comum',
+      faturaId: 'f1',
+      descricao: 'Aluguel',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))]
+    })
+
+    const gastoNetting = new Gasto({
+      id: 'g-netting',
+      faturaId: 'f1',
+      descricao: 'Acerto Pix',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'm2',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))],
+      isSettlement: true
+    })
+
+    mockGastoRepo.buscarPorId.mockImplementation(async (id) => {
+      if (id === 'g-comum') return gastoComum
+      if (id === 'g-netting') return gastoNetting
+      return null
+    })
+
+    mockGastoRepo.listarTodos.mockResolvedValue([gastoComum, gastoNetting])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+
+    await expect(service.excluirGasto('g-comum')).rejects.toThrow(
+      'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+    )
+
+    await expect(service.excluirGasto('g-netting')).resolves.not.toThrow()
+  })
+
+  it('deve impedir a edição de um gasto comum se houver acerto de netting confirmado no mesmo período', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    mockFaturaRepo.buscarPorId.mockResolvedValue(fatura)
+
+    const gastoComum = new Gasto({
+      id: 'g-comum',
+      faturaId: 'f1',
+      descricao: 'Aluguel',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))]
+    })
+
+    const gastoNetting = new Gasto({
+      id: 'g-netting',
+      faturaId: 'f1',
+      descricao: 'Acerto Pix',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'm2',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))],
+      isSettlement: true
+    })
+
+    mockGastoRepo.buscarPorId.mockImplementation(async (id) => {
+      if (id === 'g-comum') return gastoComum
+      return null
+    })
+
+    mockGastoRepo.listarTodos.mockResolvedValue([gastoComum, gastoNetting])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+
+    await expect(service.atualizarGastoCompleto('g-comum', {
+      descricao: 'Aluguel editado',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      method: 'pix',
+      cardOwner: null,
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
+      installments: 1
+    })).rejects.toThrow(
+      'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+    )
   })
 })
 

@@ -212,6 +212,28 @@ export class GastoService implements IGastoService {
     const gasto = await this.gastoRepo.buscarPorId(id)
     if (!gasto) return
 
+    if (!gasto.isSettlement) {
+      let faturaIds: string[] = []
+      if (gasto.grupoParcelasId) {
+        const todos = await this.gastoRepo.listarTodos()
+        const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
+        faturaIds = grupo.map(g => g.faturaId)
+      } else {
+        faturaIds = [gasto.faturaId]
+      }
+
+      const todosGastos = (await this.gastoRepo.listarTodos()) || []
+      const temNettingNoPeriodo = todosGastos.some(
+        g => faturaIds.includes(g.faturaId) && g.isSettlement
+      )
+
+      if (temNettingNoPeriodo) {
+        throw new Error(
+          'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+        )
+      }
+    }
+
     if (gasto.grupoParcelasId) {
       const todos = await this.gastoRepo.listarTodos()
       const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
@@ -366,6 +388,28 @@ export class GastoService implements IGastoService {
 
     const original = await this.gastoRepo.buscarPorId(gastoId)
     if (!original) throw new Error('Gasto não encontrado')
+
+    if (!original.isSettlement) {
+      let faturaIds: string[] = []
+      if (original.grupoParcelasId) {
+        const todos = await this.gastoRepo.listarTodos()
+        const grupo = todos.filter(g => g.grupoParcelasId === original.grupoParcelasId)
+        faturaIds = grupo.map(g => g.faturaId)
+      } else {
+        faturaIds = [original.faturaId]
+      }
+
+      const todosGastos = (await this.gastoRepo.listarTodos()) || []
+      const temNettingNoPeriodo = todosGastos.some(
+        g => faturaIds.includes(g.faturaId) && g.isSettlement
+      )
+
+      if (temNettingNoPeriodo) {
+        throw new Error(
+          'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+        )
+      }
+    }
 
     const periodosOriginal: { mes: number; ano: number }[] = []
     if (original.grupoParcelasId) {
