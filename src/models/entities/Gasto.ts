@@ -47,6 +47,10 @@ export class Gasto {
   public readonly grupoParcelasId: string | null
 
   constructor(props: GastoProps) {
+    if (!props.valorTotal.isPositivo()) {
+      throw new Error('O valor total do gasto deve ser maior que zero')
+    }
+
     if (props.divisoes.length === 0) {
       throw new Error('Um gasto deve ter pelo menos uma divisão')
     }

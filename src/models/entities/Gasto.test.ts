@@ -22,12 +22,21 @@ describe('Gasto', () => {
   })
 
   it('deve lançar erro se o gasto for criado sem divisões', () => {
-    const total = Dinheiro.deCentavos(0)
+    const total = Dinheiro.deCentavos(1000)
     const divisoes: DivisaoDeGasto[] = []
     
     expect(() => {
       new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, compradorId: 'm1', divisoes })
     }).toThrow('Um gasto deve ter pelo menos uma divisão')
+  })
+
+  it('deve lançar erro se o gasto for criado com valor total menor ou igual a zero', () => {
+    const total = Dinheiro.deCentavos(0)
+    const divisoes = [new DivisaoDeGasto('m1', Dinheiro.deCentavos(0))]
+    
+    expect(() => {
+      new Gasto({ id: 'g1', faturaId: 'f1', descricao: 'Mercado', valorTotal: total, compradorId: 'm1', divisoes })
+    }).toThrow('O valor total do gasto deve ser maior que zero')
   })
 
   it('deve inicializar com campos padrão de parcelamento e empréstimo se não informados', () => {
