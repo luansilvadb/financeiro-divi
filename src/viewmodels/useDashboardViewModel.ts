@@ -341,19 +341,27 @@ export function useDashboardViewModel(
   // --- Ações de Negócio ---
   const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
     if (faturaSelecionadaTrancada.value) return
-    await fecharFaturaManual(faturaId, responsavelId)
-    showBottomSheetFechar.value = false
-    faturaParaFechar.value = null
-    await cartoesEFaturas.inicializar()
+    try {
+      await fecharFaturaManual(faturaId, responsavelId)
+      showBottomSheetFechar.value = false
+      faturaParaFechar.value = null
+      await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao fechar fatura')
+    }
   }
 
   const confirmarAjusteGasto = async (dados: any) => {
     if (faturaSelecionadaTrancada.value) return
     if (!gastoParaAjustar.value) return
-    await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
-    showBottomSheetAjustar.value = false
-    gastoParaAjustar.value = null
-    await cartoesEFaturas.inicializar()
+    try {
+      await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
+      showBottomSheetAjustar.value = false
+      gastoParaAjustar.value = null
+      await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao ajustar gasto')
+    }
   }
 
   const enviarReembolsoPix = async (acertoId: string) => {
@@ -363,6 +371,8 @@ export function useDashboardViewModel(
       await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
       acertoPixId.value = null
       await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao registrar reembolso')
     } finally {
       isSubmittingPix.value = false
     }
@@ -374,6 +384,8 @@ export function useDashboardViewModel(
       await quitarAcertoMembro(acertoId)
       acertoPixId.value = null
       await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao quitar acerto')
     } finally {
       isSubmittingPix.value = false
     }
@@ -383,9 +395,13 @@ export function useDashboardViewModel(
     if (faturaSelecionadaTrancada.value) return
     const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
-    await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
-    showPopupLancar.value = false
-    await cartoesEFaturas.inicializar()
+    try {
+      await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
+      showPopupLancar.value = false
+      await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao lançar conta fixa')
+    }
   }
 
   const confirmarSalvarTemplate = (template: any) => {
@@ -419,6 +435,8 @@ export function useDashboardViewModel(
     try {
       await executarNovoPeriodo(nomeNovoPeriodo.value)
       showBottomSheetNovoPeriodo.value = false
+    } catch (error: any) {
+      alert(error.message || 'Erro ao fechar mês')
     } finally {
       isExecutingRollover.value = false
     }
@@ -429,18 +447,22 @@ export function useDashboardViewModel(
     const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
 
-    await localGastoService.registrarAcertoNetting({
-      faturaId: activeFaturaId,
-      descricao: dados.descricao,
-      valor: dados.valor,
-      fromMemberId: dados.from,
-      toMemberId: dados.to,
-      method: dados.method
-    })
+    try {
+      await localGastoService.registrarAcertoNetting({
+        faturaId: activeFaturaId,
+        descricao: dados.descricao,
+        valor: dados.valor,
+        fromMemberId: dados.from,
+        toMemberId: dados.to,
+        method: dados.method
+      })
 
-    showBottomSheetNetting.value = false
-    nettingTarget.value = null
-    await cartoesEFaturas.inicializar()
+      showBottomSheetNetting.value = false
+      nettingTarget.value = null
+      await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao registrar acerto de contas')
+    }
   }
 
   const excluirGasto = async (id: string) => {
@@ -452,14 +474,18 @@ export function useDashboardViewModel(
   const confirmarEstorno = async () => {
     if (!itemParaEstornar.value) return
 
-    const handlers: Record<string, () => Promise<void>> = {
-      'Lançamento': () => excluirGasto(itemParaEstornar.value!.id),
-      'Conta Fixa': () => excluirContaFixa(itemParaEstornar.value!.id)
-    }
-    await handlers[itemTypeParaEstornar.value]?.()
+    try {
+      const handlers: Record<string, () => Promise<void>> = {
+        'Lançamento': () => excluirGasto(itemParaEstornar.value!.id),
+        'Conta Fixa': () => excluirContaFixa(itemParaEstornar.value!.id)
+      }
+      await handlers[itemTypeParaEstornar.value]?.()
 
-    showBottomSheetConfirmacaoEstorno.value = false
-    itemParaEstornar.value = null
+      showBottomSheetConfirmacaoEstorno.value = false
+      itemParaEstornar.value = null
+    } catch (error: any) {
+      alert(error.message || 'Erro ao realizar estorno')
+    }
   }
 
   const estornarContaFixa = async (bill: any) => {
@@ -481,10 +507,14 @@ export function useDashboardViewModel(
   const reabrirPeriodoSelecionado = async () => {
     const p = periodoSelecionado.value
     const faturasDoPeriodo = props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    for (const fatura of faturasDoPeriodo) {
-      await reabrirFaturaManual(fatura.id)
+    try {
+      for (const fatura of faturasDoPeriodo) {
+        await reabrirFaturaManual(fatura.id)
+      }
+      await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      alert(error.message || 'Erro ao reabrir período')
     }
-    await cartoesEFaturas.inicializar()
   }
 
   return {
