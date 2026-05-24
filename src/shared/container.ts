@@ -101,7 +101,7 @@ class DynamicFaturaRepository implements IFaturaRepository {
 class DynamicGastoRepository implements IGastoRepository {
   private get active() { return tenantSessionService.isAuthenticated() ? supabaseGastoRepo : localGastoRepo }
   async salvar(g: Gasto) { return this.active.salvar(g) }
-  async salvarMuitos(g: Gasto[]) { return this.active.salvarMuitas(g) }
+  async salvarMuitos(g: Gasto[]) { return this.active.salvarMuitos(g) }
   async buscarPorFatura(fId: string) { return this.active.buscarPorFatura(fId) }
   async buscarPorId(id: string) { return this.active.buscarPorId(id) }
   async excluir(id: string) { return this.active.excluir(id) }
@@ -149,3 +149,15 @@ export const faturaRolloverService = new FaturaRolloverService(faturaRepository,
 export const acertoService = new AcertoService(acertoMembroRepository, faturaRepository, gastoRepository)
 export const ledgerService = new LedgerService(eventStore)
 export const bootstrapEventGenerator = new BootstrapEventGenerator(eventStore, gastoRepository)
+
+import { MigrationService } from '../models/services/MigrationService'
+export const migrationService = new MigrationService(
+  supabase,
+  localMembroRepo,
+  localCartaoRepo,
+  localFaturaRepo,
+  localGastoRepo,
+  localContaFixaRepo,
+  localAcertoRepo,
+  localEventStore
+)

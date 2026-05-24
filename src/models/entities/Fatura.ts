@@ -103,6 +103,12 @@ export class Fatura {
     this._status = 'ACERTADA'
   }
 
+  desmarcarAcertada() {
+    if (this._status === 'ACERTADA') {
+      this._status = 'FECHADA'
+    }
+  }
+
   reabrir() {
     if (this._status !== 'FECHADA' && this._status !== 'ACERTADA') {
       throw new Error('Apenas faturas FECHADAS ou ACERTADAS podem ser reabertas')

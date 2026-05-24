@@ -234,6 +234,51 @@ export class GastoService implements IGastoService {
       }
     }
 
+    // Se for um acerto netting, estornamos a baixa nos AcertoMembro correspondentes das faturas do período anterior
+    if (gasto.isSettlement && this.acertoRepo) {
+      const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
+      if (fatura) {
+        let anteriorMes = fatura.periodo.mes - 1
+        let anteriorAno = fatura.periodo.ano
+        if (anteriorMes < 1) {
+          anteriorMes = 12
+          anteriorAno -= 1
+        }
+
+        const todasFaturas = await this.faturaRepo.listarTodas()
+        const faturasAnteriores = todasFaturas.filter(
+          f => f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno && (f.status === 'FECHADA' || f.status === 'ACERTADA')
+        )
+
+        let estornoRestanteCentavos = gasto.valorTotal.centavos
+
+        for (const fatAnterior of faturasAnteriores) {
+          if (estornoRestanteCentavos <= 0) break
+
+          const acertosMembro = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
+          const acertoComPagamento = acertosMembro.find(a => a.membroId === gasto.compradorId && a.valorPago.centavos > 0)
+
+          if (acertoComPagamento) {
+            const valorEstorno = Math.min(estornoRestanteCentavos, acertoComPagamento.valorPago.centavos)
+            acertoComPagamento.valorPago = Dinheiro.deCentavos(acertoComPagamento.valorPago.centavos - valorEstorno)
+
+            if (acertoComPagamento.valorPago.centavos < acertoComPagamento.valorAcerto.centavos) {
+              acertoComPagamento.pago = false
+              acertoComPagamento.dataPagamento = undefined
+            }
+
+            await this.acertoRepo.salvar(acertoComPagamento)
+            estornoRestanteCentavos -= valorEstorno
+
+            if (fatAnterior.status === 'ACERTADA') {
+              fatAnterior.desmarcarAcertada()
+              await this.faturaRepo.salvar(fatAnterior)
+            }
+          }
+        }
+      }
+    }
+
     if (gasto.grupoParcelasId) {
       const todos = (await this.gastoRepo.listarTodos()) || []
       const grupo = todos.filter(g => g.grupoParcelasId === gasto.grupoParcelasId)
@@ -250,7 +295,7 @@ export class GastoService implements IGastoService {
         fatura.validarOperacaoPermitida()
       }
       await this.gastoRepo.excluir(id)
-      if (fatura) {
+      if (fatura && !gasto.isSettlement) {
         await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
       }
     } else {
@@ -259,7 +304,7 @@ export class GastoService implements IGastoService {
         fatura.validarOperacaoPermitida()
       }
       await this.gastoRepo.excluir(id)
-      if (fatura) {
+      if (fatura && !gasto.isSettlement) {
         await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
       }
     }

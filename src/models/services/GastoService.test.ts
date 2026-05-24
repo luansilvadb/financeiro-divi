@@ -955,6 +955,94 @@ describe('GastoService', () => {
     await service.excluirGasto('g2')
     expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g2')
   })
+
+  it('deve permitir a exclusão individual de acertos netting e não deve apagar outros acertos do período', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const faturaPix = new Fatura({ id: 'f-pix', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const gNetting1 = new Gasto({
+      id: 'g-netting-1',
+      faturaId: 'f-pix',
+      descricao: 'Acerto 1',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(50))],
+      isSettlement: true
+    })
+    const gNetting2 = new Gasto({
+      id: 'g-netting-2',
+      faturaId: 'f-pix',
+      descricao: 'Acerto 2',
+      valorTotal: Dinheiro.deReais(30),
+      compradorId: 'm3',
+      divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(30))],
+      isSettlement: true
+    })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(gNetting1)
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaPix)
+    mockGastoRepo.listarTodos.mockResolvedValue([gNetting1, gNetting2])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.excluirGasto('g-netting-1')
+
+    // Deve ter excluído apenas o g-netting-1
+    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g-netting-1')
+    // Não deve ter chamado excluirMuitos para limpar os outros acertos
+    expect(mockGastoRepo.excluirMuitos).not.toHaveBeenCalled()
+  })
+
+  it('deve estornar a baixa de acertos pendentes da fatura anterior e alterar o status dela para FECHADA ao excluir acerto netting', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    const mockAcertoRepo = { buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn(), listarTodos: vi.fn() }
+
+    const faturaAtual = new Fatura({ id: 'f-atual', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 6, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const faturaAnterior = new Fatura({ id: 'f-anterior', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm2', status: 'ACERTADA', dataPagamentoBanco: new Date() })
+
+    const gNetting = new Gasto({
+      id: 'g-netting',
+      faturaId: 'f-atual',
+      descricao: 'Acerto Pix',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(50))],
+      isSettlement: true
+    })
+
+    const { AcertoMembro } = await import('../entities/AcertoMembro')
+    const acertoMembroAnterior = new AcertoMembro({
+      id: 'am-anterior',
+      faturaId: 'f-anterior',
+      membroId: 'm1',
+      totalConsumido: Dinheiro.deReais(50),
+      valorPago: Dinheiro.deReais(50),
+      pago: true
+    })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(gNetting)
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaAtual)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
+    mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoMembroAnterior])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
+    await service.excluirGasto('g-netting')
+
+    // Deve estornar o valor pago no AcertoMembro
+    expect(acertoMembroAnterior.valorPago.centavos).toBe(0)
+    expect(acertoMembroAnterior.pago).toBe(false)
+    expect(mockAcertoRepo.salvar).toHaveBeenCalledWith(acertoMembroAnterior)
+
+    // A fatura anterior deve voltar a ser FECHADA
+    expect(faturaAnterior.status).toBe('FECHADA')
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(faturaAnterior)
+
+    // Deve ter excluído o gasto
+    expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g-netting')
+  })
 })
 
 

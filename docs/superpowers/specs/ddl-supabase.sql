@@ -22,28 +22,34 @@ CREATE TABLE public.membros_casa (
 
 -- 4. Tabela de Cartões
 CREATE TABLE public.cartoes (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id text NOT NULL,
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   nome text NOT NULL,
-  limite_centavos bigint NOT NULL DEFAULT 0,
-  dono_id text NOT NULL,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+  dia_fechamento integer NOT NULL CHECK (dia_fechamento >= 1 AND dia_fechamento <= 31),
+  responsavel_padrao_id text NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  PRIMARY KEY (id, tenant_id)
 );
 
 -- 5. Tabela de Faturas
 CREATE TABLE public.faturas (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id text NOT NULL,
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  periodo text NOT NULL,
-  is_closed boolean NOT NULL DEFAULT false,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+  cartao_id text NOT NULL,
+  mes integer NOT NULL CHECK (mes >= 1 AND mes <= 12),
+  ano integer NOT NULL,
+  responsavel_id text NOT NULL,
+  status text NOT NULL CHECK (status IN ('ABERTA', 'FECHADA', 'ACERTADA')),
+  data_pagamento_banco timestamp with time zone,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  PRIMARY KEY (id, tenant_id)
 );
 
 -- 6. Tabela de Gastos
 CREATE TABLE public.gastos (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id text NOT NULL,
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  fatura_id uuid NOT NULL REFERENCES public.faturas(id) ON DELETE CASCADE,
+  fatura_id text NOT NULL,
   descricao text NOT NULL,
   valor_total_centavos bigint NOT NULL,
   comprador_id text NOT NULL,
@@ -51,45 +57,63 @@ CREATE TABLE public.gastos (
   total_installments integer NOT NULL DEFAULT 1,
   is_loan boolean NOT NULL DEFAULT false,
   borrower_id text,
-  recurring_bill_id uuid,
+  recurring_bill_id text,
   is_settlement boolean NOT NULL DEFAULT false,
   settlement_details jsonb,
   method text NOT NULL DEFAULT 'pix',
   card_owner_id text,
-  grupo_parcelas_id uuid,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+  grupo_parcelas_id text,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  PRIMARY KEY (id, tenant_id)
 );
 
 -- 7. Tabela de Divisões de Gasto
 CREATE TABLE public.divisoes_gasto (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  gasto_id uuid NOT NULL REFERENCES public.gastos(id) ON DELETE CASCADE,
+  tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  gasto_id text NOT NULL,
   membro_id text NOT NULL,
   valor_centavos bigint NOT NULL
 );
 
 -- 8. Tabela de Contas Fixas
 CREATE TABLE public.contas_fixas (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id text NOT NULL,
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   name text NOT NULL,
   icon text NOT NULL,
   fixed_value_centavos bigint,
   default_split jsonb NOT NULL DEFAULT '[]'::jsonb,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  PRIMARY KEY (id, tenant_id)
 );
 
--- 9. Tabela de Ledger Events
+-- 9. Tabela de Acertos de Membros
+CREATE TABLE public.acertos_membro (
+  id text NOT NULL,
+  tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  fatura_id text NOT NULL,
+  membro_id text NOT NULL,
+  total_consumido_centavos bigint NOT NULL,
+  valor_pago_centavos bigint NOT NULL DEFAULT 0,
+  pago boolean NOT NULL DEFAULT false,
+  data_pagamento timestamp with time zone,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  PRIMARY KEY (id, tenant_id)
+);
+
+-- 10. Tabela de Ledger Events
 CREATE TABLE public.ledger_events (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id text NOT NULL,
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   type text NOT NULL,
   timestamp bigint NOT NULL,
   version integer NOT NULL,
-  payload jsonb NOT NULL
+  payload jsonb NOT NULL,
+  PRIMARY KEY (id, tenant_id)
 );
 
--- 10. Configuração de RLS
+-- 11. Configuração de RLS
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.membros_casa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cartoes ENABLE ROW LEVEL SECURITY;
@@ -97,9 +121,10 @@ ALTER TABLE public.faturas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gastos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.divisoes_gasto ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contas_fixas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.acertos_membro ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ledger_events ENABLE ROW LEVEL SECURITY;
 
--- 11. Políticas de Segurança (Isolamento por Membros da Casa cadastrados com auth.uid())
+-- 12. Políticas de Segurança (Isolamento por Membros da Casa cadastrados com auth.uid())
 CREATE POLICY tenant_membros_casa_access ON public.membros_casa
   FOR ALL TO authenticated
   USING (
@@ -107,7 +132,7 @@ CREATE POLICY tenant_membros_casa_access ON public.membros_casa
       SELECT t_m.tenant_id FROM public.membros_casa t_m 
       WHERE t_m.user_id = auth.uid()
     )
-    OR user_id = auth.uid() -- Permite que ele se insira ao associar convite
+    OR user_id = auth.uid()
   );
 
 CREATE POLICY tenant_isolation_tenants ON public.tenants
@@ -149,14 +174,22 @@ CREATE POLICY tenant_isolation_gastos ON public.gastos
 CREATE POLICY tenant_isolation_divisoes ON public.divisoes_gasto
   FOR ALL TO authenticated
   USING (
-    gasto_id IN (
-      SELECT g.id FROM public.gastos g
-      JOIN public.membros_casa t_m ON g.tenant_id = t_m.tenant_id
+    tenant_id IN (
+      SELECT t_m.tenant_id FROM public.membros_casa t_m 
       WHERE t_m.user_id = auth.uid()
     )
   );
 
 CREATE POLICY tenant_isolation_contas_fixas ON public.contas_fixas
+  FOR ALL TO authenticated
+  USING (
+    tenant_id IN (
+      SELECT t_m.tenant_id FROM public.membros_casa t_m 
+      WHERE t_m.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY tenant_isolation_acertos ON public.acertos_membro
   FOR ALL TO authenticated
   USING (
     tenant_id IN (
