@@ -124,85 +124,68 @@ ALTER TABLE public.contas_fixas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.acertos_membro ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ledger_events ENABLE ROW LEVEL SECURITY;
 
--- 12. Políticas de Segurança (Isolamento por Membros da Casa cadastrados com auth.uid())
+-- 12. Função auxiliar SECURITY DEFINER para quebrar a recursão de RLS
+CREATE OR REPLACE FUNCTION public.get_user_tenants(user_uuid uuid)
+RETURNS TABLE(t_id uuid) 
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT tenant_id FROM public.membros_casa WHERE user_id = user_uuid;
+$$;
+
+-- 13. Políticas de Segurança (Isolamento por Membros da Casa cadastrados com auth.uid())
 CREATE POLICY tenant_membros_casa_access ON public.membros_casa
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
-    OR user_id = auth.uid()
+    user_id = auth.uid()
+    OR
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_tenants ON public.tenants
   FOR ALL TO authenticated
   USING (
-    id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_cartoes ON public.cartoes
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_faturas ON public.faturas
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_gastos ON public.gastos
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_divisoes ON public.divisoes_gasto
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_contas_fixas ON public.contas_fixas
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_acertos ON public.acertos_membro
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
 CREATE POLICY tenant_isolation_ledger_events ON public.ledger_events
   FOR ALL TO authenticated
   USING (
-    tenant_id IN (
-      SELECT t_m.tenant_id FROM public.membros_casa t_m 
-      WHERE t_m.user_id = auth.uid()
-    )
+    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
