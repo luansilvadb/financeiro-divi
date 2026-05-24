@@ -3,6 +3,17 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import App from './App.vue'
 
+vi.mock('./shared/container', () => ({
+  tenantSessionService: {
+    isAuthenticated: () => true,
+    getActiveTenantId: () => 'tenant-123',
+    getCurrentUserId: () => 'user-123'
+  },
+  migrationService: {
+    migrar: vi.fn()
+  }
+}))
+
 vi.mock('./viewmodels/useMembros', () => ({
   useMembros: () => ({
     ativos: ref([]),

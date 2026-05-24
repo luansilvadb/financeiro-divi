@@ -4,12 +4,15 @@ import NovoLancamentoWizard from './views/screens/NovoLancamentoWizard.vue'
 import DashboardSaldos from './views/screens/DashboardSaldos.vue'
 import ConfiguracoesMembros from './views/screens/ConfiguracoesMembros.vue'
 import BottomSheet from './views/components/ui/BottomSheet.vue'
+import LoginScreen from './views/screens/LoginScreen.vue'
 import { Plus } from 'lucide-vue-next'
 import { useMembros } from './viewmodels/useMembros'
 import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
 import { useStorageSync } from './viewmodels/useStorageSync'
 import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
+import { tenantSessionService, migrationService } from './shared/container'
+import { supabase } from './shared/supabase'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const activeTab = ref<Tab>('hoje')
@@ -26,11 +29,15 @@ const {
 
 useStorageSync()
 
+const isAuthed = ref(tenantSessionService.isAuthenticated())
+
 onMounted(async () => {
-  await Promise.all([
-    inicializarMembros(),
-    inicializarCartoes()
-  ])
+  if (isAuthed.value) {
+    await Promise.all([
+      inicializarMembros(),
+      inicializarCartoes()
+    ])
+  }
 })
 
 const handleSalvarTransacao = async () => {
@@ -38,10 +45,64 @@ const handleSalvarTransacao = async () => {
   currentView.value = 'dashboard'
 }
 const isPeriodLocked = ref(false)
+
+const handleAuthSuccess = async () => {
+  isAuthed.value = true
+  
+  const jaMigrado = localStorage.getItem('divi_migrado_saas') === 'true'
+  const activeTenantId = tenantSessionService.getActiveTenantId()
+  const userId = tenantSessionService.getCurrentUserId()
+
+  if (!jaMigrado && userId) {
+    const temDadosLocais = localStorage.getItem('divi_gastos_cartao') || localStorage.getItem('divi_faturas')
+    if (temDadosLocais) {
+      try {
+        let tenantId = activeTenantId
+        if (!tenantId) {
+          tenantId = crypto.randomUUID()
+          const code = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
+          
+          // Cria o tenant
+          await supabase.from('tenants').insert({
+            id: tenantId,
+            name: 'Minha Casa Importada',
+            invite_code: code
+          })
+
+          // Associa o membro fundador
+          await supabase.from('membros_casa').insert({
+            id: userId,
+            tenant_id: tenantId,
+            nome: localStorage.getItem('divi_username') || 'Morador',
+            avatar: (localStorage.getItem('divi_username') || 'M').substring(0, 2).toUpperCase(),
+            user_id: userId
+          })
+          
+          tenantSessionService.setActiveTenant(tenantId)
+        }
+
+        // Executa a migração
+        await migrationService.migrar(tenantId, userId)
+        console.log('Dados migrados localmente para o Supabase com sucesso!')
+      } catch (err) {
+        console.error('Falha ao migrar dados locais:', err)
+      }
+    }
+  }
+
+  // Inicializa os dados com as fontes online
+  await Promise.all([
+    inicializarMembros(),
+    inicializarCartoes()
+  ])
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
+  <div v-if="!isAuthed">
+    <LoginScreen @auth-success="handleAuthSuccess" />
+  </div>
+  <div v-else class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
     <div class="max-w-[1200px] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-36 md:pb-16 relative">
       <!-- Main Content -->
       <main class="relative z-10">
@@ -58,8 +119,6 @@ const isPeriodLocked = ref(false)
         />
       </main>
     </div>
-
-
 
     <!-- Floating Action Button (FAB) -->
     <Transition name="fab-zoom">

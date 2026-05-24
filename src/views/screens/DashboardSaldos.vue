@@ -142,6 +142,185 @@ const membrosDisponiveisParaAjustar = computed(() => {
     splitIds.includes(m.id)
   )
 })
+
+// --- INTEGRAÇÃO SUPABASE MULTITENANT ---
+import { tenantSessionService } from '../../shared/container'
+import { supabase } from '../../shared/supabase'
+import { LogOut, Home, Copy, Check } from 'lucide-vue-next'
+import { onMounted } from 'vue'
+
+const isAuthed = ref(tenantSessionService.isAuthenticated())
+const activeTenantId = ref(tenantSessionService.getActiveTenantId())
+const casas = ref<any[]>([])
+const showBottomSheetCasas = ref(false)
+const nomeNovaCasa = ref('')
+const codigoConvite = ref('')
+const errorCasa = ref('')
+const copied = ref(false)
+
+const activeTenantObj = computed(() => {
+  return casas.value.find(c => c.id === activeTenantId.value) || null
+})
+
+const carregarCasas = async () => {
+  if (!isAuthed.value) return
+  const { data: members, error: mError } = await supabase
+    .from('membros_casa')
+    .select('tenant_id')
+    .eq('user_id', tenantSessionService.getCurrentUserId())
+  
+  if (mError || !members) return
+
+  const tenantIds = members.map(m => m.tenant_id)
+  if (tenantIds.length === 0) {
+    casas.value = []
+    return
+  }
+
+  const { data: tenantsList, error: tError } = await supabase
+    .from('tenants')
+    .select('*')
+    .in('id', tenantIds)
+
+  if (!tError && tenantsList) {
+    casas.value = tenantsList
+    // Se não tiver tenant ativo mas tiver casas, seleciona a primeira
+    if (!activeTenantId.value && tenantsList.length > 0) {
+      selecionarCasa(tenantsList[0].id)
+    }
+  }
+}
+
+const selecionarCasa = (id: string) => {
+  tenantSessionService.setActiveTenant(id)
+  activeTenantId.value = id
+  showBottomSheetCasas.value = false
+  window.location.reload()
+}
+
+const criarNovaCasa = async () => {
+  errorCasa.value = ''
+  if (!nomeNovaCasa.value.trim()) {
+    errorCasa.value = 'Digite o nome da casa'
+    return
+  }
+
+  const uuid = crypto.randomUUID()
+  const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase()
+  const code = `CASA-${randomSuffix}`
+
+  // 1. Inserir Tenant
+  const { error: tError } = await supabase.from('tenants').insert({
+    id: uuid,
+    name: nomeNovaCasa.value.trim(),
+    invite_code: code
+  })
+
+  if (tError) {
+    errorCasa.value = 'Erro ao criar casa: ' + tError.message
+    return
+  }
+
+  // 2. Inserir Membro Fundador
+  const { error: mError } = await supabase.from('membros_casa').insert({
+    id: tenantSessionService.getCurrentUserId()!,
+    tenant_id: uuid,
+    nome: localStorage.getItem('divi_username') || 'Membro Fundador',
+    avatar: (localStorage.getItem('divi_username') || 'MF').substring(0, 2).toUpperCase(),
+    user_id: tenantSessionService.getCurrentUserId()!
+  })
+
+  if (mError) {
+    errorCasa.value = 'Erro ao associar membro: ' + mError.message
+    return
+  }
+
+  nomeNovaCasa.value = ''
+  await carregarCasas()
+  selecionarCasa(uuid)
+}
+
+const entrarPorCodigo = async () => {
+  errorCasa.value = ''
+  const cleanedCode = codigoConvite.value.trim().toUpperCase()
+  if (!cleanedCode) {
+    errorCasa.value = 'Digite o código de convite'
+    return
+  }
+
+  const { data: tenantData, error: tError } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('invite_code', cleanedCode)
+    .single()
+
+  if (tError || !tenantData) {
+    errorCasa.value = 'Código de convite inválido ou casa não encontrada.'
+    return
+  }
+
+  const userId = tenantSessionService.getCurrentUserId()!
+  const username = localStorage.getItem('divi_username') || 'Convidado'
+
+  const { data: perfilExistente, error: pError } = await supabase
+    .from('membros_casa')
+    .select('*')
+    .eq('tenant_id', tenantData.id)
+    .eq('nome', username)
+    .is('user_id', null)
+    .limit(1)
+
+  if (!pError && perfilExistente && perfilExistente.length > 0) {
+    const { error: uError } = await supabase
+      .from('membros_casa')
+      .update({ user_id: userId })
+      .eq('tenant_id', tenantData.id)
+      .eq('id', perfilExistente[0].id)
+
+    if (uError) {
+      errorCasa.value = 'Erro ao vincular perfil: ' + uError.message
+      return
+    }
+  } else {
+    const { error: mError } = await supabase.from('membros_casa').insert({
+      id: userId,
+      tenant_id: tenantData.id,
+      nome: username,
+      avatar: username.substring(0, 2).toUpperCase(),
+      user_id: userId
+    })
+
+    if (mError) {
+      errorCasa.value = 'Erro ao entrar na casa: ' + mError.message
+      return
+    }
+  }
+
+  codigoConvite.value = ''
+  await carregarCasas()
+  selecionarCasa(tenantData.id)
+}
+
+const copyInviteCode = async (code: string) => {
+  try {
+    await navigator.clipboard.writeText(code)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch (err) {
+    console.error('Falha ao copiar:', err)
+  }
+}
+
+const handleLogoutClick = async () => {
+  await tenantSessionService.logout()
+  window.location.reload()
+}
+
+onMounted(() => {
+  if (isAuthed.value) {
+    carregarCasas()
+  }
+})
 </script>
 
 <template>
@@ -177,7 +356,16 @@ const membrosDisponiveisParaAjustar = computed(() => {
         <div class="absolute -top-4 -right-1 transform rotate-12 animate-wobble z-0 opacity-80 pointer-events-none">
           <IllustrationMascot variant="ember" :size="32" mood="happy" />
         </div>
-        <span class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] block leading-none mb-1.5 relative z-10">Finanças Residenciais</span>
+        <div 
+          v-if="isAuthed && activeTenantObj"
+          class="cursor-pointer flex items-center justify-center gap-1 text-[9px] font-bold text-ember uppercase tracking-[0.15em] mb-1.5 relative z-10 hover:opacity-85"
+          @click="showBottomSheetCasas = true"
+        >
+          <Home class="w-3.5 h-3.5 text-ember" />
+          <span>{{ activeTenantObj.name }}</span>
+          <ChevronDown class="w-3 h-3 text-ember" />
+        </div>
+        <span v-else class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] block leading-none mb-1.5 relative z-10">Finanças Residenciais</span>
         <h1 class="text-3xl font-black text-charcoal tracking-[-0.05em] leading-none relative z-10">
           DIVI<span class="text-ember">.</span>
         </h1>
@@ -756,5 +944,105 @@ const membrosDisponiveisParaAjustar = computed(() => {
       @cancel="showBottomSheetConfirmacaoEstorno = false"
       @confirm="confirmarEstorno"
     />
+
+    <!-- BottomSheet de Gerenciamento de Casas (SaaS) -->
+    <BottomSheet 
+      :model-value="showBottomSheetCasas" 
+      @update:model-value="val => { if (!val) showBottomSheetCasas = false }" 
+      width-class="md:w-[460px]"
+      max-height="90dvh"
+    >
+      <div class="p-6 sm:p-8 space-y-6 flex-grow overflow-y-auto custom-scrollbar flex flex-col text-graphite">
+        <div class="space-y-3">
+          <h3 class="text-3xl font-display text-charcoal leading-tight">Minhas <span class="text-ember">Casas</span></h3>
+          <p class="text-xs text-ash leading-relaxed">
+            Selecione uma casa ativa ou gerencie seus grupos financeiros. Compartilhe o código de convite para trazer novos membros.
+          </p>
+        </div>
+
+        <!-- Seção: Lista de Casas -->
+        <div class="space-y-3">
+          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Alternar de Casa</h4>
+          <div class="grid gap-2">
+            <div 
+              v-for="casa in casas" 
+              :key="casa.id"
+              @click="selecionarCasa(casa.id)"
+              class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between hover:border-ember/30"
+              :class="activeTenantId === casa.id ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas text-charcoal'"
+            >
+              <div class="flex items-center gap-3">
+                <Home class="w-4 h-4 shrink-0" :class="activeTenantId === casa.id ? 'text-ember' : 'text-ash'" />
+                <span class="text-sm font-semibold">{{ casa.name }}</span>
+              </div>
+              
+              <!-- Código de convite com opção de copiar -->
+              <div class="flex items-center gap-2" @click.stop>
+                <code class="text-[10px] bg-stone/50 px-2 py-1 rounded text-ash font-mono select-all">
+                  {{ casa.invite_code }}
+                </code>
+                <button 
+                  @click="copyInviteCode(casa.invite_code)" 
+                  class="p-1 hover:bg-stone rounded transition-colors"
+                  :title="copied ? 'Copiado!' : 'Copiar código'"
+                >
+                  <Check v-if="copied" class="w-3.5 h-3.5 text-meadow" />
+                  <Copy v-else class="w-3.5 h-3.5 text-ash" />
+                </button>
+              </div>
+            </div>
+            
+            <div v-if="casas.length === 0" class="text-center py-6 border border-dashed border-stone rounded-xl">
+              <p class="text-xs text-ash italic">Nenhuma casa associada. Crie uma abaixo!</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-stone/60 my-6" />
+
+        <!-- Seção: Criar Nova Casa -->
+        <div class="space-y-3">
+          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Criar Nova Casa</h4>
+          <div class="flex gap-2">
+            <input 
+              v-model="nomeNovaCasa"
+              placeholder="Ex: República Central"
+              class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
+            />
+            <Button size="sm" @click="criarNovaCasa">Criar</Button>
+          </div>
+        </div>
+
+        <!-- Seção: Entrar por Código -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Entrar com Código</h4>
+          <div class="flex gap-2">
+            <input 
+              v-model="codigoConvite"
+              placeholder="Ex: CASA-7F2A1"
+              class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
+            />
+            <Button size="sm" @click="entrarPorCodigo">Entrar</Button>
+          </div>
+        </div>
+
+        <!-- Mensagem de erro se houver -->
+        <div v-if="errorCasa" class="text-xs text-coral font-semibold pt-2">
+          {{ errorCasa }}
+        </div>
+      </div>
+      
+      <!-- Footer com Botão de Logout -->
+      <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0 flex justify-between items-center">
+        <button 
+          @click="handleLogoutClick" 
+          class="flex items-center gap-2 text-xs font-bold text-coral hover:underline focus:outline-none"
+        >
+          <LogOut class="w-4 h-4" />
+          Sair da Conta
+        </button>
+        <Button variant="secondary" @click="showBottomSheetCasas = false">Fechar</Button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
