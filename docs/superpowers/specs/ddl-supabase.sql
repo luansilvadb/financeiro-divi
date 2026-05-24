@@ -189,3 +189,9 @@ CREATE POLICY tenant_isolation_ledger_events ON public.ledger_events
   USING (
     tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
+
+-- 14. Concessão de Privilégios para as roles do Supabase
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, authenticated, service_role;
