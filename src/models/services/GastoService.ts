@@ -597,6 +597,98 @@ export class GastoService implements IGastoService {
     }
   }
 
+  private async atualizarGastoSimplesParaParcelado(
+    gastoId: string,
+    original: Gasto,
+    dados: {
+      descricao: string
+      valorTotal: Dinheiro
+      compradorId: string
+      method: 'pix' | 'card'
+      cardOwner: string | null
+      divisoes: DivisaoDeGasto[]
+      installments: number
+    }
+  ): Promise<void> {
+    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+    if (faturaOriginal && typeof faturaOriginal.validarOperacaoPermitida === 'function') {
+      faturaOriginal.validarOperacaoPermitida()
+    }
+
+    // Deleta original
+    await this.gastoRepo.excluir(original.id)
+
+    // Relança parcelado
+    if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${gastoId}`)
+    const periodoInicial = faturaOriginal.periodo
+    await this.lancarGastoOuEmprestimo({
+      flow: original.isLoan ? 'loan' : 'expense',
+      paymentMethod: dados.method,
+      compradorId: dados.compradorId,
+      valor: dados.valorTotal.centavos / 100,
+      descricao: dados.descricao,
+      divisoes: dados.divisoes,
+      installments: dados.installments,
+      cardOwnerId: dados.cardOwner,
+      borrowerId: original.borrowerId,
+      periodo: periodoInicial
+    })
+  }
+
+  private async atualizarGastoSimplesParaSimples(
+    original: Gasto,
+    dados: {
+      descricao: string
+      valorTotal: Dinheiro
+      compradorId: string
+      method: 'pix' | 'card'
+      cardOwner: string | null
+      divisoes: DivisaoDeGasto[]
+      installments: number
+    },
+    resolvedCardOwner: string | null,
+    cartaoReal: Cartao | undefined,
+    todosCartoes: Cartao[]
+  ): Promise<void> {
+    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+    if (faturaOriginal && typeof faturaOriginal.validarOperacaoPermitida === 'function') {
+      faturaOriginal.validarOperacaoPermitida()
+    }
+
+    let novaFaturaId = original.faturaId
+    if (faturaOriginal) {
+      const cartaoId = (dados.method === 'card')
+        ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID'))
+        : 'PIX_DEFAULT_ID'
+      const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
+      const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, faturaOriginal.periodo.mes, faturaOriginal.periodo.ano, responsavelFaturaId)
+      if (novaFatura && typeof novaFatura.validarOperacaoPermitida === 'function') {
+        novaFatura.validarOperacaoPermitida()
+      }
+      novaFaturaId = novaFatura.id
+    }
+
+    const novoGasto = new Gasto({
+      id: original.id,
+      faturaId: novaFaturaId,
+      descricao: dados.descricao,
+      valorTotal: dados.valorTotal,
+      compradorId: dados.compradorId,
+      divisoes: dados.divisoes,
+      method: dados.method,
+      cardOwner: resolvedCardOwner,
+      installments: dados.installments,
+      totalInstallments: dados.installments,
+      isLoan: original.isLoan,
+      borrowerId: original.borrowerId,
+      recurringBillId: original.recurringBillId,
+      isSettlement: original.isSettlement,
+      settlementDetails: original.settlementDetails
+    })
+
+    await this.gastoRepo.salvar(novoGasto)
+  }
+
   async removerAssociacaoContaFixa(contaFixaId: string): Promise<void> {
     const todos = await this.gastoRepo.listarTodos()
     const gastosAssociados = todos.filter(g => g.recurringBillId === contaFixaId)
