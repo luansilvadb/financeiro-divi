@@ -51,6 +51,38 @@ function obterPeriodoInicial(faturasAbertas: Fatura[], faturasFechadas: Fatura[]
   return obterPeriodoSelecionado(fallback)
 }
 
+function verificarPeriodoTrancado(
+  p: { mes: number; ano: number },
+  faturasAbertas: Fatura[],
+  faturasFechadas: Fatura[],
+  cartoes: Cartao[]
+): boolean {
+  // Se não há faturas no período, tecnicamente não está trancado
+  const temFaturaPixAberta = faturasAbertas.some(f =>
+    f.cartaoId === 'PIX_DEFAULT_ID' &&
+    f.periodo.mes === p.mes &&
+    f.periodo.ano === p.ano
+  )
+
+  if (cartoes.length > 0) {
+    const todosCartoesFechados = cartoes.every(cartao => {
+      const fechada = faturasFechadas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+      if (fechada) return true
+
+      const aberta = faturasAbertas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+      if (aberta) return false
+
+      // Se não tem fatura, consideramos "aberto" para permitir o lançamento que irá criá-la
+      return false
+    })
+
+    if (temFaturaPixAberta) return false
+    return todosCartoesFechados
+  }
+
+  return faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+}
+
 function criarFaturaVirtual(
   p: { mes: number; ano: number },
   cartaoId: string,
@@ -127,32 +159,12 @@ export function useDashboardViewModel(
   })
 
   const faturaSelecionadaTrancada = computed(() => {
-    const p = periodoSelecionado.value
-
-    // Se não há faturas no período, tecnicamente não está trancado
-    const temFaturaPixAberta = props.faturasAbertas.some(f =>
-      f.cartaoId === 'PIX_DEFAULT_ID' &&
-      f.periodo.mes === p.mes &&
-      f.periodo.ano === p.ano
+    return verificarPeriodoTrancado(
+      periodoSelecionado.value,
+      props.faturasAbertas,
+      props.faturasFechadas,
+      props.cartoes
     )
-
-    if (props.cartoes.length > 0) {
-      const todosCartoesFechados = props.cartoes.every(cartao => {
-        const fechada = props.faturasFechadas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-        if (fechada) return true
-
-        const aberta = props.faturasAbertas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-        if (aberta) return false
-
-        // Se não tem fatura, consideramos "aberto" para permitir o lançamento que irá criá-la
-        return false
-      })
-
-      if (temFaturaPixAberta) return false
-      return todosCartoesFechados
-    }
-
-    return props.faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
   })
 
   watch(faturaSelecionadaTrancada, (isLocked) => {
