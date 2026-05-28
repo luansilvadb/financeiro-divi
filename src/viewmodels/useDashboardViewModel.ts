@@ -51,6 +51,20 @@ function obterPeriodoInicial(faturasAbertas: Fatura[], faturasFechadas: Fatura[]
   return obterPeriodoSelecionado(fallback)
 }
 
+function criarFaturaVirtual(
+  p: { mes: number; ano: number },
+  cartaoId: string,
+  responsavelId: string
+): Fatura {
+  return new Fatura({
+    id: `virtual-${p.mes}-${p.ano}`,
+    cartaoId,
+    periodo: { mes: p.mes, ano: p.ano },
+    responsavelId,
+    status: 'ABERTA'
+  })
+}
+
 export function useDashboardViewModel(
   props: DashboardProps,
   emit: (event: any, ...args: any[]) => void,
@@ -78,13 +92,11 @@ export function useDashboardViewModel(
     ]
     if (faturasExistentes.length === 0) {
       return [
-        new Fatura({
-          id: `virtual-${p.mes}-${p.ano}`,
-          cartaoId: props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
-          periodo: { mes: p.mes, ano: p.ano },
-          responsavelId: props.membros[0]?.id || 'virtual-member',
-          status: 'ABERTA'
-        })
+        criarFaturaVirtual(
+          p,
+          props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
+          props.membros[0]?.id || 'virtual-member'
+        )
       ]
     }
     return faturasExistentes
@@ -153,13 +165,11 @@ export function useDashboardViewModel(
                              props.faturasFechadas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
     if (faturaEncontrada) return faturaEncontrada
 
-    return new Fatura({
-      id: `virtual-${p.mes}-${p.ano}`,
-      cartaoId: props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
-      periodo: { mes: p.mes, ano: p.ano },
-      responsavelId: props.membros[0]?.id || 'virtual-member',
-      status: 'ABERTA'
-    })
+    return criarFaturaVirtual(
+      p,
+      props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
+      props.membros[0]?.id || 'virtual-member'
+    )
   })
 
   // --- Seletor de Meses ---
