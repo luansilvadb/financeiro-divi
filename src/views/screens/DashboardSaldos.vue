@@ -135,7 +135,7 @@ const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false
 const membrosDisponiveisParaAjustar = computed(() => {
   if (!gastoParaAjustar.value) return membrosAtivos.value
   const compradorId = gastoParaAjustar.value.compradorId
-  const splitIds = gastoParaAjustar.value.divisoes.map(d => d.membroId)
+  const splitIds = gastoParaAjustar.value.divisoes.map((d: any) => d.membroId)
   return props.membros.filter(m => 
     m.ativo !== false || 
     m.id === compradorId || 
@@ -184,9 +184,14 @@ const carregarCasas = async () => {
 
   if (!tError && tenantsList) {
     casas.value = tenantsList
-    // Se não tiver tenant ativo mas tiver casas, seleciona a primeira
-    if (!activeTenantId.value && tenantsList.length > 0) {
-      selecionarCasa(tenantsList[0].id)
+    const isValido = tenantsList.some(c => c.id === activeTenantId.value)
+    if (!isValido || !activeTenantId.value) {
+      if (tenantsList.length > 0) {
+        selecionarCasa(tenantsList[0].id)
+      } else {
+        tenantSessionService.setActiveTenant('')
+        activeTenantId.value = ''
+      }
     }
   }
 }

@@ -1,3 +1,14 @@
+-- 0. Limpeza prévia de tabelas antigas (opcional para recriar o esquema do zero)
+DROP TABLE IF EXISTS public.divisoes_gasto CASCADE;
+DROP TABLE IF EXISTS public.gastos CASCADE;
+DROP TABLE IF EXISTS public.faturas CASCADE;
+DROP TABLE IF EXISTS public.acertos_membro CASCADE;
+DROP TABLE IF EXISTS public.cartoes CASCADE;
+DROP TABLE IF EXISTS public.contas_fixas CASCADE;
+DROP TABLE IF EXISTS public.ledger_events CASCADE;
+DROP TABLE IF EXISTS public.membros_casa CASCADE;
+DROP TABLE IF EXISTS public.tenants CASCADE;
+
 -- 1. Habilitar uuid-ossp
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -73,7 +84,8 @@ CREATE TABLE public.divisoes_gasto (
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   gasto_id text NOT NULL,
   membro_id text NOT NULL,
-  valor_centavos bigint NOT NULL
+  valor_centavos bigint NOT NULL,
+  FOREIGN KEY (gasto_id, tenant_id) REFERENCES public.gastos(id, tenant_id) ON DELETE CASCADE
 );
 
 -- 8. Tabela de Contas Fixas
@@ -142,8 +154,24 @@ CREATE POLICY tenant_membros_casa_access ON public.membros_casa
     tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
-CREATE POLICY tenant_isolation_tenants ON public.tenants
-  FOR ALL TO authenticated
+CREATE POLICY tenant_isolation_tenants_select ON public.tenants
+  FOR SELECT TO authenticated
+  USING (
+    id IN (SELECT public.get_user_tenants(auth.uid()))
+  );
+
+CREATE POLICY tenant_isolation_tenants_insert ON public.tenants
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY tenant_isolation_tenants_update ON public.tenants
+  FOR UPDATE TO authenticated
+  USING (
+    id IN (SELECT public.get_user_tenants(auth.uid()))
+  );
+
+CREATE POLICY tenant_isolation_tenants_delete ON public.tenants
+  FOR DELETE TO authenticated
   USING (
     id IN (SELECT public.get_user_tenants(auth.uid()))
   );

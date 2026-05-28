@@ -34,12 +34,18 @@ describe('Fatura', () => {
     expect(() => fatura.validarOperacaoPermitida()).toThrow('Fatura não está ABERTA')
   })
 
-  it('fechar - deve fechar a fatura corretamente e salvar a data de pagamento', () => {
+  it('fechar - deve retornar nova fatura FECHADA e preservar a data de pagamento', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ABERTA' })
     const dataPagamento = new Date('2026-05-20T10:00:00Z')
-    fatura.fechar({ dataPagamentoBanco: dataPagamento })
-    expect(fatura.status).toBe('FECHADA')
-    expect(fatura.dataPagamentoBanco).toBe(dataPagamento)
+    const fechada = fatura.fechar({ dataPagamentoBanco: dataPagamento })
+    
+    // Nova instância com status FECHADA
+    expect(fechada.status).toBe('FECHADA')
+    expect(fechada.dataPagamentoBanco).toBe(dataPagamento)
+    expect(fechada).not.toBe(fatura)
+    
+    // Original inalterada
+    expect(fatura.status).toBe('ABERTA')
   })
 
   it('fechar - deve falhar se a fatura nao estiver ABERTA', () => {
@@ -47,10 +53,13 @@ describe('Fatura', () => {
     expect(() => fatura.fechar()).toThrow('Apenas faturas ABERTAS podem ser fechadas')
   })
 
-  it('marcarAcertada - deve marcar a fatura como ACERTADA', () => {
+  it('marcarAcertada - deve retornar nova fatura ACERTADA', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'FECHADA' })
-    fatura.marcarAcertada()
-    expect(fatura.status).toBe('ACERTADA')
+    const acertada = fatura.marcarAcertada()
+    
+    expect(acertada.status).toBe('ACERTADA')
+    expect(acertada).not.toBe(fatura)
+    expect(fatura.status).toBe('FECHADA')
   })
 
   it('marcarAcertada - deve falhar se a fatura nao estiver FECHADA', () => {
@@ -60,8 +69,6 @@ describe('Fatura', () => {
 
   it('determinarPeriodoFatura - compra feita perto do final do dia local deve usar o dia local', () => {
     // 21 de Maio às 23:00 (hora local da máquina).
-    // Se o fechamento do cartão é no dia 22, este gasto deve pertencer à fatura do próprio mês de Maio (mês 5), 
-    // mesmo que em UTC a data já tenha virado dia 22.
     const dataGasto = new Date(2026, 4, 21, 23, 0, 0) // Mês 4 é Maio (0-indexed)
     const periodo = determinarPeriodoFatura(dataGasto, 22)
     expect(periodo.mes).toBe(5)
@@ -78,22 +85,42 @@ describe('Fatura', () => {
     expect(periodo.ano).toBe(2026)
   })
 
-  it('reabrir - deve reabrir uma fatura FECHADA com sucesso', () => {
+  it('reabrir - deve retornar nova fatura ABERTA a partir de FECHADA', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'FECHADA', dataPagamentoBanco: new Date() })
-    fatura.reabrir()
-    expect(fatura.status).toBe('ABERTA')
-    expect(fatura.dataPagamentoBanco).toBeUndefined()
+    const reaberta = fatura.reabrir()
+    
+    expect(reaberta.status).toBe('ABERTA')
+    expect(reaberta.dataPagamentoBanco).toBeUndefined()
+    expect(reaberta).not.toBe(fatura)
+    expect(fatura.status).toBe('FECHADA')
   })
 
-  it('reabrir - deve reabrir uma fatura ACERTADA com sucesso', () => {
+  it('reabrir - deve retornar nova fatura ABERTA a partir de ACERTADA', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ACERTADA', dataPagamentoBanco: new Date() })
-    fatura.reabrir()
-    expect(fatura.status).toBe('ABERTA')
-    expect(fatura.dataPagamentoBanco).toBeUndefined()
+    const reaberta = fatura.reabrir()
+    
+    expect(reaberta.status).toBe('ABERTA')
+    expect(reaberta.dataPagamentoBanco).toBeUndefined()
+    expect(reaberta).not.toBe(fatura)
   })
 
   it('reabrir - deve falhar se a fatura ja estiver ABERTA', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ABERTA' })
     expect(() => fatura.reabrir()).toThrow('Apenas faturas FECHADAS ou ACERTADAS podem ser reabertas')
+  })
+
+  it('desmarcarAcertada - deve retornar nova fatura FECHADA quando ACERTADA', () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'ACERTADA' })
+    const fechada = fatura.desmarcarAcertada()
+    
+    expect(fechada.status).toBe('FECHADA')
+    expect(fechada).not.toBe(fatura)
+  })
+
+  it('desmarcarAcertada - deve retornar a mesma instância quando não é ACERTADA', () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'FECHADA' })
+    const resultado = fatura.desmarcarAcertada()
+    
+    expect(resultado).toBe(fatura)
   })
 })

@@ -1,0 +1,20 @@
+{
+  "skill_name": "dense-pm-architect",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Quero criar um SaaS para pequenas clinicas acompanharem pacientes inadimplentes. Pensei em Next.js, Supabase, Stripe, dashboard com metricas, perfis de atendente, automacoes por WhatsApp, IA para prever quem vai atrasar e multi-tenant desde o dia 1. Me da a arquitetura completa?",
+      "expected_output": "The answer should challenge the broad architecture, ask for missing business/workflow context before committing to tools, cut non-core dashboard/profile/AI scope, and propose a smaller validation slice around the payment recovery workflow."
+    },
+    {
+      "id": 2,
+      "prompt": "Tenho uma ideia vaga: um sistema para donos de oficinas economizarem tempo com orcamentos. Quero que voce defina o MVP e o esqueleto tecnico, mas sem inventar um monte de feature.",
+      "expected_output": "The answer should identify assumptions, compress the core value, define a very small MVP, list explicit exclusions, and provide 3-4 codable walking-skeleton tasks with done criteria."
+    },
+    {
+      "id": 3,
+      "prompt": "Meu app B2B vai ter muitos clientes no futuro, entao quero comecar com microservices, Kafka, Kubernetes e banco separado por tenant. E tambem usar auth provider que cobra por usuario ativo porque e rapido. Concorda?",
+      "expected_output": "The answer should disagree with premature scale architecture, explain failure modes and costs, recommend a simpler default such as monolith plus PostgreSQL with tenant_id where appropriate, and include explicit trade-offs for the recommendation."
+    }
+  ]
+}

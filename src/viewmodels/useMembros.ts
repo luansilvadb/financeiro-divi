@@ -50,9 +50,6 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
     await carregar()
   }
 
-  if (!inicializado.value) {
-    inicializar()
-  }
 
   return {
     membros,

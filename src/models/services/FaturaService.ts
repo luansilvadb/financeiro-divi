@@ -6,6 +6,7 @@ import type { IFaturaService } from './IFaturaService'
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import { Dinheiro } from '../entities/Dinheiro'
 import { AcertoMembro } from '../entities/AcertoMembro'
+import { valorParcelaAtual } from '../entities/ParcelaCalculator'
 
 export class FaturaService implements IFaturaService {
   constructor(
@@ -22,8 +23,8 @@ export class FaturaService implements IFaturaService {
       return
     }
 
-    fatura.fechar({ responsavelId, dataPagamentoBanco })
-    await this.faturaRepo.salvar(fatura)
+    const fechada = fatura.fechar({ responsavelId, dataPagamentoBanco })
+    await this.faturaRepo.salvar(fechada)
 
     // Buscar acertos antigos antes de excluir para preservar dados de pagamento
     const acertosAntigos = await this.acertoRepo.buscarPorFatura(faturaId)
@@ -39,13 +40,10 @@ export class FaturaService implements IFaturaService {
           consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + div.valor.centavos
         }
       } else {
-        const divisor = g.totalInstallments || g.installments || 1
-        const index = Math.max(0, divisor - g.installments)
         for (const div of g.divisoes) {
-          const parcelas = div.valor.distribuir(divisor)
-          if (index < parcelas.length) {
-            const valorParcelaCentavos = parcelas[index].centavos
-            consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcelaCentavos
+          const valorParcela = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
+          if (valorParcela.centavos > 0) {
+            consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcela.centavos
           }
         }
       }
@@ -105,8 +103,8 @@ export class FaturaService implements IFaturaService {
       }
     }
 
-    fatura.reabrir()
-    await this.faturaRepo.salvar(fatura)
+    const reaberta = fatura.reabrir()
+    await this.faturaRepo.salvar(reaberta)
     await this.acertoRepo.excluirPorFatura(faturaId)
   }
 

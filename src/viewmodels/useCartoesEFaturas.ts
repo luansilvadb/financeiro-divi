@@ -8,6 +8,7 @@ import { AcertoMembro } from '../models/entities/AcertoMembro'
 import { Gasto } from '../models/entities/Gasto'
 import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import { Dinheiro } from '../models/entities/Dinheiro'
+import { valorParcelaAtual } from '../models/entities/ParcelaCalculator'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
@@ -19,7 +20,8 @@ import {
   acertoMembroRepository,
   faturaService,
   acertoService,
-  gastoService
+  gastoService,
+  tenantSessionService
 } from '../shared/container'
 
 export interface CartoesEFaturasState {
@@ -76,6 +78,15 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
 
     const carregar = async () => {
       try {
+        if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
+          state.value.cartoes = []
+          state.value.faturas = []
+          state.value.acertos = []
+          state.value.gastos = []
+          state.value.inicializado = true
+          return
+        }
+
         if (typeof localFaturaRepo.executarMigracoesEDesduplicacao === 'function') {
           await localFaturaRepo.executarMigracoesEDesduplicacao()
         }
@@ -208,14 +219,10 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     const gastosDaFatura = state.value.gastos.filter(g => g.faturaId === faturaId)
     let total = 0
     gastosDaFatura.forEach(g => {
-      const divisor = g.totalInstallments || g.installments || 1
-      const index = Math.max(0, divisor - g.installments)
       g.divisoes.forEach(d => {
         if (d.membroId === membroId) {
-          const parcelas = d.valor.distribuir(divisor)
-          if (index < parcelas.length) {
-            total += parcelas[index].centavos
-          }
+          const valorParcela = valorParcelaAtual(d.valor, g.installments, g.totalInstallments)
+          total += valorParcela.centavos
         }
       })
     })
@@ -235,9 +242,6 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
     promiseInicializacao = null
   }
 
-  if (!state.value.inicializado) {
-    inicializar()
-  }
 
   return {
     cartoes,

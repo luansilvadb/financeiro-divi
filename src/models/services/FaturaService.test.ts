@@ -48,8 +48,9 @@ describe('FaturaService', () => {
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.fecharFatura('f1', undefined, new Date())
 
-    expect(fatura.status).toBe('FECHADA')
-    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+    // Fatura original é imutável, verificamos que salvar recebeu nova instância FECHADA
+    expect(fatura.status).toBe('ABERTA') // original inalterada
+    expect(faturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({ id: 'f1', status: 'FECHADA' }))
     expect(acertoRepo.excluirPorFatura).toHaveBeenCalledWith('f1')
     expect(acertoRepo.salvar).toHaveBeenCalledTimes(2)
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
@@ -74,9 +75,11 @@ describe('FaturaService', () => {
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.fecharFatura('f1', 'm2', new Date())
 
-    expect(fatura.status).toBe('FECHADA')
-    expect(fatura.responsavelId).toBe('m2')
-    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+    // Fatura original imutável — verificamos nova instância
+    expect(fatura.status).toBe('ABERTA') // original inalterada
+    const faturaFechada = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaFechada.status).toBe('FECHADA')
+    expect(faturaFechada.responsavelId).toBe('m2')
   })
 
   it('deve reabrir a fatura e excluir os acertos persistidos', async () => {
@@ -89,9 +92,11 @@ describe('FaturaService', () => {
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.reabrirFatura('f1')
 
-    expect(fatura.status).toBe('ABERTA')
-    expect(fatura.dataPagamentoBanco).toBeUndefined()
-    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+    // Fatura original imutável — verificamos nova instância
+    expect(fatura.status).toBe('FECHADA') // original inalterada
+    const faturaReaberta = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaReaberta.status).toBe('ABERTA')
+    expect(faturaReaberta.dataPagamentoBanco).toBeUndefined()
     expect(acertoRepo.excluirPorFatura).toHaveBeenCalledWith('f1')
   })
 
@@ -270,6 +275,9 @@ describe('FaturaService', () => {
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     
     await expect(service.reabrirFatura('f1')).resolves.not.toThrow()
-    expect(fatura.status).toBe('ABERTA')
+    // Fatura original imutável — verificamos nova instância
+    expect(fatura.status).toBe('ACERTADA') // original inalterada
+    const faturaReaberta = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaReaberta.status).toBe('ABERTA')
   })
 })

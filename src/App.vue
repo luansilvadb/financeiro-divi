@@ -8,6 +8,7 @@ import LoginScreen from './views/screens/LoginScreen.vue'
 import { Plus } from 'lucide-vue-next'
 import { useMembros } from './viewmodels/useMembros'
 import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
+import { useContasFixas } from './viewmodels/useContasFixas'
 import { useStorageSync } from './viewmodels/useStorageSync'
 import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
@@ -26,16 +27,49 @@ const {
   faturasFechadas,
   calcularConsumoMembro
 } = useCartoesEFaturas()
+const { carregarTemplates: inicializarContasFixas } = useContasFixas()
 
 useStorageSync()
 
 const isAuthed = ref(tenantSessionService.isAuthenticated())
 
+const validarESincronizarTenantAtivo = async () => {
+  if (!tenantSessionService.isAuthenticated()) return
+  const userId = tenantSessionService.getCurrentUserId()
+  if (!userId) return
+  try {
+    const { data: members, error: mError } = await supabase
+      .from('membros_casa')
+      .select('tenant_id')
+      .eq('user_id', userId)
+
+    if (mError || !members) return
+
+    const tenantIds = members.map(m => m.tenant_id)
+    const activeTenantId = tenantSessionService.getActiveTenantId()
+
+    if (tenantIds.length === 0) {
+      if (activeTenantId) {
+        tenantSessionService.setActiveTenant('')
+      }
+      return
+    }
+
+    if (!activeTenantId || !tenantIds.includes(activeTenantId)) {
+      tenantSessionService.setActiveTenant(tenantIds[0])
+    }
+  } catch (err) {
+    console.error('Erro ao validar tenant ativo:', err)
+  }
+}
+
 onMounted(async () => {
   if (isAuthed.value) {
+    await validarESincronizarTenantAtivo()
     await Promise.all([
       inicializarMembros(),
-      inicializarCartoes()
+      inicializarCartoes(),
+      inicializarContasFixas()
     ])
   }
 })
@@ -48,6 +82,8 @@ const isPeriodLocked = ref(false)
 
 const handleAuthSuccess = async () => {
   isAuthed.value = true
+  
+  await validarESincronizarTenantAtivo()
   
   const jaMigrado = localStorage.getItem('divi_migrado_saas') === 'true'
   const activeTenantId = tenantSessionService.getActiveTenantId()
@@ -93,7 +129,8 @@ const handleAuthSuccess = async () => {
   // Inicializa os dados com as fontes online
   await Promise.all([
     inicializarMembros(),
-    inicializarCartoes()
+    inicializarCartoes(),
+    inicializarContasFixas()
   ])
 }
 </script>

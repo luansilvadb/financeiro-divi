@@ -46,74 +46,97 @@ export class Fatura {
   public readonly id: string
   public readonly cartaoId: string
   public readonly periodo: FaturaPeriodo
-  public _responsavelId: string
-  public _status: FaturaStatus
-  public _dataPagamentoBanco?: Date
+  public readonly responsavelId: string
+  public readonly status: FaturaStatus
+  public readonly dataPagamentoBanco?: Date
 
   constructor(props: FaturaProps) {
     this.id = props.id
     this.cartaoId = props.cartaoId
     this.periodo = props.periodo
-    this._responsavelId = props.responsavelId
-    this._status = props.status
-    this._dataPagamentoBanco = props.dataPagamentoBanco
-  }
-
-  get responsavelId(): string {
-    return this._responsavelId
-  }
-
-  get status(): FaturaStatus {
-    return this._status
-  }
-
-  get dataPagamentoBanco(): Date | undefined {
-    return this._dataPagamentoBanco
+    this.responsavelId = props.responsavelId
+    this.status = props.status
+    this.dataPagamentoBanco = props.dataPagamentoBanco
   }
 
   validarOperacaoPermitida() {
-    if (this._status !== 'ABERTA') {
+    if (this.status !== 'ABERTA') {
       throw new Error('Fatura não está ABERTA')
     }
   }
 
-  fechar(opts?: { responsavelId?: string; dataPagamentoBanco?: Date }) {
-    if (this._status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
-    this._status = 'FECHADA'
+  fechar(opts?: { responsavelId?: string; dataPagamentoBanco?: Date }): Fatura {
+    if (this.status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
+    return new Fatura({
+      id: this.id,
+      cartaoId: this.cartaoId,
+      periodo: this.periodo,
+      responsavelId: opts?.responsavelId || this.responsavelId,
+      status: 'FECHADA',
+      dataPagamentoBanco: opts?.dataPagamentoBanco || this.dataPagamentoBanco
+    })
+  }
 
-    if (opts?.dataPagamentoBanco) {
-      this._dataPagamentoBanco = opts.dataPagamentoBanco
+  marcarComoPagaAoBanco(data: Date = new Date()): Fatura {
+    if (this.status === 'ABERTA') throw new Error('Faturas ABERTAS não podem ser pagas ao banco')
+    return new Fatura({
+      id: this.id,
+      cartaoId: this.cartaoId,
+      periodo: this.periodo,
+      responsavelId: this.responsavelId,
+      status: this.status,
+      dataPagamentoBanco: data
+    })
+  }
+
+  desmarcarComoPagaAoBanco(): Fatura {
+    return new Fatura({
+      id: this.id,
+      cartaoId: this.cartaoId,
+      periodo: this.periodo,
+      responsavelId: this.responsavelId,
+      status: this.status,
+      dataPagamentoBanco: undefined
+    })
+  }
+
+  marcarAcertada(): Fatura {
+    if (this.status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser acertadas')
+    return new Fatura({
+      id: this.id,
+      cartaoId: this.cartaoId,
+      periodo: this.periodo,
+      responsavelId: this.responsavelId,
+      status: 'ACERTADA',
+      dataPagamentoBanco: this.dataPagamentoBanco
+    })
+  }
+
+  desmarcarAcertada(): Fatura {
+    if (this.status === 'ACERTADA') {
+      return new Fatura({
+        id: this.id,
+        cartaoId: this.cartaoId,
+        periodo: this.periodo,
+        responsavelId: this.responsavelId,
+        status: 'FECHADA',
+        dataPagamentoBanco: this.dataPagamentoBanco
+      })
     }
-    if (opts?.responsavelId) {
-      this._responsavelId = opts.responsavelId
-    }
+    return this
   }
 
-  marcarComoPagaAoBanco(data: Date = new Date()) {
-    if (this._status === 'ABERTA') throw new Error('Faturas ABERTAS não podem ser pagas ao banco')
-    this._dataPagamentoBanco = data
-  }
-
-  desmarcarComoPagaAoBanco() {
-    this._dataPagamentoBanco = undefined
-  }
-
-  marcarAcertada() {
-    if (this._status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser acertadas')
-    this._status = 'ACERTADA'
-  }
-
-  desmarcarAcertada() {
-    if (this._status === 'ACERTADA') {
-      this._status = 'FECHADA'
-    }
-  }
-
-  reabrir() {
-    if (this._status !== 'FECHADA' && this._status !== 'ACERTADA') {
+  reabrir(): Fatura {
+    if (this.status !== 'FECHADA' && this.status !== 'ACERTADA') {
       throw new Error('Apenas faturas FECHADAS ou ACERTADAS podem ser reabertas')
     }
-    this._status = 'ABERTA'
-    this._dataPagamentoBanco = undefined
+    return new Fatura({
+      id: this.id,
+      cartaoId: this.cartaoId,
+      periodo: this.periodo,
+      responsavelId: this.responsavelId,
+      status: 'ABERTA',
+      dataPagamentoBanco: undefined
+    })
   }
 }

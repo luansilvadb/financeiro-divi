@@ -609,8 +609,10 @@ describe('GastoService', () => {
 
     expect(mockAcertoRepo.salvar).toHaveBeenCalled()
     expect(acertoPendente.pago).toBe(true)
-    expect(faturaAnterior.status).toBe('ACERTADA')
-    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(faturaAnterior)
+    // Fatura original imutável — verificamos nova instância passada ao salvar
+    expect(faturaAnterior.status).toBe('FECHADA') // original inalterada (já era FECHADA antes do marcarAcertada)
+    const faturaAcertada = mockFaturaRepo.salvar.mock.calls.find((c: any[]) => c[0]?.id === 'f-janeiro')?.[0]
+    expect(faturaAcertada?.status).toBe('ACERTADA')
   })
 
   it('deve assegurar que chamadas concorrentes simultaneas para obterOuCriarFatura nao dupliquem a fatura', async () => {
@@ -1037,8 +1039,10 @@ describe('GastoService', () => {
     expect(mockAcertoRepo.salvar).toHaveBeenCalledWith(acertoMembroAnterior)
 
     // A fatura anterior deve voltar a ser FECHADA
-    expect(faturaAnterior.status).toBe('FECHADA')
-    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(faturaAnterior)
+    // Fatura original imutável — verificamos nova instância passada ao salvar
+    expect(faturaAnterior.status).toBe('ACERTADA') // original inalterada
+    const faturaRevertida = mockFaturaRepo.salvar.mock.calls.find((c: any[]) => c[0]?.id === 'f-anterior')?.[0]
+    expect(faturaRevertida?.status).toBe('FECHADA')
 
     // Deve ter excluído o gasto
     expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g-netting')

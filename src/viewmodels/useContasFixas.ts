@@ -3,7 +3,7 @@ import type { ContaFixa } from '../models/entities/ContaFixa'
 import type { Gasto } from '../models/entities/Gasto'
 import type { IContaFixaRepository } from '../models/repositories/IContaFixaRepository'
 import type { IGastoService } from '../models/services/IGastoService'
-import { contaFixaRepository, gastoService } from '../shared/container'
+import { contaFixaRepository, gastoService, tenantSessionService } from '../shared/container'
 
 const CONTAS_PADRAO: ContaFixa[] = [
   { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValue: 1500.00, defaultSplit: [] },
@@ -28,6 +28,12 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
 
   const carregarTemplates = async () => {
     if (promiseInicializacao) return promiseInicializacao
+
+    if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
+      contasFixas.value = [...CONTAS_PADRAO]
+      inicializado.value = true
+      return
+    }
 
     const carregar = async () => {
       const saved = await contaFixaRepo.listarTodas()
@@ -96,9 +102,6 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
     inicializado.value = false
   }
 
-  if (!inicializado.value) {
-    carregarTemplates()
-  }
 
   return {
     contasFixas,

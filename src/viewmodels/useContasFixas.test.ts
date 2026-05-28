@@ -14,15 +14,15 @@ describe('useContasFixas', () => {
   const esperarTick = () => new Promise(resolve => setTimeout(resolve, 0))
 
   it('deve carregar contas fixas padrao ao inicializar', async () => {
-    const { contasFixas } = useContasFixas()
-    await esperarTick()
+    const { contasFixas, carregarTemplates } = useContasFixas()
+    await carregarTemplates()
     expect(contasFixas.value.length).toBe(5)
     expect(contasFixas.value[0].id).toBe('aluguel')
   })
 
   it('deve cadastrar, atualizar e remover um template customizado', async () => {
-    const { contasFixas, salvarContaFixa, excluirContaFixa } = useContasFixas()
-    await esperarTick()
+    const { contasFixas, salvarContaFixa, excluirContaFixa, carregarTemplates } = useContasFixas()
+    await carregarTemplates()
     
     await salvarContaFixa({
       id: 'new_bill',

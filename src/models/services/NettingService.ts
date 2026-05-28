@@ -1,4 +1,5 @@
 import { Gasto } from '../entities/Gasto'
+import { valorParcelaAtual } from '../entities/ParcelaCalculator'
 
 export interface TransferenciaNetting {
   from: string
@@ -18,13 +19,10 @@ export function calcularSaldosUnificados(
   membros.forEach(m => { saldosCentavos[m.id] = 0 })
 
   gastos.forEach(g => {
-    const divisor = g.totalInstallments || g.installments || 1
-    const parcelaAtualIdx = Math.max(0, divisor - g.installments)
-
     if (g.isLoan) {
-      const parcelasEmprestimo = g.valorTotal.distribuir(divisor)
-      if (parcelaAtualIdx < parcelasEmprestimo.length) {
-        const valorParcelaCentavos = parcelasEmprestimo[parcelaAtualIdx].centavos
+      const valorParcela = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
+      if (valorParcela.centavos > 0) {
+        const valorParcelaCentavos = valorParcela.centavos
         if (g.compradorId) {
           if (saldosCentavos[g.compradorId] === undefined) {
             saldosCentavos[g.compradorId] = 0
@@ -43,9 +41,9 @@ export function calcularSaldosUnificados(
 
       let totalDebitosCentavos = 0
       g.divisoes.forEach(div => {
-        const distribuicaoDiv = div.valor.distribuir(divisor)
-        if (parcelaAtualIdx < distribuicaoDiv.length) {
-          const valorDebitoCentavos = distribuicaoDiv[parcelaAtualIdx].centavos
+        const valorDebito = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
+        if (valorDebito.centavos > 0) {
+          const valorDebitoCentavos = valorDebito.centavos
           if (saldosCentavos[div.membroId] === undefined) {
             saldosCentavos[div.membroId] = 0
           }

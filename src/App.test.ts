@@ -41,6 +41,17 @@ vi.mock('./viewmodels/useStorageSync', () => ({
   useStorageSync: vi.fn(),
 }))
 
+vi.mock('./viewmodels/useContasFixas', () => ({
+  useContasFixas: () => ({
+    contasFixas: ref([]),
+    salvarContaFixa: vi.fn(),
+    excluirContaFixa: vi.fn(),
+    lancarGastoContaFixa: vi.fn(),
+    carregarTemplates: vi.fn(),
+    resetar: vi.fn()
+  }),
+}))
+
 const isAnyBottomSheetOpenMock = ref(false)
 vi.mock('./viewmodels/useBottomSheetState', () => ({
   useBottomSheetState: () => ({

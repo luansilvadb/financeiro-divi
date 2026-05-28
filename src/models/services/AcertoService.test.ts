@@ -22,8 +22,10 @@ describe('AcertoService', () => {
 
     expect(acerto1.pago).toBe(true)
     expect(acertoRepo.salvar).toHaveBeenCalledWith(acerto1)
-    expect(fatura.status).toBe('ACERTADA')
-    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+    // Fatura original imutável — verificamos nova instância passada ao salvar
+    expect(fatura.status).toBe('FECHADA') // original inalterada
+    const faturaAcertada = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaAcertada.status).toBe('ACERTADA')
   })
 
   it('deve registrar reembolso parcial e marcar fatura acertada quando zerar a divida', async () => {
@@ -48,13 +50,15 @@ describe('AcertoService', () => {
     await service.registrarReembolsoMembro('ac1', Dinheiro.deCentavos(5000))
     expect(acerto.pago).toBe(false)
     expect(acerto.valorPago.centavos).toBe(5000)
-    expect(fatura.status).toBe('FECHADA')
+    expect(fatura.status).toBe('FECHADA') // original inalterada neste ponto
 
     // Quita restante
     await service.registrarReembolsoMembro('ac1', Dinheiro.deCentavos(5000))
     expect(acerto.pago).toBe(true)
-    expect(fatura.status).toBe('ACERTADA')
-    expect(faturaRepo.salvar).toHaveBeenCalledWith(fatura)
+    // Fatura original imutável — verificamos nova instância
+    expect(fatura.status).toBe('FECHADA') // original permanece FECHADA
+    const faturaAcertada = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaAcertada.status).toBe('ACERTADA')
   })
 
   it('deve manter fatura como FECHADA se acertos forem quitados mas pagamento ao banco estiver pendente', async () => {

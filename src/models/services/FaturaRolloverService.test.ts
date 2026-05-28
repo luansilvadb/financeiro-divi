@@ -100,9 +100,7 @@ describe('FaturaRolloverService', () => {
     })
 
     const mockFaturaService = {
-      fecharFatura: vi.fn().mockImplementation(async (_id, respId, date) => {
-        faturaAntiga.fechar({ responsavelId: respId, dataPagamentoBanco: date })
-      }),
+      fecharFatura: vi.fn().mockResolvedValue(undefined),
       reabrirFatura: vi.fn(),
       assegurarFaturasAbertas: vi.fn()
     }
@@ -120,7 +118,8 @@ describe('FaturaRolloverService', () => {
     })
 
     expect(mockFaturaService.fecharFatura).toHaveBeenCalledWith('f-antiga', 'm1', expect.any(Date))
-    expect(faturaAntiga.status).toBe('FECHADA')
+    // faturaAntiga permanece ABERTA pois Fatura é imutável — o fecharFatura no serviço real criaria nova instância
+    expect(faturaAntiga.status).toBe('ABERTA')
     expect(mockFaturaRepo.salvar).toHaveBeenCalledTimes(2) // 1 para Pix default, 1 para a nova do cartão (a antiga é fechada via faturaService)
   })
 })

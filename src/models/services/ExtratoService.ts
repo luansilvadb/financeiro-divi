@@ -1,5 +1,6 @@
 import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
+import { valorParcelaAtual } from '../entities/ParcelaCalculator'
 
 export interface ItemExtrato {
   id: string
@@ -20,17 +21,12 @@ export class ExtratoService {
     let saldoAcumulado = Dinheiro.deCentavos(0)
     
     return gastosOrdenados.map(g => {
-      const divisor = g.totalInstallments || 1
-      const parcelaAtualIdx = Math.max(0, divisor - g.installments)
-
       let centavosPagos = 0
       let centavosConsumidos = 0
 
       if (g.isLoan) {
-        const parcelasEmprestimo = g.valorTotal.distribuir(divisor)
-        const valorParcelaCentavos = parcelaAtualIdx < parcelasEmprestimo.length 
-          ? parcelasEmprestimo[parcelaAtualIdx].centavos 
-          : 0
+        const valorParcela = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
+        const valorParcelaCentavos = valorParcela.centavos
 
         if (g.compradorId === membroId) {
           centavosPagos = valorParcelaCentavos
@@ -43,9 +39,9 @@ export class ExtratoService {
         
         let totalDebitosParcela = 0
         g.divisoes.forEach(div => {
-          const distribuicaoDiv = div.valor.distribuir(divisor)
-          if (parcelaAtualIdx < distribuicaoDiv.length) {
-            const centavosDiv = distribuicaoDiv[parcelaAtualIdx].centavos
+          const valorDebito = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
+          if (valorDebito.centavos > 0) {
+            const centavosDiv = valorDebito.centavos
             totalDebitosParcela += centavosDiv
             
             if (div.membroId === membroId) {

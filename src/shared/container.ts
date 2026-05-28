@@ -36,15 +36,8 @@ import { FaturaService } from '../models/services/FaturaService'
 import { AcertoService } from '../models/services/AcertoService'
 import { LedgerService } from '../models/services/LedgerService'
 import { BootstrapEventGenerator } from '../models/services/BootstrapEventGenerator'
-
-// Entidades de Domínio
-import type { Membro } from '../models/entities/Membro'
-import type { Cartao } from '../models/entities/Cartao'
-import type { Fatura, FaturaPeriodo } from '../models/entities/Fatura'
-import type { Gasto } from '../models/entities/Gasto'
-import type { ContaFixa } from '../models/entities/ContaFixa'
-import type { AcertoMembro } from '../models/entities/AcertoMembro'
-import type { LedgerEvent } from '../models/entities/LedgerEvent'
+import { LancamentoService } from '../models/services/LancamentoService'
+import { EstornoService } from '../models/services/EstornoService'
 
 // 1. Instanciar o Serviço de Sessão do Supabase
 export const tenantSessionService = new TenantSessionService(supabase)
@@ -70,80 +63,43 @@ export const supabaseContaFixaRepo = new SupabaseContaFixaRepository(supabase, g
 export const supabaseAcertoRepo = new SupabaseAcertoMembroRepository(supabase, getActiveTenantId)
 export const supabaseEventStore = new SupabaseEventStore(supabase, getActiveTenantId)
 
-// 4. Implementar Classes Wrappers Dinâmicas (Proxies)
-class DynamicMembroRepository implements IMembroRepository {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseMembroRepo : localMembroRepo }
-  async salvar(m: Membro) { return this.active.salvar(m) }
-  async listarTodos() { return this.active.listarTodos() }
-  async buscarPorId(id: string) { return this.active.buscarPorId(id) }
-}
-
-class DynamicCartaoRepository implements ICartaoRepository {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseCartaoRepo : localCartaoRepo }
-  async buscarPorId(id: string) { return this.active.buscarPorId(id) }
-  async salvar(c: Cartao) { return this.active.salvar(c) }
-  async listarTodos() { return this.active.listarTodos() }
-  async excluir(id: string) { return this.active.excluir(id) }
-}
-
-class DynamicFaturaRepository implements IFaturaRepository {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseFaturaRepo : localFaturaRepo }
-  async buscarPorId(id: string) { return this.active.buscarPorId(id) }
-  async buscarPorCartaoEPeriodo(cId: string, p: FaturaPeriodo) { return this.active.buscarPorCartaoEPeriodo(cId, p) }
-  async salvar(f: Fatura) { return this.active.salvar(f) }
-  async salvarMuitas(f: Fatura[]) { return this.active.salvarMuitas(f) }
-  async listarTodas() { return this.active.listarTodas() }
-  async executarMigracoesEDesduplicacao() { return this.active.executarMigracoesEDesduplicacao() }
-  async assegurarObterOuCriarFatura(cId: string, m: number, a: number, rId: string) { return this.active.assegurarObterOuCriarFatura(cId, m, a, rId) }
-  async excluirFaturasAbertasSemGastosPorCartao(cId: string) { return this.active.excluirFaturasAbertasSemGastosPorCartao(cId) }
-}
-
-class DynamicGastoRepository implements IGastoRepository {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseGastoRepo : localGastoRepo }
-  async salvar(g: Gasto) { return this.active.salvar(g) }
-  async salvarMuitos(g: Gasto[]) { return this.active.salvarMuitos(g) }
-  async buscarPorFatura(fId: string) { return this.active.buscarPorFatura(fId) }
-  async buscarPorId(id: string) { return this.active.buscarPorId(id) }
-  async excluir(id: string) { return this.active.excluir(id) }
-  async excluirMuitos(ids: string[]) { return this.active.excluirMuitos(ids) }
-  async listarTodos() { return this.active.listarTodos() }
-}
-
-class DynamicContaFixaRepository implements IContaFixaRepository {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseContaFixaRepo : localContaFixaRepo }
-  async listarTodas() { return this.active.listarTodas() }
-  async salvar(cf: ContaFixa) { return this.active.salvar(cf) }
-  async excluir(id: string) { return this.active.excluir(id) }
-}
-
-class DynamicAcertoMembroRepository implements IAcertoMembroRepository {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseAcertoRepo : localAcertoRepo }
-  async buscarPorId(id: string) { return this.active.buscarPorId(id) }
-  async buscarPorFatura(fId: string) { return this.active.buscarPorFatura(fId) }
-  async salvar(am: AcertoMembro) { return this.active.salvar(am) }
-  async excluirPorFatura(fId: string) { return this.active.excluirPorFatura(fId) }
-  async listarTodos() { return this.active.listarTodos() }
-}
-
-class DynamicEventStore implements IEventStore {
-  private get active() { return tenantSessionService.isAuthenticated() ? supabaseEventStore : localEventStore }
-  async append(events: LedgerEvent[]) { return this.active.append(events) }
-  async getStream() { return this.active.getStream() }
-  async clear() { return this.active.clear() }
+// 4. Factory Genérica para Repositórios Dinâmicos (Proxies)
+function createDynamicRepo<T extends object>(local: T, supa: T): T {
+  return new Proxy(local, {
+    get(_, prop) {
+      const active = tenantSessionService.isAuthenticated() ? supa : local
+      const value = (active as any)[prop]
+      if (typeof value === 'function') {
+        return value.bind(active)
+      }
+      return value
+    }
+  })
 }
 
 // 5. Instanciar Repositórios Dinâmicos para a aplicação
-export const membroRepository = new DynamicMembroRepository()
-export const cartaoRepository = new DynamicCartaoRepository()
-export const faturaRepository = new DynamicFaturaRepository()
-export const gastoRepository = new DynamicGastoRepository()
-export const contaFixaRepository = new DynamicContaFixaRepository()
-export const acertoMembroRepository = new DynamicAcertoMembroRepository()
-export const eventStore = new DynamicEventStore()
+export const membroRepository = createDynamicRepo<IMembroRepository>(localMembroRepo, supabaseMembroRepo)
+export const cartaoRepository = createDynamicRepo<ICartaoRepository>(localCartaoRepo, supabaseCartaoRepo)
+export const faturaRepository = createDynamicRepo<IFaturaRepository>(localFaturaRepo, supabaseFaturaRepo)
+export const gastoRepository = createDynamicRepo<IGastoRepository>(localGastoRepo, supabaseGastoRepo)
+export const contaFixaRepository = createDynamicRepo<IContaFixaRepository>(localContaFixaRepo, supabaseContaFixaRepo)
+export const acertoMembroRepository = createDynamicRepo<IAcertoMembroRepository>(localAcertoRepo, supabaseAcertoRepo)
+export const eventStore = createDynamicRepo<IEventStore>(localEventStore, supabaseEventStore)
 
 // 6. Instanciar os Serviços de Domínio injetando os repositórios dinâmicos
+export const lancamentoService = new LancamentoService(gastoRepository, faturaRepository, cartaoRepository, membroRepository)
+export const estornoService = new EstornoService(gastoRepository, faturaRepository, acertoMembroRepository)
+
 export const membroService = new MembroService(membroRepository, cartaoRepository, gastoRepository, faturaRepository, acertoMembroRepository)
-export const gastoService = new GastoService(gastoRepository, faturaRepository, cartaoRepository, membroRepository, acertoMembroRepository)
+export const gastoService = new GastoService(
+  gastoRepository,
+  faturaRepository,
+  cartaoRepository,
+  membroRepository,
+  acertoMembroRepository,
+  lancamentoService,
+  estornoService
+)
 export const faturaService = new FaturaService(faturaRepository, acertoMembroRepository, gastoRepository)
 export const faturaRolloverService = new FaturaRolloverService(faturaRepository, gastoRepository, faturaService)
 export const acertoService = new AcertoService(acertoMembroRepository, faturaRepository, gastoRepository)

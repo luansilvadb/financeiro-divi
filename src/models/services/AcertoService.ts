@@ -82,8 +82,8 @@ export class AcertoService implements IAcertoService {
     if (todosQuitados) {
       const faturaObj = await this.faturaRepo.buscarPorId(acerto.faturaId)
       if (faturaObj && faturaObj.status === 'FECHADA' && faturaObj.dataPagamentoBanco) {
-        faturaObj.marcarAcertada()
-        await this.faturaRepo.salvar(faturaObj)
+        const acertada = faturaObj.marcarAcertada()
+        await this.faturaRepo.salvar(acertada)
       }
     }
   }
