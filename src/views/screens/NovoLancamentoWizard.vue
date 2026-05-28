@@ -169,7 +169,11 @@ const handleGravar = async () => {
           </p>
           <h2 class="mt-3 text-[23px] leading-[1.2] font-semibold text-charcoal tracking-[-0.44px]">
             <template v-if="step === 1">Como você pagou?</template>
-            <template v-else-if="step === 2">{{ wizFlow === 'loan' ? 'Quem está emprestando?' : 'Quem foi que pagou?' }}</template>
+            <template v-else-if="step === 2">
+              <template v-if="wizFlow === 'loan'">Quem está emprestando?</template>
+              <template v-else-if="wizPayment === 'card'">Quem usou o cartão?</template>
+              <template v-else>Quem foi que pagou?</template>
+            </template>
             <template v-else-if="step === 3 && wizFlow === 'loan'">Quem pegou emprestado?</template>
             <template v-else-if="isValorStep">Qual foi o valor total?</template>
             <template v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')">Qual a descrição?</template>
@@ -178,7 +182,17 @@ const handleGravar = async () => {
         </div>
       </div>
 
-      <div class="h-1.5 rounded-full bg-stone overflow-hidden">
+      <div v-if="step === 2 && wizPayment === 'card'" class="mt-4 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10 flex gap-3 items-center animate-in fade-in slide-in-from-top-1">
+        <CreditCard class="w-4 h-4 text-sky-600 shrink-0" />
+        <p class="text-[11px] font-medium text-sky-700 leading-tight">
+          O crédito de reembolso será atribuído ao dono do cartão: 
+          <strong v-if="cartoes.find(c => c.id === wizCardOwner)">
+            {{ props.membros.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)?.responsavelPadraoId)?.nome || 'Responsável' }}
+          </strong>
+        </p>
+      </div>
+
+      <div class="mt-4 h-1.5 rounded-full bg-stone overflow-hidden">
         <div
           class="h-full rounded-full bg-midnight transition-all duration-300"
           :style="{ width: `${(step / totalSteps) * 100}%` }"
