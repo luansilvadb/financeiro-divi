@@ -161,7 +161,7 @@ export function useDashboardViewModel(
       uiState.faturaParaFechar.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao fechar fatura')
+      toast.show(error.message || 'Erro ao fechar fatura', 'error')
     }
   }
 
@@ -174,7 +174,7 @@ export function useDashboardViewModel(
       uiState.gastoParaAjustar.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao ajustar gasto')
+      toast.show(error.message || 'Erro ao ajustar gasto', 'error')
     }
   }
 
@@ -186,7 +186,7 @@ export function useDashboardViewModel(
       uiState.acertoPixId.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao registrar reembolso')
+      toast.show(error.message || 'Erro ao registrar reembolso', 'error')
     } finally {
       uiState.isSubmittingPix.value = false
     }
@@ -199,7 +199,7 @@ export function useDashboardViewModel(
       uiState.acertoPixId.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao quitar acerto')
+      toast.show(error.message || 'Erro ao quitar acerto', 'error')
     } finally {
       uiState.isSubmittingPix.value = false
     }
@@ -214,7 +214,7 @@ export function useDashboardViewModel(
       uiState.showPopupLancar.value = false
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao lançar conta fixa')
+      toast.show(error.message || 'Erro ao lançar conta fixa', 'error')
     }
   }
 
@@ -245,7 +245,7 @@ export function useDashboardViewModel(
       await cartoesEFaturas.inicializar()
       uiState.showBottomSheetNovoPeriodo.value = false
     } catch (error: any) {
-      alert(error.message || 'Erro ao fechar mês')
+      toast.show(error.message || 'Erro ao fechar mês', 'error')
     } finally {
       isExecutingRollover.value = false
     }
@@ -270,7 +270,7 @@ export function useDashboardViewModel(
       uiState.nettingTarget.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao registrar acerto de contas')
+      toast.show(error.message || 'Erro ao registrar acerto de contas', 'error')
     }
   }
 
@@ -285,7 +285,7 @@ export function useDashboardViewModel(
         const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
         if (temAcertosConfirmados) {
           toast.show(
-            ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
+            'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
             'error'
           )
           return
@@ -303,30 +303,16 @@ export function useDashboardViewModel(
       uiState.showBottomSheetConfirmacaoEstorno.value = false
       uiState.itemParaEstornar.value = null
     } catch (error: any) {
-      alert(error.message || 'Erro ao realizar estorno')
+      toast.show(error.message || 'Erro ao realizar estorno', 'error')
+      uiState.showBottomSheetConfirmacaoEstorno.value = false
+      uiState.itemParaEstornar.value = null
     }
-  }
-
-  const abrirConfirmacaoEstornoGasto = (gasto: any) => {
-    const isComum = !gasto.cardOwner && !gasto.isSettlement
-    if (isComum) {
-      const acertos = acertosDaFatura(gasto.faturaId)
-      const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
-      if (temAcertosConfirmados) {
-        toast.show(
-          ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
-          'error'
-        )
-        return
-      }
-    }
-    uiState.abrirConfirmacaoEstornoGasto(gasto)
   }
 
   const estornarContaFixa = async (bill: any) => {
     const gasto = gastosFaturaSelecionada.value.find(g => g.recurringBillId === bill.id)
     if (gasto) {
-      abrirConfirmacaoEstornoGasto(gasto)
+      uiState.abrirConfirmacaoEstornoGasto(gasto)
     }
   }
 
@@ -339,7 +325,7 @@ export function useDashboardViewModel(
       }
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
-      alert(error.message || 'Erro ao reabrir período')
+      toast.show(error.message || 'Erro ao reabrir período', 'error')
     }
   }
 
@@ -374,7 +360,21 @@ export function useDashboardViewModel(
     formatarMesAno,
     iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),
     abrirNovoPeriodoBottomSheet: () => uiState.abrirNovoPeriodoBottomSheet(periodos.faturaAtivaVisualizada.value),
-    abrirConfirmacaoEstornoGasto,
+    abrirConfirmacaoEstornoGasto: (gasto: any) => {
+      const isComum = !gasto.cardOwner && !gasto.isSettlement
+      if (isComum) {
+        const acertos = acertosDaFatura(gasto.faturaId)
+        const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
+        if (temAcertosConfirmados) {
+          toast.show(
+            'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+            'error'
+          )
+          return
+        }
+      }
+      uiState.abrirConfirmacaoEstornoGasto(gasto)
+    },
     excluirGasto: async (id: string) => {
       if (periodos.faturaSelecionadaTrancada.value) return
       
@@ -386,7 +386,7 @@ export function useDashboardViewModel(
           const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
           if (temAcertosConfirmados) {
             toast.show(
-              ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
+              'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
               'error'
             )
             return
