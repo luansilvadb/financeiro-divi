@@ -6,6 +6,19 @@ import { Dinheiro } from '../models/entities/Dinheiro'
 import { Cartao } from '../models/entities/Cartao'
 import { Fatura } from '../models/entities/Fatura'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
+import { useToast } from '../composables/useToast'
+
+vi.mock('../composables/useToast', () => {
+  const showMock = vi.fn()
+  const hideMock = vi.fn()
+  return {
+    useToast: () => ({
+      show: showMock,
+      hide: hideMock,
+      visible: ref(false)
+    })
+  }
+})
 
 // Mocks para os composables de suporte
 const mockCartoesEFaturas = {
@@ -577,5 +590,51 @@ describe('useDashboardViewModel', () => {
     expect(vm.faturasPeriodoIds.value).toContain('virtual-pix-6-2026')
     expect(vm.gastosFaturaSelecionada.value.length).toBe(1)
     expect(vm.gastosFaturaSelecionada.value[0].id).toBe('g-pix-virtual')
+  })
+
+  it('deve impedir exclusao de gasto comum se houver acertos confirmados no periodo', async () => {
+    const mockGastoComum = {
+      id: 'g-comum',
+      faturaId: 'f1',
+      descricao: 'Gasto Comum',
+      cardOwner: null,
+      isSettlement: false,
+      valorTotal: { centavos: 1000 }
+    } as any
+
+    const mockAcertoConfirmado = {
+      id: 'a1',
+      faturaId: 'f1',
+      pago: true,
+      valorPago: { centavos: 1000 }
+    } as any
+
+    const customProps = {
+      membros: [{ id: 'm1', nome: 'Luan' }, { id: 'm2', nome: 'Maria' }],
+      faturasAbertas: [],
+      faturasFechadas: [],
+      acertosPendentes: [mockAcertoConfirmado],
+      cartoes: [new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' })],
+      calcularConsumo: () => 0
+    }
+    
+    const vm = createViewModel(customProps, vi.fn())
+    
+    // Configura o item a ser estornado no UI state do vm
+    vm.itemParaEstornar.value = mockGastoComum
+    vm.itemTypeParaEstornar.value = 'Lançamento'
+    
+    // Dispara a tentativa de estorno
+    await vm.confirmarEstorno()
+    
+    // Garante que o toast de erro foi chamado
+    const toast = useToast()
+    expect(toast.show).toHaveBeenCalledWith(
+      'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+      'error'
+    )
+    
+    // Garante que o service de excluir gasto NÃO foi chamado
+    expect(mockGastoService.excluirGasto).not.toHaveBeenCalled()
   })
 })

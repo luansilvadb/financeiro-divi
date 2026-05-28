@@ -12,6 +12,7 @@ import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
 import { formatarMesAno } from '../shared/utils/meses'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
+import { useToast } from '../composables/useToast'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
 import type { IContaFixaRepository } from '../models/repositories/IContaFixaRepository'
@@ -56,6 +57,7 @@ export function useDashboardViewModel(
   const localGastoService = dependencies.gastoService || gastoService
 
   const uiState = useDashboardUIState()
+  const toast = useToast()
   
   const periodos = useDashboardPeriodos(
     () => props.faturasAbertas,
@@ -275,6 +277,22 @@ export function useDashboardViewModel(
   const confirmarEstorno = async () => {
     if (!uiState.itemParaEstornar.value) return
 
+    if (uiState.itemTypeParaEstornar.value === 'Lançamento') {
+      const gasto = uiState.itemParaEstornar.value
+      const isComum = !gasto.cardOwner && !gasto.isSettlement
+      if (isComum) {
+        const acertos = acertosDaFatura(gasto.faturaId)
+        const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
+        if (temAcertosConfirmados) {
+          toast.show(
+            'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+            'error'
+          )
+          return
+        }
+      }
+    }
+
     try {
       const handlers: Record<string, () => Promise<void>> = {
         'Lançamento': () => localGastoService.excluirGasto(uiState.itemParaEstornar.value!.id).then(() => cartoesEFaturas.inicializar()),
@@ -340,8 +358,40 @@ export function useDashboardViewModel(
     formatarMesAno,
     iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),
     abrirNovoPeriodoBottomSheet: () => uiState.abrirNovoPeriodoBottomSheet(periodos.faturaAtivaVisualizada.value),
+    abrirConfirmacaoEstornoGasto: (gasto: any) => {
+      const isComum = !gasto.cardOwner && !gasto.isSettlement
+      if (isComum) {
+        const acertos = acertosDaFatura(gasto.faturaId)
+        const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
+        if (temAcertosConfirmados) {
+          toast.show(
+            'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+            'error'
+          )
+          return
+        }
+      }
+      uiState.abrirConfirmacaoEstornoGasto(gasto)
+    },
     excluirGasto: async (id: string) => {
       if (periodos.faturaSelecionadaTrancada.value) return
+      
+      const gasto = globalGastos.value.find(g => g.id === id)
+      if (gasto) {
+        const isComum = !gasto.cardOwner && !gasto.isSettlement
+        if (isComum) {
+          const acertos = acertosDaFatura(gasto.faturaId)
+          const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
+          if (temAcertosConfirmados) {
+            toast.show(
+              'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+              'error'
+            )
+            return
+          }
+        }
+      }
+
       await localGastoService.excluirGasto(id)
       await cartoesEFaturas.inicializar()
     }
