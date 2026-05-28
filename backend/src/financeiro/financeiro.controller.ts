@@ -3,6 +3,13 @@ import { FinanceiroService } from './financeiro.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+import { MembroDto } from './dto/membro.dto';
+import { CartaoDto } from './dto/cartao.dto';
+import { FaturaDto } from './dto/fatura.dto';
+import { GastoDto } from './dto/gasto.dto';
+import { ContaFixaDto } from './dto/conta-fixa.dto';
+import { AcertoDto } from './dto/acerto.dto';
+
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
@@ -28,8 +35,8 @@ export class FinanceiroController {
   }
 
   @Post('membros')
-  async salvarMembro(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any) {
-    return this.financeiroService.salvarMembro(tenantId, body);
+  async salvarMembro(@Headers('X-Tenant-ID') tenantId: string, @Body() membroDto: MembroDto) {
+    return this.financeiroService.salvarMembro(tenantId, membroDto);
   }
 
   // --- CARTOES ---
@@ -39,8 +46,8 @@ export class FinanceiroController {
   }
 
   @Post('cartoes')
-  async salvarCartao(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any) {
-    return this.financeiroService.salvarCartao(tenantId, body);
+  async salvarCartao(@Headers('X-Tenant-ID') tenantId: string, @Body() cartaoDto: CartaoDto) {
+    return this.financeiroService.salvarCartao(tenantId, cartaoDto);
   }
 
   @Delete('cartoes/:id')
@@ -55,13 +62,13 @@ export class FinanceiroController {
   }
 
   @Post('faturas')
-  async salvarFatura(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any) {
-    return this.financeiroService.salvarFatura(tenantId, body);
+  async salvarFatura(@Headers('X-Tenant-ID') tenantId: string, @Body() faturaDto: FaturaDto) {
+    return this.financeiroService.salvarFatura(tenantId, faturaDto);
   }
 
   @Post('faturas/batch')
-  async salvarMuitasFaturas(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any[]) {
-    return this.financeiroService.salvarMuitasFaturas(tenantId, body);
+  async salvarMuitasFaturas(@Headers('X-Tenant-ID') tenantId: string, @Body() faturasDto: FaturaDto[]) {
+    return this.financeiroService.salvarMuitasFaturas(tenantId, faturasDto);
   }
 
   // --- GASTOS ---
@@ -71,13 +78,13 @@ export class FinanceiroController {
   }
 
   @Post('gastos')
-  async salvarGasto(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any) {
-    return this.financeiroService.salvarGasto(tenantId, body);
+  async salvarGasto(@Headers('X-Tenant-ID') tenantId: string, @Body() gastoDto: GastoDto) {
+    return this.financeiroService.salvarGasto(tenantId, gastoDto);
   }
 
   @Post('gastos/batch')
-  async salvarMuitosGastos(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any[]) {
-    return this.financeiroService.salvarMuitosGastos(tenantId, body);
+  async salvarMuitosGastos(@Headers('X-Tenant-ID') tenantId: string, @Body() gastosDto: GastoDto[]) {
+    return this.financeiroService.salvarMuitosGastos(tenantId, gastosDto);
   }
 
   @Delete('gastos/:id')
@@ -97,8 +104,8 @@ export class FinanceiroController {
   }
 
   @Post('contas-fixas')
-  async salvarContaFixa(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any) {
-    return this.financeiroService.salvarContaFixa(tenantId, body);
+  async salvarContaFixa(@Headers('X-Tenant-ID') tenantId: string, @Body() contaFixaDto: ContaFixaDto) {
+    return this.financeiroService.salvarContaFixa(tenantId, contaFixaDto);
   }
 
   @Delete('contas-fixas/:id')
@@ -113,7 +120,7 @@ export class FinanceiroController {
   }
 
   @Post('acertos')
-  async salvarAcerto(@Headers('X-Tenant-ID') tenantId: string, @Body() body: any) {
-    return this.financeiroService.salvarAcerto(tenantId, body);
+  async salvarAcerto(@Headers('X-Tenant-ID') tenantId: string, @Body() acertoDto: AcertoDto) {
+    return this.financeiroService.salvarAcerto(tenantId, acertoDto);
   }
 }

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { execSync } from 'child_process';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -39,7 +39,12 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Tenant-ID',
+  });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // Configuração da documentação interativa Swagger (OpenAPI)
   const config = new DocumentBuilder()
