@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { useCasasMultitenant } from './useCasasMultitenant'
 import { tenantSessionService } from '../shared/container'
-import { supabase } from '../shared/supabase'
 
 vi.mock('../shared/container', () => ({
   tenantSessionService: {
@@ -32,49 +31,9 @@ Object.defineProperty(navigator, 'clipboard', {
   configurable: true
 })
 
-vi.mock('../shared/supabase', () => {
-  const fromMock = vi.fn().mockImplementation((table: string) => {
-    if (table === 'membros_casa') {
-      const queryBuilder = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        single: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        update: vi.fn().mockReturnThis(), // Permite encadeamento de .eq() após o update
-        then: (onfulfilled: any) => onfulfilled({ data: [{ tenant_id: 'tenant-123' }], error: null })
-      }
-      return queryBuilder
-    }
-    if (table === 'tenants') {
-      let isSingleCall = false
-      const queryBuilder: any = {
-        select: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockImplementation(() => {
-          isSingleCall = true
-          return queryBuilder
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        then: (onfulfilled: any) => {
-          if (isSingleCall) {
-            return onfulfilled({ data: { id: 'tenant-convidado', name: 'Casa Convidada', invite_code: 'CONVITE12' }, error: null })
-          }
-          return onfulfilled({ data: [{ id: 'tenant-123', name: 'Casa Feliz', invite_code: 'CODE123' }], error: null })
-        }
-      }
-      return queryBuilder
-    }
-    return { select: vi.fn().mockReturnThis() }
-  })
-  return {
-    supabase: {
-      from: fromMock
-    }
-  }
-})
+// Mock global do fetch
+const fetchMock = vi.fn()
+vi.stubGlobal('fetch', fetchMock)
 
 function withSetup<T>(composable: () => T) {
   let result: T
@@ -93,9 +52,15 @@ describe('useCasasMultitenant', () => {
     vi.clearAllMocks()
     reloadMock.mockClear()
     writeTextMock.mockClear()
+    fetchMock.mockReset()
   })
 
   it('deve inicializar com o estado padrão', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ tenants: [] })
+    })
+
     const [{ isAuthed, casas, showBottomSheetCasas }, app] = withSetup(() => useCasasMultitenant())
     expect(isAuthed.value).toBe(true)
     expect(casas.value).toEqual([])
@@ -106,6 +71,13 @@ describe('useCasasMultitenant', () => {
   })
 
   it('deve carregar as casas e obter o objeto do tenant ativo', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        tenants: [{ id: 'tenant-123', name: 'Casa Feliz', invite_code: 'CODE123' }]
+      })
+    })
+
     const [vm, app] = withSetup(() => useCasasMultitenant())
     
     await vm.carregarCasas()
@@ -117,26 +89,52 @@ describe('useCasasMultitenant', () => {
   })
 
   it('deve criar uma nova casa com sucesso', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/financeiro/tenants')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' })
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ tenants: [{ id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' }] })
+      })
+    })
+
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
     
     vm.nomeNovaCasa.value = 'República Central'
     await vm.criarNovaCasa()
 
-    expect(supabase.from).toHaveBeenCalledWith('tenants')
-    expect(tenantSessionService.setActiveTenant).toHaveBeenCalledWith(expect.any(String))
+    expect(fetchMock).toHaveBeenCalled()
+    expect(tenantSessionService.setActiveTenant).toHaveBeenCalledWith('new-tenant-id')
     expect(reloadMock).toHaveBeenCalled()
     app.unmount()
   })
 
   it('deve entrar em uma casa por código de convite com sucesso', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/financeiro/tenants/entrar')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' })
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ tenants: [{ id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' }] })
+      })
+    })
+
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
     
     vm.codigoConvite.value = 'CONVITE12'
     await vm.entrarPorCodigo()
 
-    expect(supabase.from).toHaveBeenCalledWith('tenants')
+    expect(fetchMock).toHaveBeenCalled()
     expect(tenantSessionService.setActiveTenant).toHaveBeenCalledWith('tenant-convidado')
     expect(reloadMock).toHaveBeenCalled()
     app.unmount()
@@ -145,6 +143,11 @@ describe('useCasasMultitenant', () => {
   it('deve copiar o código de convite e dar feedback visual', async () => {
     vi.useFakeTimers()
     try {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({ tenants: [] })
+      })
+
       const [vm, app] = withSetup(() => useCasasMultitenant())
       await nextTick()
 
@@ -162,6 +165,11 @@ describe('useCasasMultitenant', () => {
   })
 
   it('deve deslogar e recarregar a tela', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ tenants: [] })
+    })
+
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
 

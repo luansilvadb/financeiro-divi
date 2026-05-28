@@ -9,11 +9,9 @@ import { Plus } from 'lucide-vue-next'
 import { useMembros } from './viewmodels/useMembros'
 import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
 import { useContasFixas } from './viewmodels/useContasFixas'
-import { useStorageSync } from './viewmodels/useStorageSync'
 import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
-import { tenantSessionService, migrationService } from './shared/container'
-import { supabase } from './shared/supabase'
+import { tenantSessionService } from './shared/container'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const activeTab = ref<Tab>('hoje')
@@ -29,43 +27,10 @@ const {
 } = useCartoesEFaturas()
 const { carregarTemplates: inicializarContasFixas } = useContasFixas()
 
-useStorageSync()
-
 const isAuthed = ref(tenantSessionService.isAuthenticated())
-
-const validarESincronizarTenantAtivo = async () => {
-  if (!tenantSessionService.isAuthenticated()) return
-  const userId = tenantSessionService.getCurrentUserId()
-  if (!userId) return
-  try {
-    const { data: members, error: mError } = await supabase
-      .from('membros_casa')
-      .select('tenant_id')
-      .eq('user_id', userId)
-
-    if (mError || !members) return
-
-    const tenantIds = members.map(m => m.tenant_id)
-    const activeTenantId = tenantSessionService.getActiveTenantId()
-
-    if (tenantIds.length === 0) {
-      if (activeTenantId) {
-        tenantSessionService.setActiveTenant('')
-      }
-      return
-    }
-
-    if (!activeTenantId || !tenantIds.includes(activeTenantId)) {
-      tenantSessionService.setActiveTenant(tenantIds[0])
-    }
-  } catch (err) {
-    console.error('Erro ao validar tenant ativo:', err)
-  }
-}
 
 onMounted(async () => {
   if (isAuthed.value) {
-    await validarESincronizarTenantAtivo()
     await Promise.all([
       inicializarMembros(),
       inicializarCartoes(),
@@ -83,45 +48,6 @@ const isPeriodLocked = ref(false)
 const handleAuthSuccess = async () => {
   isAuthed.value = true
   
-  await validarESincronizarTenantAtivo()
-  
-  const jaMigrado = localStorage.getItem('divi_migrado_saas') === 'true'
-  const activeTenantId = tenantSessionService.getActiveTenantId()
-  const userId = tenantSessionService.getCurrentUserId()
-
-  if (!jaMigrado && userId) {
-    const temDadosLocais = localStorage.getItem('divi_gastos_cartao') || localStorage.getItem('divi_faturas')
-    if (temDadosLocais) {
-      try {
-        let tenantId = activeTenantId
-        if (!tenantId) {
-          tenantId = crypto.randomUUID()
-          const code = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
-          
-          await supabase.from('tenants').insert({
-            id: tenantId,
-            name: 'Minha Casa Importada',
-            invite_code: code
-          })
-
-          await supabase.from('membros_casa').insert({
-            id: userId,
-            tenant_id: tenantId,
-            nome: localStorage.getItem('divi_username') || 'Morador',
-            avatar: (localStorage.getItem('divi_username') || 'M').substring(0, 2).toUpperCase(),
-            user_id: userId
-          })
-          
-          tenantSessionService.setActiveTenant(tenantId)
-        }
-
-        await migrationService.migrar(tenantId, userId)
-      } catch (err) {
-        console.error('Falha ao migrar dados locais:', err)
-      }
-    }
-  }
-
   await Promise.all([
     inicializarMembros(),
     inicializarCartoes(),

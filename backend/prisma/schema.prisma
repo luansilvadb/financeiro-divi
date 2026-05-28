@@ -1,0 +1,149 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id         String       @id @default(uuid()) @db.Uuid
+  name       String
+  inviteCode String       @unique @map("invite_code")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  membros    MembroCasa[]
+  cartoes    Cartao[]
+  faturas    Fatura[]
+  gastos     Gasto[]
+  contasFixas ContaFixa[]
+  acertos    AcertoMembro[]
+
+  @@map("tenants")
+}
+
+model Usuario {
+  id           String       @id @default(uuid()) @db.Uuid
+  username     String       @unique
+  passwordHash String       @map("password_hash")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  perfisMembro MembroCasa[]
+
+  @@map("usuarios")
+}
+
+model MembroCasa {
+  id        String
+  tenantId  String   @map("tenant_id") @db.Uuid
+  nome      String
+  avatar    String
+  userId    String?  @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario   Usuario? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@id([id, tenantId])
+  @@map("membros_casa")
+}
+
+model Cartao {
+  id                  String
+  tenantId            String   @map("tenant_id") @db.Uuid
+  nome                String
+  diaFechamento       Int      @map("dia_fechamento")
+  responsavelPadraoId String   @map("responsavel_padrao_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([id, tenantId])
+  @@map("cartoes")
+}
+
+model Fatura {
+  id                 String
+  tenantId           String    @map("tenant_id") @db.Uuid
+  cartaoId           String    @map("cartao_id")
+  mes                Int
+  ano                Int
+  responsavelId      String    @map("responsavel_id")
+  status             String
+  dataPagamentoBanco DateTime? @map("data_pagamento_banco")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([id, tenantId])
+  @@map("faturas")
+}
+
+model Gasto {
+  id                  String
+  tenantId            String   @map("tenant_id") @db.Uuid
+  faturaId            String   @map("fatura_id")
+  descricao           String
+  valorTotalCentavos  BigInt   @map("valor_total_centavos")
+  compradorId         String   @map("comprador_id")
+  installments        Int      @default(1)
+  totalInstallments   Int      @default(1) @map("total_installments")
+  isLoan              Boolean  @default(false) @map("is_loan")
+  borrowerId          String?  @map("borrower_id")
+  recurringBillId     String?  @map("recurring_bill_id")
+  isSettlement        Boolean  @default(false) @map("is_settlement")
+  settlementDetails   Json?    @map("settlement_details")
+  method              String   @default("pix")
+  cardOwnerId         String?  @map("card_owner_id")
+  grupoParcelasId     String?  @map("grupo_parcelas_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  divisoes            DivisaoGasto[]
+
+  @@id([id, tenantId])
+  @@map("gastos")
+}
+
+model DivisaoGasto {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  gastoId       String   @map("gasto_id")
+  membroId      String   @map("membro_id")
+  valorCentavos BigInt   @map("valor_centavos")
+
+  gasto         Gasto    @relation(fields: [gastoId, tenantId], references: [id, tenantId], onDelete: Cascade)
+
+  @@map("divisoes_gasto")
+}
+
+model ContaFixa {
+  id                  String
+  tenantId            String   @map("tenant_id") @db.Uuid
+  name                String
+  icon                String
+  fixedValueCentavos  BigInt?  @map("fixed_value_centavos")
+  defaultSplit        Json     @default("[]") @map("default_split")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([id, tenantId])
+  @@map("contas_fixas")
+}
+
+model AcertoMembro {
+  id                     String
+  tenantId               String    @map("tenant_id") @db.Uuid
+  faturaId               String    @map("fatura_id")
+  membroId               String    @map("membro_id")
+  totalConsumidoCentavos BigInt    @map("total_consumido_centavos")
+  valorPagoCentavos      BigInt    @default(0) @map("valor_pago_centavos")
+  pago                   Boolean   @default(false)
+  dataPagamento          DateTime? @map("data_pagamento")
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  tenant                 Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([id, tenantId])
+  @@map("acertos_membro")
+}

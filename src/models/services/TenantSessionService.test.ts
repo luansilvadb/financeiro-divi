@@ -1,17 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TenantSessionService } from './TenantSessionService'
 
-const mockSupabase = {
-  auth: {
-    signInWithPassword: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn(),
-    getUser: vi.fn(),
-    onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
-    getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null })
-  },
-  from: vi.fn()
-}
+const fetchMock = vi.fn()
+vi.stubGlobal('fetch', fetchMock)
 
 describe('TenantSessionService', () => {
   let service: TenantSessionService
@@ -19,19 +10,37 @@ describe('TenantSessionService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    service = new TenantSessionService(mockSupabase as any)
+    fetchMock.mockReset()
+    service = new TenantSessionService()
   })
 
-  it('deve converter nome de usuário para e-mail fictício no login', async () => {
-    mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'usr-123' } }, error: null })
+  it('deve realizar login chamando a rota de autenticação', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        access_token: 'jwt-token-123',
+        userId: 'usr-123',
+        username: 'luansilva'
+      })
+    })
     
+    // Segunda chamada para /auth/me na inicialização do login
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        tenants: [{ id: 'tenant-123', name: 'Casa Feliz' }]
+      })
+    })
+
     const success = await service.login('Luan Silva', 'senha123')
     
-    expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
-      email: 'luansilva@divi.app',
-      password: 'senha123'
-    })
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost:3000/auth/login', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ username: 'Luan Silva', password: 'senha123' })
+    }))
     expect(success).toBe(true)
+    expect(localStorage.getItem('divi_jwt_token')).toBe('jwt-token-123')
+    expect(localStorage.getItem('divi_current_user_id')).toBe('usr-123')
   })
 
   it('deve permitir definir e recuperar o active tenant id do localstorage', () => {

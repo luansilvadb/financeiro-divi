@@ -1,76 +1,84 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-
 export class TenantSessionService {
   private activeTenantId: string | null = null
-  private authenticatedUser: any | null = null
+  private jwtToken: string | null = null
+  private currentUserId: string | null = null
 
-  constructor(private supabase: SupabaseClient) {
+  constructor() {
     this.activeTenantId = localStorage.getItem('divi_active_tenant_id')
-    
-    // Escuta mudanças de autenticação para atualizar o cache síncrono
-    this.supabase.auth.onAuthStateChange((_event, session) => {
-      this.authenticatedUser = session?.user || null
-    })
-
-    // Recupera a sessão inicial de forma assíncrona (geralmente resolve síncrono do storage interno)
-    this.supabase.auth.getSession().then(({ data }) => {
-      this.authenticatedUser = data.session?.user || null
-    })
+    this.jwtToken = localStorage.getItem('divi_jwt_token')
+    this.currentUserId = localStorage.getItem('divi_current_user_id')
   }
 
-  private cleanUsername(username: string): string {
-    return username
-      .toLowerCase()
-      .replace(/\s+/g, '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+  private get baseUrl(): string {
+    return (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
   }
 
-  private getEmailFromUsername(username: string): string {
-    return `${this.cleanUsername(username)}@divi.app`
-  }
+  async login(username: string, passwordSecret: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: passwordSecret })
+      })
 
-  async login(username: string, password: string): Promise<boolean> {
-    const email = this.getEmailFromUsername(username)
-    const { data, error } = await this.supabase.auth.signInWithPassword({
-      email,
-      password
-    })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        console.error('Erro de login:', err.message || response.statusText)
+        return false
+      }
 
-    if (error) {
-      console.error('Erro de login:', error.message)
+      const data = await response.json()
+      this.jwtToken = data.access_token
+      this.currentUserId = data.userId
+
+      localStorage.setItem('divi_jwt_token', data.access_token)
+      localStorage.setItem('divi_current_user_id', data.userId)
+      localStorage.setItem('divi_username', data.username)
+
+      // Ao logar, vamos carregar os tenants associados a este usuário
+      await this.carregarSessaoUsuario()
+
+      return true
+    } catch (err) {
+      console.error('Falha de conexão ao fazer login:', err)
       return false
     }
-
-    this.authenticatedUser = data.user
-    return !!data.user
   }
 
-  async register(username: string, password: string): Promise<boolean> {
-    const email = this.getEmailFromUsername(username)
-    const { data, error } = await this.supabase.auth.signUp({
-      email,
-      password
-    })
+  async register(username: string, passwordSecret: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: passwordSecret })
+      })
 
-    if (error) {
-      console.error('Erro de cadastro:', error.message)
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        console.error('Erro de cadastro:', err.message || response.statusText)
+        return false
+      }
+
+      // Após registrar, executa o login automático
+      return this.login(username, passwordSecret)
+    } catch (err) {
+      console.error('Falha de conexão ao registrar:', err)
       return false
     }
-
-    this.authenticatedUser = data.user
-    return !!data.user
   }
 
   async logout(): Promise<void> {
-    await this.supabase.auth.signOut()
-    this.authenticatedUser = null
+    this.jwtToken = null
+    this.currentUserId = null
     this.activeTenantId = null
+    localStorage.removeItem('divi_jwt_token')
+    localStorage.removeItem('divi_current_user_id')
     localStorage.removeItem('divi_active_tenant_id')
+    localStorage.removeItem('divi_username')
   }
 
   isAuthenticated(): boolean {
-    return !!this.authenticatedUser
+    return !!this.jwtToken
   }
 
   getActiveTenantId(): string | null {
@@ -79,10 +87,39 @@ export class TenantSessionService {
 
   setActiveTenant(tenantId: string): void {
     this.activeTenantId = tenantId
-    localStorage.setItem('divi_active_tenant_id', tenantId)
+    if (tenantId) {
+      localStorage.setItem('divi_active_tenant_id', tenantId)
+    } else {
+      localStorage.removeItem('divi_active_tenant_id')
+    }
   }
 
   getCurrentUserId(): string | null {
-    return this.authenticatedUser?.id || null
+    return this.currentUserId
+  }
+
+  private async carregarSessaoUsuario(): Promise<void> {
+    if (!this.jwtToken) return
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${this.jwtToken}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.tenants && data.tenants.length > 0) {
+          // Se o usuário já participa de tenants mas não tem activeTenantId ativo, seleciona o primeiro
+          if (!this.activeTenantId || !data.tenants.some((t: any) => t.id === this.activeTenantId)) {
+            this.setActiveTenant(data.tenants[0].id)
+          }
+        } else {
+          this.setActiveTenant('')
+        }
+      }
+    } catch (err) {
+      console.error('Falha ao carregar sessão do usuário:', err)
+    }
   }
 }
