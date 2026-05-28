@@ -96,24 +96,15 @@ export class EstornoService implements IEstornoService {
           'Não é possível excluir esta parcela pois existem parcelas subsequentes ativas. Exclua as parcelas futuras deste gasto primeiro.'
         )
       }
+    }
 
-      const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
-      if (fatura && typeof fatura.validarOperacaoPermitida === 'function') {
-        fatura.validarOperacaoPermitida()
-      }
-      await this.gastoRepo.excluir(id)
-      if (fatura && !gasto.isSettlement) {
-        await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
-      }
-    } else {
-      const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
-      if (fatura && typeof fatura.validarOperacaoPermitida === 'function') {
-        fatura.validarOperacaoPermitida()
-      }
-      await this.gastoRepo.excluir(id)
-      if (fatura && !gasto.isSettlement) {
-        await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
-      }
+    const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
+    if (fatura && typeof fatura.validarOperacaoPermitida === 'function') {
+      fatura.validarOperacaoPermitida()
+    }
+    await this.gastoRepo.excluir(id)
+    if (fatura && !gasto.isSettlement) {
+      await this.limparNettingDoPeriodo(fatura.periodo.mes, fatura.periodo.ano)
     }
   }
 
