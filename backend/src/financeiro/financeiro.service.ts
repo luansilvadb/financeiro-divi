@@ -248,7 +248,7 @@ export class FinanceiroService {
     return serializeBigInt(gastos);
   }
 
-  async salvarGasto(tenantId: string, gastoData: any) {
+  private async upsertGastoTx(tx: any, tenantId: string, g: any) {
     const {
       id,
       faturaId,
@@ -266,76 +266,49 @@ export class FinanceiroService {
       cardOwnerId,
       grupoParcelasId,
       divisoes,
-    } = gastoData;
+    } = g;
 
-    // Executamos a criação do gasto e de suas divisões em uma transação do Prisma
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Apaga divisões anteriores se o gasto estiver sendo atualizado
-      await tx.divisaoGasto.deleteMany({
-        where: { gastoId: id, tenantId },
-      });
+    await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
 
-      // 2. Insere/atualiza o Gasto principal
-      const gasto = await tx.gasto.upsert({
-        where: {
-          id_tenantId: { id, tenantId },
-        },
-        create: {
-          id,
-          tenantId,
-          faturaId,
-          descricao,
-          valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-          compradorId,
-          installments,
-          totalInstallments,
-          isLoan,
-          borrowerId,
-          recurringBillId,
-          isSettlement,
-          settlementDetails,
-          method,
-          cardOwnerId,
-          grupoParcelasId,
-        },
-        update: {
-          faturaId,
-          descricao,
-          valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-          compradorId,
-          installments,
-          totalInstallments,
-          isLoan,
-          borrowerId,
-          recurringBillId,
-          isSettlement,
-          settlementDetails,
-          method,
-          cardOwnerId,
-          grupoParcelasId,
-        },
-      });
+    await tx.gasto.upsert({
+      where: { id_tenantId: { id, tenantId } },
+      create: {
+        id, tenantId, faturaId, descricao,
+        valorTotalCentavos: BigInt(valorTotalCentavos || 0),
+        compradorId, installments, totalInstallments,
+        isLoan, borrowerId, recurringBillId,
+        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+      },
+      update: {
+        faturaId, descricao,
+        valorTotalCentavos: BigInt(valorTotalCentavos || 0),
+        compradorId, installments, totalInstallments,
+        isLoan, borrowerId, recurringBillId,
+        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+      },
+    });
 
-      // 3. Insere as novas divisões de gasto
-      if (divisoes && divisoes.length > 0) {
-        const divisoesData = divisoes.map((d: any) => ({
+    if (divisoes && divisoes.length > 0) {
+      await tx.divisaoGasto.createMany({
+        data: divisoes.map((d: any) => ({
           tenantId,
           gastoId: id,
           membroId: d.membroId,
           valorCentavos: BigInt(d.valorCentavos || 0),
-        }));
-        await tx.divisaoGasto.createMany({
-          data: divisoesData,
-        });
-      }
-
-      // Retorna o gasto com as divisões incluídas
-      return tx.gasto.findUnique({
-        where: { id_tenantId: { id, tenantId } },
-        include: { divisoes: true },
+        })),
       });
-    });
+    }
 
+    return tx.gasto.findUnique({
+      where: { id_tenantId: { id, tenantId } },
+      include: { divisoes: true },
+    });
+  }
+
+  async salvarGasto(tenantId: string, gastoData: any) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      return this.upsertGastoTx(tx, tenantId, gastoData);
+    });
     return serializeBigInt(result);
   }
 
@@ -343,91 +316,10 @@ export class FinanceiroService {
     const result = await this.prisma.$transaction(async (tx) => {
       const savedGastos = [];
       for (const g of gastosList) {
-        const {
-          id,
-          faturaId,
-          descricao,
-          valorTotalCentavos,
-          compradorId,
-          installments,
-          totalInstallments,
-          isLoan,
-          borrowerId,
-          recurringBillId,
-          isSettlement,
-          settlementDetails,
-          method,
-          cardOwnerId,
-          grupoParcelasId,
-          divisoes,
-        } = g;
-
-        // Apaga divisões anteriores
-        await tx.divisaoGasto.deleteMany({
-          where: { gastoId: id, tenantId },
-        });
-
-        // Upsert Gasto
-        await tx.gasto.upsert({
-          where: { id_tenantId: { id, tenantId } },
-          create: {
-            id,
-            tenantId,
-            faturaId,
-            descricao,
-            valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-            compradorId,
-            installments,
-            totalInstallments,
-            isLoan,
-            borrowerId,
-            recurringBillId,
-            isSettlement,
-            settlementDetails,
-            method,
-            cardOwnerId,
-            grupoParcelasId,
-          },
-          update: {
-            faturaId,
-            descricao,
-            valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-            compradorId,
-            installments,
-            totalInstallments,
-            isLoan,
-            borrowerId,
-            recurringBillId,
-            isSettlement,
-            settlementDetails,
-            method,
-            cardOwnerId,
-            grupoParcelasId,
-          },
-        });
-
-        // Cria novas divisões
-        if (divisoes && divisoes.length > 0) {
-          const divisoesData = divisoes.map((d: any) => ({
-            tenantId,
-            gastoId: id,
-            membroId: d.membroId,
-            valorCentavos: BigInt(d.valorCentavos || 0),
-          }));
-          await tx.divisaoGasto.createMany({
-            data: divisoesData,
-          });
-        }
-
-        const fullGasto = await tx.gasto.findUnique({
-          where: { id_tenantId: { id, tenantId } },
-          include: { divisoes: true },
-        });
-        savedGastos.push(fullGasto);
+        savedGastos.push(await this.upsertGastoTx(tx, tenantId, g));
       }
       return savedGastos;
     });
-
     return serializeBigInt(result);
   }
 

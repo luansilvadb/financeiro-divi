@@ -241,7 +241,7 @@ export function useNovoLancamentoWizard(
         valoresDivisaoWizard.value = data.valoresDivisaoWizard
       }
     } catch (e) {
-      console.error('Erro ao carregar rascunho sênior:', e)
+      console.error('Erro ao carregar rascunho do wizard:', e)
     }
   })
 

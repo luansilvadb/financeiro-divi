@@ -41,8 +41,8 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
     return list.find(g => g.id === id) || null
   }
 
-  async salvar(gasto: Gasto): Promise<void> {
-    const body = {
+  private mapToDto(gasto: Gasto) {
+    return {
       id: gasto.id,
       faturaId: gasto.faturaId,
       descricao: gasto.descricao,
@@ -63,39 +63,19 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
         valorCentavos: d.valor.centavos
       }))
     }
+  }
 
+  async salvar(gasto: Gasto): Promise<void> {
     await this.request('/financeiro/gastos', {
       method: 'POST',
-      body: JSON.stringify(body)
+      body: JSON.stringify(this.mapToDto(gasto))
     })
   }
 
   async salvarMuitos(gastos: Gasto[]): Promise<void> {
-    const mapped = gastos.map(gasto => ({
-      id: gasto.id,
-      faturaId: gasto.faturaId,
-      descricao: gasto.descricao,
-      valorTotalCentavos: gasto.valorTotal.centavos,
-      compradorId: gasto.compradorId,
-      installments: gasto.installments,
-      totalInstallments: gasto.totalInstallments,
-      isLoan: gasto.isLoan,
-      borrowerId: gasto.borrowerId,
-      recurringBillId: gasto.recurringBillId,
-      isSettlement: gasto.isSettlement,
-      settlementDetails: gasto.settlementDetails,
-      method: gasto.method,
-      cardOwnerId: gasto.cardOwner,
-      grupoParcelasId: gasto.grupoParcelasId,
-      divisoes: gasto.divisoes.map(d => ({
-        membroId: d.membroId,
-        valorCentavos: d.valor.centavos
-      }))
-    }))
-
     await this.request('/financeiro/gastos/batch', {
       method: 'POST',
-      body: JSON.stringify(mapped)
+      body: JSON.stringify(gastos.map(g => this.mapToDto(g)))
     })
   }
 

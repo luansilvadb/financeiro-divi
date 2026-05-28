@@ -3,6 +3,9 @@ export class TenantSessionService {
   private jwtToken: string | null = null
   private currentUserId: string | null = null
 
+  // Lista de casas do usuário (carregada após login/inicializarSessao)
+  tenants: { id: string; name: string; inviteCode: string }[] = []
+
   constructor() {
     this.activeTenantId = localStorage.getItem('divi_active_tenant_id')
     this.jwtToken = localStorage.getItem('divi_jwt_token')
@@ -71,6 +74,7 @@ export class TenantSessionService {
     this.jwtToken = null
     this.currentUserId = null
     this.activeTenantId = null
+    this.tenants = []
     localStorage.removeItem('divi_jwt_token')
     localStorage.removeItem('divi_current_user_id')
     localStorage.removeItem('divi_active_tenant_id')
@@ -81,12 +85,19 @@ export class TenantSessionService {
     return !!this.jwtToken
   }
 
+  /** Carrega a sessão do usuário (tenants) ao inicializar o app. Deve ser chamado antes de qualquer fetch de dados. */
+  async inicializarSessao(): Promise<void> {
+    if (this.jwtToken) {
+      await this.carregarSessaoUsuario()
+    }
+  }
+
   getActiveTenantId(): string | null {
     return this.activeTenantId
   }
 
   setActiveTenant(tenantId: string): void {
-    this.activeTenantId = tenantId
+    this.activeTenantId = tenantId || null
     if (tenantId) {
       localStorage.setItem('divi_active_tenant_id', tenantId)
     } else {
@@ -96,6 +107,52 @@ export class TenantSessionService {
 
   getCurrentUserId(): string | null {
     return this.currentUserId
+  }
+
+  /** Cria uma nova casa e seleciona ela automaticamente */
+  async criarCasa(nome: string): Promise<{ id: string; name: string; inviteCode: string }> {
+    const response = await fetch(`${this.baseUrl}/financeiro/tenants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.jwtToken}`
+      },
+      body: JSON.stringify({ name: nome })
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || 'Erro ao criar a casa')
+    }
+
+    const tenant = await response.json()
+    this.setActiveTenant(tenant.id)
+    this.tenants = [...this.tenants, { id: tenant.id, name: tenant.name, inviteCode: tenant.inviteCode }]
+    return tenant
+  }
+
+  /** Entra em uma casa existente pelo código de convite */
+  async entrarCasa(inviteCode: string): Promise<{ id: string; name: string; inviteCode: string }> {
+    const response = await fetch(`${this.baseUrl}/financeiro/tenants/entrar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.jwtToken}`
+      },
+      body: JSON.stringify({ inviteCode })
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || 'Código de convite inválido ou casa não encontrada.')
+    }
+
+    const tenant = await response.json()
+    this.setActiveTenant(tenant.id)
+    if (!this.tenants.find(t => t.id === tenant.id)) {
+      this.tenants = [...this.tenants, { id: tenant.id, name: tenant.name, inviteCode: tenant.inviteCode }]
+    }
+    return tenant
   }
 
   private async carregarSessaoUsuario(): Promise<void> {
@@ -109,6 +166,7 @@ export class TenantSessionService {
 
       if (response.ok) {
         const data = await response.json()
+        this.tenants = data.tenants || []
         if (data.tenants && data.tenants.length > 0) {
           // Se o usuário já participa de tenants mas não tem activeTenantId ativo, seleciona o primeiro
           if (!this.activeTenantId || !data.tenants.some((t: any) => t.id === this.activeTenantId)) {

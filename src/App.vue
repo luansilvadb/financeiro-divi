@@ -5,6 +5,7 @@ import DashboardSaldos from './views/screens/DashboardSaldos.vue'
 import ConfiguracoesMembros from './views/screens/ConfiguracoesMembros.vue'
 import BottomSheet from './views/components/ui/BottomSheet.vue'
 import LoginScreen from './views/screens/LoginScreen.vue'
+import TenantSelectorScreen from './views/screens/TenantSelectorScreen.vue'
 import { Plus } from 'lucide-vue-next'
 import { useMembros } from './viewmodels/useMembros'
 import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
@@ -16,7 +17,7 @@ import { tenantSessionService } from './shared/container'
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const activeTab = ref<Tab>('hoje')
 const { isAnyBottomSheetOpen } = useBottomSheetState()
-const { ativos, membros: todosMembros, inicializar: inicializarMembros } = useMembros()
+const { ativos, membros: todosMembros, inicializar: inicializarMembros, carregar: recarregarMembros } = useMembros()
 const {
   cartoes,
   acertos,
@@ -28,38 +29,89 @@ const {
 const { carregarTemplates: inicializarContasFixas } = useContasFixas()
 
 const isAuthed = ref(tenantSessionService.isAuthenticated())
+const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
 
 onMounted(async () => {
   if (isAuthed.value) {
-    await Promise.all([
-      inicializarMembros(),
-      inicializarCartoes(),
-      inicializarContasFixas()
-    ])
+    try {
+      // Garante que a sessão (com tenantId) está carregada antes de qualquer fetch
+      await tenantSessionService.inicializarSessao()
+      hasTenant.value = !!tenantSessionService.getActiveTenantId()
+      if (hasTenant.value) {
+        await Promise.all([
+          inicializarMembros(),
+          inicializarCartoes(),
+          inicializarContasFixas()
+        ])
+      }
+    } catch (error: any) {
+      console.error('Erro na inicialização da sessão:', error)
+    }
   }
 })
 
 const handleSalvarTransacao = async () => {
-  await inicializarCartoes()
-  currentView.value = 'dashboard'
+  try {
+    await inicializarCartoes()
+    currentView.value = 'dashboard'
+  } catch (error: any) {
+    console.error('Erro ao recarregar cartões após salvar transação:', error)
+    alert(error.message || 'Erro ao sincronizar dados com o servidor')
+    currentView.value = 'dashboard'
+  }
 }
 const isPeriodLocked = ref(false)
 
 const handleAuthSuccess = async () => {
   isAuthed.value = true
-  
-  await Promise.all([
-    inicializarMembros(),
-    inicializarCartoes(),
-    inicializarContasFixas()
-  ])
+  hasTenant.value = !!tenantSessionService.getActiveTenantId()
+  if (hasTenant.value) {
+    // Usa `carregar` (force reload) pois `inicializar` pode ter flag inicializado=true de tentativa anterior sem tenant
+    try {
+      await Promise.all([
+        recarregarMembros(),
+        inicializarCartoes(),
+        inicializarContasFixas()
+      ])
+    } catch (error: any) {
+      console.error('Erro na inicialização pós-auth:', error)
+    }
+  }
+}
+
+const handleCasaSelecionada = async () => {
+  hasTenant.value = true
+  try {
+    await Promise.all([
+      recarregarMembros(),
+      inicializarCartoes(),
+      inicializarContasFixas()
+    ])
+  } catch (error: any) {
+    console.error('Erro ao inicializar dados da nova casa:', error)
+  }
+}
+
+const handleLogout = async () => {
+  await tenantSessionService.logout()
+  isAuthed.value = false
+  hasTenant.value = false
 }
 </script>
 
 <template>
+  <!-- Não autenticado -->
   <div v-if="!isAuthed">
     <LoginScreen @auth-success="handleAuthSuccess" />
   </div>
+  <!-- Autenticado mas sem casa -->
+  <div v-else-if="!hasTenant">
+    <TenantSelectorScreen
+      @casa-selecionada="handleCasaSelecionada"
+      @logout="handleLogout"
+    />
+  </div>
+  <!-- Dashboard normal -->
   <div v-else class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
     <div class="max-w-[1200px] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-36 md:pb-16 relative">
       <main class="relative z-10">

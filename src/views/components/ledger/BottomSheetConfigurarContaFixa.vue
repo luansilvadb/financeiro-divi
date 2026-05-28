@@ -22,7 +22,7 @@ watch(() => props.bill, (newBill) => {
     icon.value = newBill.icon
     fixedValue.value = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : null
     
-    const validSplitIds = newBill.defaultSplit.filter(id => 
+    const validSplitIds = (newBill.defaultSplit || []).filter(id => 
       props.membros.some(m => m.id === id)
     )
     if (validSplitIds.length > 0) {

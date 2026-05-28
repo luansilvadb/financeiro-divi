@@ -149,13 +149,9 @@ export class GastoService implements IGastoService {
   }
 
   private async validarMembrosAtivosParaAtualizacao(dados: AtualizarGastoDados): Promise<void> {
-    const membrosEnvolvidos = [dados.compradorId]
-    dados.divisoes.forEach(d => {
-      if (!membrosEnvolvidos.includes(d.membroId)) {
-        membrosEnvolvidos.push(d.membroId)
-      }
-    })
-    await this.lancamentoService.validarMembrosAtivos(membrosEnvolvidos)
+    const membrosEnvolvidos = [dados.compradorId, ...dados.divisoes.map(d => d.membroId)]
+    const unicos = [...new Set(membrosEnvolvidos)]
+    await this.lancamentoService.validarMembrosAtivos(unicos)
   }
 
   private async executarAtualizacaoPorTipo(
@@ -220,24 +216,31 @@ export class GastoService implements IGastoService {
   private async validarNettingNoPeriodo(original: Gasto): Promise<void> {
     if (original.isSettlement) return
 
-    let faturaIds: string[] = []
+    let faturaIds: string[]
     if (original.grupoParcelasId) {
       const todos = await this.gastoRepo.listarTodos()
       const grupo = todos.filter(g => g.grupoParcelasId === original.grupoParcelasId)
       faturaIds = grupo.map(g => g.faturaId)
+
+      const temNettingNoPeriodo = todos.some(
+        g => faturaIds.includes(g.faturaId) && g.isSettlement
+      )
+      if (temNettingNoPeriodo) {
+        throw new Error(
+          'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+        )
+      }
     } else {
       faturaIds = [original.faturaId]
-    }
-
-    const todosGastos = (await this.gastoRepo.listarTodos()) || []
-    const temNettingNoPeriodo = todosGastos.some(
-      g => faturaIds.includes(g.faturaId) && g.isSettlement
-    )
-
-    if (temNettingNoPeriodo) {
-      throw new Error(
-        'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+      const todosGastos = (await this.gastoRepo.listarTodos()) || []
+      const temNettingNoPeriodo = todosGastos.some(
+        g => faturaIds.includes(g.faturaId) && g.isSettlement
       )
+      if (temNettingNoPeriodo) {
+        throw new Error(
+          'Não é possível alterar gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro.'
+        )
+      }
     }
   }
 

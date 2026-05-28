@@ -57,9 +57,7 @@ export class HttpFaturaRepository extends HttpBaseRepository implements IFaturaR
     }))
   }
 
-  async executarMigracoesEDesduplicacao(): Promise<void> {
-    // No-op (Offline removido, desduplicação e controle de versão rodam no Postgres/NestJS)
-  }
+  async executarMigracoesEDesduplicacao(): Promise<void> {}
 
   async assegurarObterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<Fatura> {
     const periodo = { mes, ano }
@@ -77,27 +75,5 @@ export class HttpFaturaRepository extends HttpBaseRepository implements IFaturaR
     return nova
   }
 
-  async excluirFaturasAbertasSemGastosPorCartao(cartaoId: string): Promise<void> {
-    // Buscamos todas as faturas e gastos para identificar faturas abertas sem gastos associados
-    const todasFaturas = await this.listarTodas()
-    const todosGastos = await this.request<any[]>('/financeiro/gastos')
-    
-    const faturasAbertas = todasFaturas.filter(f => f.cartaoId === cartaoId && f.status === 'ABERTA')
-    
-    for (const fat of faturasAbertas) {
-      const temGastos = todosGastos.some(g => g.faturaId === fat.id)
-      if (!temGastos) {
-        // Exclui a fatura se não tiver gastos (no modelo relacional PostgreSQL, faremos isso via exclusão normal no banco caso o controller permita ou via lógica local)
-        // Como o backend já trata ou podemos criar um endpoint para excluir faturas específicas, mas para simplificar,
-        // faremos a requisição de salvar com um status de exclusão ou podemos simplesmente não fazer nada se o backend já limpa cartões.
-        // Mas para manter compatibilidade, vamos enviar uma requisição para uma rota mock de exclusão se necessário,
-        // ou deletar enviando faturas vazias. 
-        // No entanto, para fins práticos, o NestJS trata a exclusão no serviço de cartão e faturas de forma limpa.
-        // Vamos apenas silenciar ou criar uma requisição genérica se o backend tiver a rota de deleção de fatura.
-        // Atualmente não criamos rota de exclusão de fatura individual no backend, mas podemos adicionar
-        // ou fazer o no-op se a consistência relacional do Postgres já for suficiente.
-        // Vamos deixar no-op para evitar chamadas de rota inexistentes, já que no banco relacional o delete cascade limpa.
-      }
-    }
-  }
+  async excluirFaturasAbertasSemGastosPorCartao(_cartaoId: string): Promise<void> {}
 }

@@ -116,7 +116,7 @@ watch(() => props.bill, (newBill) => {
     compradorId.value = props.membros[0]?.id || ''
     
     // Filtra apenas os IDs que realmente existem na lista de membros atual
-    const validSplitIds = newBill.defaultSplit.filter(id => 
+    const validSplitIds = (newBill.defaultSplit || []).filter(id => 
       props.membros.some(m => m.id === id)
     )
     

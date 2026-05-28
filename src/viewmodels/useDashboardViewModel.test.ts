@@ -60,11 +60,11 @@ vi.mock('./useDashboardCalculations', () => ({
 const mockSalvarGasto = vi.fn()
 const mockExcluirGasto = vi.fn()
 const mockGastoService = {
-  lancarGastoOuEmprestimo: vi.fn(),
-  excluirGasto: vi.fn(),
-  registrarAcertoNetting: vi.fn(),
-  lancarGastoContaFixa: vi.fn(),
-  atualizarGastoCompleto: vi.fn()
+  lancarGastoOuEmprestimo: vi.fn().mockResolvedValue(undefined),
+  excluirGasto: vi.fn().mockResolvedValue(undefined),
+  registrarAcertoNetting: vi.fn().mockResolvedValue(undefined),
+  lancarGastoContaFixa: vi.fn().mockResolvedValue(undefined),
+  atualizarGastoCompleto: vi.fn().mockResolvedValue(undefined)
 }
 
 const mockFaturaRolloverService = {

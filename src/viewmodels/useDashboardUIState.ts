@@ -1,18 +1,91 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { formatarMesAno } from '../shared/utils/meses'
 
 export function useDashboardUIState() {
-  const showBottomSheetHistorico = ref(false)
-  const showBottomSheetFechar = ref(false)
+  const modalStack = ref<string[]>([])
+
+  const abrirModal = (nome: string) => {
+    if (!modalStack.value.includes(nome)) {
+      modalStack.value.push(nome)
+    }
+  }
+
+  const fecharModal = (nome: string) => {
+    modalStack.value = modalStack.value.filter(n => n !== nome)
+  }
+
+  const isModalNoTopo = (nome: string) => {
+    return modalStack.value[modalStack.value.length - 1] === nome
+  }
+
+  const showBottomSheetHistorico = computed({
+    get: () => modalStack.value.includes('historico'),
+    set: (val) => {
+      if (val) abrirModal('historico')
+      else fecharModal('historico')
+    }
+  })
+
+  const showBottomSheetFechar = computed({
+    get: () => modalStack.value.includes('fechar-fatura'),
+    set: (val) => {
+      if (val) abrirModal('fechar-fatura')
+      else fecharModal('fechar-fatura')
+    }
+  })
+
+  const showBottomSheetAjustar = computed({
+    get: () => modalStack.value.includes('ajustar-gasto'),
+    set: (val) => {
+      if (val) abrirModal('ajustar-gasto')
+      else fecharModal('ajustar-gasto')
+    }
+  })
+
+  const showPopupLancar = computed({
+    get: () => modalStack.value.includes('lancar-conta-fixa'),
+    set: (val) => {
+      if (val) abrirModal('lancar-conta-fixa')
+      else fecharModal('lancar-conta-fixa')
+    }
+  })
+
+  const showBottomSheetConfigCF = computed({
+    get: () => modalStack.value.includes('configurar-conta-fixa'),
+    set: (val) => {
+      if (val) abrirModal('configurar-conta-fixa')
+      else fecharModal('configurar-conta-fixa')
+    }
+  })
+
+  const showBottomSheetNovoPeriodo = computed({
+    get: () => modalStack.value.includes('novo-periodo'),
+    set: (val) => {
+      if (val) abrirModal('novo-periodo')
+      else fecharModal('novo-periodo')
+    }
+  })
+
+  const showBottomSheetNetting = computed({
+    get: () => modalStack.value.includes('netting'),
+    set: (val) => {
+      if (val) abrirModal('netting')
+      else fecharModal('netting')
+    }
+  })
+
+  const showBottomSheetConfirmacaoEstorno = computed({
+    get: () => modalStack.value.includes('confirmacao-estorno'),
+    set: (val) => {
+      if (val) abrirModal('confirmacao-estorno')
+      else fecharModal('confirmacao-estorno')
+    }
+  })
+
   const faturaParaFechar = ref<any | null>(null)
-  const showBottomSheetAjustar = ref(false)
   const gastoParaAjustar = ref<any | null>(null)
-  const showPopupLancar = ref(false)
-  const showBottomSheetConfigCF = ref(false)
   const billSelecionada = ref<any | null>(null)
-  const showBottomSheetNovoPeriodo = ref(false)
   const nomeNovoPeriodo = ref('')
-  const showBottomSheetNetting = ref(false)
   const nettingTarget = ref<any | null>(null)
   const showParcelasFuturas = ref(false)
   const isDropdownAbertosOpen = ref(false)
@@ -21,7 +94,6 @@ export function useDashboardUIState() {
   const isSubmittingPix = ref(false)
 
   // --- Confirmação de Estorno ---
-  const showBottomSheetConfirmacaoEstorno = ref(false)
   const itemParaEstornar = ref<any | null>(null)
   const itemTypeParaEstornar = ref('')
 
@@ -79,6 +151,10 @@ export function useDashboardUIState() {
   }
 
   return {
+    modalStack,
+    abrirModal,
+    fecharModal,
+    isModalNoTopo,
     showBottomSheetHistorico,
     showBottomSheetFechar,
     faturaParaFechar,

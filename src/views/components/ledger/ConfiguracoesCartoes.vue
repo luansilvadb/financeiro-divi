@@ -5,7 +5,9 @@ import { useMembros } from '../../../viewmodels/useMembros'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import { Trash2, CreditCard, Calendar, User, ChevronDown } from 'lucide-vue-next'
+import { useCasasMultitenant } from '../../../viewmodels/useCasasMultitenant'
 
+const { activeTenantId } = useCasasMultitenant()
 const { ativos } = useMembros()
 const { cartoes, adicionarCartao, excluirCartaoManual } = useCartoesEFaturas()
 
@@ -150,10 +152,13 @@ const handleExcluir = async (id: string) => {
           @click="adicionarCard" 
           class="w-full h-12"
           variant="primary"
-          :disabled="!nome || !responsavelId"
+          :disabled="!nome || !responsavelId || !activeTenantId"
         >
           Cadastrar Cartão
         </Button>
+        <p v-if="!activeTenantId" class="text-xs text-coral font-bold text-center mt-2">
+          Crie ou selecione uma casa no menu superior antes de cadastrar cartões!
+        </p>
       </div>
     </Card>
 

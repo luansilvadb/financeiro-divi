@@ -14,7 +14,7 @@ export interface LancarGastoInput {
   periodo: { mes: number; ano: number }
 }
 
-export interface NettingInput {
+interface NettingInput {
   faturaId: string
   descricao: string
   valor: number

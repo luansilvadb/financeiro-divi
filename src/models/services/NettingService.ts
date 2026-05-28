@@ -18,21 +18,21 @@ export function calcularSaldosUnificados(
   const saldosCentavos: Record<string, number> = {}
   membros.forEach(m => { saldosCentavos[m.id] = 0 })
 
+  const ensureKey = (id: string) => {
+    if (saldosCentavos[id] === undefined) saldosCentavos[id] = 0
+  }
+
   gastos.forEach(g => {
     if (g.isLoan) {
       const valorParcela = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
       if (valorParcela.centavos > 0) {
         const valorParcelaCentavos = valorParcela.centavos
         if (g.compradorId) {
-          if (saldosCentavos[g.compradorId] === undefined) {
-            saldosCentavos[g.compradorId] = 0
-          }
+          ensureKey(g.compradorId)
           saldosCentavos[g.compradorId] += valorParcelaCentavos
         }
         if (g.borrowerId) {
-          if (saldosCentavos[g.borrowerId] === undefined) {
-            saldosCentavos[g.borrowerId] = 0
-          }
+          ensureKey(g.borrowerId)
           saldosCentavos[g.borrowerId] -= valorParcelaCentavos
         }
       }
@@ -44,24 +44,19 @@ export function calcularSaldosUnificados(
         const valorDebito = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
         if (valorDebito.centavos > 0) {
           const valorDebitoCentavos = valorDebito.centavos
-          if (saldosCentavos[div.membroId] === undefined) {
-            saldosCentavos[div.membroId] = 0
-          }
+          ensureKey(div.membroId)
           saldosCentavos[div.membroId] -= valorDebitoCentavos
           totalDebitosCentavos += valorDebitoCentavos
         }
       })
 
       if (pagadorId) {
-        if (saldosCentavos[pagadorId] === undefined) {
-          saldosCentavos[pagadorId] = 0
-        }
+        ensureKey(pagadorId)
         saldosCentavos[pagadorId] += totalDebitosCentavos
       }
     }
   })
 
-  // Retorna diretamente o saldo em centavos para preservar precisão absoluta
   return saldosCentavos
 }
 

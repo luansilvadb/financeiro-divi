@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { DivisaoGastoDto } from './divisao-gasto.dto';
 
@@ -97,8 +97,12 @@ export class GastoDto {
     example: 'Acerto ref. fatura de Maio',
   })
   @IsOptional()
-  @IsString()
-  settlementDetails?: string;
+  @IsObject()
+  settlementDetails?: {
+    fromMemberId: string;
+    toMemberId: string;
+    method: string;
+  } | null;
 
   @ApiProperty({
     description: 'Método de pagamento do gasto (ex: CREDIT_CARD, DEBIT, MONEY, PIX)',

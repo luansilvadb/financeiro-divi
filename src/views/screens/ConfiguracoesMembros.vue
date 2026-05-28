@@ -5,8 +5,10 @@ import { UserMinus, UserCheck, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
+import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
 
 const { membros, adicionarMembro, desativarMembro, ativarMembro } = useMembros()
+const { activeTenantId } = useCasasMultitenant()
 const novoNome = ref('')
 const activeTab = ref<'membros' | 'cartoes'>('membros')
 
@@ -96,12 +98,15 @@ const handleDesativar = async (id: string) => {
           </div>
           <Button 
             @click="handleAdicionar"
-            :disabled="!novoNome.trim()"
+            :disabled="!novoNome.trim() || !activeTenantId"
             class="w-full h-12"
             variant="primary"
           >
             Adicionar Morador
           </Button>
+          <p v-if="!activeTenantId" class="text-xs text-coral font-bold text-center mt-2">
+            Crie ou selecione uma casa no menu superior antes de adicionar moradores!
+          </p>
         </div>
       </Card>
 

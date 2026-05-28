@@ -24,7 +24,7 @@ import {
   tenantSessionService
 } from '../shared/container'
 
-export interface CartoesEFaturasState {
+interface CartoesEFaturasState {
   cartoes: Cartao[]
   faturas: Fatura[]
   acertos: AcertoMembro[]
@@ -216,7 +216,7 @@ export function useCartoesEFaturas(dependencies: CartoesEFaturasDependencies = {
   const faturasFechadas = computed(() => state.value.faturas.filter(f => f.status === 'FECHADA' || f.status === 'ACERTADA'))
 
   const calcularConsumoMembro = (faturaId: string, membroId: string) => {
-    const gastosDaFatura = state.value.gastos.filter(g => g.faturaId === faturaId)
+    const gastosDaFatura = state.value.gastos.filter(g => g.faturaId === faturaId && !g.isSettlement)
     let total = 0
     gastosDaFatura.forEach(g => {
       g.divisoes.forEach(d => {

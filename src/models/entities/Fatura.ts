@@ -77,29 +77,6 @@ export class Fatura {
     })
   }
 
-  marcarComoPagaAoBanco(data: Date = new Date()): Fatura {
-    if (this.status === 'ABERTA') throw new Error('Faturas ABERTAS não podem ser pagas ao banco')
-    return new Fatura({
-      id: this.id,
-      cartaoId: this.cartaoId,
-      periodo: this.periodo,
-      responsavelId: this.responsavelId,
-      status: this.status,
-      dataPagamentoBanco: data
-    })
-  }
-
-  desmarcarComoPagaAoBanco(): Fatura {
-    return new Fatura({
-      id: this.id,
-      cartaoId: this.cartaoId,
-      periodo: this.periodo,
-      responsavelId: this.responsavelId,
-      status: this.status,
-      dataPagamentoBanco: undefined
-    })
-  }
-
   marcarAcertada(): Fatura {
     if (this.status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser acertadas')
     return new Fatura({

@@ -49,14 +49,4 @@ export class AcertoMembro {
       this.dataPagamento = data
     }
   }
-
-  public marcarComoPago(data: Date = new Date()): void {
-    const faltaPagar = Dinheiro.deCentavos(this.valorAcerto.centavos - this.valorPago.centavos)
-    if (faltaPagar.centavos > 0) {
-      this.registrarReembolso(faltaPagar, data)
-    } else {
-      this.pago = true
-      this.dataPagamento = data
-    }
-  }
 }

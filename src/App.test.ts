@@ -7,7 +7,8 @@ vi.mock('./shared/container', () => ({
   tenantSessionService: {
     isAuthenticated: () => true,
     getActiveTenantId: () => 'tenant-123',
-    getCurrentUserId: () => 'user-123'
+    getCurrentUserId: () => 'user-123',
+    inicializarSessao: vi.fn().mockResolvedValue(undefined)
   },
   migrationService: {
     migrar: vi.fn()

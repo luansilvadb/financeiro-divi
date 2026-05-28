@@ -29,10 +29,10 @@ const installmentsInput = ref(1)
 // Monitora alterações do gasto recebido por prop para sincronizar o formulário
 watch(() => props.gasto, (newG) => {
   if (newG) {
-    descInput.value = newG.descricao
-    valorInput.value = newG.valorTotal.centavos / 100
-    quemPaga.value = newG.compradorId
-    activeMethod.value = newG.method
+    descInput.value = newG.descricao || ''
+    valorInput.value = newG.valorTotal?.centavos ? newG.valorTotal.centavos / 100 : 0
+    quemPaga.value = newG.compradorId || ''
+    activeMethod.value = newG.method || 'pix'
     
     let cardIdResolved: string | null = null
     if (newG.method === 'card') {
@@ -51,7 +51,7 @@ watch(() => props.gasto, (newG) => {
     }
     activeCardOwner.value = cardIdResolved
 
-    selectedSplit.value = newG.divisoes.map(d => d.membroId)
+    selectedSplit.value = newG.divisoes ? newG.divisoes.map(d => d.membroId) : []
     installmentsInput.value = newG.installments || 1
   }
 }, { immediate: true })

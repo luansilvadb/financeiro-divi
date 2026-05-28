@@ -147,8 +147,12 @@ const splitSummaryDesc = computed(() => {
 })
 
 const handleGravar = async () => {
-  await finalizarGastoOuEmprestimo()
-  emit('salvar')
+  try {
+    await finalizarGastoOuEmprestimo()
+    emit('salvar')
+  } catch (error: any) {
+    alert(error.message || 'Erro ao salvar transação')
+  }
 }
 </script>
 

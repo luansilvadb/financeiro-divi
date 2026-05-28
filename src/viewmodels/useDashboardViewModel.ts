@@ -1,4 +1,4 @@
-import { ref, watch, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { Fatura } from '../models/entities/Fatura'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { Cartao } from '../models/entities/Cartao'
@@ -6,11 +6,11 @@ import { AcertoMembro } from '../models/entities/AcertoMembro'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
-import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
+import { useDashboardPeriodos } from './useDashboardPeriodos'
+import { useDashboardNetting } from './useDashboardNetting'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
-import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
-import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from '../shared/utils/periodoStorage'
+import { formatarMesAno } from '../shared/utils/meses'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import type { IFaturaRepository } from '../models/repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../models/repositories/ICartaoRepository'
@@ -43,60 +43,6 @@ export interface DashboardDependencies {
   gastoService?: IGastoService
 }
 
-function obterPeriodoInicial(faturasAbertas: Fatura[], faturasFechadas: Fatura[]): { mes: number; ano: number } {
-  const faturaReferencia = faturasAbertas?.[0] || faturasFechadas?.[0]
-  const fallback = faturaReferencia?.periodo
-    ? { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
-    : undefined
-  return obterPeriodoSelecionado(fallback)
-}
-
-function verificarPeriodoTrancado(
-  p: { mes: number; ano: number },
-  faturasAbertas: Fatura[],
-  faturasFechadas: Fatura[],
-  cartoes: Cartao[]
-): boolean {
-  // Se não há faturas no período, tecnicamente não está trancado
-  const temFaturaPixAberta = faturasAbertas.some(f =>
-    f.cartaoId === 'PIX_DEFAULT_ID' &&
-    f.periodo.mes === p.mes &&
-    f.periodo.ano === p.ano
-  )
-
-  if (cartoes.length > 0) {
-    const todosCartoesFechados = cartoes.every(cartao => {
-      const fechada = faturasFechadas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-      if (fechada) return true
-
-      const aberta = faturasAbertas.find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-      if (aberta) return false
-
-      // Se não tem fatura, consideramos "aberto" para permitir o lançamento que irá criá-la
-      return false
-    })
-
-    if (temFaturaPixAberta) return false
-    return todosCartoesFechados
-  }
-
-  return faturasFechadas.some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-}
-
-function criarFaturaVirtual(
-  p: { mes: number; ano: number },
-  cartaoId: string,
-  responsavelId: string
-): Fatura {
-  return new Fatura({
-    id: `virtual-${p.mes}-${p.ano}`,
-    cartaoId,
-    periodo: { mes: p.mes, ano: p.ano },
-    responsavelId,
-    status: 'ABERTA'
-  })
-}
-
 export function useDashboardViewModel(
   props: DashboardProps,
   emit: (event: any, ...args: any[]) => void,
@@ -109,152 +55,23 @@ export function useDashboardViewModel(
   const rolloverService = dependencies.faturaRolloverService || faturaRolloverService
   const localGastoService = dependencies.gastoService || gastoService
 
-  // --- Estado de Período ---
-  const periodoSelecionado = ref<{ mes: number; ano: number }>(obterPeriodoInicial(props.faturasAbertas, props.faturasFechadas))
-
-  watch(periodoSelecionado, (novos) => {
-    salvarPeriodoSelecionado(novos)
-  }, { deep: true, immediate: true })
-
-  const buscarFaturasNoPeriodo = (p: { mes: number; ano: number }) => {
-    return [
-      ...props.faturasAbertas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano),
-      ...props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    ]
-  }
-
-  const buscarFaturaNoPeriodo = (p: { mes: number; ano: number }, cartaoId?: string) => {
-    const faturas = buscarFaturasNoPeriodo(p)
-    if (!cartaoId) return faturas[0]
-    return faturas.find(f => f.cartaoId === cartaoId)
-  }
-
-  const faturasPeriodoSelecionado = computed(() => {
-    const p = periodoSelecionado.value
-    const faturasExistentes = buscarFaturasNoPeriodo(p)
-    if (faturasExistentes.length === 0) {
-      return [
-        criarFaturaVirtual(
-          p,
-          props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
-          props.membros[0]?.id || 'virtual-member'
-        )
-      ]
-    }
-    return faturasExistentes
-  })
-
-  const faturasPeriodoIds = computed(() => {
-    const ids = faturasPeriodoSelecionado.value.map(f => f.id)
-    const pixId = faturaPixPeriodoSelecionado.value?.id
-    if (pixId && !ids.includes(pixId)) {
-      ids.push(pixId)
-    }
-    return ids
-  })
-
-  const faturaPixPeriodoSelecionado = computed(() => {
-    const p = periodoSelecionado.value
-    const faturaPix = buscarFaturaNoPeriodo(p, 'PIX_DEFAULT_ID')
-    if (faturaPix) return faturaPix
-
-    return new Fatura({
-      id: `virtual-pix-${p.mes}-${p.ano}`,
-      cartaoId: 'PIX_DEFAULT_ID',
-      periodo: { mes: p.mes, ano: p.ano },
-      responsavelId: 'PIX_SYSTEM_OWNER',
-      status: 'ABERTA'
-    })
-  })
-
-  const faturaSelecionadaTrancada = computed(() => {
-    return verificarPeriodoTrancado(
-      periodoSelecionado.value,
-      props.faturasAbertas,
-      props.faturasFechadas,
-      props.cartoes
-    )
-  })
-
-  watch(faturaSelecionadaTrancada, (isLocked) => {
-    emit('periodoStatusChanged', isLocked)
-  }, { immediate: true })
-
-  const faturaAtivaVisualizada = computed(() => {
-    const p = periodoSelecionado.value
-    return buscarFaturaNoPeriodo(p) || criarFaturaVirtual(
-      p,
-      props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
-      props.membros[0]?.id || 'virtual-member'
-    )
-  })
-
-  // --- Seletor de Meses ---
-  const listaMesesSeletor = computed(() => {
-    const hoje = new Date()
-    const list = []
-    for (let i = -12; i <= 12; i++) {
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
-      const mesIdx = d.getMonth() + 1
-      const anoIdx = d.getFullYear()
-      const estaFechada = props.faturasFechadas.some(f => f.periodo.mes === mesIdx && f.periodo.ano === anoIdx)
-      list.push({
-        mes: mesIdx,
-        ano: anoIdx,
-        nome: formatarMesAno(mesIdx, anoIdx),
-        status: (estaFechada ? 'FECHADA' : 'ABERTA') as 'FECHADA' | 'ABERTA'
-      })
-    }
-    return list
-  })
-
-  const mesesAbertosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'ABERTA'))
-  const mesesTrancadosOpcoes = computed(() => listaMesesSeletor.value.filter(item => item.status === 'FECHADA'))
-
-  // --- UI States & Sub-composables ---
   const uiState = useDashboardUIState()
-  const {
-    showBottomSheetHistorico,
-    showBottomSheetFechar,
-    faturaParaFechar,
-    showBottomSheetAjustar,
-    gastoParaAjustar,
-    showPopupLancar,
-    showBottomSheetConfigCF,
-    billSelecionada,
-    showBottomSheetNovoPeriodo,
-    nomeNovoPeriodo,
-    showBottomSheetConfirmacaoEstorno,
-    itemParaEstornar,
-    itemTypeParaEstornar,
-    showBottomSheetNetting,
-    nettingTarget,
-    showParcelasFuturas,
-    isDropdownAbertosOpen,
-    acertoPixId,
-    valorPixInput,
-    isSubmittingPix,
-    abrirConfirmacaoEstornoGasto,
-    abrirConfirmacaoEstornoBill,
-    abrirLancarBill,
-    abrirConfigurarBill,
-    abrirNovoBill,
-    abrirAjustarGasto,
-    abrirBottomSheetNetting,
-    abrirNovoPeriodoBottomSheet: uiAbrirNovoPeriodoBottomSheet,
-    iniciarPix: uiIniciarPix
-  } = uiState
+  
+  const periodos = useDashboardPeriodos(
+    () => props.faturasAbertas,
+    () => props.faturasFechadas,
+    () => props.cartoes,
+    () => props.membros,
+    emit
+  )
 
-  const iniciarPix = (acerto: AcertoMembro) => uiIniciarPix(acerto, formatarDinheiro)
-  const abrirNovoPeriodoBottomSheet = () => uiAbrirNovoPeriodoBottomSheet(faturaAtivaVisualizada.value)
-
-  // --- Composables e Services ---
   const cartoesEFaturas = useCartoesEFaturas({
     cartaoRepository: cartaoRepo,
     faturaRepository: faturaRepo,
     gastoRepository: gastoRepo,
     gastoService: localGastoService
   })
+  
   const { contasFixas, salvarContaFixa, excluirContaFixa, lancarGastoContaFixa } = useContasFixas({
     contaFixaRepository: contaFixaRepo,
     gastoService: localGastoService
@@ -270,7 +87,14 @@ export function useDashboardViewModel(
     acertos: globalAcertos
   } = cartoesEFaturas
 
-  // --- Funções de cálculo (puras, inline) ---
+  const gastosFaturaSelecionada = computed(() => {
+    const ids = periodos.faturasPeriodoIds.value
+    return globalGastos.value.filter(g => ids.includes(g.faturaId))
+  })
+
+  const netting = useDashboardNetting(() => props.membros, gastosFaturaSelecionada)
+
+  // --- Helpers ---
   const getMembroNome = (id: string) => {
     if (!id) return 'Desconhecido'
     return props.membros.find(m => m.id === id)?.nome || 'Membro desconhecido'
@@ -294,20 +118,8 @@ export function useDashboardViewModel(
     return acertos.length > 0 && acertos.every((a: AcertoMembro) => a.pago)
   }
 
-  const currentMonthName = computed(() => {
-    const fat = faturaAtivaVisualizada.value
-    if (!fat) return 'Mês'
-    return NOMES_MESES[fat.periodo.mes - 1]
-  })
-
-  const currentYear = computed(() => {
-    const fat = faturaAtivaVisualizada.value
-    if (!fat) return 'Atual'
-    return fat.periodo.ano.toString()
-  })
-
   const parcelasFuturasDetalhadas = computed(() => {
-    const ids = faturasPeriodoIds.value
+    const ids = periodos.faturasPeriodoIds.value
     const gastosDoPeriodo = globalGastos.value.filter(g => ids.includes(g.faturaId))
     return gastosDoPeriodo
       .filter(g => g.installments > 1)
@@ -325,60 +137,26 @@ export function useDashboardViewModel(
       })
   })
 
-  // --- Dados Derivados ---
-  const gastosFaturaSelecionada = computed(() => {
-    const ids = faturasPeriodoIds.value
-    return globalGastos.value.filter(g => ids.includes(g.faturaId))
-  })
-
-  const saldosUnificadosAtivosCentavos = computed(() => {
-    // Cálculo legado para garantir retrocompatibilidade durante transição
-    const gastosPeriodo = gastosFaturaSelecionada.value
-    const saldosCalculados = calcularSaldosUnificados(props.membros, gastosPeriodo)
-
-    // Se temos dados no ledger, priorizamos eles para os membros presentes
-    const finalSaldos: Record<string, number> = { ...saldosCalculados }
-
-    return finalSaldos
-  })
-
-  const saldosUnificadosAtivos = computed(() => {
-    const centavos = saldosUnificadosAtivosCentavos.value
-    const reais: Record<string, number> = {}
-    for (const key in centavos) {
-      reais[key] = centavos[key] / 100
-    }
-    return reais
-  })
-
-  const nettingTransferencias = computed(() => calcularTransacoesNetting(saldosUnificadosAtivosCentavos.value))
-
-  const membrosVisiveis = computed(() => {
-    return props.membros.filter(m => {
-      if (m.ativo !== false) return true
-      const saldoCentavos = saldosUnificadosAtivosCentavos.value[m.id] || 0
-      return Math.abs(saldoCentavos) > 0
-    })
-  })
-
   const totalFuturasVencer = computed(() => {
     return parcelasFuturasDetalhadas.value.reduce((acc, p) => acc + p.totalFuturo, 0)
   })
 
-  // --- Ações de Negócio ---
-  const guardTrancado = () => {
-    if (faturaSelecionadaTrancada.value) {
-      return true
-    }
-    return false
-  }
+  const totalPeriodoSelecionado = computed(() => {
+    const ids = periodos.faturasPeriodoIds.value
+    return ids.reduce((sum, id) => sum + calcularTotalFatura(id), 0)
+  })
 
+  const totalLancamentosPeriodoSelecionado = computed(() => {
+    return gastosFaturaSelecionada.value.filter(g => !g.isSettlement).length
+  })
+
+  // --- Ações de Negócio ---
   const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
-    if (guardTrancado()) return
+    if (periodos.faturaSelecionadaTrancada.value) return
     try {
       await fecharFaturaManual(faturaId, responsavelId)
-      showBottomSheetFechar.value = false
-      faturaParaFechar.value = null
+      uiState.showBottomSheetFechar.value = false
+      uiState.faturaParaFechar.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       alert(error.message || 'Erro ao fechar fatura')
@@ -386,12 +164,12 @@ export function useDashboardViewModel(
   }
 
   const confirmarAjusteGasto = async (dados: any) => {
-    if (guardTrancado()) return
-    if (!gastoParaAjustar.value) return
+    if (periodos.faturaSelecionadaTrancada.value) return
+    if (!uiState.gastoParaAjustar.value) return
     try {
-      await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
-      showBottomSheetAjustar.value = false
-      gastoParaAjustar.value = null
+      await atualizarGastoCompletoManual(uiState.gastoParaAjustar.value.id, dados)
+      uiState.showBottomSheetAjustar.value = false
+      uiState.gastoParaAjustar.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       alert(error.message || 'Erro ao ajustar gasto')
@@ -399,39 +177,39 @@ export function useDashboardViewModel(
   }
 
   const enviarReembolsoPix = async (acertoId: string) => {
-    if (valorPixInput.value <= 0) return
-    isSubmittingPix.value = true
+    if (uiState.valorPixInput.value <= 0) return
+    uiState.isSubmittingPix.value = true
     try {
-      await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(valorPixInput.value))
-      acertoPixId.value = null
+      await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(uiState.valorPixInput.value))
+      uiState.acertoPixId.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       alert(error.message || 'Erro ao registrar reembolso')
     } finally {
-      isSubmittingPix.value = false
+      uiState.isSubmittingPix.value = false
     }
   }
 
   const quitarComAjuste = async (acertoId: string) => {
-    isSubmittingPix.value = true
+    uiState.isSubmittingPix.value = true
     try {
       await quitarAcertoMembro(acertoId)
-      acertoPixId.value = null
+      uiState.acertoPixId.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       alert(error.message || 'Erro ao quitar acerto')
     } finally {
-      isSubmittingPix.value = false
+      uiState.isSubmittingPix.value = false
     }
   }
 
   const confirmarLancarBill = async (dados: { valorCentavos: number; compradorId: string; splitIds: string[] }) => {
-    if (guardTrancado()) return
-    const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
+    if (periodos.faturaSelecionadaTrancada.value) return
+    const activeFaturaId = periodos.faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
     try {
-      await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorCentavos, dados.compradorId, dados.splitIds)
-      showPopupLancar.value = false
+      await lancarGastoContaFixa(activeFaturaId, uiState.billSelecionada.value, dados.valorCentavos, dados.compradorId, dados.splitIds)
+      uiState.showPopupLancar.value = false
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       alert(error.message || 'Erro ao lançar conta fixa')
@@ -439,36 +217,31 @@ export function useDashboardViewModel(
   }
 
   const confirmarSalvarTemplate = (template: any) => {
-    if (guardTrancado()) return
+    if (periodos.faturaSelecionadaTrancada.value) return
     salvarContaFixa(template)
-    showBottomSheetConfigCF.value = false
-  }
-
-  const executarNovoPeriodo = async (nomeNovoPeriodoVal: string) => {
-    const faturasAbertasVisualizadas = props.faturasAbertas.filter(f =>
-      f.periodo.mes === faturaAtivaVisualizada.value.periodo.mes &&
-      f.periodo.ano === faturaAtivaVisualizada.value.periodo.ano
-    )
-
-    await rolloverService.executarRolloverPeriodo({
-      nomeNovoPeriodo: nomeNovoPeriodoVal,
-      faturasAbertas: faturasAbertasVisualizadas,
-      cartoes: props.cartoes,
-      saldosAcumulados: saldosUnificadosAtivosCentavos.value,
-      nomePeriodoAnterior: currentMonthName.value
-    })
-
-    await cartoesEFaturas.inicializar()
+    uiState.showBottomSheetConfigCF.value = false
   }
 
   const isExecutingRollover = ref(false)
 
   const confirmarNovoPeriodo = async () => {
-    if (!nomeNovoPeriodo.value.trim() || isExecutingRollover.value) return
+    if (!uiState.nomeNovoPeriodo.value.trim() || isExecutingRollover.value) return
     isExecutingRollover.value = true
     try {
-      await executarNovoPeriodo(nomeNovoPeriodo.value)
-      showBottomSheetNovoPeriodo.value = false
+      const faturasAbertasVisualizadas = props.faturasAbertas.filter(f =>
+        f.periodo.mes === periodos.faturaAtivaVisualizada.value.periodo.mes &&
+        f.periodo.ano === periodos.faturaAtivaVisualizada.value.periodo.ano
+      )
+
+      await rolloverService.executarRolloverPeriodo({
+        nomeNovoPeriodo: uiState.nomeNovoPeriodo.value,
+        faturasAbertas: faturasAbertasVisualizadas,
+        cartoes: props.cartoes,
+        saldosAcumulados: netting.saldosUnificadosAtivosCentavos.value,
+        nomePeriodoAnterior: periodos.currentMonthName.value
+      })
+      await cartoesEFaturas.inicializar()
+      uiState.showBottomSheetNovoPeriodo.value = false
     } catch (error: any) {
       alert(error.message || 'Erro ao fechar mês')
     } finally {
@@ -477,8 +250,8 @@ export function useDashboardViewModel(
   }
 
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
-    if (guardTrancado()) return
-    const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
+    if (periodos.faturaSelecionadaTrancada.value) return
+    const activeFaturaId = periodos.faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
 
     try {
@@ -491,32 +264,26 @@ export function useDashboardViewModel(
         method: dados.method
       })
 
-      showBottomSheetNetting.value = false
-      nettingTarget.value = null
+      uiState.showBottomSheetNetting.value = false
+      uiState.nettingTarget.value = null
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       alert(error.message || 'Erro ao registrar acerto de contas')
     }
   }
 
-  const excluirGasto = async (id: string) => {
-    if (guardTrancado()) return
-    await localGastoService.excluirGasto(id)
-    await cartoesEFaturas.inicializar()
-  }
-
   const confirmarEstorno = async () => {
-    if (!itemParaEstornar.value) return
+    if (!uiState.itemParaEstornar.value) return
 
     try {
       const handlers: Record<string, () => Promise<void>> = {
-        'Lançamento': () => excluirGasto(itemParaEstornar.value!.id),
-        'Conta Fixa': () => excluirContaFixa(itemParaEstornar.value!.id)
+        'Lançamento': () => localGastoService.excluirGasto(uiState.itemParaEstornar.value!.id).then(() => cartoesEFaturas.inicializar()),
+        'Conta Fixa': () => excluirContaFixa(uiState.itemParaEstornar.value!.id)
       }
-      await handlers[itemTypeParaEstornar.value]?.()
+      await handlers[uiState.itemTypeParaEstornar.value]?.()
 
-      showBottomSheetConfirmacaoEstorno.value = false
-      itemParaEstornar.value = null
+      uiState.showBottomSheetConfirmacaoEstorno.value = false
+      uiState.itemParaEstornar.value = null
     } catch (error: any) {
       alert(error.message || 'Erro ao realizar estorno')
     }
@@ -525,21 +292,12 @@ export function useDashboardViewModel(
   const estornarContaFixa = async (bill: any) => {
     const gasto = gastosFaturaSelecionada.value.find(g => g.recurringBillId === bill.id)
     if (gasto) {
-      abrirConfirmacaoEstornoGasto(gasto)
+      uiState.abrirConfirmacaoEstornoGasto(gasto)
     }
   }
 
-  const totalPeriodoSelecionado = computed(() => {
-    const ids = faturasPeriodoIds.value
-    return ids.reduce((sum, id) => sum + calcularTotalFatura(id), 0)
-  })
-
-  const totalLancamentosPeriodoSelecionado = computed(() => {
-    return gastosFaturaSelecionada.value.length
-  })
-
   const reabrirPeriodoSelecionado = async () => {
-    const p = periodoSelecionado.value
+    const p = periodos.periodoSelecionado.value
     const faturasDoPeriodo = props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
     try {
       for (const fatura of faturasDoPeriodo) {
@@ -552,41 +310,12 @@ export function useDashboardViewModel(
   }
 
   return {
-    periodoSelecionado,
-    faturaSelecionadaTrancada,
-    faturaAtivaVisualizada,
-    faturasPeriodoSelecionado,
-    faturasPeriodoIds,
-    faturaPixPeriodoSelecionado,
+    ...periodos,
+    ...netting,
+    ...uiState,
     totalPeriodoSelecionado,
     totalLancamentosPeriodoSelecionado,
     reabrirPeriodoSelecionado,
-    listaMesesSeletor,
-    mesesAbertosOpcoes,
-    mesesTrancadosOpcoes,
-    showBottomSheetHistorico,
-    showBottomSheetFechar,
-    faturaParaFechar,
-    showBottomSheetAjustar,
-    gastoParaAjustar,
-    showPopupLancar,
-    showBottomSheetConfigCF,
-    billSelecionada,
-    showBottomSheetNovoPeriodo,
-    nomeNovoPeriodo,
-    showBottomSheetConfirmacaoEstorno,
-    itemParaEstornar,
-    itemTypeParaEstornar,
-    showBottomSheetNetting,
-    nettingTarget,
-    showParcelasFuturas,
-    isDropdownAbertosOpen,
-    acertoPixId,
-    valorPixInput,
-    isSubmittingPix,
-    saldosUnificadosAtivos,
-    nettingTransferencias,
-    membrosVisiveis,
     totalFuturasVencer,
     parcelasFuturasDetalhadas,
     contasFixas,
@@ -597,20 +326,8 @@ export function useDashboardViewModel(
     acertosDaFatura,
     gastosDaFatura,
     todosOsAcertosQuitados,
-    currentMonthName,
-    currentYear,
-    abrirLancarBill,
-    abrirConfigurarBill,
-    abrirNovoBill,
-    abrirAjustarGasto,
-    abrirConfirmacaoEstornoGasto,
-    abrirConfirmacaoEstornoBill,
-    abrirBottomSheetNetting,
-    abrirNovoPeriodoBottomSheet,
     confirmarFechamentoFatura,
     confirmarAjusteGasto,
-    reabrirFaturaManual,
-    iniciarPix,
     enviarReembolsoPix,
     quitarComAjuste,
     confirmarLancarBill,
@@ -619,8 +336,14 @@ export function useDashboardViewModel(
     isExecutingRollover,
     confirmarBaixaNetting,
     confirmarEstorno,
-    excluirGasto,
     estornarContaFixa,
-    formatarMesAno
+    formatarMesAno,
+    iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),
+    abrirNovoPeriodoBottomSheet: () => uiState.abrirNovoPeriodoBottomSheet(periodos.faturaAtivaVisualizada.value),
+    excluirGasto: async (id: string) => {
+      if (periodos.faturaSelecionadaTrancada.value) return
+      await localGastoService.excluirGasto(id)
+      await cartoesEFaturas.inicializar()
+    }
   }
 }

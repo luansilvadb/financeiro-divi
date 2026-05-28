@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { Membro } from '../models/entities/Membro'
 import type { IMembroRepository } from '../models/repositories/IMembroRepository'
 import type { IMembroService } from '../models/services/IMembroService'
-import { membroRepository, membroService } from '../shared/container'
+import { membroRepository, membroService, tenantSessionService } from '../shared/container'
 import { obterPeriodoSelecionado } from '../shared/utils/periodoStorage'
 
 export interface MembrosDependencies {
@@ -23,14 +23,27 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
   const carregar = async () => {
+    // Não faz fetch se não há tenant ativo
+    if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
+      membros.value = []
+      inicializado.value = true
+      return
+    }
     let lista = await repo.listarTodos()
     membros.value = lista
     inicializado.value = true
   }
 
   const inicializar = async () => {
+    // Se já foi inicializado com sucesso, não refaz
+    if (inicializado.value) return
+    // Se há uma promise em andamento, aguarda ela
     if (promiseInicializacao) return promiseInicializacao
-    promiseInicializacao = carregar()
+    promiseInicializacao = carregar().catch((err) => {
+      // Em caso de erro, reseta para permitir retry
+      promiseInicializacao = null
+      throw err
+    })
     return promiseInicializacao
   }
 

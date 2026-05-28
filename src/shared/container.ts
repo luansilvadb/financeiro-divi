@@ -24,8 +24,8 @@ export const gastoRepository = new HttpGastoRepository()
 export const contaFixaRepository = new HttpContaFixaRepository()
 export const acertoMembroRepository = new HttpAcertoMembroRepository()
 
-export const lancamentoService = new LancamentoService(gastoRepository, faturaRepository, cartaoRepository, membroRepository)
-export const estornoService = new EstornoService(gastoRepository, faturaRepository, acertoMembroRepository)
+const lancamentoService = new LancamentoService(gastoRepository, faturaRepository, cartaoRepository, membroRepository)
+const estornoService = new EstornoService(gastoRepository, faturaRepository, acertoMembroRepository)
 
 export const membroService = new MembroService(membroRepository, cartaoRepository, gastoRepository, faturaRepository, acertoMembroRepository)
 export const gastoService = new GastoService(

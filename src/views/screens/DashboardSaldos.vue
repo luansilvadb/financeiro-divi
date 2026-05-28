@@ -1,32 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, watch } from 'vue'
 import type { Tab } from '../components/ui/BottomTabBar.vue'
 import { useDashboardViewModel } from '../../viewmodels/useDashboardViewModel'
 import type { Fatura } from '../../models/entities/Fatura'
 import type { AcertoMembro } from '../../models/entities/AcertoMembro'
 import type { Cartao } from '../../models/entities/Cartao'
 import ContasFixasPanel from '../components/ledger/ContasFixasPanel.vue'
-import PopupLancarContaFixa from '../components/ledger/PopupLancarContaFixa.vue'
-import BottomSheetConfigurarContaFixa from '../components/ledger/BottomSheetConfigurarContaFixa.vue'
-import BottomSheetFecharFatura from '../components/ledger/dashboard/BottomSheetFecharFatura.vue'
-import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
 import ActivityFeed from '../components/ledger/ActivityFeed.vue'
-import BottomSheetAjustarGasto from '../components/ledger/BottomSheetAjustarGasto.vue'
-import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfirmacaoEstorno.vue'
 import DetalhamentoSaldosCard from '../components/ledger/dashboard/DetalhamentoSaldosCard.vue'
+import DashboardHeader from '../components/ledger/dashboard/DashboardHeader.vue'
+import UnifiedBalancePanel from '../components/ledger/dashboard/UnifiedBalancePanel.vue'
+import NettingPanel from '../components/ledger/dashboard/NettingPanel.vue'
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
-import BottomSheet from '../components/ui/BottomSheet.vue'
+import DashboardModalsManager from './DashboardModalsManager.vue'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 import { 
-  ArrowUpRight, 
   TrendingUp, 
   ChevronDown, 
   ChevronUp, 
   History,
-  Settings,
-  Sparkles,
-  AlertTriangle,
   Lock
 } from 'lucide-vue-next'
 
@@ -48,28 +41,9 @@ const vm = useDashboardViewModel(props, emit)
 
 // Desestruturação reativa das propriedades e métodos para uso no template
 const {
-  periodoSelecionado,
   faturaSelecionadaTrancada,
   faturaAtivaVisualizada,
-  mesesAbertosOpcoes,
-  mesesTrancadosOpcoes,
-  showBottomSheetHistorico,
-  showBottomSheetFechar,
-  faturaParaFechar,
-  showBottomSheetAjustar,
-  gastoParaAjustar,
-  showPopupLancar,
-  showBottomSheetConfigCF,
-  billSelecionada,
-  showBottomSheetNovoPeriodo,
-  nomeNovoPeriodo,
-  showBottomSheetConfirmacaoEstorno,
-  itemParaEstornar,
-  itemTypeParaEstornar,
-  showBottomSheetNetting,
-  nettingTarget,
   showParcelasFuturas,
-  isDropdownAbertosOpen,
   acertoPixId,
   valorPixInput,
   isSubmittingPix,
@@ -91,61 +65,26 @@ const {
   abrirNovoBill,
   abrirAjustarGasto,
   abrirConfirmacaoEstornoGasto,
-  abrirConfirmacaoEstornoBill,
   abrirBottomSheetNetting,
   abrirNovoPeriodoBottomSheet,
-  confirmarFechamentoFatura,
-  confirmarAjusteGasto,
   iniciarPix,
   enviarReembolsoPix,
   quitarComAjuste,
-  confirmarLancarBill,
-  confirmarSalvarTemplate,
-  confirmarNovoPeriodo,
-  confirmarBaixaNetting,
-  confirmarEstorno,
   estornarContaFixa,
-  formatarMesAno,
-  totalPeriodoSelecionado,
   totalLancamentosPeriodoSelecionado,
   reabrirPeriodoSelecionado} = vm
 
-// Lógica de scroll para o item selecionado (única lógica de UI pura/DOM mantida na View)
-const itemSelecionadoRef = ref<any>(null)
-const setItemSelecionadoRef = (el: any, op: { mes: number; ano: number }) => {
-  if (el && periodoSelecionado.value.mes === op.mes && periodoSelecionado.value.ano === op.ano) {
-    itemSelecionadoRef.value = el
-  }
-}
 
-watch(isDropdownAbertosOpen, async (aberto) => {
-  if (aberto) {
-    await nextTick()
-    if (itemSelecionadoRef.value && typeof itemSelecionadoRef.value.scrollIntoView === 'function') {
-      itemSelecionadoRef.value.scrollIntoView({ block: 'nearest' })
-    }
-  }
-})
 
 // Helpers locais para a renderização das Tabs
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
 const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
 
-const membrosDisponiveisParaAjustar = computed(() => {
-  if (!gastoParaAjustar.value) return membrosAtivos.value
-  const compradorId = gastoParaAjustar.value.compradorId
-  const splitIds = gastoParaAjustar.value.divisoes.map((d: any) => d.membroId)
-  return props.membros.filter(m => 
-    m.ativo !== false || 
-    m.id === compradorId || 
-    splitIds.includes(m.id)
-  )
-})
+
 
 // --- INTEGRAÇÃO SUPABASE MULTITENANT ---
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
-import { LogOut, Home, Copy, Check } from 'lucide-vue-next'
 
 const {
   isAuthed,
@@ -163,68 +102,43 @@ const {
   copyInviteCode,
   handleLogoutClick
 } = useCasasMultitenant()
+
+// Sincroniza o modal de casas (que vem de useCasasMultitenant) com a pilha de modais do dashboard
+watch(showBottomSheetCasas, (isOpen) => {
+  if (isOpen) {
+    vm.abrirModal('casas')
+  } else {
+    vm.fecharModal('casas')
+  }
+})
+
+watch(() => vm.modalStack.value, (newStack) => {
+  const contemCasas = newStack.includes('casas')
+  if (showBottomSheetCasas.value !== contemCasas) {
+    showBottomSheetCasas.value = contemCasas
+  }
+}, { deep: true })
+
+defineExpose({
+  isDropdownAbertosOpen: vm.isDropdownAbertosOpen,
+  periodoSelecionado: vm.periodoSelecionado,
+  showBottomSheetHistorico: vm.showBottomSheetHistorico
+})
 </script>
 
 <template>
   <div class="space-y-12">
-    <!-- NOVO HEADER TRIPARTITE (Aesthetic v2026) -->
-    <header class="flex items-center justify-between pb-6 pt-3 mb-8 border-b border-stone/50">
-      <!-- Coluna Esquerda: Mês Selector -->
-      <div class="flex-1">
-        <div 
-          class="flex flex-col cursor-pointer group inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-md p-1 -ml-1 transition-all"
-          role="button"
-          tabindex="0"
-          aria-haspopup="dialog"
-          aria-label="Selecionar período"
-          @click="showBottomSheetHistorico = true"
-          @keydown.enter.prevent="showBottomSheetHistorico = true"
-          @keydown.space.prevent="showBottomSheetHistorico = true"
-        >
-          <span class="text-[8px] font-black text-ash uppercase tracking-[0.2em] mb-1 flex items-center gap-1 group-hover:text-ember transition-colors">
-            {{ currentYear }}
-            <ChevronDown class="w-3 h-3 text-ash group-hover:text-ember transition-colors" />
-          </span>
-          <div class="flex items-center gap-2">
-            <span class="text-2xl font-black text-charcoal tracking-tighter group-hover:text-ember transition-colors">{{ currentMonthName }}</span>
-            <Lock v-if="faturaSelecionadaTrancada" class="w-4 h-4 text-ash/60 animate-in zoom-in-50 duration-300" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Coluna Central: Brand -->
-      <div class="flex-1 flex flex-col items-center justify-center text-center relative">
-        <!-- Mascote do Header (Wobble) -->
-        <div class="absolute -top-4 -right-1 transform rotate-12 animate-wobble z-0 opacity-80 pointer-events-none">
-          <IllustrationMascot variant="ember" :size="32" mood="happy" />
-        </div>
-        <div 
-          v-if="isAuthed && activeTenantObj"
-          class="cursor-pointer flex items-center justify-center gap-1 text-[9px] font-bold text-ember uppercase tracking-[0.15em] mb-1.5 relative z-10 hover:opacity-85"
-          @click="showBottomSheetCasas = true"
-        >
-          <Home class="w-3.5 h-3.5 text-ember" />
-          <span>{{ activeTenantObj.name }}</span>
-          <ChevronDown class="w-3 h-3 text-ember" />
-        </div>
-        <span v-else class="text-[7px] font-bold text-ash/60 uppercase tracking-[0.3em] block leading-none mb-1.5 relative z-10">Finanças Residenciais</span>
-        <h1 class="text-3xl font-black text-charcoal tracking-[-0.05em] leading-none relative z-10">
-          DIVI<span class="text-ember">.</span>
-        </h1>
-      </div>
-
-      <!-- Coluna Direita: Ações (Settings) -->
-      <div class="flex-1 flex justify-end">
-        <button 
-          @click="$emit('openSettings')" 
-          class="w-11 h-11 bg-transparent hover:bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-xl flex items-center justify-center transition-all group cursor-pointer"
-          aria-label="Configurações"
-          title="Configurações"
-        >
-          <Settings class="w-6 h-6 text-ash group-hover:text-ember transition-colors duration-200" />
-        </button>
-      </div>
-    </header>
+    <!-- NOVO HEADER TRIPARTITE -->
+    <DashboardHeader 
+      :current-year="currentYear"
+      :current-month-name="currentMonthName"
+      :fatura-selecionada-trancada="faturaSelecionadaTrancada"
+      :is-authed="isAuthed"
+      :active-tenant-obj="activeTenantObj"
+      @open-historico="vm.showBottomSheetHistorico.value = true"
+      @open-casas="showBottomSheetCasas = true"
+      @open-settings="$emit('openSettings')"
+    />
 
     <!-- GROUP: HOJE -->
     <div v-show="isHoje" class="space-y-12">
@@ -243,108 +157,20 @@ const {
 
     <!-- Painel de Saldo Real Unificado (Design System Family) -->
     <section class="space-y-4">
-      <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
-        <!-- Cabeçalho Padronizado -->
-        <div class="py-7 px-6 border-b border-stone bg-parchment flex items-center">
-          <div class="flex items-center gap-5">
-            <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
-              <TrendingUp class="w-5 h-5" />
-            </div>
-            <div>
-              <h3 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Saldos Unificados</h3>
-              <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5 font-medium">
-                Créditos e débitos da casa
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="p-6 space-y-4 relative z-10">
-          <div 
-            v-for="m in membrosVisiveis" 
-            :key="m.id" 
-            class="group flex justify-between items-center p-4 rounded-xl border border-stone bg-canvas hover:border-ember/30 hover:bg-white transition-all duration-300"
-          >
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-ember/10 flex items-center justify-center font-display text-lg text-ember">
-                {{ m.nome[0] }}
-              </div>
-              <div>
-                <span class="font-bold text-base block text-charcoal">{{ m.nome }}</span>
-                <span class="text-[11px] text-ash block mt-0.5">
-                  {{ saldosUnificadosAtivos[m.id] > 0.005 ? 'Crédito acumulado' : saldosUnificadosAtivos[m.id] < -0.005 ? 'Débito pendente' : 'Tudo em dia' }}
-                </span>
-              </div>
-            </div>
-            <div class="text-right">
-              <span :class="['font-display text-xl block', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-ash']">
-                {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id]?.toFixed(2).replace('.', ',') }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
+      <UnifiedBalancePanel 
+        :membros-visiveis="membrosVisiveis"
+        :saldos-unificados-ativos="saldosUnificadosAtivos"
+      />
     </section>
 
     <!-- Painel de Compensação Otimizada (Design System Family) -->
     <section v-if="nettingTransferencias.length > 0" class="space-y-4" :class="{ 'opacity-70 grayscale-[0.3] pointer-events-none transition-all duration-500': faturaSelecionadaTrancada }">
-      <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite border-l-4 border-l-ember">
-        <!-- Cabeçalho Padronizado -->
-        <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
-          <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
-              <Sparkles class="w-5 h-5" />
-            </div>
-            <div>
-              <h3 class="font-bold text-lg leading-tight text-charcoal">Acertos Otimizados</h3>
-              <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
-                Compensação inteligente de dívidas
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="p-6 grid gap-4">
-          <div 
-            v-for="t in nettingTransferencias" 
-            :key="t.from + '-' + t.to" 
-            class="p-5 border border-stone bg-canvas shadow-none rounded-xl"
-          >
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div class="flex items-start gap-4">
-                <div class="w-10 h-10 rounded-full bg-ember/10 flex items-center justify-center shrink-0">
-                  <ArrowUpRight class="w-5 h-5 text-ember" />
-                </div>
-                <div>
-                  <p class="text-sm leading-relaxed">
-                    <span class="font-bold text-charcoal">{{ getMembroNome(t.from) }}</span> 
-                    deve enviar para 
-                    <span class="font-bold text-charcoal">{{ getMembroNome(t.to) }}</span>
-                  </p>
-                  <p class="font-display text-2xl text-ember mt-1">
-                    R$ {{ t.val.toFixed(2).replace('.', ',') }}
-                  </p>
-                </div>
-              </div>
-              <div class="w-full md:w-auto flex flex-col items-center">
-                <Button 
-                  @click="abrirBottomSheetNetting(t)"
-                  :disabled="faturaSelecionadaTrancada"
-                  :aria-disabled="faturaSelecionadaTrancada"
-                  :aria-describedby="faturaSelecionadaTrancada ? 'netting-disabled-reason-' + t.from + '-' + t.to : undefined"
-                  variant="primary"
-                  class="w-full"
-                >
-                  Confirmar Pix
-                </Button>
-                <p v-if="faturaSelecionadaTrancada" :id="'netting-disabled-reason-' + t.from + '-' + t.to" class="text-[10px] text-ash mt-1.5 text-center max-w-[150px] leading-tight animate-in fade-in">
-                  Reabra o mês para confirmar
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+      <NettingPanel 
+        :netting-transferencias="nettingTransferencias"
+        :fatura-selecionada-trancada="faturaSelecionadaTrancada"
+        :get-membro-nome="getMembroNome"
+        @abrir-netting="abrirBottomSheetNetting"
+      />
     </section>
 
     <!-- Checklist de Contas Fixas (Design System Family) -->
@@ -561,330 +387,14 @@ const {
     </section>
     </div><!-- /isFaturas -->
 
-    <!-- BottomSheet de Fechamento de Fatura com Dono Variável (Gap 6) -->
-    <BottomSheetFecharFatura 
-      :show="showBottomSheetFechar"
-      :fatura="faturaParaFechar"
-      :membros="membrosAtivos"
-      @close="showBottomSheetFechar = false"
-      @confirmar="confirmarFechamentoFatura"
+    <!-- Modals Manager Delegado -->
+    <DashboardModalsManager 
+      :vm="vm" 
+      :membrosAtivos="membrosAtivos" 
+      :cartoes="props.cartoes" 
+      :faturasAbertas="props.faturasAbertas" 
+      :faturasFechadas="props.faturasFechadas" 
+      :casasMultitenant="{ isAuthed, activeTenantId, casas, showBottomSheetCasas, nomeNovaCasa, codigoConvite, errorCasa, copied, activeTenantObj, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
     />
-
-    <!-- Modais do Checklist (Fase 2) -->
-    <PopupLancarContaFixa 
-      :visible="showPopupLancar"
-      :bill="billSelecionada"
-      :membros="membrosAtivos"
-      @confirm="confirmarLancarBill"
-      @cancel="showPopupLancar = false"
-    />
-
-    <BottomSheetConfigurarContaFixa 
-      :visible="showBottomSheetConfigCF"
-      :bill="billSelecionada"
-      :membros="membrosAtivos"
-      @save="confirmarSalvarTemplate"
-      @delete="abrirConfirmacaoEstornoBill"
-      @cancel="showBottomSheetConfigCF = false"
-    />
-
-    <!-- BottomSheet Novo Período (Dossiê Estratégico) -->
-    <BottomSheet :model-value="showBottomSheetNovoPeriodo" @update:model-value="val => { if (!val) showBottomSheetNovoPeriodo = false }" width-class="md:w-[460px]" max-height="95dvh">
-      
-      <!-- Corpo com Scroll -->
-      <div class="p-6 sm:p-8 space-y-8 flex-grow overflow-y-auto custom-scrollbar">
-        <div class="space-y-3">
-          <h3 class="text-3xl font-display text-charcoal leading-tight">Fechamento<br>de <span class="text-ember">Período</span></h3>
-          <p class="text-sm text-ash leading-relaxed">
-            Revise os números antes de arquivar o mês de <strong class="text-charcoal">{{ faturaAtivaVisualizada ? formatarMesAno(faturaAtivaVisualizada.periodo.mes, faturaAtivaVisualizada.periodo.ano) : '' }}</strong>. O saldo será consolidado e os acertos serão gerados automaticamente.
-          </p>
-        </div>
-
-        <div v-if="faturaAtivaVisualizada" class="grid grid-cols-2 gap-3">
-          <div class="bg-parchment p-4 rounded-xl border border-stone">
-            <p class="text-[10px] font-bold uppercase text-ash tracking-widest mb-1">Total do Mês</p>
-            <p class="text-2xl font-display text-charcoal break-words">R$ {{ formatarDinheiro(totalPeriodoSelecionado).toFixed(2).replace('.', ',') }}</p>
-            <p class="text-[10px] text-ash font-medium mt-1">{{ totalLancamentosPeriodoSelecionado }} lançamentos registrados</p>
-          </div>
-          
-          <div class="bg-parchment p-4 rounded-xl border border-stone">
-            <p class="text-[10px] font-bold uppercase text-ash tracking-widest mb-1">Impacto (Pix)</p>
-            <p class="text-2xl font-display text-ember">{{ nettingTransferencias.length }} Acertos</p>
-            <p class="text-[10px] text-ash font-medium mt-1">serão cobrados dos moradores</p>
-          </div>
-        </div>
-
-        <div v-if="faturaAtivaVisualizada && contasFixas.some(c => !gastosFaturaSelecionada.some(g => g.recurringBillId === c.id))" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start">
-          <div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
-            <AlertTriangle class="w-3.5 h-3.5 text-amber-600" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-amber-700">Contas fixas pendentes!</p>
-            <p class="text-[11px] text-amber-700/80 mt-0.5">Ainda existem contas fixas deste mês que não foram lançadas. Deseja fechar mesmo assim?</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer Fixo (Botões) -->
-      <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
-        <div class="grid grid-cols-2 gap-3">
-          <Button variant="secondary" @click="showBottomSheetNovoPeriodo = false">Cancelar</Button>
-          <Button variant="primary" class="bg-charcoal text-white hover:bg-midnight border-none" @click="confirmarNovoPeriodo" :disabled="!nomeNovoPeriodo.trim()">
-            Arquivar Mês
-          </Button>
-        </div>
-      </div>
-    </BottomSheet>
-
-    <!-- BottomSheet de Netting Otimizado (Senior v19) -->
-    <BottomSheetAcertoCompensacao 
-      :visible="showBottomSheetNetting"
-      :from-id="nettingTarget?.from"
-      :to-id="nettingTarget?.to"
-      :from-name="getMembroNome(nettingTarget?.from)"
-      :to-name="getMembroNome(nettingTarget?.to)"
-      :suggested-value="nettingTarget?.val || 0"
-      @cancel="showBottomSheetNetting = false"
-      @confirm="confirmarBaixaNetting"
-    />
-
-    <!-- BottomSheet de Ajuste de Lançamento (✏️ Ajustar) -->
-    <BottomSheetAjustarGasto 
-      :visible="showBottomSheetAjustar"
-      :gasto="gastoParaAjustar"
-      :membros="membrosDisponiveisParaAjustar"
-      :cartoes="props.cartoes"
-      :faturas="[...props.faturasAbertas, ...props.faturasFechadas]"
-      @cancel="showBottomSheetAjustar = false"
-      @save="confirmarAjusteGasto"
-    />
-
-    <!-- BottomSheet de Navegação de Histórico (Mobile Premium) -->
-    <BottomSheet 
-      :model-value="showBottomSheetHistorico" 
-      @update:model-value="val => { if (!val) showBottomSheetHistorico = false }" 
-      width-class="md:w-[460px]"
-      max-height="85dvh"
-    >
-      <div 
-        class="p-6 sm:p-8 space-y-6 flex-grow custom-scrollbar"
-        :class="isDropdownAbertosOpen ? 'overflow-y-visible' : 'overflow-y-auto'"
-      >
-        <div class="space-y-3">
-          <h3 class="text-3xl font-display text-charcoal leading-tight">Navegar<br>nos <span class="text-ember">Períodos</span></h3>
-          <p class="text-xs text-ash leading-relaxed">
-            Selecione o mês que você deseja gerenciar. Todos os meses estão abertos para lançamentos até serem fechados.
-          </p>
-        </div>
-
-        <!-- Seção: Meses em Aberto (Seletor Premium) -->
-        <div class="space-y-3">
-          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Gerenciar Período Aberto</h4>
-          <div class="relative" @blur="isDropdownAbertosOpen = false">
-            <div 
-              @click="isDropdownAbertosOpen = !isDropdownAbertosOpen"
-              @keydown.enter.prevent="isDropdownAbertosOpen = !isDropdownAbertosOpen"
-              @keydown.space.prevent="isDropdownAbertosOpen = !isDropdownAbertosOpen"
-              role="button"
-              tabindex="0"
-              :aria-expanded="isDropdownAbertosOpen"
-              aria-haspopup="listbox"
-              aria-label="Gerenciar período aberto"
-              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none flex justify-between items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2"
-              :class="isDropdownAbertosOpen ? 'border-ember ring-2 ring-ember/20' : ''"
-            >
-              <span class="flex items-center gap-2.5">
-                <span class="w-2 h-2 rounded-full bg-meadow animate-pulse" />
-                <span class="block truncate">
-                  {{ (periodoSelecionado && props.faturasFechadas.every(f => f.periodo.mes !== periodoSelecionado.mes || f.periodo.ano !== periodoSelecionado.ano))
-                    ? formatarMesAno(periodoSelecionado.mes, periodoSelecionado.ano)
-                    : 'Selecionar mês aberto...'
-                  }}
-                </span>
-              </span>
-              <ChevronDown 
-                class="w-4 h-4 text-ash pointer-events-none transition-transform duration-200" 
-                :class="isDropdownAbertosOpen ? 'rotate-180' : ''"
-              />
-            </div>
-            
-            <!-- Listagem suspensa do Dropdown de Abertos -->
-            <transition name="dropdown-slide">
-              <div 
-                v-if="isDropdownAbertosOpen" 
-                class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
-              >
-                <div 
-                  v-for="op in mesesAbertosOpcoes" 
-                  :key="op.nome" 
-                  :ref="el => setItemSelecionadoRef(el, op)"
-                  @mousedown.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false" 
-                  @keydown.enter.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false"
-                  @keydown.space.prevent="periodoSelecionado = { mes: op.mes, ano: op.ano }; isDropdownAbertosOpen = false; showBottomSheetHistorico = false"
-                  role="button"
-                  tabindex="0"
-                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors flex items-center gap-3 focus:outline-none focus:bg-stone"
-                  :class="periodoSelecionado.mes === op.mes && periodoSelecionado.ano === op.ano ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
-                >
-                  <span class="w-2 h-2 rounded-full bg-meadow animate-pulse shrink-0" />
-                  {{ op.nome }}
-                </div>
-              </div>
-            </transition>
-          </div>
-        </div>
-
-        <!-- Divider Elegante -->
-        <hr class="border-stone/60 my-6" />
-
-        <!-- Seção: Histórico de Trancados -->
-        <div class="space-y-3">
-          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Histórico de Fechados (Arquivados)</h4>
-          <div class="grid gap-2">
-            <div 
-              v-for="item in mesesTrancadosOpcoes" 
-              :key="item.nome"
-              @click="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
-              @keydown.enter.prevent="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
-              @keydown.space.prevent="periodoSelecionado = { mes: item.mes, ano: item.ano }; showBottomSheetHistorico = false"
-              role="button"
-              tabindex="0"
-              :aria-label="`Selecionar período arquivado ${item.nome}`"
-              class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2"
-              :class="periodoSelecionado.mes === item.mes && periodoSelecionado.ano === item.ano ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas hover:border-ember/30 text-charcoal'"
-            >
-              <div class="flex items-center gap-3">
-                <span class="w-2.5 h-2.5 rounded-full bg-ash" />
-                <span class="text-sm font-semibold">{{ item.nome }}</span>
-              </div>
-              
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] uppercase font-bold text-ash">Arquivado</span>
-                <Lock class="w-3.5 h-3.5 text-ash shrink-0" />
-              </div>
-            </div>
-            
-            <div v-if="mesesTrancadosOpcoes.length === 0" class="text-center py-6 border border-dashed border-stone rounded-xl">
-              <p class="text-xs text-ash italic">Nenhum período arquivado ainda.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Footer do BottomSheet -->
-      <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
-        <Button variant="secondary" class="w-full" @click="showBottomSheetHistorico = false">Fechar</Button>
-      </div>
-    </BottomSheet>
-
-    <!-- BottomSheet de Confirmação de Estorno (Shared) -->
-    <BottomSheetConfirmacaoEstorno 
-      :visible="showBottomSheetConfirmacaoEstorno"
-      :item-type="itemTypeParaEstornar"
-      :item-name="itemParaEstornar?.descricao || itemParaEstornar?.name"
-      :item-value="itemParaEstornar?.valorTotal ? itemParaEstornar?.valorTotal.centavos / 100 : itemParaEstornar?.defaultAmount"
-      @cancel="showBottomSheetConfirmacaoEstorno = false"
-      @confirm="confirmarEstorno"
-    />
-
-    <!-- BottomSheet de Gerenciamento de Casas (SaaS) -->
-    <BottomSheet 
-      :model-value="showBottomSheetCasas" 
-      @update:model-value="val => { if (!val) showBottomSheetCasas = false }" 
-      width-class="md:w-[460px]"
-      max-height="90dvh"
-    >
-      <div class="p-6 sm:p-8 space-y-6 flex-grow overflow-y-auto custom-scrollbar flex flex-col text-graphite">
-        <div class="space-y-3">
-          <h3 class="text-3xl font-display text-charcoal leading-tight">Minhas <span class="text-ember">Casas</span></h3>
-          <p class="text-xs text-ash leading-relaxed">
-            Selecione uma casa ativa ou gerencie seus grupos financeiros. Compartilhe o código de convite para trazer novos membros.
-          </p>
-        </div>
-
-        <!-- Seção: Lista de Casas -->
-        <div class="space-y-3">
-          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Alternar de Casa</h4>
-          <div class="grid gap-2">
-            <div 
-              v-for="casa in casas" 
-              :key="casa.id"
-              @click="selecionarCasa(casa.id)"
-              class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between hover:border-ember/30"
-              :class="activeTenantId === casa.id ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas text-charcoal'"
-            >
-              <div class="flex items-center gap-3">
-                <Home class="w-4 h-4 shrink-0" :class="activeTenantId === casa.id ? 'text-ember' : 'text-ash'" />
-                <span class="text-sm font-semibold">{{ casa.name }}</span>
-              </div>
-              
-              <!-- Código de convite com opção de copiar -->
-              <div class="flex items-center gap-2" @click.stop>
-                <code class="text-[10px] bg-stone/50 px-2 py-1 rounded text-ash font-mono select-all">
-                  {{ casa.invite_code }}
-                </code>
-                <button 
-                  @click="copyInviteCode(casa.invite_code)" 
-                  class="p-1 hover:bg-stone rounded transition-colors"
-                  :title="copied ? 'Copiado!' : 'Copiar código'"
-                >
-                  <Check v-if="copied" class="w-3.5 h-3.5 text-meadow" />
-                  <Copy v-else class="w-3.5 h-3.5 text-ash" />
-                </button>
-              </div>
-            </div>
-            
-            <div v-if="casas.length === 0" class="text-center py-6 border border-dashed border-stone rounded-xl">
-              <p class="text-xs text-ash italic">Nenhuma casa associada. Crie uma abaixo!</p>
-            </div>
-          </div>
-        </div>
-
-        <hr class="border-stone/60 my-6" />
-
-        <!-- Seção: Criar Nova Casa -->
-        <div class="space-y-3">
-          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Criar Nova Casa</h4>
-          <div class="flex gap-2">
-            <input 
-              v-model="nomeNovaCasa"
-              placeholder="Ex: República Central"
-              class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
-            />
-            <Button size="sm" @click="criarNovaCasa">Criar</Button>
-          </div>
-        </div>
-
-        <!-- Seção: Entrar por Código -->
-        <div class="space-y-3 pt-2">
-          <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Entrar com Código</h4>
-          <div class="flex gap-2">
-            <input 
-              v-model="codigoConvite"
-              placeholder="Ex: CASA-7F2A1"
-              class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
-            />
-            <Button size="sm" @click="entrarPorCodigo">Entrar</Button>
-          </div>
-        </div>
-
-        <!-- Mensagem de erro se houver -->
-        <div v-if="errorCasa" class="text-xs text-coral font-semibold pt-2">
-          {{ errorCasa }}
-        </div>
-      </div>
-      
-      <!-- Footer com Botão de Logout -->
-      <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0 flex justify-between items-center">
-        <button 
-          @click="handleLogoutClick" 
-          class="flex items-center gap-2 text-xs font-bold text-coral hover:underline focus:outline-none"
-        >
-          <LogOut class="w-4 h-4" />
-          Sair da Conta
-        </button>
-        <Button variant="secondary" @click="showBottomSheetCasas = false">Fechar</Button>
-      </div>
-    </BottomSheet>
   </div>
 </template>
