@@ -415,6 +415,49 @@ export class GastoService implements IGastoService {
     }
   }
 
+  private async obterPeriodosOriginal(original: Gasto): Promise<{ mes: number; ano: number }[]> {
+    const periodosOriginal: { mes: number; ano: number }[] = []
+    if (original.grupoParcelasId) {
+      const todosGastos = await this.gastoRepo.listarTodos()
+      const gastosDoGrupo = todosGastos.filter(g => g.grupoParcelasId === original.grupoParcelasId)
+      for (const g of gastosDoGrupo) {
+        const fat = await this.faturaRepo.buscarPorId(g.faturaId)
+        if (fat) {
+          periodosOriginal.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+        }
+      }
+    } else {
+      const fat = await this.faturaRepo.buscarPorId(original.faturaId)
+      if (fat) {
+        periodosOriginal.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+      }
+    }
+    return periodosOriginal
+  }
+
+  private async obterPeriodosDepois(gastoId: string): Promise<{ mes: number; ano: number }[]> {
+    const periodosDepois: { mes: number; ano: number }[] = []
+    const atualizado = await this.gastoRepo.buscarPorId(gastoId)
+    if (atualizado) {
+      if (atualizado.grupoParcelasId) {
+        const todosGastos = await this.gastoRepo.listarTodos()
+        const gastosDoGrupo = todosGastos.filter(g => g.grupoParcelasId === atualizado.grupoParcelasId)
+        for (const g of gastosDoGrupo) {
+          const fat = await this.faturaRepo.buscarPorId(g.faturaId)
+          if (fat) {
+            periodosDepois.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+          }
+        }
+      } else {
+        const fat = await this.faturaRepo.buscarPorId(atualizado.faturaId)
+        if (fat) {
+          periodosDepois.push({ mes: fat.periodo.mes, ano: fat.periodo.ano })
+        }
+      }
+    }
+    return periodosDepois
+  }
+
   async removerAssociacaoContaFixa(contaFixaId: string): Promise<void> {
     const todos = await this.gastoRepo.listarTodos()
     const gastosAssociados = todos.filter(g => g.recurringBillId === contaFixaId)
