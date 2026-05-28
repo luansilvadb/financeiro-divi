@@ -43,7 +43,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo no qual a operação será executada', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Membros listados com sucesso', type: [MembroDto] })
   @Get('membros')
-  async listarMembros(@Headers('X-Tenant-ID') tenantId: string) {
+  async listarMembros(@Headers('x-tenant-id') tenantId: string) {
     return this.financeiroService.listarMembros(tenantId);
   }
 
@@ -51,7 +51,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Membro salvo com sucesso', type: MembroDto })
   @Post('membros')
-  async salvarMembro(@Headers('X-Tenant-ID') tenantId: string, @Body() membroDto: MembroDto) {
+  async salvarMembro(@Headers('x-tenant-id') tenantId: string, @Body() membroDto: MembroDto) {
     return this.financeiroService.salvarMembro(tenantId, membroDto);
   }
 
@@ -60,7 +60,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Cartões listados com sucesso', type: [CartaoDto] })
   @Get('cartoes')
-  async listarCartoes(@Headers('X-Tenant-ID') tenantId: string) {
+  async listarCartoes(@Headers('x-tenant-id') tenantId: string) {
     return this.financeiroService.listarCartoes(tenantId);
   }
 
@@ -68,7 +68,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Cartão salvo com sucesso', type: CartaoDto })
   @Post('cartoes')
-  async salvarCartao(@Headers('X-Tenant-ID') tenantId: string, @Body() cartaoDto: CartaoDto) {
+  async salvarCartao(@Headers('x-tenant-id') tenantId: string, @Body() cartaoDto: CartaoDto) {
     return this.financeiroService.salvarCartao(tenantId, cartaoDto);
   }
 
@@ -76,7 +76,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Cartão excluído com sucesso' })
   @Delete('cartoes/:id')
-  async excluirCartao(@Headers('X-Tenant-ID') tenantId: string, @Param('id') id: string) {
+  async excluirCartao(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return this.financeiroService.excluirCartao(tenantId, id);
   }
 
@@ -85,7 +85,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Faturas listadas com sucesso', type: [FaturaDto] })
   @Get('faturas')
-  async listarFaturas(@Headers('X-Tenant-ID') tenantId: string) {
+  async listarFaturas(@Headers('x-tenant-id') tenantId: string) {
     return this.financeiroService.listarFaturas(tenantId);
   }
 
@@ -93,7 +93,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Fatura salva com sucesso', type: FaturaDto })
   @Post('faturas')
-  async salvarFatura(@Headers('X-Tenant-ID') tenantId: string, @Body() faturaDto: FaturaDto) {
+  async salvarFatura(@Headers('x-tenant-id') tenantId: string, @Body() faturaDto: FaturaDto) {
     return this.financeiroService.salvarFatura(tenantId, faturaDto);
   }
 
@@ -102,7 +102,7 @@ export class FinanceiroController {
   @ApiBody({ type: [FaturaDto] })
   @ApiOkResponse({ description: 'Faturas em lote sincronizadas com sucesso' })
   @Post('faturas/batch')
-  async salvarMuitasFaturas(@Headers('X-Tenant-ID') tenantId: string, @Body() faturasDto: FaturaDto[]) {
+  async salvarMuitasFaturas(@Headers('x-tenant-id') tenantId: string, @Body() faturasDto: FaturaDto[]) {
     return this.financeiroService.salvarMuitasFaturas(tenantId, faturasDto);
   }
 
@@ -111,7 +111,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gastos listados com sucesso', type: [GastoDto] })
   @Get('gastos')
-  async listarGastos(@Headers('X-Tenant-ID') tenantId: string) {
+  async listarGastos(@Headers('x-tenant-id') tenantId: string) {
     return this.financeiroService.listarGastos(tenantId);
   }
 
@@ -119,7 +119,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gasto salvo com sucesso', type: GastoDto })
   @Post('gastos')
-  async salvarGasto(@Headers('X-Tenant-ID') tenantId: string, @Body() gastoDto: GastoDto) {
+  async salvarGasto(@Headers('x-tenant-id') tenantId: string, @Body() gastoDto: GastoDto) {
     return this.financeiroService.salvarGasto(tenantId, gastoDto);
   }
 
@@ -128,7 +128,7 @@ export class FinanceiroController {
   @ApiBody({ type: [GastoDto] })
   @ApiOkResponse({ description: 'Gastos em lote sincronizados com sucesso' })
   @Post('gastos/batch')
-  async salvarMuitosGastos(@Headers('X-Tenant-ID') tenantId: string, @Body() gastosDto: GastoDto[]) {
+  async salvarMuitosGastos(@Headers('x-tenant-id') tenantId: string, @Body() gastosDto: GastoDto[]) {
     return this.financeiroService.salvarMuitosGastos(tenantId, gastosDto);
   }
 
@@ -136,7 +136,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gasto excluído com sucesso' })
   @Delete('gastos/:id')
-  async excluirGasto(@Headers('X-Tenant-ID') tenantId: string, @Param('id') id: string) {
+  async excluirGasto(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return this.financeiroService.excluirGasto(tenantId, id);
   }
 
@@ -144,7 +144,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gastos em lote excluídos com sucesso' })
   @Post('gastos/delete-batch')
-  async excluirMuitosGastos(@Headers('X-Tenant-ID') tenantId: string, @Body() excluirDto: ExcluirMuitosGastosDto) {
+  async excluirMuitosGastos(@Headers('x-tenant-id') tenantId: string, @Body() excluirDto: ExcluirMuitosGastosDto) {
     return this.financeiroService.excluirMuitosGastos(tenantId, excluirDto.ids);
   }
 
@@ -153,7 +153,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Contas fixas listadas com sucesso', type: [ContaFixaDto] })
   @Get('contas-fixas')
-  async listarContasFixas(@Headers('X-Tenant-ID') tenantId: string) {
+  async listarContasFixas(@Headers('x-tenant-id') tenantId: string) {
     return this.financeiroService.listarContasFixas(tenantId);
   }
 
@@ -161,7 +161,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Conta fixa salva com sucesso', type: ContaFixaDto })
   @Post('contas-fixas')
-  async salvarContaFixa(@Headers('X-Tenant-ID') tenantId: string, @Body() contaFixaDto: ContaFixaDto) {
+  async salvarContaFixa(@Headers('x-tenant-id') tenantId: string, @Body() contaFixaDto: ContaFixaDto) {
     return this.financeiroService.salvarContaFixa(tenantId, contaFixaDto);
   }
 
@@ -169,7 +169,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Conta fixa excluída com sucesso' })
   @Delete('contas-fixas/:id')
-  async excluirContaFixa(@Headers('X-Tenant-ID') tenantId: string, @Param('id') id: string) {
+  async excluirContaFixa(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return this.financeiroService.excluirContaFixa(tenantId, id);
   }
 
@@ -178,7 +178,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Acertos listados com sucesso', type: [AcertoDto] })
   @Get('acertos')
-  async listarAcertos(@Headers('X-Tenant-ID') tenantId: string) {
+  async listarAcertos(@Headers('x-tenant-id') tenantId: string) {
     return this.financeiroService.listarAcertos(tenantId);
   }
 
@@ -186,7 +186,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Acerto salvo com sucesso', type: AcertoDto })
   @Post('acertos')
-  async salvarAcerto(@Headers('X-Tenant-ID') tenantId: string, @Body() acertoDto: AcertoDto) {
+  async salvarAcerto(@Headers('x-tenant-id') tenantId: string, @Body() acertoDto: AcertoDto) {
     return this.financeiroService.salvarAcerto(tenantId, acertoDto);
   }
 }
