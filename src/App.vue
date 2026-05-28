@@ -14,6 +14,7 @@ import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
 import { tenantSessionService } from './shared/container'
 import ToastNotification from './views/components/ui/ToastNotification.vue'
+import { useToast } from './composables/useToast'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const activeTab = ref<Tab>('hoje')
@@ -31,6 +32,7 @@ const { carregarTemplates: inicializarContasFixas } = useContasFixas()
 
 const isAuthed = ref(tenantSessionService.isAuthenticated())
 const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
+const toast = useToast()
 
 onMounted(async () => {
   if (isAuthed.value) {
@@ -57,7 +59,7 @@ const handleSalvarTransacao = async () => {
     currentView.value = 'dashboard'
   } catch (error: any) {
     console.error('Erro ao recarregar cartões após salvar transação:', error)
-    alert(error.message || 'Erro ao sincronizar dados com o servidor')
+    toast.show(error.message || 'Erro ao sincronizar dados com o servidor', 'error')
     currentView.value = 'dashboard'
   }
 }
