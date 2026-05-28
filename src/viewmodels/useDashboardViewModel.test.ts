@@ -630,7 +630,7 @@ describe('useDashboardViewModel', () => {
     // Garante que o toast de erro foi chamado
     const toast = useToast()
     expect(toast.show).toHaveBeenCalledWith(
-      'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+      ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
       'error'
     )
     

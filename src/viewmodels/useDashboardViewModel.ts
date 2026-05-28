@@ -285,7 +285,7 @@ export function useDashboardViewModel(
         const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
         if (temAcertosConfirmados) {
           toast.show(
-            'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+            ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
             'error'
           )
           return
@@ -307,10 +307,26 @@ export function useDashboardViewModel(
     }
   }
 
+  const abrirConfirmacaoEstornoGasto = (gasto: any) => {
+    const isComum = !gasto.cardOwner && !gasto.isSettlement
+    if (isComum) {
+      const acertos = acertosDaFatura(gasto.faturaId)
+      const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
+      if (temAcertosConfirmados) {
+        toast.show(
+          ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
+          'error'
+        )
+        return
+      }
+    }
+    uiState.abrirConfirmacaoEstornoGasto(gasto)
+  }
+
   const estornarContaFixa = async (bill: any) => {
     const gasto = gastosFaturaSelecionada.value.find(g => g.recurringBillId === bill.id)
     if (gasto) {
-      uiState.abrirConfirmacaoEstornoGasto(gasto)
+      abrirConfirmacaoEstornoGasto(gasto)
     }
   }
 
@@ -358,21 +374,7 @@ export function useDashboardViewModel(
     formatarMesAno,
     iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),
     abrirNovoPeriodoBottomSheet: () => uiState.abrirNovoPeriodoBottomSheet(periodos.faturaAtivaVisualizada.value),
-    abrirConfirmacaoEstornoGasto: (gasto: any) => {
-      const isComum = !gasto.cardOwner && !gasto.isSettlement
-      if (isComum) {
-        const acertos = acertosDaFatura(gasto.faturaId)
-        const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
-        if (temAcertosConfirmados) {
-          toast.show(
-            'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
-            'error'
-          )
-          return
-        }
-      }
-      uiState.abrirConfirmacaoEstornoGasto(gasto)
-    },
+    abrirConfirmacaoEstornoGasto,
     excluirGasto: async (id: string) => {
       if (periodos.faturaSelecionadaTrancada.value) return
       
@@ -384,7 +386,7 @@ export function useDashboardViewModel(
           const temAcertosConfirmados = acertos.some(a => a.pago || (a.valorPago && a.valorPago.centavos > 0))
           if (temAcertosConfirmados) {
             toast.show(
-              'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
+              ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
               'error'
             )
             return
