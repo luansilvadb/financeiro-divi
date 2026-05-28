@@ -1,23 +1,47 @@
 import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiConflictResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterResponseDto } from './dto/register-response.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { UserProfileDto } from './dto/user-profile.dto';
 
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @ApiOperation({ summary: 'Registrar um novo usuário' })
+  @ApiCreatedResponse({
+    description: 'Usuário cadastrado com sucesso',
+    type: RegisterResponseDto,
+  })
+  @ApiConflictResponse({ description: 'Nome de usuário já está em uso' })
   @Post('register')
-  async register(@Body() body: any) {
-    return this.authService.register(body.username, body.password);
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto.username, registerDto.password);
   }
 
+  @ApiOperation({ summary: 'Realizar login para obter token JWT' })
+  @ApiOkResponse({
+    description: 'Login bem-sucedido',
+    type: LoginResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
   @Post('login')
-  async login(@Body() body: any) {
-    return this.authService.login(body.username, body.password);
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto.username, loginDto.password);
   }
 
+  @ApiOperation({ summary: 'Obter dados e perfil do usuário logado' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOkResponse({
+    description: 'Perfil retornado com sucesso',
+    type: UserProfileDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Token JWT ausente ou inválido' })
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMe(@Request() req: any) {
