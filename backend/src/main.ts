@@ -35,7 +35,8 @@ async function bootstrap() {
     execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
     logger.log('Migrações DDL aplicadas/verificadas com sucesso!');
   } catch (error) {
-    logger.error('Falha ao aplicar migrações DDL de forma autônoma:', error);
+    logger.error('Falha CRÍTICA ao aplicar migrações DDL de forma autônoma. Abortando inicialização do servidor:', error);
+    process.exit(1);
   }
 
   const app = await NestFactory.create(AppModule);
@@ -67,7 +68,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
-  logger.log('Servidor NestJS rodando na porta 3000');
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  logger.log(`Servidor NestJS rodando na porta ${port}`);
 }
 bootstrap();
