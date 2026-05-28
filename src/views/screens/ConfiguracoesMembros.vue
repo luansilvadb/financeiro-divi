@@ -6,9 +6,11 @@ import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
+import { useToast } from '../../composables/useToast'
 
 const { membros, adicionarMembro, desativarMembro, ativarMembro } = useMembros()
 const { activeTenantId } = useCasasMultitenant()
+const toast = useToast()
 const novoNome = ref('')
 const activeTab = ref<'membros' | 'cartoes'>('membros')
 
@@ -25,7 +27,7 @@ const handleDesativar = async (id: string) => {
   try {
     await desativarMembro(id)
   } catch (error: any) {
-    alert(error.message || 'Erro ao desativar morador')
+    toast.show(error.message || 'Erro ao desativar morador', 'error')
   }
 }
 </script>

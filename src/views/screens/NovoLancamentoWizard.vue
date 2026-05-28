@@ -11,6 +11,7 @@ import {
   Minus,
   Check
 } from 'lucide-vue-next'
+import { useToast } from '../../composables/useToast'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -52,6 +53,7 @@ const {
   reset,
   finalizarGastoOuEmprestimo
 } = useNovoLancamentoWizard(() => props.membros)
+const toast = useToast()
 
 onUnmounted(() => {
   reset()
@@ -151,7 +153,7 @@ const handleGravar = async () => {
     await finalizarGastoOuEmprestimo()
     emit('salvar')
   } catch (error: any) {
-    alert(error.message || 'Erro ao salvar transação')
+    toast.show(error.message || 'Erro ao salvar transação', 'error')
   }
 }
 </script>

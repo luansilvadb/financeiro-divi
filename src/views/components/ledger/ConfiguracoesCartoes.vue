@@ -6,10 +6,12 @@ import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import { Trash2, CreditCard, Calendar, User, ChevronDown } from 'lucide-vue-next'
 import { useCasasMultitenant } from '../../../viewmodels/useCasasMultitenant'
+import { useToast } from '../../../composables/useToast'
 
 const { activeTenantId } = useCasasMultitenant()
 const { ativos } = useMembros()
 const { cartoes, adicionarCartao, excluirCartaoManual } = useCartoesEFaturas()
+const toast = useToast()
 
 const nome = ref('')
 const diaFechamento = ref<number>(10)
@@ -57,7 +59,7 @@ const handleExcluir = async (id: string) => {
   try {
     await excluirCartaoManual(id)
   } catch (error: any) {
-    alert(error.message || 'Erro ao excluir cartão')
+    toast.show(error.message || 'Erro ao excluir cartão', 'error')
   }
 }
 </script>
