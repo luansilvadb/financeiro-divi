@@ -18,13 +18,13 @@ export class MembroDto {
   @IsString()
   nome!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'String representando o avatar do membro (ex: cor, emoji ou URL)',
     example: 'https://api.dicebear.com/7.x/bottts/svg?seed=Luan',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  avatar!: string;
+  avatar?: string;
 
   @ApiPropertyOptional({
     description: 'ID do usuário associado (opcional se for um membro sem login na plataforma)',

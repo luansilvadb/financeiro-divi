@@ -110,6 +110,7 @@ export class FinanceiroService {
 
   async salvarMembro(tenantId: string, membroData: any) {
     const { id, nome, avatar, userId } = membroData;
+    const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
     const upserted = await this.prisma.membroCasa.upsert({
       where: {
         id_tenantId: { id, tenantId },
@@ -118,12 +119,12 @@ export class FinanceiroService {
         id,
         tenantId,
         nome,
-        avatar,
+        avatar: defaultAvatar,
         userId,
       },
       update: {
         nome,
-        avatar,
+        avatar: defaultAvatar,
         userId,
       },
     });
