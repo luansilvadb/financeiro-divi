@@ -32,7 +32,7 @@ async function bootstrap() {
   // Executa migrações automáticas pendentes antes de iniciar o app
   try {
     logger.log('Iniciando verificação autônoma de migrações DDL...');
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
     logger.log('Migrações DDL aplicadas/verificadas com sucesso!');
   } catch (error) {
     logger.error('Falha ao aplicar migrações DDL de forma autônoma:', error);
