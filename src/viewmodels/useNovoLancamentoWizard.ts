@@ -8,13 +8,18 @@ import { gastoService } from '../shared/container'
 import type { WizardDraft } from '../models/entities/WizardDraft'
 
 function canAdvanceLoan(step: number, compradorId: string, borrowerId: string | null, valor: number, descricao: string): boolean {
-  const rules: Record<number, () => boolean> = {
-    2: () => !!compradorId,
-    3: () => !!borrowerId,
-    4: () => valor > 0,
-    5: () => descricao.trim().length > 0
+  switch (step) {
+    case 2:
+      return !!compradorId
+    case 3:
+      return !!borrowerId
+    case 4:
+      return valor > 0
+    case 5:
+      return descricao.trim().length > 0
+    default:
+      return false
   }
-  return rules[step]?.() ?? false
 }
 
 function canAdvanceExpense(
@@ -26,20 +31,23 @@ function canAdvanceExpense(
   participantes: string[],
   valoresDivisao: Record<string, number>
 ): boolean {
-  const rules: Record<number, () => boolean> = {
-    2: () => !!compradorId,
-    3: () => valor > 0,
-    4: () => descricao.trim().length > 0,
-    5: () => {
+  switch (step) {
+    case 2:
+      return !!compradorId
+    case 3:
+      return valor > 0
+    case 4:
+      return descricao.trim().length > 0
+    case 5:
       if (modoDivisao === 'IGUAL') {
         return participantes.length > 0
       }
       const valorCentavos = Math.round(valor * 100)
       const somaCentavos = participantes.reduce((acc, id) => acc + Math.round((valoresDivisao[id] || 0) * 100), 0)
       return Math.abs(somaCentavos - valorCentavos) <= 1
-    }
+    default:
+      return false
   }
-  return rules[step]?.() ?? false
 }
 
 function buildDivisoes(
