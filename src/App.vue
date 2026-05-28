@@ -13,6 +13,7 @@ import { useContasFixas } from './viewmodels/useContasFixas'
 import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
 import { tenantSessionService } from './shared/container'
+import ToastNotification from './views/components/ui/ToastNotification.vue'
 
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
 const activeTab = ref<Tab>('hoje')
@@ -113,6 +114,7 @@ const handleLogout = async () => {
   </div>
   <!-- Dashboard normal -->
   <div v-else class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
+    <ToastNotification />
     <div class="max-w-[1200px] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-36 md:pb-16 relative">
       <main class="relative z-10">
         <DashboardSaldos 
