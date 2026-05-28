@@ -7,7 +7,7 @@ const bill: ContaFixa = {
   id: 'energia',
   name: 'Energia',
   icon: 'kW',
-  fixedValue: null,
+  fixedValueCentavos: null,
   defaultSplit: ['luan', 'maria'],
 }
 
@@ -53,7 +53,7 @@ describe('PopupLancarContaFixa', () => {
 
     expect(wrapper.emitted('confirm')?.[0]).toEqual([
       {
-        valorReal: 300,
+        valorCentavos: 30000,
         compradorId: 'maria',
         splitIds: ['luan', 'maria', 'joao'],
       },

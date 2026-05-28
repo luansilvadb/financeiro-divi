@@ -13,7 +13,6 @@ const mockLocalFatura = { listarTodas: vi.fn().mockResolvedValue([]) }
 const mockLocalGasto = { listarTodos: vi.fn().mockResolvedValue([]) }
 const mockLocalContaFixa = { listarTodas: vi.fn().mockResolvedValue([]) }
 const mockLocalAcerto = { listarTodos: vi.fn().mockResolvedValue([]) }
-const mockLocalEventStore = { getStream: vi.fn().mockResolvedValue([]) }
 
 describe('MigrationService', () => {
   let service: MigrationService
@@ -28,8 +27,7 @@ describe('MigrationService', () => {
       mockLocalFatura as any,
       mockLocalGasto as any,
       mockLocalContaFixa as any,
-      mockLocalAcerto as any,
-      mockLocalEventStore as any
+      mockLocalAcerto as any
     )
   })
 

@@ -28,28 +28,8 @@ export class Dinheiro {
     return this.centavos === outro.centavos
   }
 
-  maiorQue(outro: Dinheiro): boolean {
-    return this.centavos > outro.centavos
-  }
-
-  menorQue(outro: Dinheiro): boolean {
-    return this.centavos < outro.centavos
-  }
-
-  isZero(): boolean {
-    return this.centavos === 0
-  }
-
   isPositivo(): boolean {
     return this.centavos > 0
-  }
-
-  isNegativo(): boolean {
-    return this.centavos < 0
-  }
-
-  multiplicar(fator: number): Dinheiro {
-    return new Dinheiro(Math.round(this.centavos * fator))
   }
 
   distribuir(n: number): Dinheiro[] {
@@ -67,43 +47,5 @@ export class Dinheiro {
       else if (resto < 0) resto++
     }
     return resultados
-  }
-
-  distribuirPorPesos(pesos: number[]): Dinheiro[] {
-    if (pesos.some(p => p < 0)) {
-      throw new Error('Os pesos não podem conter valores negativos')
-    }
-    const totalPesos = pesos.reduce((acc, p) => acc + p, 0)
-    if (totalPesos <= 0) {
-      throw new Error('A soma dos pesos deve ser maior que zero')
-    }
-
-    let centavosRestantes = this.centavos
-
-    const valores = pesos.map(p => {
-      const valor = Math.trunc(this.centavos * p / totalPesos)
-      centavosRestantes -= valor
-      return valor
-    })
-
-    // Distribuir o resto (centavos órfãos) pelos primeiros pesos maiores que 0
-    let i = 0
-    let centavosAlocados = 0
-    const totalCentavosRestantes = Math.abs(centavosRestantes)
-
-    while (centavosAlocados < totalCentavosRestantes && i < pesos.length * 10) {
-      const idx = i % pesos.length
-      if (pesos[idx] > 0) {
-        if (centavosRestantes > 0) {
-          valores[idx]++
-        } else {
-          valores[idx]--
-        }
-        centavosAlocados++
-      }
-      i++
-    }
-
-    return valores.map(c => new Dinheiro(c))
   }
 }

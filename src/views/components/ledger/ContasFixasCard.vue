@@ -5,7 +5,7 @@ import type { ContaFixa } from '../../../models/entities/ContaFixa'
 const props = defineProps<{
   bill: ContaFixa
   paga: boolean
-  statusGasto: { valorReal: number; pagoPor: string } | null
+  statusGasto: { valorCentavos: number; pagoPor: string } | null
   obterNomeMembro: (id?: string) => string | undefined
   isMonthLocked: boolean
 }>()
@@ -218,7 +218,7 @@ onUnmounted(() => {
         <span class="font-bold text-sm block text-charcoal truncate tracking-[-0.17px]">{{ bill.name }}</span>
         <div v-if="paga && statusGasto" class="flex items-center mt-1">
           <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
-            R$ {{ statusGasto.valorReal.toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(statusGasto.pagoPor) }}
+            R$ {{ (statusGasto.valorCentavos / 100).toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(statusGasto.pagoPor) }}
           </span>
         </div>
       </div>

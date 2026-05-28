@@ -79,7 +79,7 @@ describe('GastoService', () => {
     await service.lancarGastoContaFixa({
       faturaId: 'f1',
       conta: { id: 'aluguel', name: 'Aluguel' },
-      valorTotal: 1200,
+      valorCentavos: 120000,
       compradorId: 'm1',
       participantes: ['m1', 'm2']
     })
@@ -1046,6 +1046,93 @@ describe('GastoService', () => {
 
     // Deve ter excluído o gasto
     expect(mockGastoRepo.excluir).toHaveBeenCalledWith('g-netting')
+  })
+
+  it('F-04: nao deve salvar a fatura novamente se ela ja estiver como ACERTADA no netting', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    const mockAcertoRepo = { buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn(), listarTodos: vi.fn() }
+
+    const faturaAtual = new Fatura({ id: 'f-fevereiro', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 2, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const faturaAnterior = new Fatura({ id: 'f-janeiro', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 1, ano: 2026 }, responsavelId: 'membro-credor', status: 'FECHADA', dataPagamentoBanco: new Date() })
+
+    const { AcertoMembro } = await import('../entities/AcertoMembro')
+    const acertoPendente = new AcertoMembro({
+      id: 'a-janeiro',
+      faturaId: 'f-janeiro',
+      membroId: 'membro-devedor',
+      totalConsumido: Dinheiro.deCentavos(5000)
+    })
+
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaAtual)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
+    mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoPendente])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
+    
+    await service.registrarAcertoNetting({
+      faturaId: 'f-fevereiro',
+      descricao: 'Acerto de Saldo',
+      valor: 50,
+      fromMemberId: 'membro-devedor',
+      toMemberId: 'membro-credor',
+      method: 'pix'
+    })
+
+    expect(mockAcertoRepo.salvar).toHaveBeenCalled()
+    expect(acertoPendente.pago).toBe(true)
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({ id: 'f-janeiro', status: 'ACERTADA' }))
+  })
+
+  it('F-05: deve lancar erro ao tentar atualizar parcelamento quando fatura original nao existe', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), salvarMuitas: vi.fn(), listarTodas: vi.fn(), executarMigracoesEDesduplicacao: vi.fn() }
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+
+    const g1 = new Gasto({
+      id: 'g1',
+      faturaId: 'f1_missing',
+      descricao: 'Original 1/2',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(10000))],
+      method: 'card',
+      cardOwner: 'm1',
+      installments: 2,
+      totalInstallments: 2,
+      grupoParcelasId: 'grupo-x'
+    })
+
+    const g2 = new Gasto({
+      id: 'g2',
+      faturaId: 'f2_missing',
+      descricao: 'Original 2/2',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(10000))],
+      method: 'card',
+      cardOwner: 'm1',
+      installments: 1,
+      totalInstallments: 2,
+      grupoParcelasId: 'grupo-x'
+    })
+
+    mockGastoRepo.buscarPorId.mockResolvedValue(g1)
+    mockGastoRepo.listarTodos.mockResolvedValue([g1, g2])
+    mockFaturaRepo.buscarPorId.mockResolvedValue(null)
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+
+    await expect(service.atualizarGastoCompleto('g1', {
+      descricao: 'Atualizado',
+      valorTotal: Dinheiro.deReais(120),
+      compradorId: 'm1',
+      method: 'card',
+      cardOwner: 'c1',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deCentavos(12000))],
+      installments: 3
+    })).rejects.toThrow('Fatura original não encontrada para o gasto g1')
   })
 })
 

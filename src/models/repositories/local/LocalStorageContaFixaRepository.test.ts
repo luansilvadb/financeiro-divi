@@ -15,13 +15,14 @@ describe('LocalStorageContaFixaRepository', () => {
       id: 'cf1',
       name: 'Internet',
       icon: 'wifi',
-      fixedValue: 10000,
+      fixedValueCentavos: 1000000,
       defaultSplit: ['m1']
     }
     await repo.salvar(conta)
     const todas = await repo.listarTodas()
     expect(todas).toHaveLength(1)
     expect(todas[0].name).toBe('Internet')
+    expect(todas[0].fixedValueCentavos).toBe(1000000)
   })
 
   it('deve excluir uma conta fixa pelo id', async () => {
@@ -29,7 +30,7 @@ describe('LocalStorageContaFixaRepository', () => {
       id: 'cf2',
       name: 'Água',
       icon: 'water',
-      fixedValue: 5000,
+      fixedValueCentavos: 500000,
       defaultSplit: ['m1']
     }
     await repo.salvar(conta)
@@ -40,6 +41,19 @@ describe('LocalStorageContaFixaRepository', () => {
     await repo.excluir('cf2')
     listadas = await repo.listarTodas()
     expect(listadas.some(c => c.id === 'cf2')).toBe(false)
+  })
+
+  it('deve migrar dados antigos do local storage contendo fixedValue', async () => {
+    localStorage.setItem('divi_contas_fixas_templates_v18', JSON.stringify([{
+      id: 'luz_antiga',
+      name: 'Energia',
+      icon: '💡',
+      fixedValue: 120.50,
+      defaultSplit: ['luan']
+    }]))
+
+    const list = await repo.listarTodas()
+    expect(list[0].fixedValueCentavos).toBe(12050)
   })
 
   it('deve lançar erro se o banco de dados local estiver corrompido', async () => {

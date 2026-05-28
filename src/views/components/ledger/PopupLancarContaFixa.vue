@@ -112,7 +112,7 @@ const splitIds = ref<string[]>([])
 
 watch(() => props.bill, (newBill) => {
   if (newBill) {
-    valorReal.value = newBill.fixedValue || 0
+    valorReal.value = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : 0
     compradorId.value = props.membros[0]?.id || ''
     
     // Filtra apenas os IDs que realmente existem na lista de membros atual
@@ -148,7 +148,7 @@ const obterDivisao = () => {
 
 const confirmar = () => {
   emit('confirm', {
-    valorReal: valorReal.value,
+    valorCentavos: Math.round((valorReal.value || 0) * 100),
     compradorId: compradorId.value,
     splitIds: splitIds.value
   })

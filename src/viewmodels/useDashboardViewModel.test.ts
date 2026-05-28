@@ -342,13 +342,13 @@ describe('useDashboardViewModel', () => {
     vm.billSelecionada.value = { id: 'b1', name: 'Luz' }
     vm.showPopupLancar.value = true
 
-    const dadosLancamento = { valorReal: 150, compradorId: 'm1', splitIds: ['m1', 'm2'] }
+    const dadosLancamento = { valorCentavos: 15000, compradorId: 'm1', splitIds: ['m1', 'm2'] }
     await vm.confirmarLancarBill(dadosLancamento)
 
     expect(mockContasFixas.lancarGastoContaFixa).toHaveBeenCalledWith(
       expect.stringContaining('virtual'),
       vm.billSelecionada.value,
-      150,
+      15000,
       'm1',
       ['m1', 'm2']
     )
@@ -380,7 +380,7 @@ describe('useDashboardViewModel', () => {
     vm.billSelecionada.value = { id: 'b1', name: 'Luz' }
     vm.showPopupLancar.value = true
 
-    const dadosLancamento = { valorReal: 150, compradorId: 'm1', splitIds: ['m1', 'm2'] }
+    const dadosLancamento = { valorCentavos: 15000, compradorId: 'm1', splitIds: ['m1', 'm2'] }
     await vm.confirmarLancarBill(dadosLancamento)
 
     expect(mockContasFixas.lancarGastoContaFixa).not.toHaveBeenCalled()

@@ -24,7 +24,20 @@ export class LocalStorageContaFixaRepository implements IContaFixaRepository {
     const data = localStorage.getItem(this.STORAGE_KEY)
     if (!data) return []
     try {
-      return JSON.parse(data) as ContaFixa[]
+      const parsed = JSON.parse(data) as any[]
+      return parsed.map(c => {
+        const centavos = c.fixedValueCentavos !== undefined
+          ? c.fixedValueCentavos
+          : (c.fixedValue !== undefined && c.fixedValue !== null ? Math.round(c.fixedValue * 100) : null)
+        
+        return {
+          id: c.id,
+          name: c.name,
+          icon: c.icon,
+          fixedValueCentavos: centavos,
+          defaultSplit: Array.isArray(c.defaultSplit) ? c.defaultSplit : []
+        }
+      })
     } catch (e) {
       console.error('Erro grave de integridade no banco de dados local de contas fixas:', e)
       throw new Error('Banco de dados local de contas fixas corrompido. Operação abortada para evitar perda de dados.')

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
-import { Gasto } from '../../../models/entities/Gasto'
+import type { Gasto } from '../../../models/entities/Gasto'
 import { Repeat, Plus } from 'lucide-vue-next'
 import Card from '../ui/Card.vue'
 import ContasFixasCard from './ContasFixasCard.vue'
@@ -28,7 +27,7 @@ const obterStatusGasto = (conta: ContaFixa) => {
   const g = props.gastos.find(g => g.recurringBillId === conta.id)
   if (!g) return null
   return {
-    valorReal: g.valorTotal.centavos / 100,
+    valorCentavos: g.valorTotal.centavos,
     pagoPor: g.compradorId
   }
 }
@@ -37,92 +36,14 @@ const obterNomeMembro = (id?: string) => {
   return props.membros.find(m => m.id === id)?.nome || id
 }
 
-// --- Lógica de Ripple para o botão Novo ---
-const addButtonRef = ref<HTMLElement | null>(null)
-
-interface RippleState {
-  active: boolean
-  x: number
-  y: number
-  radius: number
-  opacity: number
-  scale: number
-  type: 'tap' | 'long'
-}
-
-const ripple = ref<RippleState>({
-  active: false,
-  x: 0,
-  y: 0,
-  radius: 0,
-  opacity: 0,
-  scale: 0,
-  type: 'tap'
-})
-
-let isHolding = false
-let animationFrameId: number | null = null
-
-const onPointerDown = (e: PointerEvent) => {
-  if (props.isMonthLocked) return
-  
-  const el = addButtonRef.value
-  if (!el) return
-
-  const rect = el.getBoundingClientRect()
-  const x = e.clientX - rect.left
-  const y = e.clientY - rect.top
-
-  isHolding = true
-
-  const dx = Math.max(x, rect.width - x)
-  const dy = Math.max(y, rect.height - y)
-  const maxRadius = Math.sqrt(dx * dx + dy * dy)
-
-  ripple.value.active = true
-  ripple.value.type = 'tap' // Botão novo é sempre tap rápido visualmente
-  ripple.value.x = x
-  ripple.value.y = y
-  ripple.value.radius = maxRadius
-  ripple.value.scale = 0
-  ripple.value.opacity = 0.25
-}
-
-const onPointerUp = () => {
-  if (!isHolding) return
-  
-  requestAnimationFrame(() => {
-    ripple.value.scale = 1
-    ripple.value.opacity = 0
-  })
-
-  setTimeout(() => {
-    ripple.value.active = false
-  }, 300)
-  
-  isHolding = false
-}
-
-const onPointerLeave = () => {
-  if (isHolding) {
-    ripple.value.active = false
-    isHolding = false
-  }
-}
-
 const handleClick = () => {
   if (props.isMonthLocked) return
   emit('novo')
 }
-
-onUnmounted(() => {
-  if (animationFrameId) cancelAnimationFrame(animationFrameId)
-})
 </script>
 
 <template>
   <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
-    <!-- Cabeçalho Padronizado -->
     <div class="py-7 px-6 border-b border-stone bg-parchment flex items-center">
       <div class="flex items-center gap-5">
         <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
@@ -138,20 +59,16 @@ onUnmounted(() => {
     </div>
 
     <div class="p-6 grid gap-3">
-      <!-- Estado Vazio Ilustrado se não houver contas fixas cadastradas -->
       <div v-if="contasFixas.length === 0" class="text-center py-12 border border-dashed border-stone rounded-xl space-y-4 bg-canvas/30">
-        <!-- Mascote Verde Meadow com Talão de Notas -->
         <svg viewBox="0 0 100 100" class="w-20 h-20 mx-auto animate-bounce" style="animation-duration: 6s;">
           <path d="M15,50 Q20,15 50,20 Q80,25 85,55 Q90,85 50,80 Q10,75 15,50 Z" fill="var(--color-meadow)" />
           <circle cx="42" cy="45" r="4.5" fill="#000" />
           <circle cx="62" cy="45" r="4.5" fill="#000" />
           <path d="M46,56 Q52,62 58,56" stroke="#000" stroke-width="3" stroke-linecap="round" fill="none" />
-          <!-- Clipboard/Talão de Notas -->
           <rect x="25" y="62" width="18" height="22" rx="2" fill="#ffffff" stroke="#000" stroke-width="2" />
           <rect x="29" y="58" width="10" height="4" rx="1" fill="var(--color-ember)" stroke="#000" stroke-width="1.5" />
           <line x1="30" y1="69" x2="40" y2="69" stroke="#000" stroke-width="2" />
           <line x1="30" y1="75" x2="40" y2="75" stroke="#000" stroke-width="2" />
-          <!-- Perninhas -->
           <line x1="35" y1="78" x2="25" y2="92" stroke="#000" stroke-width="3" stroke-linecap="round" />
           <line x1="65" y1="78" x2="75" y2="92" stroke="#000" stroke-width="3" stroke-linecap="round" />
         </svg>
@@ -163,7 +80,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Widgets de Contas Fixas (Se existirem) -->
       <template v-else>
         <ContasFixasCard 
           v-for="bill in contasFixas" 
@@ -179,14 +95,8 @@ onUnmounted(() => {
         />
       </template>
 
-      <!-- Adicionar Nova Conta -->
       <div class="flex flex-col items-center gap-2 mt-2">
         <button
-          ref="addButtonRef"
-          @pointerdown="onPointerDown"
-          @pointerup="onPointerUp"
-          @pointerleave="onPointerLeave"
-          @pointercancel="onPointerLeave"
           @click="handleClick"
           :disabled="isMonthLocked"
           :class="[
@@ -195,20 +105,6 @@ onUnmounted(() => {
           ]"
           data-testid="nova-conta-fixa"
         >
-          <!-- Ripple overlay -->
-          <div 
-            v-if="ripple.active"
-            class="absolute rounded-full bg-ember/20 pointer-events-none ripple-transition"
-            :style="{
-              left: ripple.x + 'px',
-              top: ripple.y + 'px',
-              width: ripple.radius * 2 + 'px',
-              height: ripple.radius * 2 + 'px',
-              transform: `translate(-50%, -50%) scale(${ripple.scale})`,
-              opacity: ripple.opacity
-            }"
-          ></div>
-
           <Plus class="w-4 h-4 transition-transform group-hover:scale-110 text-ash group-hover:text-ember" />
           <span class="text-ash group-hover:text-ember font-bold text-xs uppercase tracking-widest">Adicionar conta fixa</span>
         </button>
@@ -219,9 +115,3 @@ onUnmounted(() => {
     </div>
   </Card>
 </template>
-
-<style scoped>
-.ripple-transition {
-  transition: transform 300ms cubic-bezier(0.1, 0.8, 0.3, 1), opacity 250ms ease-out;
-}
-</style>

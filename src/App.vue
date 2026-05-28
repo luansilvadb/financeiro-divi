@@ -98,14 +98,12 @@ const handleAuthSuccess = async () => {
           tenantId = crypto.randomUUID()
           const code = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
           
-          // Cria o tenant
           await supabase.from('tenants').insert({
             id: tenantId,
             name: 'Minha Casa Importada',
             invite_code: code
           })
 
-          // Associa o membro fundador
           await supabase.from('membros_casa').insert({
             id: userId,
             tenant_id: tenantId,
@@ -117,16 +115,13 @@ const handleAuthSuccess = async () => {
           tenantSessionService.setActiveTenant(tenantId)
         }
 
-        // Executa a migração
         await migrationService.migrar(tenantId, userId)
-        console.log('Dados migrados localmente para o Supabase com sucesso!')
       } catch (err) {
         console.error('Falha ao migrar dados locais:', err)
       }
     }
   }
 
-  // Inicializa os dados com as fontes online
   await Promise.all([
     inicializarMembros(),
     inicializarCartoes(),
@@ -141,7 +136,6 @@ const handleAuthSuccess = async () => {
   </div>
   <div v-else class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
     <div class="max-w-[1200px] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-36 md:pb-16 relative">
-      <!-- Main Content -->
       <main class="relative z-10">
         <DashboardSaldos 
           :membros="todosMembros"
@@ -157,7 +151,6 @@ const handleAuthSuccess = async () => {
       </main>
     </div>
 
-    <!-- Floating Action Button (FAB) -->
     <Transition name="fab-zoom">
       <div 
         v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
@@ -175,7 +168,6 @@ const handleAuthSuccess = async () => {
       </div>
     </Transition>
 
-    <!-- BottomSheet do Wizard de Novo Lançamento -->
     <BottomSheet 
       :model-value="currentView === 'wizard'"
       @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
@@ -190,7 +182,6 @@ const handleAuthSuccess = async () => {
       />
     </BottomSheet>
 
-    <!-- BottomSheet de Configurações -->
     <BottomSheet 
       :model-value="currentView === 'settings'"
       @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
@@ -207,7 +198,6 @@ const handleAuthSuccess = async () => {
 </template>
 
 <style>
-/* Smooth transitions between views */
 .v-enter-active,
 .v-leave-active {
   transition: opacity 0.5s var(--ease-spring);
@@ -218,7 +208,6 @@ const handleAuthSuccess = async () => {
   opacity: 0;
 }
 
-/* Zoom effect for FAB */
 .fab-zoom-enter-active,
 .fab-zoom-leave-active {
   transition: transform 0.4s var(--ease-spring), opacity 0.3s var(--ease-spring);

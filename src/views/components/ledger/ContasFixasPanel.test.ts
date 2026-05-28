@@ -11,14 +11,14 @@ const contasFixas: ContaFixa[] = [
     id: 'aluguel',
     name: 'Aluguel',
     icon: '🏠',
-    fixedValue: 1200,
+    fixedValueCentavos: 120000,
     defaultSplit: ['luan', 'maria'],
   },
   {
     id: 'energia',
     name: 'Energia',
     icon: '💡',
-    fixedValue: null,
+    fixedValueCentavos: null,
     defaultSplit: ['luan', 'maria'],
   },
 ]

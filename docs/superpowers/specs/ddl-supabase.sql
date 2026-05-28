@@ -5,7 +5,6 @@ DROP TABLE IF EXISTS public.faturas CASCADE;
 DROP TABLE IF EXISTS public.acertos_membro CASCADE;
 DROP TABLE IF EXISTS public.cartoes CASCADE;
 DROP TABLE IF EXISTS public.contas_fixas CASCADE;
-DROP TABLE IF EXISTS public.ledger_events CASCADE;
 DROP TABLE IF EXISTS public.membros_casa CASCADE;
 DROP TABLE IF EXISTS public.tenants CASCADE;
 
@@ -114,18 +113,7 @@ CREATE TABLE public.acertos_membro (
   PRIMARY KEY (id, tenant_id)
 );
 
--- 10. Tabela de Ledger Events
-CREATE TABLE public.ledger_events (
-  id text NOT NULL,
-  tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  type text NOT NULL,
-  timestamp bigint NOT NULL,
-  version integer NOT NULL,
-  payload jsonb NOT NULL,
-  PRIMARY KEY (id, tenant_id)
-);
-
--- 11. Configuração de RLS
+-- 10. Configuração de RLS
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.membros_casa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cartoes ENABLE ROW LEVEL SECURITY;
@@ -134,9 +122,8 @@ ALTER TABLE public.gastos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.divisoes_gasto ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contas_fixas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.acertos_membro ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ledger_events ENABLE ROW LEVEL SECURITY;
 
--- 12. Função auxiliar SECURITY DEFINER para quebrar a recursão de RLS
+-- 11. Função auxiliar SECURITY DEFINER para quebrar a recursão de RLS
 CREATE OR REPLACE FUNCTION public.get_user_tenants(user_uuid uuid)
 RETURNS TABLE(t_id uuid) 
 LANGUAGE sql
@@ -145,7 +132,7 @@ AS $$
   SELECT tenant_id FROM public.membros_casa WHERE user_id = user_uuid;
 $$;
 
--- 13. Políticas de Segurança (Isolamento por Membros da Casa cadastrados com auth.uid())
+-- 12. Políticas de Segurança (Isolamento por Membros da Casa cadastrados com auth.uid())
 CREATE POLICY tenant_membros_casa_access ON public.membros_casa
   FOR ALL TO authenticated
   USING (
@@ -212,13 +199,7 @@ CREATE POLICY tenant_isolation_acertos ON public.acertos_membro
     tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
   );
 
-CREATE POLICY tenant_isolation_ledger_events ON public.ledger_events
-  FOR ALL TO authenticated
-  USING (
-    tenant_id IN (SELECT public.get_user_tenants(auth.uid()))
-  );
-
--- 14. Concessão de Privilégios para as roles do Supabase
+-- 13. Concessão de Privilégios para as roles do Supabase
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, authenticated, service_role;

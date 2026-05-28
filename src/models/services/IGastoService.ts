@@ -30,7 +30,7 @@ export interface IGastoService {
   lancarGastoContaFixa(dados: {
     faturaId: string
     conta: { id: string; name: string }
-    valorTotal: number
+    valorCentavos: number
     compradorId: string
     participantes: string[]
   }): Promise<void>

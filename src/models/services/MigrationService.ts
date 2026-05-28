@@ -5,7 +5,6 @@ import type { LocalStorageFaturaRepository } from '../repositories/local/LocalSt
 import type { LocalStorageGastoRepository } from '../repositories/local/LocalStorageGastoRepository'
 import type { LocalStorageContaFixaRepository } from '../repositories/local/LocalStorageContaFixaRepository'
 import type { LocalStorageAcertoMembroRepository } from '../repositories/local/LocalStorageAcertoMembroRepository'
-import type { LocalStorageEventStore } from '../repositories/local/LocalStorageEventStore'
 
 export class MigrationService {
   constructor(
@@ -15,8 +14,7 @@ export class MigrationService {
     private localFatura: LocalStorageFaturaRepository,
     private localGasto: LocalStorageGastoRepository,
     private localContaFixa: LocalStorageContaFixaRepository,
-    private localAcerto: LocalStorageAcertoMembroRepository,
-    private localEventStore: LocalStorageEventStore
+    private localAcerto: LocalStorageAcertoMembroRepository
   ) {}
 
   async migrar(tenantId: string, currentUserId: string): Promise<void> {
@@ -109,7 +107,7 @@ export class MigrationService {
         tenant_id: tenantId,
         name: cf.name,
         icon: cf.icon,
-        fixed_value_centavos: cf.fixedValue !== null ? Math.round(cf.fixedValue) : null,
+        fixed_value_centavos: cf.fixedValueCentavos,
         default_split: cf.defaultSplit
       })
       if (error) throw new Error(`Erro de migração de conta fixa: ${error.message}`)
@@ -131,22 +129,6 @@ export class MigrationService {
       if (error) throw new Error(`Erro de migração de acerto: ${error.message}`)
     }
 
-    // 7. Migrar Eventos da Ledger
-    const events = await this.localEventStore.getStream()
-    if (events.length > 0) {
-      const dtos = events.map(e => ({
-        id: e.id,
-        tenant_id: tenantId,
-        type: e.type,
-        timestamp: e.timestamp,
-        version: e.version,
-        payload: e.payload
-      }))
-      const { error } = await this.supabase.from('ledger_events').insert(dtos)
-      if (error) throw new Error(`Erro de migração de ledger events: ${error.message}`)
-    }
-
-    // 8. Limpeza do LocalStorage local para marcar como migrado e prevenir re-migração
     localStorage.setItem('divi_migrado_saas', 'true')
     localStorage.removeItem('divi_event_stream')
     localStorage.removeItem('divi_gastos_cartao')

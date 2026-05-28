@@ -28,7 +28,7 @@ describe('useContasFixas', () => {
       id: 'new_bill',
       name: 'Academia',
       icon: '💪',
-      fixedValue: 100,
+      fixedValueCentavos: 10000,
       defaultSplit: ['luciana']
     })
 
@@ -38,7 +38,7 @@ describe('useContasFixas', () => {
       id: 'new_bill',
       name: 'Academia VIP',
       icon: '💪',
-      fixedValue: 150,
+      fixedValueCentavos: 15000,
       defaultSplit: ['luciana']
     })
     expect(contasFixas.value.find(c => c.id === 'new_bill')?.name).toBe('Academia VIP')
@@ -55,7 +55,7 @@ describe('useContasFixas', () => {
       id: 'aluguel',
       name: 'Aluguel',
       icon: '🔑',
-      fixedValue: 1500,
+      fixedValueCentavos: 150000,
       defaultSplit: ['luciana', 'luan', 'joao']
     }
 
@@ -75,7 +75,7 @@ describe('useContasFixas', () => {
 
     const status = verificarStatusPaga(contaAluguel, [gastoAluguel])
     expect(status).not.toBeNull()
-    expect(status?.valorReal).toBe(1500)
+    expect(status?.valorCentavos).toBe(150000)
     expect(status?.pagoPor).toBe('luciana')
   })
 
@@ -93,16 +93,16 @@ describe('useContasFixas', () => {
       id: 'aluguel',
       name: 'Aluguel',
       icon: '🔑',
-      fixedValue: 1500,
+      fixedValueCentavos: 150000,
       defaultSplit: ['luciana', 'luan']
     }
 
-    await lancarGastoContaFixa('f1', contaAluguel, 1500, 'luciana', ['luciana', 'luan'])
+    await lancarGastoContaFixa('f1', contaAluguel, 150000, 'luciana', ['luciana', 'luan'])
 
     expect(mockGastoService.lancarGastoContaFixa).toHaveBeenCalledWith({
       faturaId: 'f1',
       conta: contaAluguel,
-      valorTotal: 1500,
+      valorCentavos: 150000,
       compradorId: 'luciana',
       participantes: ['luciana', 'luan']
     })

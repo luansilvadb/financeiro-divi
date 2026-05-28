@@ -2,6 +2,6 @@ export interface ContaFixa {
   id: string
   name: string
   icon: string
-  fixedValue: number | null
+  fixedValueCentavos: number | null
   defaultSplit: string[]
 }

@@ -20,7 +20,7 @@ watch(() => props.bill, (newBill) => {
   if (newBill) {
     name.value = newBill.name
     icon.value = newBill.icon
-    fixedValue.value = newBill.fixedValue
+    fixedValue.value = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : null
     
     const validSplitIds = newBill.defaultSplit.filter(id => 
       props.membros.some(m => m.id === id)
@@ -53,7 +53,7 @@ const salvar = () => {
     id: props.bill?.id || `rec_custom_${Date.now()}`,
     name: name.value,
     icon: icon.value,
-    fixedValue: fixedValue.value && fixedValue.value > 0 ? fixedValue.value : null,
+    fixedValueCentavos: fixedValue.value && fixedValue.value > 0 ? Math.round(fixedValue.value * 100) : null,
     defaultSplit: defaultSplit.value
   })
 }

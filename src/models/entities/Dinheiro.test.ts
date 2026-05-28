@@ -32,36 +32,9 @@ describe('Dinheiro Value Object', () => {
     expect(d1.subtrair(d2).centavos).toBe(1450)
   })
 
-  describe('Comparisons', () => {
-    it('deve verificar maiorQue', () => {
-      const d1 = Dinheiro.deReais(20)
-      const d2 = Dinheiro.deReais(10)
-      expect(d1.maiorQue(d2)).toBe(true)
-      expect(d2.maiorQue(d1)).toBe(false)
-    })
-
-    it('deve verificar menorQue', () => {
-      const d1 = Dinheiro.deReais(10)
-      const d2 = Dinheiro.deReais(20)
-      expect(d1.menorQue(d2)).toBe(true)
-      expect(d2.menorQue(d1)).toBe(false)
-    })
-
-    it('deve verificar se é zero', () => {
-      expect(Dinheiro.deCentavos(0).isZero()).toBe(true)
-      expect(Dinheiro.deCentavos(1).isZero()).toBe(false)
-    })
-
-    it('deve verificar se é positivo ou negativo', () => {
-      expect(Dinheiro.deCentavos(10).isPositivo()).toBe(true)
-      expect(Dinheiro.deCentavos(-10).isNegativo()).toBe(true)
-    })
-  })
-
-  it('deve multiplicar por um fator (arredondando centavos)', () => {
-    // 10.55 * 0.5 = 5.275 -> 5.28
-    const d = Dinheiro.deReais(10.55)
-    expect(d.multiplicar(0.5).centavos).toBe(528)
+  it('deve verificar se é positivo', () => {
+    expect(Dinheiro.deCentavos(10).isPositivo()).toBe(true)
+    expect(Dinheiro.deCentavos(0).isPositivo()).toBe(false)
   })
 
   describe('Allocation', () => {
@@ -86,41 +59,7 @@ describe('Dinheiro Value Object', () => {
       expect(partes[2].centavos).toBe(1)
     })
 
-    it('deve distribuir por pesos', () => {
-      // R$ 1,00 (100 centavos) com pesos 70 e 30
-      const d = Dinheiro.deReais(1)
-      const partes = d.distribuirPorPesos([70, 30])
-      expect(partes[0].centavos).toBe(70)
-      expect(partes[1].centavos).toBe(30)
-    })
 
-    it('deve distribuir por pesos com centavos órfãos', () => {
-      // R$ 0,05 distribuído com pesos 1, 1, 1 (33.3% cada)
-      // 5 / 3 = 1.666...
-      // Deve resultar em [2, 2, 1]
-      const d = Dinheiro.deCentavos(5)
-      const partes = d.distribuirPorPesos([1, 1, 1])
-      expect(partes[0].centavos).toBe(2)
-      expect(partes[1].centavos).toBe(2)
-      expect(partes[2].centavos).toBe(1)
-      expect(partes.reduce((acc, p) => acc + p.centavos, 0)).toBe(5)
-    })
-
-    it('deve distribuir por pesos pulando membros com peso 0', () => {
-      const d = Dinheiro.deCentavos(1001) // R$ 10,01
-      const partes = d.distribuirPorPesos([0, 1, 1])
-      expect(partes[0].centavos).toBe(0)
-      expect(partes[1].centavos + partes[2].centavos).toBe(1001)
-      expect(partes[1].centavos).toBe(501)
-      expect(partes[2].centavos).toBe(500)
-    })
-
-    it('deve lancar erro ao tentar distribuir por pesos com soma menor ou igual a zero ou peso negativo', () => {
-      const d = Dinheiro.deReais(10)
-      expect(() => d.distribuirPorPesos([-1, 1])).toThrow('Os pesos não podem conter valores negativos')
-      expect(() => d.distribuirPorPesos([0, 0])).toThrow('A soma dos pesos deve ser maior que zero')
-      expect(() => d.distribuirPorPesos([-2, -2])).toThrow('Os pesos não podem conter valores negativos')
-    })
 
     describe('Property-Based Constraints (Invariantes)', () => {
       const cenarios = [

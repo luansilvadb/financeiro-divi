@@ -6,11 +6,11 @@ import type { IGastoService } from '../models/services/IGastoService'
 import { contaFixaRepository, gastoService, tenantSessionService } from '../shared/container'
 
 const CONTAS_PADRAO: ContaFixa[] = [
-  { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValue: 1500.00, defaultSplit: [] },
-  { id: 'luz', name: 'Energia (Luz)', icon: '💡', fixedValue: null, defaultSplit: [] },
-  { id: 'agua', name: 'Água', icon: '💧', fixedValue: null, defaultSplit: [] },
-  { id: 'internet', name: 'Internet', icon: '🌐', fixedValue: 120.00, defaultSplit: [] },
-  { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValue: null, defaultSplit: [] }
+  { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValueCentavos: 150000, defaultSplit: [] },
+  { id: 'luz', name: 'Energia (Luz)', icon: '💡', fixedValueCentavos: null, defaultSplit: [] },
+  { id: 'agua', name: 'Água', icon: '💧', fixedValueCentavos: null, defaultSplit: [] },
+  { id: 'internet', name: 'Internet', icon: '🌐', fixedValueCentavos: 12000, defaultSplit: [] },
+  { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValueCentavos: null, defaultSplit: [] }
 ]
 
 const contasFixas = ref<ContaFixa[]>([])
@@ -76,7 +76,7 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
     const gasto = gastos.find(g => g.recurringBillId === conta.id)
     if (!gasto) return null
     return {
-      valorReal: gasto.valorTotal.centavos / 100,
+      valorCentavos: gasto.valorTotal.centavos,
       pagoPor: gasto.compradorId
     }
   }
@@ -84,14 +84,14 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
   const lancarGastoContaFixa = async (
     faturaId: string,
     conta: ContaFixa,
-    valorTotal: number,
+    valorCentavos: number,
     compradorId: string,
     participantes: string[]
   ) => {
     await servicoGasto.lancarGastoContaFixa({
       faturaId,
       conta,
-      valorTotal,
+      valorCentavos,
       compradorId,
       participantes
     })

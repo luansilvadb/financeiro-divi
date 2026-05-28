@@ -14,7 +14,7 @@ export interface ILancamentoService {
   lancarGastoContaFixa(dados: {
     faturaId: string
     conta: { id: string; name: string }
-    valorTotal: number
+    valorCentavos: number
     compradorId: string
     participantes: string[]
   }): Promise<void>
@@ -227,11 +227,11 @@ export class LancamentoService implements ILancamentoService {
   async lancarGastoContaFixa(dados: {
     faturaId: string
     conta: { id: string; name: string }
-    valorTotal: number
+    valorCentavos: number
     compradorId: string
     participantes: string[]
   }): Promise<void> {
-    const total = Dinheiro.deReais(dados.valorTotal)
+    const total = Dinheiro.deCentavos(dados.valorCentavos)
     const partes = total.distribuir(dados.participantes.length)
     const divisoes = dados.participantes.map((id, idx) => new DivisaoDeGasto(id, partes[idx]))
 

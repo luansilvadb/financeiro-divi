@@ -17,7 +17,7 @@ export class SupabaseContaFixaRepository implements IContaFixaRepository {
       tenant_id: tenantId,
       name: conta.name,
       icon: conta.icon,
-      fixed_value_centavos: conta.fixedValue !== null ? Math.round(conta.fixedValue) : null,
+      fixed_value_centavos: conta.fixedValueCentavos,
       default_split: conta.defaultSplit
     })
 
@@ -40,7 +40,7 @@ export class SupabaseContaFixaRepository implements IContaFixaRepository {
       id: c.id,
       name: c.name,
       icon: c.icon,
-      fixedValue: c.fixed_value_centavos !== null ? Number(c.fixed_value_centavos) : null,
+      fixedValueCentavos: c.fixed_value_centavos !== null ? Number(c.fixed_value_centavos) : null,
       defaultSplit: Array.isArray(c.default_split) ? c.default_split : []
     }))
   }

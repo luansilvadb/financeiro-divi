@@ -116,12 +116,22 @@ export function useDashboardViewModel(
     salvarPeriodoSelecionado(novos)
   }, { deep: true, immediate: true })
 
-  const faturasPeriodoSelecionado = computed(() => {
-    const p = periodoSelecionado.value
-    const faturasExistentes = [
+  const buscarFaturasNoPeriodo = (p: { mes: number; ano: number }) => {
+    return [
       ...props.faturasAbertas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano),
       ...props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
     ]
+  }
+
+  const buscarFaturaNoPeriodo = (p: { mes: number; ano: number }, cartaoId?: string) => {
+    const faturas = buscarFaturasNoPeriodo(p)
+    if (!cartaoId) return faturas[0]
+    return faturas.find(f => f.cartaoId === cartaoId)
+  }
+
+  const faturasPeriodoSelecionado = computed(() => {
+    const p = periodoSelecionado.value
+    const faturasExistentes = buscarFaturasNoPeriodo(p)
     if (faturasExistentes.length === 0) {
       return [
         criarFaturaVirtual(
@@ -145,8 +155,7 @@ export function useDashboardViewModel(
 
   const faturaPixPeriodoSelecionado = computed(() => {
     const p = periodoSelecionado.value
-    const faturaPix = props.faturasAbertas.find(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === p.mes && f.periodo.ano === p.ano) ||
-                      props.faturasFechadas.find(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    const faturaPix = buscarFaturaNoPeriodo(p, 'PIX_DEFAULT_ID')
     if (faturaPix) return faturaPix
 
     return new Fatura({
@@ -173,11 +182,7 @@ export function useDashboardViewModel(
 
   const faturaAtivaVisualizada = computed(() => {
     const p = periodoSelecionado.value
-    const faturaEncontrada = props.faturasAbertas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano) ||
-                             props.faturasFechadas.find(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    if (faturaEncontrada) return faturaEncontrada
-
-    return criarFaturaVirtual(
+    return buscarFaturaNoPeriodo(p) || criarFaturaVirtual(
       p,
       props.cartoes[0]?.id || 'PIX_DEFAULT_ID',
       props.membros[0]?.id || 'virtual-member'
@@ -361,8 +366,15 @@ export function useDashboardViewModel(
   })
 
   // --- Ações de Negócio ---
+  const guardTrancado = () => {
+    if (faturaSelecionadaTrancada.value) {
+      return true
+    }
+    return false
+  }
+
   const confirmarFechamentoFatura = async (faturaId: string, responsavelId: string) => {
-    if (faturaSelecionadaTrancada.value) return
+    if (guardTrancado()) return
     try {
       await fecharFaturaManual(faturaId, responsavelId)
       showBottomSheetFechar.value = false
@@ -374,7 +386,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarAjusteGasto = async (dados: any) => {
-    if (faturaSelecionadaTrancada.value) return
+    if (guardTrancado()) return
     if (!gastoParaAjustar.value) return
     try {
       await atualizarGastoCompletoManual(gastoParaAjustar.value.id, dados)
@@ -413,12 +425,12 @@ export function useDashboardViewModel(
     }
   }
 
-  const confirmarLancarBill = async (dados: { valorReal: number; compradorId: string; splitIds: string[] }) => {
-    if (faturaSelecionadaTrancada.value) return
+  const confirmarLancarBill = async (dados: { valorCentavos: number; compradorId: string; splitIds: string[] }) => {
+    if (guardTrancado()) return
     const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
     try {
-      await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorReal, dados.compradorId, dados.splitIds)
+      await lancarGastoContaFixa(activeFaturaId, billSelecionada.value, dados.valorCentavos, dados.compradorId, dados.splitIds)
       showPopupLancar.value = false
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
@@ -427,7 +439,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarSalvarTemplate = (template: any) => {
-    if (faturaSelecionadaTrancada.value) return
+    if (guardTrancado()) return
     salvarContaFixa(template)
     showBottomSheetConfigCF.value = false
   }
@@ -465,7 +477,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
-    if (faturaSelecionadaTrancada.value) return
+    if (guardTrancado()) return
     const activeFaturaId = faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
 
@@ -488,7 +500,7 @@ export function useDashboardViewModel(
   }
 
   const excluirGasto = async (id: string) => {
-    if (faturaSelecionadaTrancada.value) return
+    if (guardTrancado()) return
     await localGastoService.excluirGasto(id)
     await cartoesEFaturas.inicializar()
   }

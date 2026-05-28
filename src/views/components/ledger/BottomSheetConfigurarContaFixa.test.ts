@@ -7,7 +7,7 @@ const bill: ContaFixa = {
   id: 'energia',
   name: 'Energia',
   icon: '💡',
-  fixedValue: 120,
+  fixedValueCentavos: 12000,
   defaultSplit: ['luan', 'maria'],
 }
 
@@ -59,7 +59,7 @@ describe('BottomSheetConfigurarContaFixa', () => {
       id: 'energia',
       name: 'Energia',
       icon: '💡',
-      fixedValue: 120,
+      fixedValueCentavos: 12000,
       defaultSplit: ['luan'] // 'joao' foi removido porque não está na prop membros
     })
   })
