@@ -18,8 +18,12 @@ const emit = defineEmits(['voltar'])
 
 const handleAdicionar = async () => {
   if (novoNome.value.trim()) {
-    await adicionarMembro(novoNome.value.trim())
-    novoNome.value = ''
+    try {
+      await adicionarMembro(novoNome.value.trim())
+      novoNome.value = ''
+    } catch (error: any) {
+      toast.show(error.message || 'Erro ao adicionar morador', 'error')
+    }
   }
 }
 
@@ -28,6 +32,14 @@ const handleDesativar = async (id: string) => {
     await desativarMembro(id)
   } catch (error: any) {
     toast.show(error.message || 'Erro ao desativar morador', 'error')
+  }
+}
+
+const handleAtivar = async (id: string) => {
+  try {
+    await ativarMembro(id)
+  } catch (error: any) {
+    toast.show(error.message || 'Erro ao reativar morador', 'error')
   }
 }
 </script>
@@ -151,7 +163,7 @@ const handleDesativar = async (id: string) => {
             v-else
             variant="secondary"
             size="icon"
-            @click="ativarMembro(membro.id)"
+            @click="handleAtivar(membro.id)"
             class="bg-meadow/10 text-meadow hover:bg-meadow/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
             title="Reativar morador"
           >

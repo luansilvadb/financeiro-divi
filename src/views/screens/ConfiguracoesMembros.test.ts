@@ -25,6 +25,7 @@ describe('ConfiguracoesMembros', () => {
 
   const mockAdicionarMembro = vi.fn()
   const mockDesativarMembro = vi.fn()
+  const mockAtivarMembro = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -32,7 +33,8 @@ describe('ConfiguracoesMembros', () => {
     ;(useMembros as any).mockReturnValue({
       membros: mockMembros,
       adicionarMembro: mockAdicionarMembro,
-      desativarMembro: mockDesativarMembro
+      desativarMembro: mockDesativarMembro,
+      ativarMembro: mockAtivarMembro
     })
   })
 
@@ -71,6 +73,38 @@ describe('ConfiguracoesMembros', () => {
     
     const itemDesativado = items.find(i => i.text().includes('Joao'))
     expect(itemDesativado?.find('button[title="Desativar morador"]').exists()).toBe(false)
+  })
+
+  it('deve exibir toast de erro se adicionarMembro falhar', async () => {
+    const errorMsg = 'Nome de morador já existe'
+    mockAdicionarMembro.mockRejectedValueOnce(new Error(errorMsg))
+    const wrapper = mount(ConfiguracoesMembros)
+    const input = wrapper.find('input')
+    const button = wrapper.find('button.h-12')
+
+    await input.setValue('Novo Morador')
+    await button.trigger('click')
+
+    const { useToast } = await import('../../composables/useToast')
+    const toast = useToast()
+    expect(toast.visible.value).toBe(true)
+    expect(toast.message.value).toBe(errorMsg)
+    expect(toast.type.value).toBe('error')
+  })
+
+  it('deve exibir toast de erro se ativarMembro falhar', async () => {
+    const errorMsg = 'Não foi possível reativar o morador'
+    mockAtivarMembro.mockRejectedValueOnce(new Error(errorMsg))
+    const wrapper = mount(ConfiguracoesMembros)
+    const btnAtivar = wrapper.find('button[title="Reativar morador"]')
+
+    await btnAtivar.trigger('click')
+
+    const { useToast } = await import('../../composables/useToast')
+    const toast = useToast()
+    expect(toast.visible.value).toBe(true)
+    expect(toast.message.value).toBe(errorMsg)
+    expect(toast.type.value).toBe('error')
   })
 
 })
