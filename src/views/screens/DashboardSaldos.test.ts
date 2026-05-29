@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DashboardSaldos from './DashboardSaldos.vue'
+import { Fatura } from '../../models/entities/Fatura'
+import { Cartao } from '../../models/entities/Cartao'
 
 describe('DashboardSaldos - Cartões & Faturas', () => {
   beforeEach(() => {
@@ -231,5 +233,47 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     
     await configButton.trigger('click')
     expect(wrapper.emitted('openSettings')).toBeTruthy()
+  })
+
+  it('deve exibir previa de faturas abertas separada do saldo real', async () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'luan', nome: 'Luan' }, { id: 'joao', nome: 'Joao' }],
+        faturasAbertas: [
+          new Fatura({ id: 'pix-maio', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' }),
+          new Fatura({ id: 'card-maio', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'luan', status: 'ABERTA' })
+        ],
+        faturasFechadas: [],
+        acertosPendentes: [],
+        cartoes: [new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'luan' })],
+        calcularConsumo: () => 0,
+        activeTab: 'faturas'
+      }
+    })
+
+    const { useCartoesEFaturas } = await import('../../viewmodels/useCartoesEFaturas')
+    const { Dinheiro } = await import('../../models/entities/Dinheiro')
+    const { Gasto } = await import('../../models/entities/Gasto')
+    const { DivisaoDeGasto } = await import('../../models/entities/DivisaoDeGasto')
+
+    const mockG = new Gasto({
+      id: 'g-cartao-aberto',
+      faturaId: 'card-maio',
+      descricao: 'Compra Nubank',
+      valorTotal: Dinheiro.deCentavos(15000),
+      compradorId: 'luan',
+      divisoes: [
+        new DivisaoDeGasto('luan', Dinheiro.deCentavos(5000)),
+        new DivisaoDeGasto('joao', Dinheiro.deCentavos(10000))
+      ],
+      method: 'card',
+      cardOwner: 'luan'
+    })
+
+    useCartoesEFaturas().gastos.value = [mockG]
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Previa de faturas abertas')
+    expect(wrapper.text()).toContain('Nao e cobranca final')
   })
 })

@@ -54,6 +54,8 @@ const {
   parcelasFuturasDetalhadas,
   contasFixas,
   gastosFaturaSelecionada,
+  previaCartaoAbertoPorMembroCentavos,
+  totalPreviaCartaoAbertoCentavos,
   getMembroNome,
   formatarDinheiro,
   acertosDaFatura,
@@ -210,7 +212,7 @@ defineExpose({
           <div>
             <h3 class="font-bold text-lg leading-tight">Mês de Referência: {{ currentMonthName }}</h3>
             <p class="text-xs text-stone-300 mt-1">
-              {{ faturaSelecionadaTrancada ? 'Este mês está arquivado. Para fazer novos lançamentos, reabra o período.' : 'Encerre este mês para gerar as faturas e iniciar o próximo período.' }}
+              {{ faturaSelecionadaTrancada ? 'Este mês está arquivado. Para fazer novos lançamentos, reabra o período.' : 'Encerre este mês para arquivar o período e iniciar o próximo. Faturas abertas continuam como previsão.' }}
             </p>
           </div>
         </div>
@@ -230,6 +232,27 @@ defineExpose({
         >
           Encerrar Mês
         </Button>
+      </Card>
+
+      <!-- Prévia de Faturas Abertas -->
+      <Card v-if="totalPreviaCartaoAbertoCentavos > 0" class="p-6 space-y-4">
+        <div>
+          <h3 class="font-bold text-lg leading-tight text-charcoal">Previa de faturas abertas</h3>
+          <p class="text-xs text-ash mt-1">Nao e cobranca final. Estes valores viram acerto quando a fatura for fechada.</p>
+        </div>
+
+        <div class="grid gap-2">
+          <div
+            v-for="m in membrosAtivos"
+            :key="m.id"
+            class="flex items-center justify-between rounded-xl bg-parchment px-4 py-3"
+          >
+            <span class="text-sm font-semibold text-charcoal">{{ m.nome }}</span>
+            <span class="text-sm font-bold text-ash">
+              R$ {{ ((previaCartaoAbertoPorMembroCentavos[m.id] || 0) / 100).toFixed(2).replace('.', ',') }}
+            </span>
+          </div>
+        </div>
       </Card>
 
       <!-- Detalhamento Granular de Saldos por Coluna (Senior v19) -->
