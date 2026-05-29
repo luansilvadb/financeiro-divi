@@ -17,15 +17,23 @@ import { ExcluirMuitosGastosDto } from './dto/excluir-muitos-gastos.dto';
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
 @ApiUnauthorizedResponse({ description: 'Token JWT ausente ou inválido' })
-@UseGuards(JwtAuthGuard)
 @Controller('financeiro')
 export class FinanceiroController {
   constructor(private financeiroService: FinanceiroService) {}
 
   // --- TENANTS ---
+  @ApiOperation({ summary: 'Obter preview de uma casa pelo código de convite', description: 'Retorna nome da casa e membros disponíveis para vínculo (sem login).' })
+  @ApiOkResponse({ description: 'Dados da casa retornados com sucesso' })
+  @ApiBadRequestResponse({ description: 'Código de convite inválido ou casa inexistente' })
+  @Get('tenants/invite/:code')
+  async obterPreviewConvite(@Param('code') code: string) {
+    return this.financeiroService.obterPreviewConvite(code);
+  }
+
   @ApiOperation({ summary: 'Criar um novo Tenant (casa)', description: 'Cria uma nova organização multitenant e vincula o usuário autenticado como administrador.' })
   @ApiCreatedResponse({ description: 'Tenant criado com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados de entrada inválidos' })
+  @UseGuards(JwtAuthGuard)
   @Post('tenants')
   async criarTenant(@Body() criarTenantDto: CriarTenantDto, @Request() req: any) {
     return this.financeiroService.criarTenant(criarTenantDto.name, req.user.userId);
@@ -34,6 +42,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Entrar em um Tenant existente usando código de convite', description: 'Associa o usuário autenticado a um tenant correspondente ao código de convite informado.' })
   @ApiOkResponse({ description: 'Acesso ao tenant concedido com sucesso' })
   @ApiBadRequestResponse({ description: 'Código de convite inválido ou tenant inexistente' })
+  @UseGuards(JwtAuthGuard)
   @Post('tenants/entrar')
   async entrarTenantPorCodigo(@Body() entrarTenantDto: EntrarTenantDto, @Request() req: any) {
     return this.financeiroService.entrarTenantPorCodigo(entrarTenantDto.inviteCode, req.user.userId);
