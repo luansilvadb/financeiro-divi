@@ -10,6 +10,7 @@ import { useDashboardPeriodos } from './useDashboardPeriodos'
 import { useDashboardNetting } from './useDashboardNetting'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
+import { calcularPreviaCartaoAberto, separarGastosSaldoRealEPreviaCartao } from '../models/services/DashboardSaldoService'
 import { formatarMesAno } from '../shared/utils/meses'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import { useToast } from '../composables/useToast'
@@ -94,7 +95,20 @@ export function useDashboardViewModel(
     return globalGastos.value.filter(g => ids.includes(g.faturaId))
   })
 
-  const netting = useDashboardNetting(() => props.membros, gastosFaturaSelecionada)
+  const faturasPeriodoSelecionadoLista = computed(() => periodos.faturasPeriodoSelecionado.value)
+
+  const separacaoDashboard = computed(() =>
+    separarGastosSaldoRealEPreviaCartao(gastosFaturaSelecionada.value, faturasPeriodoSelecionadoLista.value)
+  )
+
+  const gastosSaldoRealSelecionado = computed(() => separacaoDashboard.value.gastosSaldoReal)
+  const gastosPrevisaoCartaoAberto = computed(() => separacaoDashboard.value.gastosPrevisaoCartao)
+  const previaCartaoAbertoPorMembroCentavos = computed(() => calcularPreviaCartaoAberto(gastosPrevisaoCartaoAberto.value))
+  const totalPreviaCartaoAbertoCentavos = computed(() =>
+    Object.values(previaCartaoAbertoPorMembroCentavos.value).reduce((acc, val) => acc + val, 0)
+  )
+
+  const netting = useDashboardNetting(() => props.membros, gastosSaldoRealSelecionado)
 
   // --- Helpers ---
   const getMembroNome = (id: string) => {
@@ -340,6 +354,10 @@ export function useDashboardViewModel(
     parcelasFuturasDetalhadas,
     contasFixas,
     gastosFaturaSelecionada,
+    gastosSaldoRealSelecionado,
+    gastosPrevisaoCartaoAberto,
+    previaCartaoAbertoPorMembroCentavos,
+    totalPreviaCartaoAbertoCentavos,
     getMembroNome,
     formatarDinheiro,
     calcularTotalFatura,

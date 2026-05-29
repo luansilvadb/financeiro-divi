@@ -3,10 +3,10 @@ import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/s
 
 export function useDashboardNetting(
   getMembros: () => { id: string; nome: string; ativo?: boolean }[],
-  gastosFaturaSelecionada: Ref<any[]>
+  gastosSaldoReal: Ref<any[]>
 ) {
   const saldosUnificadosAtivosCentavos = computed(() =>
-    calcularSaldosUnificados(getMembros(), gastosFaturaSelecionada.value)
+    calcularSaldosUnificados(getMembros(), gastosSaldoReal.value)
   )
 
   const saldosUnificadosAtivos = computed(() => {
