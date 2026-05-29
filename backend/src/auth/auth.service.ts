@@ -10,7 +10,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(username: string, passwordSecret: string) {
+  async register(username: string, passwordSecret: string, inviteCode?: string, membroId?: string) {
     const cleanedUsername = username.trim().toLowerCase();
     
     const existing = await this.prisma.usuario.findUnique({
@@ -31,8 +31,36 @@ export class AuthService {
       },
     });
 
-    // Ao cadastrar o usuário, vamos criar um perfil de membro inicial padrão para ele
-    // e associá-lo a nenhuma casa (o usuário depois cria ou entra em uma casa)
+    // Se houver um convite, vinculamos o usuário ao membro da casa
+    if (inviteCode && membroId) {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { inviteCode: inviteCode.toUpperCase() }
+      });
+
+      if (tenant) {
+        if (membroId === 'novo') {
+          // Cria um novo morador na casa associado a este usuário
+          await this.prisma.membroCasa.create({
+            data: {
+              id: `membro-${crypto.randomUUID()}`,
+              tenantId: tenant.id,
+              nome: user.username,
+              avatar: user.username.substring(0, 2).toUpperCase(),
+              userId: user.id,
+            }
+          });
+        } else {
+          // Vincula a conta ao morador pré-existente selecionado
+          await this.prisma.membroCasa.update({
+            where: {
+              id_tenantId: { id: membroId, tenantId: tenant.id }
+            },
+            data: { userId: user.id }
+          });
+        }
+      }
+    }
+
     return {
       userId: user.id,
       username: user.username,
