@@ -47,7 +47,7 @@ describe('FaturaService', () => {
       excluir: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await service.fecharFatura('f1', undefined, new Date())
 
     // Fatura original é imutável, verificamos que salvar recebeu nova instância FECHADA
@@ -75,7 +75,7 @@ describe('FaturaService', () => {
     const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), excluirPorFatura: vi.fn(), salvar: vi.fn() }
     const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), salvar: vi.fn(), excluir: vi.fn() }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await service.fecharFatura('f1', 'm2', new Date())
 
     // Fatura original imutável — verificamos nova instância
@@ -92,7 +92,7 @@ describe('FaturaService', () => {
     const acertoRepo = { buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn() }
     const gastoRepo = { buscarPorFatura: vi.fn() }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await service.reabrirFatura('f1')
 
     // Fatura original imutável — verificamos nova instância
@@ -187,7 +187,7 @@ describe('FaturaService', () => {
       excluir: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await service.fecharFatura('f1', undefined, new Date())
 
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
@@ -237,7 +237,7 @@ describe('FaturaService', () => {
       excluir: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await service.fecharFatura('f1', undefined, new Date())
 
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
@@ -285,7 +285,7 @@ describe('FaturaService', () => {
       excluir: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await service.fecharFatura('f1', undefined, new Date())
 
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
@@ -458,7 +458,7 @@ describe('FaturaService', () => {
     const acertoRepo = { buscarPorFatura: vi.fn(), excluirPorFatura: vi.fn(), salvar: vi.fn() }
     const gastoRepo = { buscarPorFatura: vi.fn() }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await expect(service.fecharFatura('f1')).resolves.not.toThrow()
     expect(faturaRepo.salvar).not.toHaveBeenCalled()
   })
@@ -469,7 +469,7 @@ describe('FaturaService', () => {
     const acertoRepo = { buscarPorFatura: vi.fn(), excluirPorFatura: vi.fn(), salvar: vi.fn() }
     const gastoRepo = { buscarPorFatura: vi.fn() }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     await expect(service.reabrirFatura('f1')).resolves.not.toThrow()
     expect(faturaRepo.salvar).not.toHaveBeenCalled()
   })
@@ -499,7 +499,7 @@ describe('FaturaService', () => {
       listarTodos: vi.fn().mockResolvedValue([gastoNettingProximo])
     }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     
     await expect(service.reabrirFatura('f1')).rejects.toThrow(
       'Não é possível reabrir esta fatura pois já existem acertos de contas (Pix) confirmados no período seguinte. Estorne os acertos primeiro.'
@@ -530,7 +530,7 @@ describe('FaturaService', () => {
       listarTodos: vi.fn().mockResolvedValue([gastoNormalProximo])
     }
 
-    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     
     await expect(service.reabrirFatura('f1')).resolves.not.toThrow()
     // Fatura original imutável — verificamos nova instância

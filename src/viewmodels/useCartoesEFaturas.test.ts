@@ -115,7 +115,8 @@ describe('useCartoesEFaturas', () => {
     const lService = new LancamentoService(gRepo, fRepo, cRepo, mRepo)
     const eService = new EstornoService(gRepo, fRepo, aRepo)
     const gSvc = new GastoService(gRepo, fRepo, cRepo, mRepo, aRepo, lService, eService)
-    const fSvc = new FaturaService(fRepo, aRepo, gRepo)
+    const antRepo = { buscarPorFatura: async () => [] } as any
+    const fSvc = new FaturaService(fRepo, aRepo, gRepo, antRepo)
     const aSvc = new AcertoService(aRepo, fRepo, gRepo)
 
     deps = {
