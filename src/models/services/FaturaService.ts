@@ -6,7 +6,7 @@ import type { IFaturaService } from './IFaturaService'
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IAntecipacaoFaturaRepository } from '../repositories/IAntecipacaoFaturaRepository'
 import { Dinheiro } from '../entities/Dinheiro'
-import { AcertoMembro } from '../entities/AcertoMembro'
+import { AcertoMembro, type TipoAcerto } from '../entities/AcertoMembro'
 import { valorParcelaAtual } from '../entities/ParcelaCalculator'
 
 export class FaturaService implements IFaturaService {
@@ -75,19 +75,48 @@ export class FaturaService implements IFaturaService {
         // Localizar se já existia um acerto pago/reembolsado para esse membro
         const antigo = acertosAntigos.find(a => a.membroId === membroId)
 
-        const acerto = new AcertoMembro({
-          id: antigo?.id || crypto.randomUUID(),
+        const acerto = this.criarAcertoRecalculado({
+          antigo,
           faturaId,
           membroId,
-          totalConsumido: Dinheiro.deCentavos(centavos),
-          totalAntecipado: Dinheiro.deCentavos(totalAntecipado),
-          valorPago: antigo?.valorPago,
-          pago: antigo?.pago,
-          dataPagamento: antigo?.dataPagamento
+          totalConsumidoCentavos: centavos,
+          totalAntecipadoCentavos: totalAntecipado,
+          liquido
         })
         await this.acertoRepo.salvar(acerto)
       }
     }
+  }
+
+  private criarAcertoRecalculado(params: {
+    antigo?: AcertoMembro
+    faturaId: string
+    membroId: string
+    totalConsumidoCentavos: number
+    totalAntecipadoCentavos: number
+    liquido: number
+  }): AcertoMembro {
+    const tipoCalculado: TipoAcerto = params.liquido >= 0 ? 'MEMBRO_PAGA' : 'RESPONSAVEL_PAGA'
+    const valorAcertoCentavos = Math.abs(params.liquido)
+
+    let valorPago = Dinheiro.deCentavos(0)
+    if (params.antigo?.tipo === tipoCalculado) {
+      valorPago = Dinheiro.deCentavos(Math.min(params.antigo.valorPago.centavos, valorAcertoCentavos))
+    }
+
+    const pago = valorAcertoCentavos > 0 && valorPago.centavos >= valorAcertoCentavos
+
+    return new AcertoMembro({
+      id: params.antigo?.id || crypto.randomUUID(),
+      faturaId: params.faturaId,
+      membroId: params.membroId,
+      totalConsumido: Dinheiro.deCentavos(params.totalConsumidoCentavos),
+      totalAntecipado: Dinheiro.deCentavos(params.totalAntecipadoCentavos),
+      tipo: tipoCalculado,
+      valorPago,
+      pago,
+      dataPagamento: pago ? params.antigo?.dataPagamento : undefined
+    })
   }
 
   async reabrirFatura(faturaId: string): Promise<void> {
