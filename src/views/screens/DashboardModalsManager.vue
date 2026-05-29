@@ -107,6 +107,11 @@ const localNettingTransferencias = computed(() => {
   return Array.isArray(t) ? t : (t?.value || [])
 })
 
+const localResumoPendencias = computed(() => {
+  const r = props.vm.resumoPendencias
+  return r?.value !== undefined ? r.value : r
+})
+
 const selecionarPeriodo = (p: { mes: number; ano: number }) => {
   if (props.vm.periodoSelecionado && props.vm.periodoSelecionado.value !== undefined) {
     props.vm.periodoSelecionado.value = p
@@ -161,11 +166,6 @@ const localModalStack = computed(() => {
 const isModalNoTopo = (nome: string) => {
   return localModalStack.value[localModalStack.value.length - 1] === nome
 }
-
-const localIsExecutingRollover = computed(() => {
-  const r = props.vm.isExecutingRollover
-  return r?.value !== undefined ? r.value : (r || false)
-})
 </script>
 
 <template>
@@ -231,19 +231,37 @@ const localIsExecutingRollover = computed(() => {
             <p class="text-[11px] text-amber-700/80 mt-0.5">Ainda existem contas fixas deste mês que não foram lançadas. Deseja fechar mesmo assim?</p>
           </div>
         </div>
+
+        <div v-if="localResumoPendencias?.temPendencias" class="space-y-4 mt-2">
+          <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Pendências Identificadas</h4>
+          
+          <div v-if="localResumoPendencias.faturasAbertasComConsumo.length > 0" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <p class="text-xs font-bold text-amber-700 mb-2">Faturas de Cartão ainda ABERTAS</p>
+            <ul class="space-y-2">
+              <li v-for="item in localResumoPendencias.faturasAbertasComConsumo" :key="item.fatura.id" class="flex justify-between items-center text-xs text-amber-700/80">
+                <span>{{ cartoes.find((c: any) => c.id === item.fatura.cartaoId)?.nome || 'Cartão' }}</span>
+                <span class="font-bold">R$ {{ (item.totalCentavos / 100).toFixed(2).replace('.', ',') }} consumido</span>
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="localResumoPendencias.faturasFechadasNaoQuitadas.length > 0" class="p-4 rounded-xl bg-coral/10 border border-coral/20">
+            <p class="text-xs font-bold text-coral mb-2">Acertos não quitados (Faturas FECHADAS)</p>
+            <ul class="space-y-2">
+              <li v-for="item in localResumoPendencias.faturasFechadasNaoQuitadas" :key="item.fatura.id" class="flex justify-between items-center text-xs text-coral/80">
+                <span>{{ cartoes.find((c: any) => c.id === item.fatura.cartaoId)?.nome || 'Cartão' }}</span>
+                <span class="font-bold">{{ item.acertosPendentes.length }} acerto(s) pendente(s)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
         <div class="grid grid-cols-2 gap-3">
-          <Button variant="secondary" :disabled="localIsExecutingRollover" @click="vm.fecharModal('novo-periodo')">Cancelar</Button>
-          <Button 
-            variant="primary" 
-            class="bg-charcoal text-white hover:bg-midnight border-none flex items-center justify-center" 
-            @click="vm.confirmarNovoPeriodo" 
-            :disabled="!nomeNovoPeriodoStr.trim() || localIsExecutingRollover"
-          >
-            <span v-if="localIsExecutingRollover" class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" aria-hidden="true" />
-            {{ localIsExecutingRollover ? 'Arquivando...' : 'Arquivar Mês' }}
+          <Button variant="secondary" @click="vm.fecharModal('novo-periodo')">Cancelar</Button>
+          <Button variant="primary" class="bg-charcoal text-white hover:bg-midnight border-none" @click="vm.confirmarNovoPeriodo" :disabled="!nomeNovoPeriodoStr.trim()">
+            Arquivar Mês
           </Button>
         </div>
       </div>
@@ -414,10 +432,10 @@ const localIsExecutingRollover = computed(() => {
               </div>
               <div class="flex items-center gap-2" @click.stop>
                 <code class="text-[10px] bg-stone/50 px-2 py-1 rounded text-ash font-mono select-all">
-                  {{ casa.invite_code }}
+                  {{ casa.inviteCode }}
                 </code>
                 <button 
-                  @click="casasMultitenant.copyInviteCode(casa.invite_code)" 
+                  @click="casasMultitenant.copyInviteCode(casa.inviteCode)" 
                   class="p-1 hover:bg-stone rounded transition-colors"
                 >
                   <Check v-if="casasMultitenant.copied" class="w-3.5 h-3.5 text-meadow" />
@@ -434,7 +452,7 @@ const localIsExecutingRollover = computed(() => {
           <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Criar Nova Casa</h4>
           <div class="flex gap-2">
             <input 
-              v-model="casasMultitenant.nomeNovaCasa"
+              v-model="casasMultitenant.nomeNovaCasa.value"
               placeholder="Ex: República Central"
               class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
             />
@@ -446,7 +464,7 @@ const localIsExecutingRollover = computed(() => {
           <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Entrar com Código</h4>
           <div class="flex gap-2">
             <input 
-              v-model="casasMultitenant.codigoConvite"
+              v-model="casasMultitenant.codigoConvite.value"
               placeholder="Ex: CASA-7F2A1"
               class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
             />
