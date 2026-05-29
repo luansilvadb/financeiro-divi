@@ -14,7 +14,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
   constructor(
     private faturaRepo: IFaturaRepository,
     private gastoRepo: IGastoRepository,
-    private faturaService: IFaturaService
+    _faturaService: IFaturaService
   ) {}
 
   processarRolloverParcelas(novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] {
@@ -73,11 +73,6 @@ export class FaturaRolloverService implements IFaturaRolloverService {
   }): Promise<void> {
     const { nomeNovoPeriodo, faturasAbertas, cartoes, saldosAcumulados, nomePeriodoAnterior } = dados
     if (faturasAbertas.length === 0) return
-
-    // 1. Fechar as faturas abertas do período via FaturaService para gerar acertos
-    for (const f of faturasAbertas) {
-      await this.faturaService.fecharFatura(f.id, f.responsavelId, new Date())
-    }
 
     // 2. Criar faturas e período no novo mês
     const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')

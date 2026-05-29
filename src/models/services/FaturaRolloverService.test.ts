@@ -87,39 +87,41 @@ describe('FaturaRolloverService', () => {
     expect(carryovers1[0].id).toBe(carryovers2[0].id)
   })
 
-  it('deve fechar faturas antigas e criar novas faturas no rollover de periodo', async () => {
+  it('nao deve fechar faturas abertas ao encerrar periodo', async () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
-    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    
-    const faturaAntiga = new Fatura({
+    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn().mockResolvedValue([]), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const faturaAberta = new Fatura({
       id: 'f-antiga',
       cartaoId: 'c1',
       periodo: { mes: 5, ano: 2026 },
       responsavelId: 'm1',
       status: 'ABERTA'
     })
-
     const mockFaturaService = {
       fecharFatura: vi.fn().mockResolvedValue(undefined),
       reabrirFatura: vi.fn(),
       assegurarFaturasAbertas: vi.fn()
     }
-
     const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
-
-    mockGastoRepo.buscarPorFatura.mockResolvedValue([])
 
     await service.executarRolloverPeriodo({
       nomeNovoPeriodo: 'Junho 2026',
-      faturasAbertas: [faturaAntiga],
+      faturasAbertas: [faturaAberta],
       cartoes: [{ id: 'c1', responsavelPadraoId: 'm1' }],
       saldosAcumulados: { m1: 0 },
       nomePeriodoAnterior: 'Maio 2026'
     })
 
-    expect(mockFaturaService.fecharFatura).toHaveBeenCalledWith('f-antiga', 'm1', expect.any(Date))
-    // faturaAntiga permanece ABERTA pois Fatura é imutável — o fecharFatura no serviço real criaria nova instância
-    expect(faturaAntiga.status).toBe('ABERTA')
-    expect(mockFaturaRepo.salvar).toHaveBeenCalledTimes(2) // 1 para Pix default, 1 para a nova do cartão (a antiga é fechada via faturaService)
+    expect(mockFaturaService.fecharFatura).not.toHaveBeenCalled()
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: 6, ano: 2026 },
+      status: 'ABERTA'
+    }))
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      cartaoId: 'c1',
+      periodo: { mes: 6, ano: 2026 },
+      status: 'ABERTA'
+    }))
   })
 })

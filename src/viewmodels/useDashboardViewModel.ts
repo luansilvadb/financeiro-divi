@@ -249,6 +249,7 @@ export function useDashboardViewModel(
         f.periodo.ano === periodos.faturaAtivaVisualizada.value.periodo.ano
       )
 
+      // Encerrar mes carrega apenas saldos reais. Faturas de cartao abertas seguem como previsao.
       await rolloverService.executarRolloverPeriodo({
         nomeNovoPeriodo: uiState.nomeNovoPeriodo.value,
         faturasAbertas: faturasAbertasVisualizadas,
