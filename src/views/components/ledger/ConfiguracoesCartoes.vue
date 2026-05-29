@@ -50,9 +50,13 @@ const toggleResponsavelDropdown = async () => {
 
 const adicionarCard = async () => {
   if (!nome.value || !responsavelId.value) return
-  await adicionarCartao(nome.value, diaFechamento.value, responsavelId.value)
-  nome.value = ''
-  responsavelId.value = ''
+  try {
+    await adicionarCartao(nome.value, diaFechamento.value, responsavelId.value)
+    nome.value = ''
+    responsavelId.value = ''
+  } catch (error: any) {
+    toast.show(error.message || 'Erro ao cadastrar cartão', 'error')
+  }
 }
 
 const handleExcluir = async (id: string) => {
