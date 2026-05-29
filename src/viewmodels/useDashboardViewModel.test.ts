@@ -630,11 +630,26 @@ describe('useDashboardViewModel', () => {
     // Garante que o toast de erro foi chamado
     const toast = useToast()
     expect(toast.show).toHaveBeenCalledWith(
-      ' Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro. ',
+      'Não é possível excluir gastos comuns neste período pois já existem acertos de contas (Pix) confirmados. Estorne os acertos primeiro',
       'error'
     )
     
     // Garante que o service de excluir gasto NÃO foi chamado
     expect(mockGastoService.excluirGasto).not.toHaveBeenCalled()
+  })
+
+  it('deve exibir toast de erro se a exclusão do gasto falhar no serviço', async () => {
+    const errorMsg = 'Falha de conexão com a base de dados'
+    mockGastoService.excluirGasto.mockRejectedValueOnce(new Error(errorMsg))
+    
+    mockCartoesEFaturas.gastos.value = [
+      { id: 'g-id-erro', faturaId: 'f1', cardOwner: 'c1' }
+    ] as any
+
+    const vm = createViewModel(dummyProps, vi.fn())
+    await vm.excluirGasto('g-id-erro')
+
+    const toast = useToast()
+    expect(toast.show).toHaveBeenCalledWith(errorMsg, 'error')
   })
 })

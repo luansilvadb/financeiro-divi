@@ -394,8 +394,12 @@ export function useDashboardViewModel(
         }
       }
 
-      await localGastoService.excluirGasto(id)
-      await cartoesEFaturas.inicializar()
+      try {
+        await localGastoService.excluirGasto(id)
+        await cartoesEFaturas.inicializar()
+      } catch (error: any) {
+        toast.show(error.message || 'Erro ao excluir gasto', 'error')
+      }
     }
   }
 }
