@@ -9,6 +9,7 @@ import { FaturaDto } from './dto/fatura.dto';
 import { GastoDto } from './dto/gasto.dto';
 import { ContaFixaDto } from './dto/conta-fixa.dto';
 import { AcertoDto } from './dto/acerto.dto';
+import { AntecipacaoFaturaDto } from './dto/antecipacao-fatura.dto';
 import { CriarTenantDto } from './dto/criar-tenant.dto';
 import { EntrarTenantDto } from './dto/entrar-tenant.dto';
 import { ExcluirMuitosGastosDto } from './dto/excluir-muitos-gastos.dto';
@@ -231,6 +232,24 @@ export class FinanceiroController {
       throw new BadRequestException('O cabeçalho x-tenant-id é obrigatório.');
     }
     return this.financeiroService.listarAcertos(tenantId);
+  }
+
+  @Get('antecipacoes-fatura')
+  async listarAntecipacoesFatura(@Headers('x-tenant-id') tenantId: string) {
+    if (!tenantId) throw new BadRequestException('O cabecalho x-tenant-id e obrigatorio.');
+    return this.financeiroService.listarAntecipacoesFatura(tenantId);
+  }
+
+  @Post('antecipacoes-fatura')
+  async salvarAntecipacaoFatura(@Headers('x-tenant-id') tenantId: string, @Body() dto: AntecipacaoFaturaDto) {
+    if (!tenantId) throw new BadRequestException('O cabecalho x-tenant-id e obrigatorio.');
+    return this.financeiroService.salvarAntecipacaoFatura(tenantId, dto);
+  }
+
+  @Delete('antecipacoes-fatura/:id')
+  async excluirAntecipacaoFatura(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
+    if (!tenantId) throw new BadRequestException('O cabecalho x-tenant-id e obrigatorio.');
+    return this.financeiroService.excluirAntecipacaoFatura(tenantId, id);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar um acerto no tenant', description: 'Cria ou updates as informações de acertos no tenant ativo.' })

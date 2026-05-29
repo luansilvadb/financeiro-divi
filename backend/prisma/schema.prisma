@@ -18,6 +18,7 @@ model Tenant {
   gastos     Gasto[]
   contasFixas ContaFixa[]
   acertos    AcertoMembro[]
+  antecipacoesFatura AntecipacaoFatura[]
 
   @@map("tenants")
 }
@@ -148,4 +149,20 @@ model AcertoMembro {
 
   @@id([id, tenantId])
   @@map("acertos_membro")
+}
+
+model AntecipacaoFatura {
+  id             String   @id
+  tenantId       String   @map("tenant_id") @db.Uuid
+  faturaId       String   @map("fatura_id")
+  membroId       String   @map("membro_id")
+  responsavelId  String   @map("responsavel_id")
+  valorCentavos  BigInt   @map("valor_centavos")
+  data           DateTime
+  observacao     String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("antecipacoes_fatura")
 }

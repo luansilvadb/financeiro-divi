@@ -6,6 +6,7 @@ import { HttpFaturaRepository } from '../models/repositories/http/HttpFaturaRepo
 import { HttpGastoRepository } from '../models/repositories/http/HttpGastoRepository'
 import { HttpContaFixaRepository } from '../models/repositories/http/HttpContaFixaRepository'
 import { HttpAcertoMembroRepository } from '../models/repositories/http/HttpAcertoMembroRepository'
+import { HttpAntecipacaoFaturaRepository } from '../models/repositories/http/HttpAntecipacaoFaturaRepository'
 
 import { MembroService } from '../models/services/MembroService'
 import { GastoService } from '../models/services/GastoService'
@@ -23,6 +24,7 @@ export const faturaRepository = new HttpFaturaRepository()
 export const gastoRepository = new HttpGastoRepository()
 export const contaFixaRepository = new HttpContaFixaRepository()
 export const acertoMembroRepository = new HttpAcertoMembroRepository()
+export const antecipacaoFaturaRepository = new HttpAntecipacaoFaturaRepository()
 
 const lancamentoService = new LancamentoService(gastoRepository, faturaRepository, cartaoRepository, membroRepository)
 const estornoService = new EstornoService(gastoRepository, faturaRepository, acertoMembroRepository)

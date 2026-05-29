@@ -391,6 +391,42 @@ export class FinanceiroService {
     return serializeBigInt(acertos);
   }
 
+  async listarAntecipacoesFatura(tenantId: string) {
+    const antecipacoes = await this.prisma.antecipacaoFatura.findMany({ where: { tenantId } });
+    return serializeBigInt(antecipacoes);
+  }
+
+  async salvarAntecipacaoFatura(tenantId: string, data: any) {
+    const { id, faturaId, membroId, responsavelId, valorCentavos, observacao } = data;
+    const saved = await this.prisma.antecipacaoFatura.upsert({
+      where: { id },
+      create: {
+        id,
+        tenantId,
+        faturaId,
+        membroId,
+        responsavelId,
+        valorCentavos: BigInt(valorCentavos || 0),
+        data: new Date(data.data),
+        observacao: observacao || null,
+      },
+      update: {
+        faturaId,
+        membroId,
+        responsavelId,
+        valorCentavos: BigInt(valorCentavos || 0),
+        data: new Date(data.data),
+        observacao: observacao || null,
+      },
+    });
+    return serializeBigInt(saved);
+  }
+
+  async excluirAntecipacaoFatura(tenantId: string, id: string) {
+    await this.prisma.antecipacaoFatura.deleteMany({ where: { tenantId, id } });
+    return { success: true };
+  }
+
   async salvarAcerto(tenantId: string, acertoData: any) {
     const {
       id,
