@@ -161,6 +161,11 @@ const localModalStack = computed(() => {
 const isModalNoTopo = (nome: string) => {
   return localModalStack.value[localModalStack.value.length - 1] === nome
 }
+
+const localIsExecutingRollover = computed(() => {
+  const r = props.vm.isExecutingRollover
+  return r?.value !== undefined ? r.value : (r || false)
+})
 </script>
 
 <template>
@@ -230,9 +235,15 @@ const isModalNoTopo = (nome: string) => {
 
       <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
         <div class="grid grid-cols-2 gap-3">
-          <Button variant="secondary" @click="vm.fecharModal('novo-periodo')">Cancelar</Button>
-          <Button variant="primary" class="bg-charcoal text-white hover:bg-midnight border-none" @click="vm.confirmarNovoPeriodo" :disabled="!nomeNovoPeriodoStr.trim()">
-            Arquivar Mês
+          <Button variant="secondary" :disabled="localIsExecutingRollover" @click="vm.fecharModal('novo-periodo')">Cancelar</Button>
+          <Button 
+            variant="primary" 
+            class="bg-charcoal text-white hover:bg-midnight border-none flex items-center justify-center" 
+            @click="vm.confirmarNovoPeriodo" 
+            :disabled="!nomeNovoPeriodoStr.trim() || localIsExecutingRollover"
+          >
+            <span v-if="localIsExecutingRollover" class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" aria-hidden="true" />
+            {{ localIsExecutingRollover ? 'Arquivando...' : 'Arquivar Mês' }}
           </Button>
         </div>
       </div>
