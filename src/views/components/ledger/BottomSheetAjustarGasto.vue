@@ -245,7 +245,7 @@ const handleConfirm = () => {
           <!-- Quem pagou -->
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">
-              {{ props.gasto?.isLoan ? 'Quem emprestou?' : activeMethod === 'pix' ? 'Quem fez o Pix?' : `Quem passou no cartão?` }}
+              {{ props.gasto?.isLoan ? 'Quem emprestou?' : activeMethod === 'pix' ? 'Quem fez o Pix?' : `Quem usou o cartão?` }}
             </label>
             <div class="grid grid-cols-3 gap-2">
               <button 

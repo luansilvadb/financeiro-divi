@@ -159,7 +159,7 @@ const detailedBreakdown = computed(() => {
             
             <div class="space-y-3">
               <div class="flex justify-between items-baseline">
-                <span class="text-[13px] font-medium text-graphite">Passou</span>
+                <span class="text-[13px] font-medium text-graphite">Usou</span>
                 <span class="text-[15px] font-semibold tracking-[-0.2px] text-meadow">+R$ {{ formatarBRL(detailedBreakdown[m.id]?.cardFez || 0) }}</span>
               </div>
               <div class="h-[1px] w-full bg-stone" />
