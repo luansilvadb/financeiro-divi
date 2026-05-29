@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
+import { FinanceiroGateway } from './financeiro.gateway';
 
 function serializeBigInt(obj: any): any {
   if (obj === null || obj === undefined) return obj;
@@ -17,9 +19,36 @@ function serializeBigInt(obj: any): any {
 
 @Injectable()
 export class FinanceiroService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
+    private gateway: FinanceiroGateway
+  ) {}
 
   // --- TENANTS ---
+  async obterPreviewConvite(inviteCode: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { inviteCode: inviteCode.toUpperCase() },
+      include: {
+        membros: {
+          where: { userId: null }, // Apenas membros sem usuário vinculado (slots livres)
+          select: { id: true, nome: true, avatar: true }
+        }
+      }
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Casa não encontrada.');
+    }
+
+    return serializeBigInt({
+      id: tenant.id,
+      name: tenant.name,
+      membrosDisponiveis: tenant.membros
+    });
+  }
+
   async criarTenant(name: string, userId: string) {
     const inviteCode = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     const tenant = await this.prisma.tenant.create({
@@ -97,6 +126,8 @@ export class FinanceiroService {
       });
     }
 
+    this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
+
     return serializeBigInt(tenant);
   }
 
@@ -109,8 +140,21 @@ export class FinanceiroService {
   }
 
   async salvarMembro(tenantId: string, membroData: any) {
-    const { id, nome, avatar, userId } = membroData;
+    let { id, nome, avatar, userId, username, password } = membroData;
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
+
+    // Se o admin forneceu username e password, criamos o usuário automaticamente
+    if (!userId && username && password) {
+      try {
+        const newUser = await this.authService.register(username, password);
+        userId = newUser.userId;
+      } catch (err) {
+        // Se já existe, tentamos vincular o usuário existente (se o admin souber o login correto)
+        // Ou retornamos o erro se for conflito real.
+        throw err;
+      }
+    }
+
     const upserted = await this.prisma.membroCasa.upsert({
       where: {
         id_tenantId: { id, tenantId },
@@ -128,7 +172,9 @@ export class FinanceiroService {
         userId,
       },
     });
-    return serializeBigInt(upserted);
+    const result = serializeBigInt(upserted);
+    this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
+    return result;
   }
 
   // --- CARTOES ---
@@ -158,7 +204,9 @@ export class FinanceiroService {
         responsavelPadraoId,
       },
     });
-    return serializeBigInt(upserted);
+    const result = serializeBigInt(upserted);
+    this.gateway.notificarAlteracao(tenantId, 'cartoes_alterados');
+    return result;
   }
 
   async excluirCartao(tenantId: string, id: string) {
@@ -175,6 +223,7 @@ export class FinanceiroService {
         id_tenantId: { id, tenantId },
       },
     });
+    this.gateway.notificarAlteracao(tenantId, 'cartoes_alterados');
     return { success: true };
   }
 
@@ -208,7 +257,9 @@ export class FinanceiroService {
         dataPagamentoBanco: dataPagamentoBanco ? new Date(dataPagamentoBanco) : null,
       },
     });
-    return serializeBigInt(upserted);
+    const result = serializeBigInt(upserted);
+    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
+    return result;
   }
 
   async salvarMuitasFaturas(tenantId: string, faturasList: any[]) {
@@ -234,7 +285,9 @@ export class FinanceiroService {
       });
     });
     const result = await this.prisma.$transaction(operations);
-    return serializeBigInt(result);
+    const serialized = serializeBigInt(result);
+    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
+    return serialized;
   }
 
   // --- GASTOS ---
@@ -320,7 +373,9 @@ export class FinanceiroService {
     const result = await this.prisma.$transaction(async (tx) => {
       return this.upsertGastoTx(tx, tenantId, gastoData);
     });
-    return serializeBigInt(result);
+    const serialized = serializeBigInt(result);
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serialized;
   }
 
   async salvarMuitosGastos(tenantId: string, gastosList: any[]) {
@@ -331,15 +386,90 @@ export class FinanceiroService {
       }
       return savedGastos;
     });
-    return serializeBigInt(result);
+    const serialized = serializeBigInt(result);
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serialized;
   }
 
   async excluirGasto(tenantId: string, id: string) {
+    const gasto = await this.prisma.gasto.findUnique({ where: { id_tenantId: { id, tenantId } } });
+    if (gasto && gasto.faturaId && !gasto.isSettlement) {
+      const fatura = await this.prisma.fatura.findUnique({ where: { id_tenantId: { id: gasto.faturaId, tenantId } } });
+      if (fatura && (fatura.status === 'FECHADA' || fatura.status === 'ACERTADA')) {
+        throw new BadRequestException(
+          `Não é possível excluir um gasto em uma fatura com status "${fatura.status}". Reabra a fatura primeiro.`
+        );
+      }
+    }
+
+    // Reverter saldos em AcertoMembro se for um gasto de liquidação
+    if (gasto && gasto.isSettlement) {
+      const fatura = await this.prisma.fatura.findUnique({ where: { id_tenantId: { id: gasto.faturaId, tenantId } } });
+      if (fatura) {
+        let anteriorMes = fatura.periodoMes - 1;
+        let anteriorAno = fatura.periodoAno;
+        if (anteriorMes < 1) {
+          anteriorMes = 12;
+          anteriorAno -= 1;
+        }
+
+        // Busca faturas fechadas/acertadas no mês anterior ou atual para reverter o valor pago
+        const faturasParaReverter = await this.prisma.fatura.findMany({
+          where: {
+            tenantId,
+            OR: [
+              { periodoMes: anteriorMes, periodoAno: anteriorAno },
+              { periodoMes: fatura.periodoMes, periodoAno: fatura.periodoAno }
+            ],
+            status: { in: ['FECHADA', 'ACERTADA'] }
+          }
+        });
+
+        let estornoRestante = Number(gasto.valorTotalCentavos);
+
+        for (const fatTarget of faturasParaReverter) {
+          if (estornoRestante <= 0) break;
+
+          const acertosMembro = await this.prisma.acertoMembro.findMany({
+            where: { tenantId, faturaId: fatTarget.id, membroId: gasto.compradorId }
+          });
+
+          for (const acerto of acertosMembro) {
+            const vPago = Number(acerto.valorPagoCentavos);
+            if (vPago > 0) {
+              const valorEstorno = Math.min(estornoRestante, vPago);
+              const novoVPago = vPago - valorEstorno;
+              const vAcerto = Number(acerto.totalConsumidoCentavos) - Number(acerto.totalAntecipadoCentavos);
+
+              await this.prisma.acertoMembro.update({
+                where: { id_tenantId: { id: acerto.id, tenantId } },
+                data: {
+                  valorPagoCentavos: BigInt(novoVPago),
+                  pago: novoVPago >= vAcerto && vAcerto > 0,
+                  dataPagamento: novoVPago >= vAcerto ? acerto.dataPagamento : null
+                }
+              });
+
+              estornoRestante -= valorEstorno;
+
+              if (fatTarget.status === 'ACERTADA' && novoVPago < vAcerto) {
+                await this.prisma.fatura.update({
+                  where: { id_tenantId: { id: fatTarget.id, tenantId } },
+                  data: { status: 'FECHADA' }
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
     await this.prisma.gasto.delete({
       where: {
         id_tenantId: { id, tenantId },
       },
     });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return { success: true };
   }
 
@@ -350,6 +480,7 @@ export class FinanceiroService {
         id: { in: ids },
       },
     });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return { success: true };
   }
 
@@ -382,7 +513,9 @@ export class FinanceiroService {
         defaultSplit,
       },
     });
-    return serializeBigInt(upserted);
+    const result = serializeBigInt(upserted);
+    this.gateway.notificarAlteracao(tenantId, 'contas_fixas_alteradas');
+    return result;
   }
 
   async excluirContaFixa(tenantId: string, id: string) {
@@ -391,6 +524,7 @@ export class FinanceiroService {
         id_tenantId: { id, tenantId },
       },
     });
+    this.gateway.notificarAlteracao(tenantId, 'contas_fixas_alteradas');
     return { success: true };
   }
 
@@ -439,7 +573,9 @@ export class FinanceiroService {
         observacao: observacao || null,
       },
     });
-    return serializeBigInt(saved);
+    const result = serializeBigInt(saved);
+    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
+    return result;
   }
 
   async excluirAntecipacaoFatura(tenantId: string, id: string) {
@@ -448,6 +584,7 @@ export class FinanceiroService {
         id_tenantId: { id, tenantId },
       },
     });
+    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
     return { success: true };
   }
 
@@ -491,6 +628,8 @@ export class FinanceiroService {
         dataPagamento: dataPagamento ? new Date(dataPagamento) : null,
       },
     });
-    return serializeBigInt(upserted);
+    const result = serializeBigInt(upserted);
+    this.gateway.notificarAlteracao(tenantId, 'acertos_alterados');
+    return result;
   }
 }

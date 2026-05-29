@@ -8,7 +8,8 @@ import BottomSheetAjustarGasto from '../components/ledger/BottomSheetAjustarGast
 import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfirmacaoEstorno.vue'
 import BottomSheet from '../components/ui/BottomSheet.vue'
 import Button from '../components/ui/Button.vue'
-import { AlertTriangle, ChevronDown, Lock, Home, Check, Copy, LogOut } from 'lucide-vue-next'
+import SectionLabel from '../components/ui/SectionLabel.vue'
+import { AlertTriangle, ChevronDown, Lock, Home, Check, Copy, LogOut, X, Info } from 'lucide-vue-next'
 
 const props = defineProps<{
   vm: any
@@ -175,6 +176,7 @@ const isModalNoTopo = (nome: string) => {
       :show="isModalNoTopo('fechar-fatura')"
       :fatura="localFaturaParaFechar"
       :membros="membrosAtivos"
+      :loading="vm.isSubmittingPix?.value ?? vm.isSubmittingPix"
       @close="vm.fecharModal('fechar-fatura')"
       @confirmar="vm.confirmarFechamentoFatura"
     />
@@ -201,8 +203,17 @@ const isModalNoTopo = (nome: string) => {
     <!-- Novo Período -->
     <BottomSheet :model-value="isModalNoTopo('novo-periodo')" @update:model-value="val => { if (!val) vm.fecharModal('novo-periodo') }" width-class="md:w-[460px]" max-height="95dvh">
       <div class="p-6 sm:p-8 space-y-8 flex-grow overflow-y-auto custom-scrollbar">
+        <!-- Header -->
+        <div class="flex justify-between items-start">
+          <div class="space-y-2">
+            <h3 class="text-3xl font-display text-charcoal leading-tight">Fechamento<br>de <span class="text-ember">Período</span></h3>
+          </div>
+          <Button variant="secondary" size="icon" @click="vm.fecharModal('novo-periodo')" class="rounded-full border border-stone">
+            <X class="w-4 h-4 text-graphite" />
+          </Button>
+        </div>
+
         <div class="space-y-3">
-          <h3 class="text-3xl font-display text-charcoal leading-tight">Fechamento<br>de <span class="text-ember">Período</span></h3>
           <p class="text-sm text-ash leading-relaxed">
             Revise os números antes de arquivar o mês de <strong class="text-charcoal">{{ localFaturaAtivaVisualizada?.periodo ? vm.formatarMesAno(localFaturaAtivaVisualizada.periodo.mes, localFaturaAtivaVisualizada.periodo.ano) : '' }}</strong>. O saldo será consolidado e os acertos serão gerados automaticamente.
           </p>
@@ -275,6 +286,7 @@ const isModalNoTopo = (nome: string) => {
       :from-name="vm.getMembroNome(localNettingTarget?.from)"
       :to-name="vm.getMembroNome(localNettingTarget?.to)"
       :suggested-value="localNettingTarget?.val || 0"
+      :loading="vm.isSubmittingPix?.value ?? vm.isSubmittingPix"
       @cancel="vm.fecharModal('netting')"
       @confirm="vm.confirmarBaixaNetting"
     />
@@ -438,7 +450,7 @@ const isModalNoTopo = (nome: string) => {
                   @click="casasMultitenant.copyInviteCode(casa.inviteCode)" 
                   class="p-1 hover:bg-stone rounded transition-colors"
                 >
-                  <Check v-if="casasMultitenant.copied" class="w-3.5 h-3.5 text-meadow" />
+                  <Check v-if="casasMultitenant.copiedCode === casa.inviteCode" class="w-3.5 h-3.5 text-meadow" />
                   <Copy v-else class="w-3.5 h-3.5 text-ash" />
                 </button>
               </div>
@@ -452,7 +464,7 @@ const isModalNoTopo = (nome: string) => {
           <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Criar Nova Casa</h4>
           <div class="flex gap-2">
             <input 
-              v-model="casasMultitenant.nomeNovaCasa.value"
+              v-model="casasMultitenant.form.nomeNovaCasa"
               placeholder="Ex: República Central"
               class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
             />
@@ -464,7 +476,7 @@ const isModalNoTopo = (nome: string) => {
           <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Entrar com Código</h4>
           <div class="flex gap-2">
             <input 
-              v-model="casasMultitenant.codigoConvite.value"
+              v-model="casasMultitenant.form.codigoConvite"
               placeholder="Ex: CASA-7F2A1"
               class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
             />
@@ -472,8 +484,8 @@ const isModalNoTopo = (nome: string) => {
           </div>
         </div>
 
-        <div v-if="casasMultitenant.errorCasa" class="text-xs text-coral font-semibold pt-2">
-          {{ casasMultitenant.errorCasa }}
+        <div v-if="casasMultitenant.form.errorCasa" class="text-xs text-coral font-semibold pt-2">
+          {{ casasMultitenant.form.errorCasa }}
         </div>
       </div>
       

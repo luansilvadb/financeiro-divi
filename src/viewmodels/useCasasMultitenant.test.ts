@@ -90,7 +90,7 @@ describe('useCasasMultitenant', () => {
 
   it('deve criar uma nova casa com sucesso', async () => {
     fetchMock.mockImplementation((url: string) => {
-      if (url.includes('/financeiro/tenants')) {
+      if (url.includes('/financeiro/tenants/entrar') || (url.includes('/financeiro/tenants') && !url.endsWith('/me'))) {
         return Promise.resolve({
           ok: true,
           json: async () => ({ id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' })
@@ -98,19 +98,24 @@ describe('useCasasMultitenant', () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => ({ tenants: [{ id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' }] })
+        json: async () => ({
+          tenants: [
+            { id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'CODE123' },
+            { id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' }
+          ]
+        })
       })
     })
 
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
     
-    vm.nomeNovaCasa.value = 'República Central'
+    vm.form.nomeNovaCasa = 'República Central'
     await vm.criarNovaCasa()
 
     expect(fetchMock).toHaveBeenCalled()
-    expect(tenantSessionService.setActiveTenant).toHaveBeenCalledWith('new-tenant-id')
-    expect(reloadMock).toHaveBeenCalled()
+    expect(tenantSessionService.setActiveTenant).not.toHaveBeenCalled()
+    expect(reloadMock).not.toHaveBeenCalled()
     app.unmount()
   })
 
@@ -124,19 +129,24 @@ describe('useCasasMultitenant', () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => ({ tenants: [{ id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' }] })
+        json: async () => ({
+          tenants: [
+            { id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'CODE123' },
+            { id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' }
+          ]
+        })
       })
     })
 
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
     
-    vm.codigoConvite.value = 'CONVITE12'
+    vm.form.codigoConvite = 'CONVITE12'
     await vm.entrarPorCodigo()
 
     expect(fetchMock).toHaveBeenCalled()
-    expect(tenantSessionService.setActiveTenant).toHaveBeenCalledWith('tenant-convidado')
-    expect(reloadMock).toHaveBeenCalled()
+    expect(tenantSessionService.setActiveTenant).not.toHaveBeenCalled()
+    expect(reloadMock).not.toHaveBeenCalled()
     app.unmount()
   })
 
@@ -154,10 +164,10 @@ describe('useCasasMultitenant', () => {
       await vm.copyInviteCode('CONVITE12')
 
       expect(writeTextMock).toHaveBeenCalledWith('CONVITE12')
-      expect(vm.copied.value).toBe(true)
+      expect(vm.copiedCode.value).toBe('CONVITE12')
 
       vi.advanceTimersByTime(2100)
-      expect(vm.copied.value).toBe(false)
+      expect(vm.copiedCode.value).toBeNull()
       app.unmount()
     } finally {
       vi.useRealTimers()

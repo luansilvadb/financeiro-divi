@@ -5,6 +5,8 @@ export function useLoginViewModel() {
   const username = ref('')
   const password = ref('')
   const errorMsg = ref('')
+  const inviteCode = ref('')
+  const membroId = ref('')
   const isAuthed = ref(tenantSessionService.isAuthenticated())
 
   const handleLogin = async () => {
@@ -33,7 +35,12 @@ export function useLoginViewModel() {
       errorMsg.value = 'O nome de usuário deve ter no mínimo 3 caracteres'
       return false
     }
-    const success = await tenantSessionService.register(username.value, password.value)
+    const success = await tenantSessionService.register(
+      username.value, 
+      password.value, 
+      inviteCode.value, 
+      membroId.value
+    )
     if (success) {
       isAuthed.value = true
       localStorage.setItem('divi_username', username.value)
@@ -53,6 +60,8 @@ export function useLoginViewModel() {
     username,
     password,
     errorMsg,
+    inviteCode,
+    membroId,
     isAuthed,
     handleLogin,
     handleRegister,

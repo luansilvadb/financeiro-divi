@@ -33,4 +33,20 @@ export class MembroDto {
   @IsOptional()
   @IsString()
   userId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Nome de usuário para criar um novo login para este membro (opcional)',
+    example: 'joaosilva',
+  })
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @ApiPropertyOptional({
+    description: 'Senha para o novo login deste membro (opcional)',
+    example: 'senha123',
+  })
+  @IsOptional()
+  @IsString()
+  password?: string;
 }

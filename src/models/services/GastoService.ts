@@ -87,16 +87,21 @@ export class GastoService implements IGastoService {
       }
 
       const todasFaturas = await this.faturaRepo.listarTodas()
-      const faturasAnterioresFechadas = todasFaturas.filter(
-        f => f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno && f.status === 'FECHADA'
+      
+      // Busca faturas fechadas no período anterior E no período atual
+      const faturasParaAbater = todasFaturas.filter(
+        f => (
+          (f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno) || 
+          (f.periodo.mes === faturaAtual.periodo.mes && f.periodo.ano === faturaAtual.periodo.ano)
+        ) && f.status === 'FECHADA'
       )
 
       let nettingRestanteCentavos = total.centavos
 
-      for (const fatAnterior of faturasAnterioresFechadas) {
+      for (const fatTarget of faturasParaAbater) {
         if (nettingRestanteCentavos <= 0) break
 
-        const acertosMembro = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
+        const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
         const acertoPendente = acertosMembro.find(a => a.membroId === dados.fromMemberId && !a.pago)
 
         if (acertoPendente) {
@@ -107,10 +112,10 @@ export class GastoService implements IGastoService {
             await this.acertoRepo.salvar(acertoPendente)
             nettingRestanteCentavos -= valorAbateCentavos
 
-            const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
+            const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatTarget.id)
             const todosQuitados = acertosAtualizados.every(a => a.pago)
-            if (todosQuitados && fatAnterior.dataPagamentoBanco && fatAnterior.status !== 'ACERTADA') {
-              const acertada = fatAnterior.marcarAcertada()
+            if (todosQuitados && fatTarget.dataPagamentoBanco && fatTarget.status !== 'ACERTADA') {
+              const acertada = fatTarget.marcarAcertada()
               await this.faturaRepo.salvar(acertada)
             }
           }

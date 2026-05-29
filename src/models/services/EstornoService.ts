@@ -41,7 +41,7 @@ export class EstornoService implements IEstornoService {
       }
     }
 
-    // Se for um acerto netting, estornamos a baixa nos AcertoMembro correspondentes das faturas do período anterior
+    // Se for um acerto netting, estornamos a baixa nos AcertoMembro correspondentes
     if (gasto.isSettlement && this.acertoRepo) {
       const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
       if (fatura) {
@@ -53,16 +53,21 @@ export class EstornoService implements IEstornoService {
         }
 
         const todasFaturas = await this.faturaRepo.listarTodas()
-        const faturasAnteriores = todasFaturas.filter(
-          f => f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno && (f.status === 'FECHADA' || f.status === 'ACERTADA')
+        // Busca faturas fechadas no período anterior E no período atual
+        const faturasParaReverter = todasFaturas.filter(
+          f => (
+            (f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno) || 
+            (f.periodo.mes === fatura.periodo.mes && f.periodo.ano === fatura.periodo.ano)
+          ) && (f.status === 'FECHADA' || f.status === 'ACERTADA')
         )
 
         let estornoRestanteCentavos = gasto.valorTotal.centavos
 
-        for (const fatAnterior of faturasAnteriores) {
+        for (const fatTarget of faturasParaReverter) {
           if (estornoRestanteCentavos <= 0) break
 
-          const acertosMembro = await this.acertoRepo.buscarPorFatura(fatAnterior.id)
+          const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
+          // Procura acertos do comprador do Pix que possuem algum valor pago
           const acertoComPagamento = acertosMembro.find(a => a.membroId === gasto.compradorId && a.valorPago.centavos > 0)
 
           if (acertoComPagamento) {
@@ -77,8 +82,8 @@ export class EstornoService implements IEstornoService {
             await this.acertoRepo.salvar(acertoComPagamento)
             estornoRestanteCentavos -= valorEstorno
 
-            if (fatAnterior.status === 'ACERTADA') {
-              const revertida = fatAnterior.desmarcarAcertada()
+            if (fatTarget.status === 'ACERTADA') {
+              const revertida = fatTarget.desmarcarAcertada()
               await this.faturaRepo.salvar(revertida)
             }
           }

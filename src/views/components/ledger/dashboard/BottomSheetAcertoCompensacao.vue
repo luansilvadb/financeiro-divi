@@ -11,6 +11,7 @@ interface Props {
   fromName?: string
   toName?: string
   suggestedValue: number
+  loading?: boolean
 }
 
 const props = defineProps<Props>()
@@ -106,8 +107,11 @@ defineExpose({
 
         <!-- Rodapé Ações -->
         <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
-          <Button variant="secondary" @click="emit('cancel')">Cancelar</Button>
-          <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0">Confirmar</Button>
+          <Button variant="secondary" @click="emit('cancel')" :disabled="loading">Cancelar</Button>
+          <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0 || loading">
+            <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+            {{ loading ? 'Salvando...' : 'Confirmar' }}
+          </Button>
         </div>
     </div>
   </BottomSheet>

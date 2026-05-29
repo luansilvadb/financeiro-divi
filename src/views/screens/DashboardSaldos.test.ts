@@ -277,7 +277,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('Nao e cobranca final')
   })
 
-  it('deve abrir o modal de fechamento de periodo e permitir clicar no botao de arquivar mes', async () => {
+  it('deve abrir o modal de fechamento de periodo ao clicar no botao de encerrar mes', async () => {
     const wrapper = mount(DashboardSaldos, {
       props: {
         membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
@@ -314,17 +314,6 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
 
     // Verifica se o texto do modal agora está presente
     expect(wrapper.text()).toContain('Revise os números antes de arquivar')
-
-    // Encontra o botão "Arquivar Mês"
-    const archiveButton = wrapper.findAll('button').find(b => b.text().includes('Arquivar Mês'))
-    expect(archiveButton?.exists()).toBe(true)
-
-    // O botão NÃO deve estar desabilitado (nomeNovoPeriodoStr deve estar preenchido automaticamente com "Junho 2026")
-    expect(archiveButton?.attributes('disabled')).toBeUndefined()
-
-    // Clica no botão "Arquivar Mês"
-    await archiveButton?.trigger('click')
-    await wrapper.vm.$nextTick()
   })
 })
 

@@ -14,7 +14,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
   constructor(
     private faturaRepo: IFaturaRepository,
     private gastoRepo: IGastoRepository,
-    _faturaService: IFaturaService
+    private faturaService: IFaturaService
   ) {}
 
   processarRolloverParcelas(novaFaturaId: string, gastosAnteriores: Gasto[]): Gasto[] {
@@ -74,6 +74,13 @@ export class FaturaRolloverService implements IFaturaRolloverService {
     const { nomeNovoPeriodo, faturasAbertas, cartoes, saldosAcumulados, nomePeriodoAnterior } = dados
     if (faturasAbertas.length === 0) return
 
+    // 1. Fechar as faturas abertas do período via FaturaService para gerar acertos
+    // Isso garante que o período anterior fique "trancado" no dashboard (status FECHADA)
+    // e que os saldosAcumulados (netting) incluam essas dívidas finalizadas.
+    for (const f of faturasAbertas) {
+      await this.faturaService.fecharFatura(f.id, f.responsavelId, new Date())
+    }
+
     // 2. Criar faturas e período no novo mês
     const [mesStr, anoStr] = nomeNovoPeriodo.split(' ')
     const mesNum = NOMES_MESES.indexOf(mesStr as typeof NOMES_MESES[number]) + 1 || new Date().getMonth() + 1
@@ -83,7 +90,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
 
     // Criar fatura de Pix default no novo período
     const novaFaturaPix = new Fatura({
-      id: crypto.randomUUID(),
+      id: `PIX_DEFAULT_ID-${mesNum}-${anoNum}`,
       cartaoId: 'PIX_DEFAULT_ID',
       periodo: { mes: mesNum, ano: anoNum },
       responsavelId: 'PIX_SYSTEM_OWNER',
@@ -94,7 +101,7 @@ export class FaturaRolloverService implements IFaturaRolloverService {
 
     for (const card of cartoes) {
       const novaFatura = new Fatura({
-        id: crypto.randomUUID(),
+        id: `${card.id}-${mesNum}-${anoNum}`,
         cartaoId: card.id,
         periodo: { mes: mesNum, ano: anoNum },
         responsavelId: card.responsavelPadraoId,

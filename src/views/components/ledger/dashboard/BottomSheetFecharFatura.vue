@@ -11,6 +11,7 @@ interface Props {
   show: boolean
   fatura: Fatura | null
   membros: { id: string; nome: string }[]
+  loading?: boolean
 }
 
 const props = defineProps<Props>()
@@ -68,8 +69,11 @@ const confirmar = () => {
 
         <!-- Footer Buttons -->
         <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
-          <Button variant="secondary" @click="emit('close')">Cancelar</Button>
-          <Button variant="primary" @click="confirmar" :disabled="!responsavelId">Confirmar</Button>
+          <Button variant="secondary" @click="emit('close')" :disabled="loading">Cancelar</Button>
+          <Button variant="primary" @click="confirmar" :disabled="!responsavelId || loading">
+            <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+            {{ loading ? 'Salvando...' : 'Confirmar' }}
+          </Button>
         </div>
     </div>
   </BottomSheet>

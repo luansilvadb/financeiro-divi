@@ -12,6 +12,12 @@ vi.mock('./shared/container', () => ({
   },
   migrationService: {
     migrar: vi.fn()
+  },
+  socketService: {
+    conectar: vi.fn(),
+    desconectar: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn()
   }
 }))
 

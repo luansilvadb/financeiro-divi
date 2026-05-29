@@ -22,7 +22,12 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Dados de entrada mal-formatados ou inválidos (ex: senha com menos de 6 caracteres)' })
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto.username, registerDto.password);
+    return this.authService.register(
+      registerDto.username, 
+      registerDto.password, 
+      registerDto.inviteCode, 
+      registerDto.membroId
+    );
   }
 
   @ApiOperation({ summary: 'Realizar login para obter token JWT' })

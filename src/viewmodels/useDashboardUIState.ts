@@ -129,6 +129,11 @@ export function useDashboardUIState() {
     showBottomSheetAjustar.value = true
   }
 
+  const abrirFecharFatura = (fatura: any) => {
+    faturaParaFechar.value = fatura
+    showBottomSheetFechar.value = true
+  }
+
   const abrirBottomSheetNetting = (transferencia: any) => {
     nettingTarget.value = transferencia
     showBottomSheetNetting.value = true
@@ -181,6 +186,7 @@ export function useDashboardUIState() {
     abrirConfigurarBill,
     abrirNovoBill,
     abrirAjustarGasto,
+    abrirFecharFatura,
     abrirBottomSheetNetting,
     abrirNovoPeriodoBottomSheet,
     iniciarPix

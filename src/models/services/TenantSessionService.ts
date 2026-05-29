@@ -48,12 +48,17 @@ export class TenantSessionService {
     }
   }
 
-  async register(username: string, passwordSecret: string): Promise<boolean> {
+  async register(username: string, passwordSecret: string, inviteCode?: string, membroId?: string): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password: passwordSecret })
+        body: JSON.stringify({ 
+          username, 
+          password: passwordSecret,
+          inviteCode,
+          membroId
+        })
       })
 
       if (!response.ok) {
@@ -68,6 +73,15 @@ export class TenantSessionService {
       console.error('Falha de conexão ao registrar:', err)
       return false
     }
+  }
+
+  async getInvitePreview(code: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/financeiro/tenants/invite/${code}`)
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || 'Convite inválido')
+    }
+    return response.json()
   }
 
   async logout(): Promise<void> {

@@ -214,7 +214,7 @@ export class LancamentoService implements ILancamentoService {
 
     // Cria nova se não existir em nenhum lugar
     const novaFatura = new Fatura({
-      id: crypto.randomUUID(),
+      id: `${cartaoId}-${mes}-${ano}`,
       cartaoId,
       periodo: { mes, ano },
       responsavelId,

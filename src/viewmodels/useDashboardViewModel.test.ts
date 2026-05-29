@@ -6,6 +6,8 @@ import { Dinheiro } from '../models/entities/Dinheiro'
 import { Cartao } from '../models/entities/Cartao'
 import { Fatura } from '../models/entities/Fatura'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
+import { Gasto } from '../models/entities/Gasto'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import { useToast } from '../composables/useToast'
 
 vi.mock('../composables/useToast', () => {
@@ -298,10 +300,11 @@ describe('useDashboardViewModel', () => {
 
     await vm.confirmarFechamentoFatura('f1', 'm1')
 
+    // fecharFaturaManual é chamado e os estados de UI são limpos corretamente.
+    // O reload (inicializar) ocorre dentro de fecharFaturaManual, não em confirmarFechamentoFatura.
     expect(mockCartoesEFaturas.fecharFaturaManual).toHaveBeenCalledWith('f1', 'm1')
     expect(vm.showBottomSheetFechar.value).toBe(false)
     expect(vm.faturaParaFechar.value).toBeNull()
-    expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
   })
 
   it('should confirm expense adjustment and refresh data', async () => {
@@ -600,7 +603,7 @@ describe('useDashboardViewModel', () => {
     // Deve exibir toast de erro
     const toast = useToast()
     expect(toast.show).toHaveBeenCalledWith(
-      expect.stringContaining('acertos quitados'),
+      expect.stringContaining('pagamentos (Pix/Acertos) confirmados'),
       'error'
     )
   })
@@ -709,5 +712,50 @@ describe('useDashboardViewModel', () => {
 
     const toast = useToast()
     expect(toast.show).toHaveBeenCalledWith(errorMsg, 'error')
+  })
+
+  it('deve incluir acertos de faturas fechadas no netting e ignorar os gastos originais da fatura fechada', async () => {
+    const faturaFechada = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const acertoPendente = new AcertoMembro({
+      id: 'a1',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deReais(100),
+      valorPago: Dinheiro.deCentavos(0),
+      pago: false,
+      tipo: 'MEMBRO_PAGA'
+    })
+
+    const gastoOriginal = new Gasto({
+      id: 'g1',
+      faturaId: 'f1',
+      descricao: 'Gasto original',
+      valorTotal: Dinheiro.deReais(100),
+      compradorId: 'm1',
+      divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(100))],
+      method: 'card',
+      cardOwner: 'm1'
+    })
+
+    const props: DashboardProps = {
+      membros: [{ id: 'm1', nome: 'Luan' }, { id: 'm2', nome: 'Maria' }],
+      faturasAbertas: [],
+      faturasFechadas: [faturaFechada],
+      acertosPendentes: [acertoPendente],
+      cartoes: [new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' })],
+      calcularConsumo: () => 0
+    }
+    
+    mockCartoesEFaturas.gastos.value = [gastoOriginal]
+
+    const vm = createViewModel(props, vi.fn())
+    vm.periodoSelecionado.value = { mes: 5, ano: 2026 }
+
+    expect(vm.nettingTransferencias.value.length).toBe(1)
+    expect(vm.nettingTransferencias.value[0]).toEqual(expect.objectContaining({
+      from: 'm2',
+      to: 'm1',
+      val: 100
+    }))
   })
 })

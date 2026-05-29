@@ -3,6 +3,8 @@ import { Fatura } from '../models/entities/Fatura'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { Cartao } from '../models/entities/Cartao'
 import { AcertoMembro } from '../models/entities/AcertoMembro'
+import { Gasto } from '../models/entities/Gasto'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
@@ -102,7 +104,44 @@ export function useDashboardViewModel(
     separarGastosSaldoRealEPreviaCartao(gastosFaturaSelecionada.value, faturasPeriodoSelecionadoLista.value)
   )
 
-  const gastosSaldoRealSelecionado = computed(() => separacaoDashboard.value.gastosSaldoReal)
+  const acertosDaFaturaPeriodo = computed(() => {
+    const ids = periodos.faturasPeriodoIds.value
+    const list = props.acertosPendentes?.length > 0 ? props.acertosPendentes : globalAcertos.value
+    return list.filter((a: AcertoMembro) => ids.includes(a.faturaId))
+  })
+
+  const acertosVirtuaisParaNetting = computed(() => {
+    return acertosDaFaturaPeriodo.value.map(acerto => {
+      const fatura = faturasPeriodoSelecionadoLista.value.find(f => f.id === acerto.faturaId)
+      
+      // Se a fatura foi reaberta (ABERTA), os acertos dela não devem entrar no netting
+      if (!fatura || fatura.status === 'ABERTA') return null
+
+      const responsavelId = fatura.responsavelId
+      
+      const vAcerto = acerto.valorAcerto?.centavos ?? 0
+      const vPago = acerto.valorPago?.centavos ?? 0
+      const valorPendente = Dinheiro.deCentavos(vAcerto - vPago)
+      
+      if (valorPendente.centavos <= 0) return null
+
+      return new Gasto({
+        id: `virtual-acerto-${acerto.id}`,
+        faturaId: acerto.faturaId,
+        descricao: `Acerto pendente: ${acerto.membroId}`,
+        valorTotal: valorPendente,
+        compradorId: acerto.tipo === 'MEMBRO_PAGA' ? responsavelId : acerto.membroId,
+        divisoes: [new DivisaoDeGasto(acerto.tipo === 'MEMBRO_PAGA' ? acerto.membroId : responsavelId, valorPendente)],
+        isSettlement: true
+      })
+    }).filter((g): g is Gasto => g !== null)
+  })
+
+  const gastosSaldoRealSelecionado = computed(() => [
+    ...separacaoDashboard.value.gastosSaldoReal,
+    ...acertosVirtuaisParaNetting.value
+  ])
+
   const gastosPrevisaoCartaoAberto = computed(() => separacaoDashboard.value.gastosPrevisaoCartao)
   const previaCartaoAbertoPorMembroCentavos = computed(() => calcularPreviaCartaoAberto(gastosPrevisaoCartaoAberto.value))
   const totalPreviaCartaoAbertoCentavos = computed(() =>
@@ -215,11 +254,12 @@ export function useDashboardViewModel(
       await fecharFaturaManual(faturaId, responsavelId)
       uiState.showBottomSheetFechar.value = false
       uiState.faturaParaFechar.value = null
-      await cartoesEFaturas.inicializar()
+      // Nota: fecharFaturaManual já chama inicializar() internamente
     } catch (error: any) {
       toast.show(error.message || 'Erro ao fechar fatura', 'error')
     }
   }
+
 
   const confirmarAjusteGasto = async (dados: any) => {
     if (periodos.faturaSelecionadaTrancada.value) return
@@ -235,7 +275,7 @@ export function useDashboardViewModel(
   }
 
   const enviarReembolsoPix = async (acertoId: string) => {
-    if (uiState.valorPixInput.value <= 0) return
+    if (uiState.valorPixInput.value <= 0 || uiState.isSubmittingPix.value) return
     uiState.isSubmittingPix.value = true
     try {
       await registrarReembolsoParcialManual(acertoId, Dinheiro.deReais(uiState.valorPixInput.value))
@@ -249,6 +289,7 @@ export function useDashboardViewModel(
   }
 
   const quitarComAjuste = async (acertoId: string) => {
+    if (uiState.isSubmittingPix.value) return
     uiState.isSubmittingPix.value = true
     try {
       await quitarAcertoMembro(acertoId)
@@ -308,11 +349,50 @@ export function useDashboardViewModel(
     }
   }
 
+  const reabrirFaturaManualComTrava = async (faturaId: string) => {
+    // 1. Busca a fatura alvo no estado global (mais atualizado)
+    const faturaAlvo = cartoesEFaturas.faturas.value.find(f => f.id === faturaId)
+    if (!faturaAlvo) return
+
+    // Busca os acertos desta fatura para saber quem são os devedores envolvidos
+    const acertosDaFaturaAlvo = acertosDaFatura(faturaId)
+    const membrosDevedoresIds = acertosDaFaturaAlvo.map(a => a.membroId)
+
+    // 2. Busca faturas do mesmo mês para encontrar os Pix registrados no extrato
+    const faturasDoMesIds = cartoesEFaturas.faturas.value
+      .filter(f => f.periodo.mes === faturaAlvo.periodo.mes && f.periodo.ano === faturaAlvo.periodo.ano)
+      .map(f => f.id)
+
+    // 3. Verifica se existe algum Pix ativo no extrato deste mês enviado por um dos devedores desta fatura
+    const pixBloqueante = globalGastos.value.find(g => 
+      faturasDoMesIds.includes(g.faturaId) && 
+      g.isSettlement && 
+      membrosDevedoresIds.includes(g.compradorId)
+    )
+
+    if (pixBloqueante) {
+      const nomeMembro = getMembroNome(pixBloqueante.compradorId)
+      toast.show(
+        `Não é possível reabrir: existe um Pix de ${nomeMembro} registrado no extrato deste mês. Estorne-o primeiro.`,
+        'error'
+      )
+      return
+    }
+
+    try {
+      await reabrirFaturaManual(faturaId)
+      await cartoesEFaturas.inicializar()
+    } catch (error: any) {
+      toast.show(error.message || 'Erro ao reabrir fatura', 'error')
+    }
+  }
+
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
-    if (periodos.faturaSelecionadaTrancada.value) return
+    if (periodos.faturaSelecionadaTrancada.value || uiState.isSubmittingPix.value) return
     const activeFaturaId = periodos.faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
 
+    uiState.isSubmittingPix.value = true
     try {
       await localGastoService.registrarAcertoNetting({
         faturaId: activeFaturaId,
@@ -328,6 +408,8 @@ export function useDashboardViewModel(
       await cartoesEFaturas.inicializar()
     } catch (error: any) {
       toast.show(error.message || 'Erro ao registrar acerto de contas', 'error')
+    } finally {
+      uiState.isSubmittingPix.value = false
     }
   }
 
@@ -351,9 +433,29 @@ export function useDashboardViewModel(
     }
 
     try {
+      if (uiState.itemTypeParaEstornar.value === 'Conta Fixa') {
+        const bill = uiState.itemParaEstornar.value
+        // Verifica se existe QUALQUER gasto vinculado a este ID de conta fixa em QUALQUER período
+        const temLancamentos = globalGastos.value.some(g => g.recurringBillId === bill.id)
+        
+        if (temLancamentos) {
+          toast.show(
+            `Não é possível excluir o modelo "${bill.name}" pois ele possui lançamentos registrados. Estorne os lançamentos primeiro.`,
+            'error'
+          )
+          uiState.showBottomSheetConfirmacaoEstorno.value = false
+          uiState.itemParaEstornar.value = null
+          return
+        }
+      }
+
       const handlers: Record<string, () => Promise<void>> = {
         'Lançamento': () => localGastoService.excluirGasto(uiState.itemParaEstornar.value!.id).then(() => cartoesEFaturas.inicializar()),
-        'Conta Fixa': () => excluirContaFixa(uiState.itemParaEstornar.value!.id)
+        'Conta Fixa': async () => {
+          await excluirContaFixa(uiState.itemParaEstornar.value!.id)
+          // Fecha o modal de configuração de onde veio o comando de exclusão
+          uiState.showBottomSheetConfigCF.value = false
+        }
       }
       await handlers[uiState.itemTypeParaEstornar.value]?.()
 
@@ -376,6 +478,7 @@ export function useDashboardViewModel(
   const reabrirPeriodoSelecionado = async () => {
     const p = periodos.periodoSelecionado.value
     const faturasDoPeriodo = props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    const faturasDoPeriodoIds = [...faturasDoPeriodo.map(f => f.id), ...props.faturasAbertas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano).map(f => f.id)]
 
     // GAP 1: bloquear se qualquer acerto do período já foi pago (total ou parcialmente)
     const acertosDoPeriodo = faturasDoPeriodo.flatMap(f =>
@@ -385,9 +488,15 @@ export function useDashboardViewModel(
     const temAcertoPago = acertosDoPeriodo.some(
       (a: AcertoMembro) => a.pago || (a.valorPago && a.valorPago.centavos > 0)
     )
-    if (temAcertoPago) {
+
+    // Bloqueia também se houver transações reais de liquidação (Pix confirmados via Netting Panel)
+    const temTransacoesLiquidacao = globalGastos.value.some(g => 
+      faturasDoPeriodoIds.includes(g.faturaId) && g.isSettlement
+    )
+
+    if (temAcertoPago || temTransacoesLiquidacao) {
       toast.show(
-        'Não é possível reabrir este período pois já existem acertos quitados (total ou parcialmente). Estorne os pagamentos primeiro.',
+        'Não é possível reabrir este período pois já existem pagamentos (Pix/Acertos) confirmados. Estorne os pagamentos primeiro.',
         'error'
       )
       return
@@ -424,6 +533,8 @@ export function useDashboardViewModel(
     acertosDaFatura,
     gastosDaFatura,
     todosOsAcertosQuitados,
+    reabrirFaturaManual,
+    reabrirFaturaManualComTrava,
     confirmarFechamentoFatura,
     confirmarAjusteGasto,
     enviarReembolsoPix,
@@ -437,6 +548,7 @@ export function useDashboardViewModel(
     resumoPendencias,
     estornarContaFixa,
     formatarMesAno,
+    showToast: (msg: string, type: 'success' | 'error' = 'success') => toast.show(msg, type),
     iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),
     abrirNovoPeriodoBottomSheet: () => uiState.abrirNovoPeriodoBottomSheet(periodos.faturaAtivaVisualizada.value),
     abrirConfirmacaoEstornoGasto: (gasto: any) => {

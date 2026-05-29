@@ -20,7 +20,8 @@ import {
   ChevronDown, 
   ChevronUp, 
   History,
-  Lock
+  Lock,
+  CreditCard
 } from 'lucide-vue-next'
 
 interface Props {
@@ -73,12 +74,25 @@ const {
   enviarReembolsoPix,
   quitarComAjuste,
   estornarContaFixa,
+  faturasPeriodoSelecionado,
+  abrirFecharFatura,
+  reabrirFaturaManualComTrava,
+  showToast,
   totalLancamentosPeriodoSelecionado,
-  reabrirPeriodoSelecionado} = vm
+  reabrirPeriodoSelecionado
+  } = vm
+
+const reabrirFaturaComAviso = async (faturaId: string) => {
+  await reabrirFaturaManualComTrava(faturaId)
+}
 
 
 
 // Helpers locais para a renderização das Tabs
+watch(contasFixas, (newVal) => {
+  console.log('[DEBUG] DashboardSaldos: contasFixas atualizado no watch. Total itens:', newVal?.length, 'Itens:', JSON.stringify(newVal))
+}, { immediate: true, deep: true })
+
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
 const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
@@ -93,10 +107,8 @@ const {
   activeTenantId,
   casas,
   showBottomSheetCasas,
-  nomeNovaCasa,
-  codigoConvite,
-  errorCasa,
-  copied,
+  form,
+  copiedCode,
   activeTenantObj,
   selecionarCasa,
   criarNovaCasa,
@@ -221,6 +233,7 @@ defineExpose({
           variant="secondary" 
           class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent animate-pulse"
           @click="reabrirPeriodoSelecionado"
+          :disabled="isSubmittingPix"
         >
           Reabrir Mês
         </Button>
@@ -233,6 +246,47 @@ defineExpose({
           Encerrar Mês
         </Button>
       </Card>
+
+      <!-- Banners de Fechamento de Faturas de Cartão -->
+      <template v-for="fatura in faturasPeriodoSelecionado" :key="fatura.id">
+        <Card v-if="fatura.cartaoId !== 'PIX_DEFAULT_ID'" 
+          class="mt-6 p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-midnight text-white border-none shadow-lg rounded-card-lg transition-all duration-500 animate-in fade-in slide-in-from-top-4"
+        >
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <CreditCard class="w-5 h-5 text-white/80" />
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-lg leading-tight">Cartão: {{ props.cartoes.find(c => c.id === fatura.cartaoId)?.nome || 'Cartão' }}</h3>
+              <p class="text-xs text-stone-300 mt-1">
+                {{ fatura.status === 'ABERTA' 
+                  ? 'A fatura deste cartão ainda está aberta. Feche-a para consolidar os gastos e gerar os acertos individuais.' 
+                  : 'Esta fatura está fechada e arquivada no histórico. Para editá-la, é necessário reabrir primeiro.' 
+                }}
+              </p>
+            </div>
+          </div>
+          
+          <Button
+            v-if="fatura.status === 'ABERTA'"
+            variant="primary"
+            class="w-full md:w-auto bg-meadow hover:bg-meadow/90 border-transparent text-white font-bold"
+            @click="abrirFecharFatura(fatura)"
+            :disabled="isSubmittingPix"
+          >
+            Fechar Fatura
+          </Button>
+          <Button
+            v-else
+            variant="secondary"
+            class="w-full md:w-auto bg-stone text-charcoal hover:bg-stone/90 border-transparent font-bold"
+            @click="reabrirFaturaComAviso(fatura.id)"
+            :disabled="isSubmittingPix"
+          >
+            Reabrir Fatura
+          </Button>
+        </Card>
+      </template>
 
       <!-- Prévia de Faturas Abertas -->
       <Card v-if="totalPreviaCartaoAbertoCentavos > 0" class="p-6 space-y-4">
@@ -264,8 +318,8 @@ defineExpose({
         />
       </div>
 
-      <!-- Acertos e Reembolsos do Mês Selecionado (Exibido apenas se o mês visualizado estiver arquivado e contiver acertos) -->
-      <section v-if="faturaSelecionadaTrancada && faturaAtivaVisualizada && acertosDaFatura(faturaAtivaVisualizada.id).length > 0" class="space-y-4">
+      <!-- Acertos e Reembolsos da Fatura Fechada (Exibido quando a fatura visualizada estiver fechada/acertada e tiver acertos) -->
+      <section v-if="faturaAtivaVisualizada && faturaAtivaVisualizada.status !== 'ABERTA' && acertosDaFatura(faturaAtivaVisualizada.id).length > 0" class="space-y-4">
         <div class="grid gap-6">
           <Card class="p-0 overflow-hidden">
             <!-- Cabeçalho -->
@@ -417,7 +471,7 @@ defineExpose({
       :cartoes="props.cartoes" 
       :faturasAbertas="props.faturasAbertas" 
       :faturasFechadas="props.faturasFechadas" 
-      :casasMultitenant="{ isAuthed, activeTenantId, casas, showBottomSheetCasas, nomeNovaCasa, codigoConvite, errorCasa, copied, activeTenantObj, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
+      :casasMultitenant="{ isAuthed, activeTenantId, casas, showBottomSheetCasas, form, copiedCode, activeTenantObj, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
     />
   </div>
 </template>

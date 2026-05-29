@@ -9,7 +9,7 @@ import { useCasasMultitenant } from '../../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../../composables/useToast'
 
 const { activeTenantId } = useCasasMultitenant()
-const { ativos } = useMembros()
+const { ativos, membros } = useMembros()
 const { cartoes, adicionarCartao, excluirCartaoManual } = useCartoesEFaturas()
 const toast = useToast()
 
@@ -69,7 +69,7 @@ const handleExcluir = async (id: string) => {
 </script>
 
 <template>
-  <div class="space-y-10">
+  <div class="space-y-10 w-full overflow-x-hidden">
     <!-- Adicionar Novo -->
     <Card class="p-8 shadow-subtle bg-card rounded-card space-y-6">
       <div class="space-y-4">
@@ -119,7 +119,9 @@ const handleExcluir = async (id: string) => {
             </div>
           </div>
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Responsável</label>
+            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">
+              Responsável (Membros: {{ membros.length }}, Ativos: {{ ativos.length }})
+            </label>
             <div class="relative" tabindex="0" @blur="isResponsavelDropdownOpen = false">
               <User class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none z-10" />
               <div 

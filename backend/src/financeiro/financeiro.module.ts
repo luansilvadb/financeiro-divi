@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { FinanceiroService } from './financeiro.service';
 import { FinanceiroController } from './financeiro.controller';
+import { AuthModule } from '../auth/auth.module';
+import { FinanceiroGateway } from './financeiro.gateway';
 
 @Module({
-  providers: [FinanceiroService],
+  imports: [AuthModule],
+  providers: [FinanceiroService, FinanceiroGateway],
   controllers: [FinanceiroController],
   exports: [FinanceiroService],
 })

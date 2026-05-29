@@ -16,9 +16,10 @@ export class MembroService implements IMembroService {
     private acertoRepo?: IAcertoMembroRepository
   ) {}
 
-  async adicionarMembro(nome: string): Promise<Membro> {
+  async adicionarMembro(nome: string, username?: string, password?: string): Promise<Membro> {
     const novo = new Membro({ id: crypto.randomUUID(), nome, ativo: true })
-    await this.repository.salvar(novo)
+    // @ts-ignore - Estendendo para passar credenciais para o backend via repositório
+    await this.repository.salvar(novo, { username, password })
     return novo
   }
 

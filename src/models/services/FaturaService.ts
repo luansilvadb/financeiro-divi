@@ -171,7 +171,7 @@ export class FaturaService implements IFaturaService {
     const temFaturaPix = todasFaturas.some(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === mes && f.periodo.ano === ano)
     if (!temFaturaPix) {
       const novaFaturaPix = new Fatura({
-        id: crypto.randomUUID(),
+        id: `PIX_DEFAULT_ID-${mes}-${ano}`,
         cartaoId: 'PIX_DEFAULT_ID',
         periodo: { mes, ano },
         responsavelId: 'PIX_SYSTEM_OWNER',
@@ -185,7 +185,7 @@ export class FaturaService implements IFaturaService {
       const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.periodo.mes === mes && f.periodo.ano === ano)
       if (!temFatura) {
         const novaFatura = new Fatura({
-          id: crypto.randomUUID(),
+          id: `${card.id}-${mes}-${ano}`,
           cartaoId: card.id,
           periodo: { mes, ano },
           responsavelId: card.responsavelPadraoId,

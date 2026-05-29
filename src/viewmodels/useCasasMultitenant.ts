@@ -1,4 +1,4 @@
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { tenantSessionService } from '../shared/container'
 
 export function useCasasMultitenant() {
@@ -6,10 +6,12 @@ export function useCasasMultitenant() {
   const activeTenantId = ref(tenantSessionService.getActiveTenantId())
   const casas = ref<any[]>([])
   const showBottomSheetCasas = ref(false)
-  const nomeNovaCasa = ref('')
-  const codigoConvite = ref('')
-  const errorCasa = ref('')
-  const copied = ref(false)
+  const form = reactive({
+    nomeNovaCasa: '',
+    codigoConvite: '',
+    errorCasa: ''
+  })
+  const copiedCode = ref<string | null>(null)
 
   const activeTenantObj = computed(() => {
     return casas.value.find(c => c.id === activeTenantId.value) || null
@@ -66,9 +68,9 @@ export function useCasasMultitenant() {
   }
 
   const criarNovaCasa = async () => {
-    errorCasa.value = ''
-    if (!nomeNovaCasa.value.trim()) {
-      errorCasa.value = 'Digite o nome da casa'
+    form.errorCasa = ''
+    if (!form.nomeNovaCasa.trim()) {
+      form.errorCasa = 'Digite o nome da casa'
       return
     }
 
@@ -76,30 +78,29 @@ export function useCasasMultitenant() {
       const response = await fetch(`${getApiUrl()}/financeiro/tenants`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ name: nomeNovaCasa.value.trim() })
+        body: JSON.stringify({ name: form.nomeNovaCasa.trim() })
       })
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}))
-        errorCasa.value = err.message || 'Erro ao criar casa'
+        form.errorCasa = err.message || 'Erro ao criar casa'
         return
       }
 
       const newTenant = await response.json()
-      nomeNovaCasa.value = ''
+      form.nomeNovaCasa = ''
       await carregarCasas()
-      selecionarCasa(newTenant.id)
     } catch (err) {
-      errorCasa.value = 'Falha de conexão com o servidor'
+      form.errorCasa = 'Falha de conexão com o servidor'
       console.error(err)
     }
   }
 
   const entrarPorCodigo = async () => {
-    errorCasa.value = ''
-    const cleanedCode = codigoConvite.value.trim().toUpperCase()
+    form.errorCasa = ''
+    const cleanedCode = form.codigoConvite.trim().toUpperCase()
     if (!cleanedCode) {
-      errorCasa.value = 'Digite o código de convite'
+      form.errorCasa = 'Digite o código de convite'
       return
     }
 
@@ -112,16 +113,15 @@ export function useCasasMultitenant() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}))
-        errorCasa.value = err.message || 'Código de convite inválido ou casa não encontrada.'
+        form.errorCasa = err.message || 'Código de convite inválido ou casa não encontrada.'
         return
       }
 
       const tenant = await response.json()
-      codigoConvite.value = ''
+      form.codigoConvite = ''
       await carregarCasas()
-      selecionarCasa(tenant.id)
     } catch (err) {
-      errorCasa.value = 'Falha de conexão com o servidor'
+      form.errorCasa = 'Falha de conexão com o servidor'
       console.error(err)
     }
   }
@@ -129,8 +129,8 @@ export function useCasasMultitenant() {
   const copyInviteCode = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code)
-      copied.value = true
-      setTimeout(() => { copied.value = false }, 2000)
+      copiedCode.value = code
+      setTimeout(() => { copiedCode.value = null }, 2000)
     } catch (err) {
       console.error('Falha ao copiar:', err)
     }
@@ -152,10 +152,8 @@ export function useCasasMultitenant() {
     activeTenantId,
     casas,
     showBottomSheetCasas,
-    nomeNovaCasa,
-    codigoConvite,
-    errorCasa,
-    copied,
+    form,
+    copiedCode,
     activeTenantObj,
     carregarCasas,
     selecionarCasa,

@@ -87,7 +87,7 @@ describe('FaturaRolloverService', () => {
     expect(carryovers1[0].id).toBe(carryovers2[0].id)
   })
 
-  it('nao deve fechar faturas abertas ao encerrar periodo', async () => {
+  it('deve fechar faturas abertas ao encerrar periodo', async () => {
     const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
     const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn().mockResolvedValue([]), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const faturaAberta = new Fatura({
@@ -112,7 +112,7 @@ describe('FaturaRolloverService', () => {
       nomePeriodoAnterior: 'Maio 2026'
     })
 
-    expect(mockFaturaService.fecharFatura).not.toHaveBeenCalled()
+    expect(mockFaturaService.fecharFatura).toHaveBeenCalledWith('f-antiga', 'm1', expect.any(Date))
     expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
       cartaoId: 'PIX_DEFAULT_ID',
       periodo: { mes: 6, ano: 2026 },

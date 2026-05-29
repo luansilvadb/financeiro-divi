@@ -29,18 +29,23 @@
       <!-- Cabeçalho -->
       <div class="space-y-3">
         <h3 class="text-heading text-charcoal leading-tight">
-          Estornar {{ itemType }}?
+          {{ itemType === 'Conta Fixa' ? 'Excluir Modelo?' : `Estornar ${itemType}?` }}
         </h3>
         <p class="text-body text-graphite leading-relaxed max-w-[280px] mx-auto">
-          O lançamento será removido e os saldos dos moradores serão recalculados imediatamente.
+          {{ itemType === 'Conta Fixa' 
+            ? 'Este modelo de conta fixa será removido da sua lista. Lançamentos que já foram feitos não serão afetados.'
+            : 'O lançamento será removido e os saldos dos moradores serão recalculados imediatamente.' 
+          }}
         </p>
       </div>
 
       <!-- Detalhes do Item (Visual Recessed Panel) -->
-      <div v-if="itemName || itemValue" class="w-full p-6 rounded-card bg-parchment shadow-subtle border-none">
+      <div v-if="itemName || (itemValue !== undefined && itemValue !== null)" class="w-full p-6 rounded-card bg-parchment shadow-subtle border-none">
         <div class="flex justify-between items-center gap-4">
           <div class="text-left flex-1 min-w-0">
-            <p class="text-caption font-bold uppercase text-ash tracking-widest mb-1">Item selecionado</p>
+            <p class="text-caption font-bold uppercase text-ash tracking-widest mb-1">
+              {{ itemType === 'Conta Fixa' ? 'Nome da Conta' : 'Item selecionado' }}
+            </p>
             <p class="text-body font-semibold text-charcoal truncate">{{ itemName || 'Sem descrição' }}</p>
           </div>
           <div v-if="itemValue" class="text-right shrink-0">
@@ -57,14 +62,14 @@
           class="w-full h-14 text-body font-semibold bg-midnight text-white rounded-pill hover:bg-charcoal transition-all"
           @click="$emit('confirm')"
         >
-          Sim, confirmar estorno
+          {{ itemType === 'Conta Fixa' ? 'Sim, excluir modelo' : 'Sim, confirmar estorno' }}
         </Button>
         <Button 
           variant="secondary" 
           class="w-full h-14 text-body font-semibold bg-stone text-charcoal rounded-pill hover:bg-stone/80 border-none transition-all"
           @click="$emit('cancel')"
         >
-          Não, manter lançamento
+          {{ itemType === 'Conta Fixa' ? 'Não, manter modelo' : 'Não, manter lançamento' }}
         </Button>
       </div>
     </div>

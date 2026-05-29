@@ -12,7 +12,7 @@ import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
 import { useContasFixas } from './viewmodels/useContasFixas'
 import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
-import { tenantSessionService } from './shared/container'
+import { tenantSessionService, socketService } from './shared/container'
 import ToastNotification from './views/components/ui/ToastNotification.vue'
 import { useToast } from './composables/useToast'
 
@@ -34,6 +34,53 @@ const isAuthed = ref(tenantSessionService.isAuthenticated())
 const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
 const toast = useToast()
 
+const inicializarSocket = (tenantId: string) => {
+  socketService.conectar(tenantId)
+
+  // Debounce: agrupa múltiplos eventos de dados em um único reload.
+  // Ao fechar uma fatura, o backend dispara faturas_alteradas + N acertos_alterados
+  // em sequência rápida. Sem debounce, cada evento dispara um reload completo.
+  let debounceTimerDados: ReturnType<typeof setTimeout> | null = null
+  const recarregarDadosDebounced = () => {
+    if (debounceTimerDados) clearTimeout(debounceTimerDados)
+    debounceTimerDados = setTimeout(async () => {
+      console.log('[Socket] Recarregando dados (debounced)...')
+      await inicializarCartoes()
+    }, 300)
+  }
+
+  socketService.on('gastos_alterados', () => {
+    console.log('[Socket] Evento gastos_alterados recebido!')
+    recarregarDadosDebounced()
+  })
+
+  socketService.on('cartoes_alterados', () => {
+    console.log('[Socket] Evento cartoes_alterados recebido!')
+    recarregarDadosDebounced()
+  })
+
+  socketService.on('faturas_alteradas', () => {
+    console.log('[Socket] Evento faturas_alteradas recebido!')
+    recarregarDadosDebounced()
+  })
+
+  socketService.on('acertos_alterados', () => {
+    console.log('[Socket] Evento acertos_alterados recebido!')
+    recarregarDadosDebounced()
+  })
+
+  socketService.on('membros_alterados', async () => {
+    console.log('[Socket] Evento membros_alterados recebido! Recarregando membros...')
+    await recarregarMembros()
+  })
+
+  socketService.on('contas_fixas_alteradas', async () => {
+    console.log('[Socket] Evento contas_fixas_alteradas recebido! Recarregando contas fixas...')
+    await inicializarContasFixas()
+  })
+}
+
+
 onMounted(async () => {
   if (isAuthed.value) {
     try {
@@ -46,6 +93,7 @@ onMounted(async () => {
           inicializarCartoes(),
           inicializarContasFixas()
         ])
+        inicializarSocket(tenantSessionService.getActiveTenantId()!)
       }
     } catch (error: any) {
       console.error('Erro na inicialização da sessão:', error)
@@ -76,6 +124,7 @@ const handleAuthSuccess = async () => {
         inicializarCartoes(),
         inicializarContasFixas()
       ])
+      inicializarSocket(tenantSessionService.getActiveTenantId()!)
     } catch (error: any) {
       console.error('Erro na inicialização pós-auth:', error)
     }
@@ -90,12 +139,14 @@ const handleCasaSelecionada = async () => {
       inicializarCartoes(),
       inicializarContasFixas()
     ])
+    inicializarSocket(tenantSessionService.getActiveTenantId()!)
   } catch (error: any) {
     console.error('Erro ao inicializar dados da nova casa:', error)
   }
 }
 
 const handleLogout = async () => {
+  socketService.desconectar()
   await tenantSessionService.logout()
   isAuthed.value = false
   hasTenant.value = false
@@ -170,9 +221,7 @@ const handleLogout = async () => {
       width-class="md:w-[560px]"
       max-height="90dvh"
     >
-      <div class="flex-grow overflow-y-auto custom-scrollbar p-6 sm:p-8">
-        <ConfiguracoesMembros />
-      </div>
+      <ConfiguracoesMembros @voltar="currentView = 'dashboard'" />
     </BottomSheet>
 
     <BottomTabBar v-model="activeTab" />

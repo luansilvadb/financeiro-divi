@@ -122,8 +122,8 @@ const salvar = () => {
 
         <div class="flex justify-between items-center flex-wrap gap-3 pt-3.5 border-t border-stone">
           <button 
-            v-if="bill?.id" 
-            @click="$emit('delete', bill.id)" 
+            v-if="bill" 
+            @click="$emit('delete', bill)" 
             class="px-4 py-2.5 text-xs font-bold bg-coral/5 hover:bg-coral/10 text-coral border border-transparent rounded-xl transition-all"
           >
             Excluir

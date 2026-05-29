@@ -45,6 +45,8 @@ model MembroCasa {
   usuario   Usuario? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@id([id, tenantId])
+  @@index([tenantId])
+  @@index([userId])
   @@map("membros_casa")
 }
 
@@ -59,6 +61,7 @@ model Cartao {
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@id([id, tenantId])
+  @@index([tenantId])
   @@map("cartoes")
 }
 
@@ -76,6 +79,8 @@ model Fatura {
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@id([id, tenantId])
+  @@index([tenantId])
+  @@index([cartaoId])
   @@map("faturas")
 }
 
@@ -102,6 +107,8 @@ model Gasto {
   divisoes            DivisaoGasto[]
 
   @@id([id, tenantId])
+  @@index([tenantId])
+  @@index([faturaId])
   @@map("gastos")
 }
 
@@ -114,6 +121,8 @@ model DivisaoGasto {
 
   gasto         Gasto    @relation(fields: [gastoId, tenantId], references: [id, tenantId], onDelete: Cascade)
 
+  @@index([tenantId])
+  @@index([gastoId, tenantId])
   @@map("divisoes_gasto")
 }
 
@@ -129,6 +138,7 @@ model ContaFixa {
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@id([id, tenantId])
+  @@index([tenantId])
   @@map("contas_fixas")
 }
 
@@ -148,6 +158,8 @@ model AcertoMembro {
   tenant                 Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@id([id, tenantId])
+  @@index([tenantId])
+  @@index([faturaId])
   @@map("acertos_membro")
 }
 
@@ -165,5 +177,7 @@ model AntecipacaoFatura {
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@id([id, tenantId])
+  @@index([tenantId])
+  @@index([faturaId])
   @@map("antecipacoes_fatura")
 }

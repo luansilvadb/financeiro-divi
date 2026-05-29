@@ -26,10 +26,15 @@ export function useDashboardPeriodos(
   }, { deep: true, immediate: true })
 
   const buscarFaturasNoPeriodo = (p: { mes: number; ano: number }) => {
-    return [
-      ...getFaturasAbertas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano),
-      ...getFaturasFechadas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    ]
+    const abertas = getFaturasAbertas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    const fechadas = getFaturasFechadas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+    
+    return [...abertas, ...fechadas].sort((a, b) => {
+      // Mantém a ordem estável baseada no ID do cartão
+      if (a.cartaoId < b.cartaoId) return -1
+      if (a.cartaoId > b.cartaoId) return 1
+      return 0
+    })
   }
 
   const buscarFaturaNoPeriodo = (p: { mes: number; ano: number }, cartaoId?: string) => {

@@ -1,4 +1,5 @@
 import { TenantSessionService } from '../models/services/TenantSessionService'
+import { SocketService } from '../models/services/SocketService'
 
 import { HttpMembroRepository } from '../models/repositories/http/HttpMembroRepository'
 import { HttpCartaoRepository } from '../models/repositories/http/HttpCartaoRepository'
@@ -42,3 +43,4 @@ export const gastoService = new GastoService(
 export const faturaService = new FaturaService(faturaRepository, acertoMembroRepository, gastoRepository, antecipacaoFaturaRepository)
 export const faturaRolloverService = new FaturaRolloverService(faturaRepository, gastoRepository, faturaService)
 export const acertoService = new AcertoService(acertoMembroRepository, faturaRepository, gastoRepository)
+export const socketService = new SocketService()

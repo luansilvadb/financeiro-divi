@@ -47,8 +47,8 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
     return promiseInicializacao
   }
 
-  const adicionarMembro = async (nome: string) => {
-    await service.adicionarMembro(nome)
+  const adicionarMembro = async (nome: string, username?: string, password?: string) => {
+    await service.adicionarMembro(nome, username, password)
     await carregar()
   }
 
