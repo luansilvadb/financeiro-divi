@@ -46,4 +46,34 @@ describe('AcertoMembro', () => {
     expect(acerto.pago).toBe(true)
     expect(acerto.valorPago.centavos).toBe(5000)
   })
+
+  it('deve representar acerto em que o membro paga o responsavel', () => {
+    const acerto = new AcertoMembro({
+      id: 'ac-membro-paga',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deCentavos(30000),
+      totalAntecipado: Dinheiro.deCentavos(10000),
+      tipo: 'MEMBRO_PAGA'
+    })
+
+    expect(acerto.tipo).toBe('MEMBRO_PAGA')
+    expect(acerto.totalAntecipado.centavos).toBe(10000)
+    expect(acerto.valorAcerto.centavos).toBe(20000)
+    expect(acerto.pago).toBe(false)
+  })
+
+  it('deve representar acerto em que o responsavel devolve ao membro', () => {
+    const acerto = new AcertoMembro({
+      id: 'ac-responsavel-paga',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deCentavos(10000),
+      totalAntecipado: Dinheiro.deCentavos(15000),
+      tipo: 'RESPONSAVEL_PAGA'
+    })
+
+    expect(acerto.tipo).toBe('RESPONSAVEL_PAGA')
+    expect(acerto.valorAcerto.centavos).toBe(5000)
+  })
 })

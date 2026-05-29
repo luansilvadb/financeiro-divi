@@ -10,6 +10,8 @@ export class HttpAcertoMembroRepository extends HttpBaseRepository implements IA
       faturaId: item.faturaId,
       membroId: item.membroId,
       totalConsumido: Dinheiro.deCentavos(item.totalConsumidoCentavos),
+      totalAntecipado: Dinheiro.deCentavos(item.totalAntecipadoCentavos || 0),
+      tipo: item.tipo || 'MEMBRO_PAGA',
       valorPago: Dinheiro.deCentavos(item.valorPagoCentavos),
       pago: item.pago,
       dataPagamento: item.dataPagamento ? new Date(item.dataPagamento) : undefined
@@ -34,6 +36,8 @@ export class HttpAcertoMembroRepository extends HttpBaseRepository implements IA
         faturaId: acerto.faturaId,
         membroId: acerto.membroId,
         totalConsumidoCentavos: acerto.totalConsumido.centavos,
+        totalAntecipadoCentavos: acerto.totalAntecipado.centavos,
+        tipo: acerto.tipo,
         valorPagoCentavos: acerto.valorPago.centavos,
         pago: acerto.pago,
         dataPagamento: acerto.dataPagamento

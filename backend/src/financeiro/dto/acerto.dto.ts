@@ -35,6 +35,22 @@ export class AcertoDto {
   totalConsumidoCentavos!: number;
 
   @ApiPropertyOptional({
+    description: 'Total antecipado pelo membro em centavos',
+    example: 2500,
+  })
+  @IsOptional()
+  @IsNumber()
+  totalAntecipadoCentavos?: number;
+
+  @ApiPropertyOptional({
+    description: 'Direcao do acerto',
+    example: 'MEMBRO_PAGA',
+  })
+  @IsOptional()
+  @IsString()
+  tipo?: 'MEMBRO_PAGA' | 'RESPONSAVEL_PAGA';
+
+  @ApiPropertyOptional({
     description: 'Valor pago pelo membro em centavos',
     example: 8750,
   })
