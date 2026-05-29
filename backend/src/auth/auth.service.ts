@@ -102,6 +102,14 @@ export class AuthService {
     };
   }
 
+  validarToken(token: string): any {
+    try {
+      return this.jwtService.verify(token);
+    } catch (err) {
+      return null;
+    }
+  }
+
   async getMe(userId: string) {
     const user = await this.prisma.usuario.findUnique({
       where: { id: userId },
