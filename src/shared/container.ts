@@ -39,6 +39,6 @@ export const gastoService = new GastoService(
   lancamentoService,
   estornoService
 )
-export const faturaService = new FaturaService(faturaRepository, acertoMembroRepository, gastoRepository)
+export const faturaService = new FaturaService(faturaRepository, acertoMembroRepository, gastoRepository, antecipacaoFaturaRepository)
 export const faturaRolloverService = new FaturaRolloverService(faturaRepository, gastoRepository, faturaService)
 export const acertoService = new AcertoService(acertoMembroRepository, faturaRepository, gastoRepository)

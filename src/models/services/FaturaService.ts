@@ -4,6 +4,7 @@ import { Fatura } from '../entities/Fatura'
 import type { IFaturaService } from './IFaturaService'
 
 import type { IGastoRepository } from '../repositories/IGastoRepository'
+import type { IAntecipacaoFaturaRepository } from '../repositories/IAntecipacaoFaturaRepository'
 import { Dinheiro } from '../entities/Dinheiro'
 import { AcertoMembro } from '../entities/AcertoMembro'
 import { valorParcelaAtual } from '../entities/ParcelaCalculator'
@@ -12,7 +13,8 @@ export class FaturaService implements IFaturaService {
   constructor(
     private faturaRepo: IFaturaRepository,
     private acertoRepo: IAcertoMembroRepository,
-    private gastoRepo: IGastoRepository
+    private gastoRepo: IGastoRepository,
+    private antecipacaoRepo?: IAntecipacaoFaturaRepository
   ) {}
 
   async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco?: Date): Promise<void> {
@@ -31,6 +33,13 @@ export class FaturaService implements IFaturaService {
     await this.acertoRepo.excluirPorFatura(faturaId)
 
     const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
+    const responsavelFinalId = responsavelId || fatura.responsavelId
+    const antecipacoes = this.antecipacaoRepo ? await this.antecipacaoRepo.buscarPorFatura(faturaId) : []
+    const antecipacoesPorMembro: Record<string, number> = {}
+    for (const ant of antecipacoes) {
+      antecipacoesPorMembro[ant.membroId] = (antecipacoesPorMembro[ant.membroId] || 0) + ant.valor.centavos
+    }
+
     const consumoMembros: Record<string, number> = {}
 
     for (const g of gastos) {
@@ -50,7 +59,13 @@ export class FaturaService implements IFaturaService {
     }
 
     for (const [membroId, centavos] of Object.entries(consumoMembros)) {
-      if (centavos !== 0) {
+      if (membroId === responsavelFinalId) {
+        continue
+      }
+
+      const totalAntecipado = antecipacoesPorMembro[membroId] || 0
+      const liquido = centavos - totalAntecipado
+      if (liquido !== 0) {
         // Localizar se já existia um acerto pago/reembolsado para esse membro
         const antigo = acertosAntigos.find(a => a.membroId === membroId)
 
@@ -59,6 +74,7 @@ export class FaturaService implements IFaturaService {
           faturaId,
           membroId,
           totalConsumido: Dinheiro.deCentavos(centavos),
+          totalAntecipado: Dinheiro.deCentavos(totalAntecipado),
           valorPago: antigo?.valorPago,
           pago: antigo?.pago,
           dataPagamento: antigo?.dataPagamento
