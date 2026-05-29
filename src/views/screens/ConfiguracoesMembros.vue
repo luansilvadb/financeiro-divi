@@ -155,7 +155,7 @@ const handleAtivar = async (id: string) => {
                 <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Novo Morador</h4>
                 <button 
                   @click="mostrarCredenciais = !mostrarCredenciais"
-                  class="text-[10px] font-bold uppercase tracking-widest hover:underline transition-colors duration-150"
+                  class="text-[10px] font-bold uppercase tracking-widest hover:underline transition-colors duration-150 select-none [touch-action:manipulation] [-webkit-tap-highlight-color:transparent]"
                   :class="mostrarCredenciais ? 'text-ash' : 'text-ember'"
                 >
                   {{ mostrarCredenciais ? 'Remover Login' : '+ Criar Login' }}
