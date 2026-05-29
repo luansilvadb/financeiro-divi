@@ -260,6 +260,30 @@ describe('FaturaService', () => {
     }))
   })
 
+  it('deve gerar acerto para membro com apenas antecipacao', async () => {
+    const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), excluirPorFatura: vi.fn(), salvar: vi.fn() }
+    const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]) }
+    const antecipacaoRepo = {
+      buscarPorFatura: vi.fn().mockResolvedValue([
+        { membroId: 'm2', valor: Dinheiro.deReais(50) }
+      ])
+    }
+
+    const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any, antecipacaoRepo as any)
+    await service.fecharFatura('f1', 'm1', new Date())
+
+    expect(acertoRepo.salvar).toHaveBeenCalledTimes(1)
+    expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      membroId: 'm2',
+      totalConsumido: expect.objectContaining({ centavos: 0 }),
+      totalAntecipado: expect.objectContaining({ centavos: 5000 }),
+      valorAcerto: expect.objectContaining({ centavos: 5000 }),
+      tipo: 'RESPONSAVEL_PAGA'
+    }))
+  })
+
   it('deve ser idempotente ao tentar fechar uma fatura que ja esta fechada ou acertada', async () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }

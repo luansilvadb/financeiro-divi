@@ -58,11 +58,17 @@ export class FaturaService implements IFaturaService {
       }
     }
 
-    for (const [membroId, centavos] of Object.entries(consumoMembros)) {
+    const membrosComAcerto = new Set([
+      ...Object.keys(consumoMembros),
+      ...Object.keys(antecipacoesPorMembro)
+    ])
+
+    for (const membroId of membrosComAcerto) {
       if (membroId === responsavelFinalId) {
         continue
       }
 
+      const centavos = consumoMembros[membroId] || 0
       const totalAntecipado = antecipacoesPorMembro[membroId] || 0
       const liquido = centavos - totalAntecipado
       if (liquido !== 0) {
