@@ -43,10 +43,26 @@ export class EstornoService implements IEstornoService {
 
     // Se for um acerto netting, estornamos a baixa nos AcertoMembro correspondentes
     if (gasto.isSettlement && this.acertoRepo) {
+      let mes: number | undefined
+      let ano: number | undefined
+
       const fatura = await this.faturaRepo.buscarPorId(gasto.faturaId)
       if (fatura) {
-        let anteriorMes = fatura.periodo.mes - 1
-        let anteriorAno = fatura.periodo.ano
+        mes = fatura.periodo.mes
+        ano = fatura.periodo.ano
+      } else {
+        // Se a fatura não existe no banco de dados (ex: virtual-pix-5-2026),
+        // extraímos o mês e ano correspondentes diretamente de gasto.faturaId
+        const match = gasto.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+        if (match) {
+          mes = parseInt(match[1], 10)
+          ano = parseInt(match[2], 10)
+        }
+      }
+
+      if (mes !== undefined && ano !== undefined) {
+        let anteriorMes = mes - 1
+        let anteriorAno = ano
         if (anteriorMes < 1) {
           anteriorMes = 12
           anteriorAno -= 1
@@ -57,7 +73,7 @@ export class EstornoService implements IEstornoService {
         const faturasParaReverter = todasFaturas.filter(
           f => (
             (f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno) || 
-            (f.periodo.mes === fatura.periodo.mes && f.periodo.ano === fatura.periodo.ano)
+            (f.periodo.mes === mes && f.periodo.ano === ano)
           ) && (f.status === 'FECHADA' || f.status === 'ACERTADA')
         )
 
@@ -67,8 +83,14 @@ export class EstornoService implements IEstornoService {
           if (estornoRestanteCentavos <= 0) break
 
           const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
-          // Procura acertos do comprador do Pix que possuem algum valor pago
-          const acertoComPagamento = acertosMembro.find(a => a.membroId === gasto.compradorId && a.valorPago.centavos > 0)
+          // Procura acertos do comprador do Pix ou o membro comum envolvido se for do tipo RESPONSAVEL_PAGA
+          const membroIdDoAcerto = gasto.settlementDetails
+            ? (gasto.settlementDetails.fromMemberId === fatTarget.responsavelId
+                ? gasto.settlementDetails.toMemberId
+                : gasto.settlementDetails.fromMemberId)
+            : gasto.compradorId
+
+          const acertoComPagamento = acertosMembro.find(a => a.membroId === membroIdDoAcerto && a.valorPago.centavos > 0)
 
           if (acertoComPagamento) {
             const valorEstorno = Math.min(estornoRestanteCentavos, acertoComPagamento.valorPago.centavos)

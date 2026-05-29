@@ -50,14 +50,16 @@ const {
   canAdvance,
   next,
   prev,
-  reset,
+  limparRascunho,
   finalizarGastoOuEmprestimo
 } = useNovoLancamentoWizard(() => props.membros)
 const toast = useToast()
 
-onUnmounted(() => {
-  reset()
-})
+const handleCancelar = () => {
+  limparRascunho()
+  emit('cancelar')
+}
+
 
 const quickChips = computed(() => {
   if (wizFlow.value === 'loan') {
@@ -375,7 +377,7 @@ const handleGravar = async () => {
     <footer class="p-5 sm:p-6 border-t border-stone bg-white flex gap-3">
       <button
         class="flex-1 h-12 rounded-full bg-stone hover:bg-stone text-midnight text-sm font-semibold transition-colors"
-        @click="step === 1 ? emit('cancelar') : prev()"
+        @click="step === 1 ? handleCancelar() : prev()"
       >
         {{ step === 1 ? 'Cancelar' : 'Voltar' }}
       </button>

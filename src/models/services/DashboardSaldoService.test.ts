@@ -75,4 +75,106 @@ describe('DashboardSaldoService', () => {
       maria: 10000
     })
   })
+
+  it('deve incluir gastos de settlement com detalhes de netting se a fatura estiver aberta', () => {
+    const settlementAberto = new Gasto({
+      id: 'g-settlement',
+      faturaId: 'pix-maio',
+      descricao: 'Acerto de contas',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'joao',
+      divisoes: [new DivisaoDeGasto('luan', Dinheiro.deReais(50))],
+      method: 'pix',
+      isSettlement: true,
+      settlementDetails: {
+        fromMemberId: 'joao',
+        toMemberId: 'luan',
+        method: 'pix'
+      }
+    })
+
+    const result = separarGastosSaldoRealEPreviaCartao([settlementAberto], [faturaPix])
+
+    expect(result.gastosSaldoReal.map(g => g.id)).toEqual(['g-settlement'])
+  })
+
+  it('deve ignorar gastos de settlement com detalhes de netting se a fatura estiver fechada', () => {
+    const faturaPixFechada = new Fatura({ id: 'pix-abril', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 4, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'FECHADA' })
+    const settlementFechado = new Gasto({
+      id: 'g-settlement',
+      faturaId: 'pix-abril',
+      descricao: 'Acerto de contas',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'joao',
+      divisoes: [new DivisaoDeGasto('luan', Dinheiro.deReais(50))],
+      method: 'pix',
+      isSettlement: true,
+      settlementDetails: {
+        fromMemberId: 'joao',
+        toMemberId: 'luan',
+        method: 'pix'
+      }
+    })
+
+    const result = separarGastosSaldoRealEPreviaCartao([settlementFechado], [faturaPixFechada])
+
+    expect(result.gastosSaldoReal).toEqual([])
+  })
+
+  it('deve incluir gastos de settlement sem detalhes de netting (ex: carryover) apenas se a fatura estiver fechada', () => {
+    const faturaPixFechada = new Fatura({ id: 'pix-abril', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 4, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'FECHADA' })
+    
+    const carryoverAberto = new Gasto({
+      id: 'g-carryover-aberto',
+      faturaId: 'pix-maio',
+      descricao: 'Carryover',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'joao',
+      divisoes: [new DivisaoDeGasto('luan', Dinheiro.deReais(50))],
+      method: 'pix',
+      isSettlement: true
+    })
+
+    const carryoverFechado = new Gasto({
+      id: 'g-carryover-fechado',
+      faturaId: 'pix-abril',
+      descricao: 'Carryover',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'joao',
+      divisoes: [new DivisaoDeGasto('luan', Dinheiro.deReais(50))],
+      method: 'pix',
+      isSettlement: true
+    })
+
+    const resultAberto = separarGastosSaldoRealEPreviaCartao([carryoverAberto], [faturaPix])
+    const resultFechado = separarGastosSaldoRealEPreviaCartao([carryoverFechado], [faturaPixFechada])
+
+    expect(resultAberto.gastosSaldoReal).toEqual([])
+    expect(resultFechado.gastosSaldoReal.map(g => g.id)).toEqual(['g-carryover-fechado'])
+  })
+
+  it('deve ignorar gasto de netting fisico se houver uma fatura de cartao fechada no mesmo periodo para evitar contagem dupla', () => {
+    const faturaPixAbril = new Fatura({ id: 'pix-abril', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 4, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const faturaCartaoAbrilFechada = new Fatura({ id: 'card-abril', cartaoId: 'c1', periodo: { mes: 4, ano: 2026 }, responsavelId: 'luan', status: 'FECHADA' })
+
+    const nettingFisico = new Gasto({
+      id: 'g-netting-fisico',
+      faturaId: 'pix-abril',
+      descricao: 'Acerto de contas',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'joao',
+      divisoes: [new DivisaoDeGasto('luan', Dinheiro.deReais(50))],
+      method: 'pix',
+      isSettlement: true,
+      settlementDetails: {
+        fromMemberId: 'joao',
+        toMemberId: 'luan',
+        method: 'pix'
+      }
+    })
+
+    const result = separarGastosSaldoRealEPreviaCartao([nettingFisico], [faturaPixAbril, faturaCartaoAbrilFechada])
+
+    expect(result.gastosSaldoReal).toEqual([])
+  })
 })

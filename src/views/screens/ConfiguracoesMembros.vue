@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { UserMinus, UserCheck, Users, CreditCard, Copy, Share2 } from 'lucide-vue-next'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
@@ -9,8 +9,13 @@ import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../composables/useToast'
 
 const { membros, adicionarMembro, desativarMembro, ativarMembro, carregar } = useMembros()
-const { activeTenantId, activeTenantObj, copyInviteCode, copied } = useCasasMultitenant()
+const { activeTenantId, activeTenantObj, copyInviteCode, copiedCode } = useCasasMultitenant()
 const toast = useToast()
+
+const copied = computed(() => {
+  if (!copiedCode) return false
+  return copiedCode.value === getInviteLink()
+})
 
 const getInviteLink = () => {
   if (!activeTenantObj.value) return ''
@@ -34,6 +39,10 @@ const toggleCredenciais = () => {
   if (agora - ultimoClique < 250) return
   ultimoClique = agora
   mostrarCredenciais.value = !mostrarCredenciais.value
+  if (!mostrarCredenciais.value) {
+    novoUsername.value = ''
+    novoPassword.value = ''
+  }
 }
 
 onMounted(async () => {
@@ -50,7 +59,10 @@ const activeTab = ref<'membros' | 'cartoes'>('membros')
 const emit = defineEmits(['voltar'])
 
 const handleAdicionar = async () => {
-  if (novoNome.value.trim()) {
+  const nomeValido = !!novoNome.value.trim()
+  const credenciaisValidas = !mostrarCredenciais.value || (!!novoUsername.value.trim() && !!novoPassword.value.trim())
+
+  if (nomeValido && activeTenantId.value && credenciaisValidas) {
     try {
       await adicionarMembro(
         novoNome.value.trim(), 
@@ -136,7 +148,7 @@ const handleAtivar = async (id: string) => {
         <!-- Conteúdo Aba 1: Moradores -->
         <div 
           class="col-start-1 row-start-1 transition-all duration-500 ease-spring space-y-4 w-full min-w-0"
-          :class="activeTab === 'membros' ? 'opacity-100 translate-y-0 z-10 delay-100' : 'opacity-0 translate-y-4 pointer-events-none z-0'"
+          :class="activeTab === 'membros' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
         >
           <!-- Quick Invite Bar -->
           <Card v-if="activeTenantObj" class="p-3 sm:p-4 bg-white border border-stone shadow-subtle rounded-card flex items-center gap-3 w-full min-w-0">
@@ -251,7 +263,7 @@ const handleAtivar = async (id: string) => {
         <!-- Conteúdo Aba 2: Cartões -->
         <div 
           class="col-start-1 row-start-1 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] w-full min-w-0"
-          :class="activeTab === 'cartoes' ? 'opacity-100 translate-y-0 z-10 delay-100' : 'opacity-0 translate-y-4 pointer-events-none z-0'"
+          :class="activeTab === 'cartoes' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
         >
           <ConfiguracoesCartoes />
         </div>

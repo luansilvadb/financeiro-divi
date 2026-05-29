@@ -406,8 +406,8 @@ export class FinanceiroService {
     if (gasto && gasto.isSettlement) {
       const fatura = await this.prisma.fatura.findUnique({ where: { id_tenantId: { id: gasto.faturaId, tenantId } } });
       if (fatura) {
-        let anteriorMes = fatura.periodoMes - 1;
-        let anteriorAno = fatura.periodoAno;
+        let anteriorMes = fatura.mes - 1;
+        let anteriorAno = fatura.ano;
         if (anteriorMes < 1) {
           anteriorMes = 12;
           anteriorAno -= 1;
@@ -418,8 +418,8 @@ export class FinanceiroService {
           where: {
             tenantId,
             OR: [
-              { periodoMes: anteriorMes, periodoAno: anteriorAno },
-              { periodoMes: fatura.periodoMes, periodoAno: fatura.periodoAno }
+              { mes: anteriorMes, ano: anteriorAno },
+              { mes: fatura.mes, ano: fatura.ano }
             ],
             status: { in: ['FECHADA', 'ACERTADA'] }
           }

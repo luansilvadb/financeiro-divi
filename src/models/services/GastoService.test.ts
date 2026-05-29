@@ -1134,6 +1134,136 @@ describe('GastoService', () => {
       installments: 3
     })).rejects.toThrow('Fatura original não encontrada para o gasto g1')
   })
+
+  it('deve dar baixa em acertos do tipo RESPONSAVEL_PAGA (credor comum) ao registrar netting', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    const mockAcertoRepo = { buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn(), listarTodos: vi.fn() }
+
+    const faturaAtual = new Fatura({ id: 'f-fevereiro', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 2, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const faturaAnterior = new Fatura({ id: 'f-janeiro', cartaoId: 'c1', periodo: { mes: 1, ano: 2026 }, responsavelId: 'membro-responsavel', status: 'FECHADA', dataPagamentoBanco: new Date() })
+
+    const { AcertoMembro } = await import('../entities/AcertoMembro')
+    // Membro credor possui acerto RESPONSAVEL_PAGA (totalConsumido < totalAntecipado)
+    const acertoPendente = new AcertoMembro({
+      id: 'a-janeiro-credor',
+      faturaId: 'f-janeiro',
+      membroId: 'membro-credor',
+      totalConsumido: Dinheiro.deCentavos(0),
+      totalAntecipado: Dinheiro.deCentavos(5000),
+      tipo: 'RESPONSAVEL_PAGA'
+    })
+
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaAtual)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
+    mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoPendente])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
+    
+    await service.registrarAcertoNetting({
+      faturaId: 'f-fevereiro',
+      descricao: 'Acerto de Saldo',
+      valor: 50,
+      fromMemberId: 'membro-responsavel', // O responsável paga
+      toMemberId: 'membro-credor',       // O credor comum recebe
+      method: 'pix'
+    })
+
+    expect(mockAcertoRepo.salvar).toHaveBeenCalled()
+    expect(acertoPendente.pago).toBe(true)
+    const faturaAcertada = mockFaturaRepo.salvar.mock.calls.find((c: any[]) => c[0]?.id === 'f-janeiro')?.[0]
+    expect(faturaAcertada?.status).toBe('ACERTADA')
+  })
+
+  it('deve dar baixa em ambos os acertos (devedor MEMBRO_PAGA e credor RESPONSAVEL_PAGA) ao registrar netting', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    const mockAcertoRepo = { buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn(), listarTodos: vi.fn() }
+
+    const faturaAtual = new Fatura({ id: 'f-fevereiro', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 2, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' })
+    const faturaAnterior = new Fatura({ id: 'f-janeiro', cartaoId: 'c1', periodo: { mes: 1, ano: 2026 }, responsavelId: 'membro-responsavel', status: 'FECHADA', dataPagamentoBanco: new Date() })
+
+    const { AcertoMembro } = await import('../entities/AcertoMembro')
+    
+    const acertoDevedor = new AcertoMembro({
+      id: 'a-janeiro-devedor',
+      faturaId: 'f-janeiro',
+      membroId: 'membro-devedor',
+      totalConsumido: Dinheiro.deCentavos(5000),
+      tipo: 'MEMBRO_PAGA'
+    })
+
+    const acertoCredor = new AcertoMembro({
+      id: 'a-janeiro-credor',
+      faturaId: 'f-janeiro',
+      membroId: 'membro-credor',
+      totalConsumido: Dinheiro.deCentavos(0),
+      totalAntecipado: Dinheiro.deCentavos(5000),
+      tipo: 'RESPONSAVEL_PAGA'
+    })
+
+    mockFaturaRepo.buscarPorId.mockResolvedValue(faturaAtual)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaAtual, faturaAnterior])
+    mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoDevedor, acertoCredor])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
+    
+    await service.registrarAcertoNetting({
+      faturaId: 'f-fevereiro',
+      descricao: 'Acerto de Saldo',
+      valor: 50,
+      fromMemberId: 'membro-devedor', // Devedor paga
+      toMemberId: 'membro-credor',   // Credor recebe
+      method: 'pix'
+    })
+
+    expect(mockAcertoRepo.salvar).toHaveBeenCalledTimes(2)
+    expect(acertoDevedor.pago).toBe(true)
+    expect(acertoCredor.pago).toBe(true)
+    const faturaAcertada = mockFaturaRepo.salvar.mock.calls.find((c: any[]) => c[0]?.id === 'f-janeiro')?.[0]
+    expect(faturaAcertada?.status).toBe('ACERTADA')
+  })
+
+  it('deve dar baixa em acertos mesmo se a fatura atual de netting for virtual e nao existir no banco de dados', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn(), excluir: vi.fn() }
+    const mockAcertoRepo = { buscarPorId: vi.fn(), buscarPorFatura: vi.fn(), salvar: vi.fn(), excluirPorFatura: vi.fn(), listarTodos: vi.fn() }
+
+    const faturaAnterior = new Fatura({ id: 'f-janeiro', cartaoId: 'c1', periodo: { mes: 1, ano: 2026 }, responsavelId: 'membro-responsavel', status: 'FECHADA', dataPagamentoBanco: new Date() })
+
+    const { AcertoMembro } = await import('../entities/AcertoMembro')
+    
+    const acertoDevedor = new AcertoMembro({
+      id: 'a-janeiro-devedor',
+      faturaId: 'f-janeiro',
+      membroId: 'membro-devedor',
+      totalConsumido: Dinheiro.deCentavos(5000),
+      tipo: 'MEMBRO_PAGA'
+    })
+
+    mockFaturaRepo.buscarPorId.mockResolvedValue(null)
+    mockFaturaRepo.listarTodas.mockResolvedValue([faturaAnterior])
+    mockAcertoRepo.buscarPorFatura.mockResolvedValue([acertoDevedor])
+
+    const service = new GastoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, undefined, mockAcertoRepo as any)
+    
+    await service.registrarAcertoNetting({
+      faturaId: 'virtual-pix-2-2026',
+      descricao: 'Acerto de Saldo Virtual',
+      valor: 50,
+      fromMemberId: 'membro-devedor',
+      toMemberId: 'membro-responsavel',
+      method: 'pix'
+    })
+
+    expect(mockAcertoRepo.salvar).toHaveBeenCalled()
+    expect(acertoDevedor.pago).toBe(true)
+    const faturaAcertada = mockFaturaRepo.salvar.mock.calls.find((c: any[]) => c[0]?.id === 'f-janeiro')?.[0]
+    expect(faturaAcertada?.status).toBe('ACERTADA')
+  })
 })
 
 

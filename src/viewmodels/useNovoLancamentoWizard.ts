@@ -190,7 +190,7 @@ export function useNovoLancamentoWizard(
         periodo: obterPeriodoSelecionado()
       })
 
-      reset()
+      limparRascunhoWizard()
     } finally {
       isSubmitting.value = false
     }
@@ -293,6 +293,7 @@ export function useNovoLancamentoWizard(
     next,
     prev,
     reset,
+    limparRascunho: limparRascunhoWizard,
     finalizarGastoOuEmprestimo,
     isSubmitting
   }

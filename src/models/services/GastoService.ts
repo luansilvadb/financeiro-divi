@@ -77,10 +77,24 @@ export class GastoService implements IGastoService {
     })
     await this.gastoRepo.salvar(acertoGasto)
 
+    let mes: number | undefined
+    let ano: number | undefined
+
     const faturaAtual = await this.faturaRepo.buscarPorId(dados.faturaId)
-    if (faturaAtual && this.acertoRepo) {
-      let anteriorMes = faturaAtual.periodo.mes - 1
-      let anteriorAno = faturaAtual.periodo.ano
+    if (faturaAtual) {
+      mes = faturaAtual.periodo.mes
+      ano = faturaAtual.periodo.ano
+    } else {
+      const match = dados.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+      if (match) {
+        mes = parseInt(match[1], 10)
+        ano = parseInt(match[2], 10)
+      }
+    }
+
+    if (mes !== undefined && ano !== undefined && this.acertoRepo) {
+      let anteriorMes = mes - 1
+      let anteriorAno = ano
       if (anteriorMes < 1) {
         anteriorMes = 12
         anteriorAno -= 1
@@ -92,33 +106,45 @@ export class GastoService implements IGastoService {
       const faturasParaAbater = todasFaturas.filter(
         f => (
           (f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno) || 
-          (f.periodo.mes === faturaAtual.periodo.mes && f.periodo.ano === faturaAtual.periodo.ano)
+          (f.periodo.mes === mes && f.periodo.ano === ano)
         ) && f.status === 'FECHADA'
       )
 
-      let nettingRestanteCentavos = total.centavos
+      let restPagadorCentavos = total.centavos
+      let restRecebedorCentavos = total.centavos
 
       for (const fatTarget of faturasParaAbater) {
-        if (nettingRestanteCentavos <= 0) break
-
         const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
-        const acertoPendente = acertosMembro.find(a => a.membroId === dados.fromMemberId && !a.pago)
 
-        if (acertoPendente) {
-          const faltaPagarCentavos = acertoPendente.valorAcerto.centavos - acertoPendente.valorPago.centavos
+        // 1. Abater dívida de quem paga (se for devedor comum: tipo MEMBRO_PAGA)
+        const acertoPagador = acertosMembro.find(a => a.membroId === dados.fromMemberId && a.tipo === 'MEMBRO_PAGA' && !a.pago)
+        if (acertoPagador && restPagadorCentavos > 0) {
+          const faltaPagarCentavos = acertoPagador.valorAcerto.centavos - acertoPagador.valorPago.centavos
           if (faltaPagarCentavos > 0) {
-            const valorAbateCentavos = Math.min(nettingRestanteCentavos, faltaPagarCentavos)
-            acertoPendente.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
-            await this.acertoRepo.salvar(acertoPendente)
-            nettingRestanteCentavos -= valorAbateCentavos
-
-            const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatTarget.id)
-            const todosQuitados = acertosAtualizados.every(a => a.pago)
-            if (todosQuitados && fatTarget.dataPagamentoBanco && fatTarget.status !== 'ACERTADA') {
-              const acertada = fatTarget.marcarAcertada()
-              await this.faturaRepo.salvar(acertada)
-            }
+            const valorAbateCentavos = Math.min(restPagadorCentavos, faltaPagarCentavos)
+            acertoPagador.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
+            await this.acertoRepo.salvar(acertoPagador)
+            restPagadorCentavos -= valorAbateCentavos
           }
+        }
+
+        // 2. Abater crédito de quem recebe (se for credor comum: tipo RESPONSAVEL_PAGA)
+        const acertoRecebedor = acertosMembro.find(a => a.membroId === dados.toMemberId && a.tipo === 'RESPONSAVEL_PAGA' && !a.pago)
+        if (acertoRecebedor && restRecebedorCentavos > 0) {
+          const faltaPagarCentavos = acertoRecebedor.valorAcerto.centavos - acertoRecebedor.valorPago.centavos
+          if (faltaPagarCentavos > 0) {
+            const valorAbateCentavos = Math.min(restRecebedorCentavos, faltaPagarCentavos)
+            acertoRecebedor.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
+            await this.acertoRepo.salvar(acertoRecebedor)
+            restRecebedorCentavos -= valorAbateCentavos
+          }
+        }
+
+        const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatTarget.id)
+        const todosQuitados = acertosAtualizados.every(a => a.pago)
+        if (todosQuitados && fatTarget.dataPagamentoBanco && fatTarget.status !== 'ACERTADA') {
+          const acertada = fatTarget.marcarAcertada()
+          await this.faturaRepo.salvar(acertada)
         }
       }
     }

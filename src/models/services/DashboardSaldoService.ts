@@ -21,20 +21,33 @@ export function separarGastosSaldoRealEPreviaCartao(
     const faturaAberta = !fatura || fatura.status === 'ABERTA'
 
     if (gasto.isSettlement) {
-      // Settlement gastos em faturas ABERTAS são confirmações de Pix já processadas.
-      // Seu efeito já está capturado via AcertoMembro (acertosVirtuaisParaNetting).
-      // Incluí-los aqui causaria double-counting com semântica invertida no cálculo de saldo.
-      
-      // Mesmo em faturas FECHADAS, se for um gasto de liquidação real (com settlementDetails),
-      // ele não deve entrar no saldo pois o AcertoMembro correspondente já reflete a quitação.
       if (gasto.settlementDetails) {
-        continue
-      }
+        // Se a fatura estiver aberta, o Pix de netting compensa os gastos comuns ativos deste período.
+        // Se a fatura estiver fechada, a compensação já é tratada pela quitação do AcertoMembro correspondente.
+        // Se houver fatura de cartão fechada no mesmo período, a compensação já é computada nos acertos virtuais.
+        let mes = fatura?.periodo.mes
+        let ano = fatura?.periodo.ano
+        if (!mes || !ano) {
+          const match = gasto.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+          if (match) {
+            mes = parseInt(match[1], 10)
+            ano = parseInt(match[2], 10)
+          }
+        }
 
-      // Settlement gastos sem detalhes (ex: carryover do rollover que traz o saldo inicial)
-      // devem ser incluídos em faturas não-abertas para compor o saldo inicial visual.
-      if (!faturaAberta) {
-        gastosSaldoReal.push(gasto)
+        const temCartaoFechadoNoPeriodo = mes !== undefined && ano !== undefined && faturas.some(
+          f => f.cartaoId !== 'PIX_DEFAULT_ID' && f.periodo.mes === mes && f.periodo.ano === ano && f.status !== 'ABERTA'
+        )
+
+        if (faturaAberta && !temCartaoFechadoNoPeriodo) {
+          gastosSaldoReal.push(gasto)
+        }
+      } else {
+        // Settlement gastos sem detalhes (ex: carryover do rollover que traz o saldo inicial)
+        // devem ser incluídos em faturas não-abertas para compor o saldo inicial visual.
+        if (!faturaAberta) {
+          gastosSaldoReal.push(gasto)
+        }
       }
       continue
     }

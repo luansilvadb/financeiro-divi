@@ -150,6 +150,39 @@ export function useDashboardViewModel(
 
   const netting = useDashboardNetting(() => props.membros, gastosSaldoRealSelecionado)
 
+  const nettingTransferencias = computed(() => {
+    const trans = netting.nettingTransferencias.value
+    return trans.map(t => {
+      const origens = acertosDaFaturaPeriodo.value.filter(a => {
+        const fatura = faturasPeriodoSelecionadoLista.value.find(f => f.id === a.faturaId)
+        if (!fatura || fatura.status === 'ABERTA') return false
+        
+        const responsavelId = fatura.responsavelId
+        const fromDevedor = a.tipo === 'MEMBRO_PAGA' ? a.membroId : responsavelId
+        const toCredor = a.tipo === 'MEMBRO_PAGA' ? responsavelId : a.membroId
+        
+        return fromDevedor === t.from && toCredor === t.to && (a.valorAcerto.centavos - (a.valorPago?.centavos || 0)) > 0
+      }).map(a => {
+        const fatura = faturasPeriodoSelecionadoLista.value.find(f => f.id === a.faturaId)
+        const cartaoNome = props.cartoes.find(c => c.id === fatura?.cartaoId)?.nome || 'Cartão'
+        const valorPendente = a.valorAcerto.centavos - (a.valorPago?.centavos || 0)
+        return {
+          id: a.id,
+          descricao: `Fatura de ${formatarMesAno(fatura!.periodo.mes, fatura!.periodo.ano)} — ${cartaoNome} (${getMembroNome(fatura!.responsavelId)})`,
+          valorTotalCentavos: a.valorAcerto.centavos,
+          valorPagoCentavos: a.valorPago?.centavos || 0,
+          valorPendenteCentavos: valorPendente
+        }
+      })
+      
+      return {
+        ...t,
+        origens
+      }
+    })
+  })
+
+
   // --- Helpers ---
   const getMembroNome = (id: string) => {
     if (!id) return 'Desconhecido'
@@ -349,6 +382,29 @@ export function useDashboardViewModel(
     }
   }
 
+  const extrairPeriodoDeFaturaId = (faturaId: string): { mes: number; ano: number } | null => {
+    const match = faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+    if (match) {
+      return {
+        mes: parseInt(match[1], 10),
+        ano: parseInt(match[2], 10)
+      }
+    }
+    return null
+  }
+
+  const gastoPertenceAoPeriodo = (g: any, mes: number, ano: number) => {
+    const fat = cartoesEFaturas.faturas.value.find(f => f.id === g.faturaId)
+    if (fat) {
+      return fat.periodo.mes === mes && fat.periodo.ano === ano
+    }
+    const periodoVirtual = extrairPeriodoDeFaturaId(g.faturaId)
+    if (periodoVirtual) {
+      return periodoVirtual.mes === mes && periodoVirtual.ano === ano
+    }
+    return false
+  }
+
   const reabrirFaturaManualComTrava = async (faturaId: string) => {
     // 1. Busca a fatura alvo no estado global (mais atualizado)
     const faturaAlvo = cartoesEFaturas.faturas.value.find(f => f.id === faturaId)
@@ -358,16 +414,11 @@ export function useDashboardViewModel(
     const acertosDaFaturaAlvo = acertosDaFatura(faturaId)
     const membrosDevedoresIds = acertosDaFaturaAlvo.map(a => a.membroId)
 
-    // 2. Busca faturas do mesmo mês para encontrar os Pix registrados no extrato
-    const faturasDoMesIds = cartoesEFaturas.faturas.value
-      .filter(f => f.periodo.mes === faturaAlvo.periodo.mes && f.periodo.ano === faturaAlvo.periodo.ano)
-      .map(f => f.id)
-
-    // 3. Verifica se existe algum Pix ativo no extrato deste mês enviado por um dos devedores desta fatura
+    // 2. Verifica se existe algum Pix ativo no extrato deste período enviado por um dos devedores desta fatura
     const pixBloqueante = globalGastos.value.find(g => 
-      faturasDoMesIds.includes(g.faturaId) && 
       g.isSettlement && 
-      membrosDevedoresIds.includes(g.compradorId)
+      membrosDevedoresIds.includes(g.compradorId) &&
+      gastoPertenceAoPeriodo(g, faturaAlvo.periodo.mes, faturaAlvo.periodo.ano)
     )
 
     if (pixBloqueante) {
@@ -491,7 +542,7 @@ export function useDashboardViewModel(
 
     // Bloqueia também se houver transações reais de liquidação (Pix confirmados via Netting Panel)
     const temTransacoesLiquidacao = globalGastos.value.some(g => 
-      faturasDoPeriodoIds.includes(g.faturaId) && g.isSettlement
+      g.isSettlement && gastoPertenceAoPeriodo(g, p.mes, p.ano)
     )
 
     if (temAcertoPago || temTransacoesLiquidacao) {
@@ -516,6 +567,7 @@ export function useDashboardViewModel(
     ...periodos,
     ...netting,
     ...uiState,
+    nettingTransferencias,
     totalPeriodoSelecionado,
     totalLancamentosPeriodoSelecionado,
     reabrirPeriodoSelecionado,

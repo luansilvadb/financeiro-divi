@@ -20,6 +20,45 @@ export class AcertoService implements IAcertoService {
     acerto.registrarReembolso(valor, data)
     await this.acertoRepo.salvar(acerto)
 
+    // Criar gasto correspondente ao reembolso (Pix de acerto)
+    if (this.gastoRepo) {
+      const fatura = await this.faturaRepo.buscarPorId(acerto.faturaId)
+      if (fatura) {
+        let faturaPixId = `virtual-pix-${fatura.periodo.mes}-${fatura.periodo.ano}`
+        if (typeof this.faturaRepo.listarTodas === 'function') {
+          const todasFaturas = await this.faturaRepo.listarTodas()
+          const faturaPix = todasFaturas.find(
+            f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === fatura.periodo.mes && f.periodo.ano === fatura.periodo.ano
+          )
+          if (faturaPix) {
+            faturaPixId = faturaPix.id
+          }
+        }
+
+        const compradorId = acerto.tipo === 'MEMBRO_PAGA' ? acerto.membroId : fatura.responsavelId
+        const divisaoMembroId = acerto.tipo === 'MEMBRO_PAGA' ? fatura.responsavelId : acerto.membroId
+
+        const novoGastoPix = new Gasto({
+          id: `pix-acerto-${acerto.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          faturaId: faturaPixId,
+          descricao: acerto.tipo === 'MEMBRO_PAGA' 
+            ? `Pix de acerto: ${acerto.membroId}` 
+            : `Devolução de acerto: ${acerto.membroId}`,
+          valorTotal: valor,
+          compradorId,
+          divisoes: [new DivisaoDeGasto(divisaoMembroId, valor)],
+          isSettlement: true,
+          settlementDetails: {
+            fromMemberId: compradorId,
+            toMemberId: divisaoMembroId,
+            method: 'pix'
+          },
+          method: 'pix'
+        })
+        await this.gastoRepo.salvar(novoGastoPix)
+      }
+    }
+
     // Sincronizar com carryover no período seguinte
     const fatura = await this.faturaRepo.buscarPorId(acerto.faturaId)
     if (fatura) {
