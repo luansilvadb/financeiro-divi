@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class AntecipacaoFaturaDto {
   @ApiProperty({ example: 'ant-1' })
@@ -25,6 +25,7 @@ export class AntecipacaoFaturaDto {
   @ApiProperty({ example: 10000 })
   @IsNotEmpty()
   @IsNumber()
+  @Min(1)
   valorCentavos!: number;
 
   @ApiProperty({ example: '2026-05-29T12:00:00.000Z' })

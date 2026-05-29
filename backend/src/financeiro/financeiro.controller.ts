@@ -234,18 +234,30 @@ export class FinanceiroController {
     return this.financeiroService.listarAcertos(tenantId);
   }
 
+  @ApiOperation({ summary: 'Listar antecipacoes de fatura do tenant', description: 'Retorna todas as antecipacoes registradas no tenant ativo.' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiOkResponse({ description: 'Antecipacoes de fatura listadas com sucesso', type: [AntecipacaoFaturaDto] })
+  @ApiBadRequestResponse({ description: 'Cabecalho x-tenant-id ausente ou invalido' })
   @Get('antecipacoes-fatura')
   async listarAntecipacoesFatura(@Headers('x-tenant-id') tenantId: string) {
     if (!tenantId) throw new BadRequestException('O cabecalho x-tenant-id e obrigatorio.');
     return this.financeiroService.listarAntecipacoesFatura(tenantId);
   }
 
+  @ApiOperation({ summary: 'Salvar/atualizar uma antecipacao de fatura no tenant', description: 'Cria ou atualiza uma antecipacao de fatura no tenant ativo.' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiCreatedResponse({ description: 'Antecipacao de fatura salva com sucesso', type: AntecipacaoFaturaDto })
+  @ApiBadRequestResponse({ description: 'Dados de entrada invalidos ou cabecalho x-tenant-id ausente' })
   @Post('antecipacoes-fatura')
   async salvarAntecipacaoFatura(@Headers('x-tenant-id') tenantId: string, @Body() dto: AntecipacaoFaturaDto) {
     if (!tenantId) throw new BadRequestException('O cabecalho x-tenant-id e obrigatorio.');
     return this.financeiroService.salvarAntecipacaoFatura(tenantId, dto);
   }
 
+  @ApiOperation({ summary: 'Excluir uma antecipacao de fatura', description: 'Remove uma antecipacao de fatura especifica do tenant ativo atraves do seu ID.' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiOkResponse({ description: 'Antecipacao de fatura excluida com sucesso' })
+  @ApiBadRequestResponse({ description: 'Cabecalho x-tenant-id ausente ou invalido' })
   @Delete('antecipacoes-fatura/:id')
   async excluirAntecipacaoFatura(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     if (!tenantId) throw new BadRequestException('O cabecalho x-tenant-id e obrigatorio.');

@@ -16,7 +16,7 @@ export class AntecipacaoFatura {
   public readonly membroId: string
   public readonly responsavelId: string
   public readonly valor: Dinheiro
-  public readonly data: Date
+  private readonly dataValue: Date
   public readonly observacao: string | null
 
   constructor(props: AntecipacaoFaturaProps) {
@@ -29,7 +29,11 @@ export class AntecipacaoFatura {
     this.membroId = props.membroId
     this.responsavelId = props.responsavelId
     this.valor = props.valor
-    this.data = props.data
+    this.dataValue = new Date(props.data.getTime())
     this.observacao = props.observacao ?? null
+  }
+
+  get data(): Date {
+    return new Date(this.dataValue.getTime())
   }
 }

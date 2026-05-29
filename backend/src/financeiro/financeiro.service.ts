@@ -398,24 +398,33 @@ export class FinanceiroService {
 
   async salvarAntecipacaoFatura(tenantId: string, data: any) {
     const { id, faturaId, membroId, responsavelId, valorCentavos, observacao } = data;
+    if (typeof valorCentavos !== 'number' || valorCentavos <= 0) {
+      throw new BadRequestException('Valor da antecipacao deve ser maior que zero');
+    }
+
+    const dataAntecipacao = new Date(data.data);
+    if (Number.isNaN(dataAntecipacao.getTime())) {
+      throw new BadRequestException('Data da antecipacao invalida');
+    }
+
     const saved = await this.prisma.antecipacaoFatura.upsert({
-      where: { id },
+      where: { id_tenantId: { id, tenantId } },
       create: {
         id,
         tenantId,
         faturaId,
         membroId,
         responsavelId,
-        valorCentavos: BigInt(valorCentavos || 0),
-        data: new Date(data.data),
+        valorCentavos: BigInt(valorCentavos),
+        data: dataAntecipacao,
         observacao: observacao || null,
       },
       update: {
         faturaId,
         membroId,
         responsavelId,
-        valorCentavos: BigInt(valorCentavos || 0),
-        data: new Date(data.data),
+        valorCentavos: BigInt(valorCentavos),
+        data: dataAntecipacao,
         observacao: observacao || null,
       },
     });
@@ -423,7 +432,11 @@ export class FinanceiroService {
   }
 
   async excluirAntecipacaoFatura(tenantId: string, id: string) {
-    await this.prisma.antecipacaoFatura.deleteMany({ where: { tenantId, id } });
+    await this.prisma.antecipacaoFatura.delete({
+      where: {
+        id_tenantId: { id, tenantId },
+      },
+    });
     return { success: true };
   }
 

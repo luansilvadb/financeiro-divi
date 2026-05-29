@@ -31,4 +31,36 @@ describe('AntecipacaoFatura', () => {
     expect(ant.valor.centavos).toBe(10000)
     expect(ant.observacao).toBe('Liberar limite')
   })
+
+  it('deve proteger a data contra mutacao do Date recebido no construtor', () => {
+    const data = new Date('2026-05-29T12:00:00Z')
+    const ant = new AntecipacaoFatura({
+      id: 'ant-1',
+      faturaId: 'fat-1',
+      membroId: 'm2',
+      responsavelId: 'm1',
+      valor: Dinheiro.deCentavos(10000),
+      data
+    })
+
+    data.setUTCFullYear(2030)
+
+    expect(ant.data.toISOString()).toBe('2026-05-29T12:00:00.000Z')
+  })
+
+  it('deve proteger a data contra mutacao do Date retornado pela entidade', () => {
+    const ant = new AntecipacaoFatura({
+      id: 'ant-1',
+      faturaId: 'fat-1',
+      membroId: 'm2',
+      responsavelId: 'm1',
+      valor: Dinheiro.deCentavos(10000),
+      data: new Date('2026-05-29T12:00:00Z')
+    })
+
+    const dataRetornada = ant.data
+    dataRetornada.setUTCFullYear(2030)
+
+    expect(ant.data.toISOString()).toBe('2026-05-29T12:00:00.000Z')
+  })
 })

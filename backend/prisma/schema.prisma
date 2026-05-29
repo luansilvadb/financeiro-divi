@@ -152,7 +152,7 @@ model AcertoMembro {
 }
 
 model AntecipacaoFatura {
-  id             String   @id
+  id             String
   tenantId       String   @map("tenant_id") @db.Uuid
   faturaId       String   @map("fatura_id")
   membroId       String   @map("membro_id")
@@ -164,5 +164,6 @@ model AntecipacaoFatura {
 
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@id([id, tenantId])
   @@map("antecipacoes_fatura")
 }
