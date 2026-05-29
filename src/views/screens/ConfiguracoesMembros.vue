@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { UserMinus, UserCheck, Users, CreditCard } from 'lucide-vue-next'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
@@ -8,10 +8,20 @@ import Button from '../components/ui/Button.vue'
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../composables/useToast'
 
-const { membros, adicionarMembro, desativarMembro, ativarMembro } = useMembros()
+const { membros, adicionarMembro, desativarMembro, ativarMembro, carregar } = useMembros()
 const { activeTenantId } = useCasasMultitenant()
 const toast = useToast()
 const novoNome = ref('')
+
+onMounted(async () => {
+  if (membros.value.length === 0 && activeTenantId.value) {
+    try {
+      await carregar()
+    } catch (e) {
+      console.error('Erro ao carregar moradores na tela de ajustes', e)
+    }
+  }
+})
 const activeTab = ref<'membros' | 'cartoes'>('membros')
 
 const emit = defineEmits(['voltar'])

@@ -31,10 +31,11 @@ describe('ConfiguracoesMembros', () => {
     vi.clearAllMocks()
     useCartoesEFaturas().resetar()
     ;(useMembros as any).mockReturnValue({
-      membros: mockMembros,
+      membros: ref(mockMembros),
       adicionarMembro: mockAdicionarMembro,
       desativarMembro: mockDesativarMembro,
-      ativarMembro: mockAtivarMembro
+      ativarMembro: mockAtivarMembro,
+      carregar: vi.fn()
     })
   })
 
