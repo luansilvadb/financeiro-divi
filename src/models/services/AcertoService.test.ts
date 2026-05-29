@@ -17,9 +17,18 @@ describe('AcertoService', () => {
       buscarPorFatura: vi.fn().mockResolvedValue([acerto1, acerto2]),
       salvar: vi.fn() 
     }
-    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn() }
+    const faturaRepo = { 
+      buscarPorId: vi.fn().mockResolvedValue(fatura), 
+      buscarPorCartaoEPeriodo: vi.fn(), 
+      salvar: vi.fn(),
+      listarTodas: vi.fn().mockResolvedValue([fatura])
+    }
+    const gastoRepo = {
+      salvar: vi.fn(),
+      buscarPorFatura: vi.fn().mockResolvedValue([])
+    }
 
-    const service = new AcertoService(acertoRepo as any, faturaRepo as any)
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any, gastoRepo as any)
     await service.marcarPago('a1', new Date())
 
     expect(acerto1.pago).toBe(true)
@@ -44,9 +53,17 @@ describe('AcertoService', () => {
       buscarPorFatura: vi.fn().mockResolvedValue([acerto]),
       salvar: vi.fn()
     }
-    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const faturaRepo = { 
+      buscarPorId: vi.fn().mockResolvedValue(fatura), 
+      salvar: vi.fn(),
+      listarTodas: vi.fn().mockResolvedValue([fatura])
+    }
+    const gastoRepo = {
+      salvar: vi.fn(),
+      buscarPorFatura: vi.fn().mockResolvedValue([])
+    }
 
-    const service = new AcertoService(acertoRepo as any, faturaRepo as any)
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any, gastoRepo as any)
 
     // Amortiza parcial
     await service.registrarReembolsoMembro('ac1', Dinheiro.deCentavos(5000))
@@ -72,9 +89,17 @@ describe('AcertoService', () => {
       buscarPorFatura: vi.fn().mockResolvedValue([acerto]),
       salvar: vi.fn()
     }
-    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
+    const faturaRepo = { 
+      buscarPorId: vi.fn().mockResolvedValue(fatura), 
+      salvar: vi.fn(),
+      listarTodas: vi.fn().mockResolvedValue([fatura])
+    }
+    const gastoRepo = {
+      salvar: vi.fn(),
+      buscarPorFatura: vi.fn().mockResolvedValue([])
+    }
 
-    const service = new AcertoService(acertoRepo as any, faturaRepo as any)
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any, gastoRepo as any)
     await service.registrarReembolsoMembro('ac1', Dinheiro.deCentavos(5000))
 
     expect(acerto.pago).toBe(true)
@@ -185,11 +210,15 @@ describe('AcertoService', () => {
     }
     const faturaRepo = {
       buscarPorId: vi.fn().mockResolvedValue(fatura),
-      listarTodas: vi.fn().mockResolvedValue([]),
+      listarTodas: vi.fn().mockResolvedValue([fatura]),
       salvar: vi.fn()
     }
+    const gastoRepo = {
+      salvar: vi.fn(),
+      buscarPorFatura: vi.fn().mockResolvedValue([])
+    }
 
-    const service = new AcertoService(acertoRepo as any, faturaRepo as any)
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any, gastoRepo as any)
     await service.marcarPago('a1', new Date())
 
     // O acerto deve estar marcado como pago
