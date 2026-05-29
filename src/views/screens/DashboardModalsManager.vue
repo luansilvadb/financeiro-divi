@@ -153,14 +153,21 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
   }
 })
 
+const localModalStack = computed(() => {
+  const stack = props.vm.modalStack
+  return stack?.value !== undefined ? stack.value : (stack || [])
+})
 
+const isModalNoTopo = (nome: string) => {
+  return localModalStack.value[localModalStack.value.length - 1] === nome
+}
 </script>
 
 <template>
   <div>
     <!-- BottomSheet de Fechamento de Fatura -->
     <BottomSheetFecharFatura 
-      :show="vm.isModalNoTopo('fechar-fatura')"
+      :show="isModalNoTopo('fechar-fatura')"
       :fatura="localFaturaParaFechar"
       :membros="membrosAtivos"
       @close="vm.fecharModal('fechar-fatura')"
@@ -169,7 +176,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Popup Lancar Conta Fixa -->
     <PopupLancarContaFixa 
-      :visible="vm.isModalNoTopo('lancar-conta-fixa')"
+      :visible="isModalNoTopo('lancar-conta-fixa')"
       :bill="localBillSelecionada"
       :membros="membrosAtivos"
       @confirm="vm.confirmarLancarBill"
@@ -178,7 +185,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Configurar Conta Fixa -->
     <BottomSheetConfigurarContaFixa 
-      :visible="vm.isModalNoTopo('configurar-conta-fixa')"
+      :visible="isModalNoTopo('configurar-conta-fixa')"
       :bill="localBillSelecionada"
       :membros="membrosAtivos"
       @save="vm.confirmarSalvarTemplate"
@@ -187,7 +194,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
     />
 
     <!-- Novo Período -->
-    <BottomSheet :model-value="vm.isModalNoTopo('novo-periodo')" @update:model-value="val => { if (!val) vm.fecharModal('novo-periodo') }" width-class="md:w-[460px]" max-height="95dvh">
+    <BottomSheet :model-value="isModalNoTopo('novo-periodo')" @update:model-value="val => { if (!val) vm.fecharModal('novo-periodo') }" width-class="md:w-[460px]" max-height="95dvh">
       <div class="p-6 sm:p-8 space-y-8 flex-grow overflow-y-auto custom-scrollbar">
         <div class="space-y-3">
           <h3 class="text-3xl font-display text-charcoal leading-tight">Fechamento<br>de <span class="text-ember">Período</span></h3>
@@ -233,7 +240,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Netting Otimizado -->
     <BottomSheetAcertoCompensacao 
-      :visible="vm.isModalNoTopo('netting')"
+      :visible="isModalNoTopo('netting')"
       :from-id="localNettingTarget?.from"
       :to-id="localNettingTarget?.to"
       :from-name="vm.getMembroNome(localNettingTarget?.from)"
@@ -245,7 +252,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Ajuste de Lançamento -->
     <BottomSheetAjustarGasto 
-      :visible="vm.isModalNoTopo('ajustar-gasto')"
+      :visible="isModalNoTopo('ajustar-gasto')"
       :gasto="localGastoParaAjustar"
       :membros="props.membrosAtivos"
       :cartoes="cartoes"
@@ -256,7 +263,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Navegação de Histórico -->
     <BottomSheet 
-      :model-value="vm.isModalNoTopo('historico')" 
+      :model-value="isModalNoTopo('historico')" 
       @update:model-value="val => { if (!val) vm.fecharModal('historico') }" 
       width-class="md:w-[460px]"
       max-height="85dvh"
@@ -357,7 +364,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Confirmação de Estorno -->
     <BottomSheetConfirmacaoEstorno 
-      :visible="vm.isModalNoTopo('confirmacao-estorno')"
+      :visible="isModalNoTopo('confirmacao-estorno')"
       :item-type="localItemTypeParaEstornar"
       :item-name="localItemParaEstornar?.descricao || localItemParaEstornar?.name"
       :item-value="localItemParaEstornar?.valorTotal ? localItemParaEstornar?.valorTotal.centavos / 100 : localItemParaEstornar?.defaultAmount"
@@ -367,7 +374,7 @@ watch(localIsDropdownAbertosOpen, async (aberto) => {
 
     <!-- Gerenciamento de Casas -->
     <BottomSheet 
-      :model-value="vm.isModalNoTopo('casas')" 
+      :model-value="isModalNoTopo('casas')" 
       @update:model-value="val => { if (!val) vm.fecharModal('casas') }" 
       width-class="md:w-[460px]"
       max-height="90dvh"

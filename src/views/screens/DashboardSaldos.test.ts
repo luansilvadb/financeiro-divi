@@ -276,4 +276,44 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     expect(wrapper.text()).toContain('Previa de faturas abertas')
     expect(wrapper.text()).toContain('Nao e cobranca final')
   })
+
+  it('deve abrir o modal de fechamento de periodo ao clicar no botao de encerrar mes', async () => {
+    const wrapper = mount(DashboardSaldos, {
+      props: {
+        membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
+        faturasFechadas: [] as any,
+        acertosPendentes: [] as any,
+        faturasAbertas: [
+          { id: 'f1', cartaoId: 'PIX_DEFAULT_ID', responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA', periodo: { mes: 5, ano: 2026 } }
+        ] as any,
+        cartoes: [] as any,
+        calcularConsumo: () => 0,
+        activeTab: 'faturas'
+      },
+      global: {
+        stubs: {
+          BottomSheet: {
+            props: ['modelValue'],
+            template: '<div v-if="modelValue"><slot /></div>'
+          }
+        }
+      }
+    })
+
+    // Garante que o texto do modal de fechamento não está presente inicialmente
+    expect(wrapper.text()).not.toContain('Revise os números antes de arquivar')
+
+    // Encontra o botão de encerrar mês
+    const buttons = wrapper.findAll('button')
+    const closeMonthButton = buttons.find(b => b.text().includes('Encerrar Mês'))
+    expect(closeMonthButton?.exists()).toBe(true)
+
+    // Clica no botão
+    await closeMonthButton?.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    // Verifica se o texto do modal agora está presente
+    expect(wrapper.text()).toContain('Revise os números antes de arquivar')
+  })
 })
+
