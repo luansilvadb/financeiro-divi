@@ -268,6 +268,17 @@ export class FinanceiroService {
       divisoes,
     } = g;
 
+    // GAP 5: bloquear edição de gasto em fatura fechada ou acertada
+    // Acertos de netting (isSettlement) são permitidos mesmo em fatura fechada
+    if (faturaId && !isSettlement) {
+      const fatura = await tx.fatura.findUnique({ where: { id_tenantId: { id: faturaId, tenantId } } });
+      if (fatura && (fatura.status === 'FECHADA' || fatura.status === 'ACERTADA')) {
+        throw new BadRequestException(
+          `Não é possível editar um gasto em uma fatura com status "${fatura.status}". Reabra a fatura primeiro.`
+        );
+      }
+    }
+
     await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
 
     await tx.gasto.upsert({

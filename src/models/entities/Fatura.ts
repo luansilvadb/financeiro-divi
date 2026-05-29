@@ -65,7 +65,7 @@ export class Fatura {
     }
   }
 
-  fechar(opts?: { responsavelId?: string; dataPagamentoBanco?: Date }): Fatura {
+  fechar(opts: { responsavelId?: string; dataPagamentoBanco: Date }): Fatura {
     if (this.status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
     return new Fatura({
       id: this.id,
@@ -73,7 +73,7 @@ export class Fatura {
       periodo: this.periodo,
       responsavelId: opts?.responsavelId || this.responsavelId,
       status: 'FECHADA',
-      dataPagamentoBanco: opts?.dataPagamentoBanco || this.dataPagamentoBanco
+      dataPagamentoBanco: opts.dataPagamentoBanco
     })
   }
 

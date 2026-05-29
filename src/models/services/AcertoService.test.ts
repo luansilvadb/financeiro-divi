@@ -150,4 +150,47 @@ describe('AcertoService', () => {
     await service.registrarReembolsoMembro('a-antigo', Dinheiro.deCentavos(2000))
     expect(gastoRepo.excluir).toHaveBeenCalledWith('carry-1')
   })
+
+  // GAP 4: cobrir fluxo RESPONSAVEL_PAGA — responsável deve dinheiro ao membro
+  it('(GAP4) deve quitar acerto do tipo RESPONSAVEL_PAGA corretamente via marcarPago', async () => {
+    // Cenário: membro antecipou R$100, consumiu R$0 — responsável deve devolver R$100 ao membro
+    const acerto = new AcertoMembro({
+      id: 'a1',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deCentavos(0),
+      totalAntecipado: Dinheiro.deReais(100),
+      tipo: 'RESPONSAVEL_PAGA',
+      valorPago: Dinheiro.deCentavos(0),
+      pago: false
+    })
+
+    expect(acerto.tipo).toBe('RESPONSAVEL_PAGA')
+    expect(acerto.valorAcerto.centavos).toBe(10000) // Math.abs(-10000) = 10000
+
+    const fatura = new Fatura({
+      id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 },
+      responsavelId: 'm1', status: 'FECHADA', dataPagamentoBanco: new Date()
+    })
+
+    const acertoRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(acerto),
+      salvar: vi.fn(),
+      buscarPorFatura: vi.fn().mockResolvedValue([acerto])
+    }
+    const faturaRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(fatura),
+      listarTodas: vi.fn().mockResolvedValue([]),
+      salvar: vi.fn()
+    }
+
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any)
+    await service.marcarPago('a1', new Date())
+
+    // O acerto deve estar marcado como pago
+    expect(acerto.pago).toBe(true)
+    // A fatura deve ter transitado para ACERTADA
+    const faturaAcertada = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaAcertada.status).toBe('ACERTADA')
+  })
 })

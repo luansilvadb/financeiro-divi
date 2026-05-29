@@ -11,6 +11,7 @@ import { useDashboardNetting } from './useDashboardNetting'
 import type { IGastoService } from '../models/services/IGastoService'
 import type { IFaturaRolloverService } from '../models/services/IFaturaRolloverService'
 import { calcularPreviaCartaoAberto, separarGastosSaldoRealEPreviaCartao } from '../models/services/DashboardSaldoService'
+import { valorParcelaAtual } from '../models/entities/ParcelaCalculator'
 import { formatarMesAno } from '../shared/utils/meses'
 import type { IGastoRepository } from '../models/repositories/IGastoRepository'
 import { useToast } from '../composables/useToast'
@@ -164,6 +165,47 @@ export function useDashboardViewModel(
 
   const totalLancamentosPeriodoSelecionado = computed(() => {
     return gastosFaturaSelecionada.value.filter(g => !g.isSettlement).length
+  })
+
+  // GAP 2: resumo de pendências do período para exibir antes de encerrar o mês
+  const resumoPendencias = computed(() => {
+    const p = periodos.periodoSelecionado.value
+
+    // Faturas de cartão ABERTAS com consumo registrado
+    const faturasAbertasComConsumo = props.faturasAbertas
+      .filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano && f.cartaoId !== 'PIX_DEFAULT_ID')
+      .map(f => ({
+        fatura: f,
+        totalCentavos: globalGastos.value
+          .filter(g => g.faturaId === f.id && !g.isSettlement)
+          .reduce((sum, g) => {
+            return sum + g.divisoes.reduce((s, d) => {
+              const vp = valorParcelaAtual(d.valor, g.installments, g.totalInstallments)
+              return s + vp.centavos
+            }, 0)
+          }, 0)
+      }))
+      .filter(item => item.totalCentavos > 0)
+
+    // Faturas FECHADAS do período com acertos ainda não quitados
+    const faturasFechadasNaoQuitadas = props.faturasFechadas
+      .filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano && f.status === 'FECHADA')
+      .map(f => ({
+        fatura: f,
+        acertosPendentes: acertosDaFatura(f.id).filter((a: AcertoMembro) => !a.pago)
+      }))
+      .filter(item => item.acertosPendentes.length > 0)
+
+    // Saldo à vista do período (netting não zerado)
+    const totalSaldoAVistaCentavos = Object.values(netting.saldosUnificadosAtivosCentavos.value as Record<string, number>)
+      .reduce((sum: number, v: number) => sum + Math.abs(v), 0)
+
+    return {
+      faturasAbertasComConsumo,
+      faturasFechadasNaoQuitadas,
+      temPendencias: faturasAbertasComConsumo.length > 0 || faturasFechadasNaoQuitadas.length > 0,
+      totalSaldoAVistaCentavos
+    }
   })
 
   // --- Ações de Negócio ---
@@ -334,6 +376,23 @@ export function useDashboardViewModel(
   const reabrirPeriodoSelecionado = async () => {
     const p = periodos.periodoSelecionado.value
     const faturasDoPeriodo = props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+
+    // GAP 1: bloquear se qualquer acerto do período já foi pago (total ou parcialmente)
+    const acertosDoPeriodo = faturasDoPeriodo.flatMap(f =>
+      (props.acertosPendentes?.length > 0 ? props.acertosPendentes : globalAcertos.value)
+        .filter((a: AcertoMembro) => a.faturaId === f.id)
+    )
+    const temAcertoPago = acertosDoPeriodo.some(
+      (a: AcertoMembro) => a.pago || (a.valorPago && a.valorPago.centavos > 0)
+    )
+    if (temAcertoPago) {
+      toast.show(
+        'Não é possível reabrir este período pois já existem acertos quitados (total ou parcialmente). Estorne os pagamentos primeiro.',
+        'error'
+      )
+      return
+    }
+
     try {
       for (const fatura of faturasDoPeriodo) {
         await reabrirFaturaManual(fatura.id)
@@ -375,6 +434,7 @@ export function useDashboardViewModel(
     isExecutingRollover,
     confirmarBaixaNetting,
     confirmarEstorno,
+    resumoPendencias,
     estornarContaFixa,
     formatarMesAno,
     iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),

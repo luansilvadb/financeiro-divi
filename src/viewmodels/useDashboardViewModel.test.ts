@@ -573,6 +573,64 @@ describe('useDashboardViewModel', () => {
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
   })
 
+  // GAP 1 — bloquear reabertura de período quando há acertos já pagos
+  it('(GAP1) deve bloquear reabertura de periodo quando existe acerto ja pago e exibir toast de erro', async () => {
+    const faturaFechada = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const acertoJaPago = new AcertoMembro({
+      id: 'a1',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deReais(100),
+      valorPago: Dinheiro.deReais(100),
+      pago: true
+    })
+
+    const propsComAcertoPago: DashboardProps = {
+      ...dummyProps,
+      faturasFechadas: [faturaFechada],
+      acertosPendentes: [acertoJaPago]
+    }
+    const vm = createViewModel(propsComAcertoPago, vi.fn())
+    vm.periodoSelecionado.value = { mes: 5, ano: 2026 }
+
+    await vm.reabrirPeriodoSelecionado()
+
+    // Não deve ter chamado reabrirFaturaManual
+    expect(mockCartoesEFaturas.reabrirFaturaManual).not.toHaveBeenCalled()
+    // Deve exibir toast de erro
+    const toast = useToast()
+    expect(toast.show).toHaveBeenCalledWith(
+      expect.stringContaining('acertos quitados'),
+      'error'
+    )
+  })
+
+  // GAP 1 — permitir reabertura quando acerto existe mas não foi pago ainda
+  it('(GAP1) deve permitir reabertura de periodo quando acerto existe mas nao foi pago', async () => {
+    const faturaFechada = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
+    const acertoNaoPago = new AcertoMembro({
+      id: 'a1',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deReais(100),
+      valorPago: Dinheiro.deCentavos(0),
+      pago: false
+    })
+
+    const props: DashboardProps = {
+      ...dummyProps,
+      faturasFechadas: [faturaFechada],
+      acertosPendentes: [acertoNaoPago]
+    }
+    const vm = createViewModel(props, vi.fn())
+    vm.periodoSelecionado.value = { mes: 5, ano: 2026 }
+
+    await vm.reabrirPeriodoSelecionado()
+
+    // Deve ter chamado reabrirFaturaManual normalmente
+    expect(mockCartoesEFaturas.reabrirFaturaManual).toHaveBeenCalledWith('f1')
+  })
+
   it('should include virtual pix invoice expenses in gastosFaturaSelecionada even if no database invoice exists', () => {
     const propsSemFaturas: DashboardProps = {
       ...dummyProps,

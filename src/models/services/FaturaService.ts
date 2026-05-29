@@ -17,7 +17,7 @@ export class FaturaService implements IFaturaService {
     private antecipacaoRepo?: IAntecipacaoFaturaRepository
   ) {}
 
-  async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco?: Date): Promise<void> {
+  async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco: Date = new Date()): Promise<void> {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     if (!fatura) throw new Error('Fatura não encontrada')
 
