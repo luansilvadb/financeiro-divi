@@ -28,6 +28,16 @@ const novoUsername = ref('')
 const novoPassword = ref('')
 const mostrarCredenciais = ref(false)
 
+let alternandoCredenciais = false
+const toggleCredenciais = () => {
+  if (alternandoCredenciais) return
+  alternandoCredenciais = true
+  mostrarCredenciais.value = !mostrarCredenciais.value
+  requestAnimationFrame(() => {
+    alternandoCredenciais = false
+  })
+}
+
 onMounted(async () => {
   if (membros.value.length === 0 && activeTenantId.value) {
     try {
@@ -154,7 +164,7 @@ const handleAtivar = async (id: string) => {
               <div class="flex items-center justify-between">
                 <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Novo Morador</h4>
                 <button 
-                  @click="mostrarCredenciais = !mostrarCredenciais"
+                  @click="toggleCredenciais"
                   class="text-[10px] font-bold uppercase tracking-widest hover:underline transition-colors duration-150 select-none [touch-action:manipulation] [-webkit-tap-highlight-color:transparent]"
                   :class="mostrarCredenciais ? 'text-ash' : 'text-ember'"
                 >
