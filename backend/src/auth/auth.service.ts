@@ -31,15 +31,34 @@ export class AuthService {
       },
     });
 
-    // Se houver um convite, vinculamos o usuário ao membro da casa
-    if (inviteCode && membroId) {
+    // Se houver um convite, vinculamos o usuário à casa
+    if (inviteCode) {
       const tenant = await this.prisma.tenant.findUnique({
         where: { inviteCode: inviteCode.toUpperCase() }
       });
 
       if (tenant) {
-        if (membroId === 'novo') {
-          // Cria um novo morador na casa associado a este usuário
+        let vinculado = false;
+
+        if (membroId && membroId !== 'novo') {
+          const membroExistente = await this.prisma.membroCasa.findFirst({
+            where: { id: membroId, tenantId: tenant.id }
+          });
+
+          if (membroExistente) {
+            // Vincula a conta ao morador pré-existente selecionado
+            await this.prisma.membroCasa.update({
+              where: {
+                id_tenantId: { id: membroId, tenantId: tenant.id }
+              },
+              data: { userId: user.id }
+            });
+            vinculado = true;
+          }
+        }
+
+        if (!vinculado) {
+          // Se não selecionou um morador correspondente, cria um novo morador na casa associado a este usuário
           await this.prisma.membroCasa.create({
             data: {
               id: `membro-${crypto.randomUUID()}`,
@@ -48,14 +67,6 @@ export class AuthService {
               avatar: user.username.substring(0, 2).toUpperCase(),
               userId: user.id,
             }
-          });
-        } else {
-          // Vincula a conta ao morador pré-existente selecionado
-          await this.prisma.membroCasa.update({
-            where: {
-              id_tenantId: { id: membroId, tenantId: tenant.id }
-            },
-            data: { userId: user.id }
           });
         }
       }
