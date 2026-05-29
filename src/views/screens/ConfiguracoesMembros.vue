@@ -28,14 +28,12 @@ const novoUsername = ref('')
 const novoPassword = ref('')
 const mostrarCredenciais = ref(false)
 
-let alternandoCredenciais = false
+let ultimoClique = 0
 const toggleCredenciais = () => {
-  if (alternandoCredenciais) return
-  alternandoCredenciais = true
+  const agora = Date.now()
+  if (agora - ultimoClique < 250) return
+  ultimoClique = agora
   mostrarCredenciais.value = !mostrarCredenciais.value
-  requestAnimationFrame(() => {
-    alternandoCredenciais = false
-  })
 }
 
 onMounted(async () => {

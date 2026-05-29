@@ -4,7 +4,7 @@
 
 **Goal:** Estabilizar o botão e os inputs de criação de login na tela de configurações de membros para evitar flickers de layout e cliques perdidos por reconstrução de DOM, otimizando tanto para desktop quanto para gestos de toque no mobile.
 
-**Architecture:** Substituição dos botões condicionais baseados em `v-if`/`v-else` por um único botão reativo estável, e dos inputs por um container persistente baseado em `v-show` e estado `:disabled` reativo. Aplicação de propriedades CSS de Toque no mobile e limitação de taxa por frame de tela (`requestAnimationFrame`).
+**Architecture:** Substituição dos botões condicionais baseados em `v-if`/`v-else` por um único botão reativo estável, e dos inputs por um container persistente baseado em `v-show` e estado `:disabled` reativo. Aplicação de propriedades CSS de Toque no mobile e filtro matemático de toques rápidos baseados em timestamp (`Date.now()`).
 
 **Tech Stack:** Vue 3, Vitest, TailwindCSS.
 
@@ -26,58 +26,47 @@
 
 ---
 
-### Task 3: Sincronização de Visibilidade por Frame de Tela (requestAnimationFrame)
+### Task 3: Sincronização de Visibilidade por Frame de Tela (requestAnimationFrame) (Concluído / Substituído pela Task 4)
+- [x] Step 1: Adicionar toggleCredenciais no script de ConfiguracoesMembros.vue
+- [x] Step 2: Atualizar chamada de clique no template de ConfiguracoesMembros.vue
+- [x] Step 3: Atualizar teste de unidade em ConfiguracoesMembros.test.ts
+- [x] Step 4: Rodar todos os testes do projeto
+- [x] Step 5: Commit
+
+---
+
+### Task 4: Debouncing Nativo por Timestamp (Filtro de Cliques Rápidos)
 
 **Files:**
 - Modify: `d:/projetos/divi/src/views/screens/ConfiguracoesMembros.vue`
 - Test: `d:/projetos/divi/src/views/screens/ConfiguracoesMembros.test.ts`
 
-- [ ] **Step 1: Adicionar toggleCredenciais no script de ConfiguracoesMembros.vue**
+- [ ] **Step 1: Atualizar toggleCredenciais no script de ConfiguracoesMembros.vue**
 
-Definir a variável de controle `alternandoCredenciais` e a função `toggleCredenciais` no script do componente.
+Substituir o bloqueio baseado em frame (`requestAnimationFrame`) por um filtro baseado em data real (`Date.now()`) de 250ms.
 
-Código a ser adicionado (em torno da linha 30):
+Código a ser modificado (em torno da linha 30):
 ```typescript
-let alternandoCredenciais = false
+let ultimoClique = 0
 const toggleCredenciais = () => {
-  if (alternandoCredenciais) return
-  alternandoCredenciais = true
+  const agora = Date.now()
+  if (agora - ultimoClique < 250) return
+  ultimoClique = agora
   mostrarCredenciais.value = !mostrarCredenciais.value
-  requestAnimationFrame(() => {
-    alternandoCredenciais = false
-  })
 }
 ```
 
-- [ ] **Step 2: Atualizar chamada de clique no template de ConfiguracoesMembros.vue**
+- [ ] **Step 2: Rodar testes locais**
 
-Substituir `@click="mostrarCredenciais = !mostrarCredenciais"` por `@click="toggleCredenciais"`.
-
-Código a ser modificado (em torno da linha 156):
-```html
-                <button 
-                  @click="toggleCredenciais"
-                  class="text-[10px] font-bold uppercase tracking-widest hover:underline transition-colors duration-150 select-none [touch-action:manipulation] [-webkit-tap-highlight-color:transparent]"
-                  :class="mostrarCredenciais ? 'text-ash' : 'text-ember'"
-                >
-                  {{ mostrarCredenciais ? 'Remover Login' : '+ Criar Login' }}
-                </button>
-```
-
-- [ ] **Step 3: Atualizar teste de unidade em ConfiguracoesMembros.test.ts**
-
-No teste unitário criado na Task 1, precisamos garantir que o clique use o fluxo correto do `toggleCredenciais` e que não quebre devido ao `requestAnimationFrame`. No ambiente de testes do Vitest, o `requestAnimationFrame` precisa ser executado (geralmente executado de forma síncrona no ambiente JSDOM, mas caso contrário, podemos precisar limpar timers ou apenas simular o clique).
-
-Rodar os testes para verificar o comportamento:
 Run: `npx vitest run src/views/screens/ConfiguracoesMembros.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Rodar todos os testes do projeto**
+- [ ] **Step 3: Rodar todos os testes do projeto**
 
 Run: `npx vitest run`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 Run: `git add src/views/screens/ConfiguracoesMembros.vue`
-Run: `git commit -m "perf: synchronize login toggle with screen rendering frame"`
+Run: `git commit -m "perf: implement hardware-like input debouncing on credentials toggle"`
