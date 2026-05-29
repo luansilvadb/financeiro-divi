@@ -20,7 +20,7 @@ describe('MembroService', () => {
     expect(novoMembro).toBeInstanceOf(Membro)
     expect(novoMembro.nome).toBe(nome)
     expect(novoMembro.ativo).toBe(true)
-    expect(mockMembroRepo.salvar).toHaveBeenCalledWith(novoMembro)
+    expect(mockMembroRepo.salvar).toHaveBeenCalledWith(novoMembro, { username: undefined, password: undefined })
   })
 
   it('deve desativar um membro com sucesso', async () => {

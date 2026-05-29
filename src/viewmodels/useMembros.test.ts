@@ -53,7 +53,7 @@ describe('useMembros', () => {
 
     await adicionarMembro('Novo Membro')
 
-    expect(mockService.adicionarMembro).toHaveBeenCalledWith('Novo Membro')
+    expect(mockService.adicionarMembro).toHaveBeenCalledWith('Novo Membro', undefined, undefined)
     expect(membros.value.length).toBe(1)
     expect(membros.value[0].nome).toBe('Novo Membro')
   })
