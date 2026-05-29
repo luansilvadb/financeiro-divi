@@ -63,7 +63,7 @@ export class HttpFaturaRepository extends HttpBaseRepository implements IFaturaR
     if (faturaGasto && faturaAcerto) {
       return faturaGasto.mes === faturaAcerto.mes && faturaGasto.ano === faturaAcerto.ano
     }
-    const match = gasto.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+    const match = gasto.faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
     if (match && faturaAcerto) {
       const mes = parseInt(match[1], 10)
       const ano = parseInt(match[2], 10)
@@ -96,7 +96,7 @@ export class HttpFaturaRepository extends HttpBaseRepository implements IFaturaR
             const faturaPix = faturas.find(
               f => f.cartaoId === 'PIX_DEFAULT_ID' && f.mes === faturaAcerto.mes && f.ano === faturaAcerto.ano
             )
-            const faturaPixId = faturaPix ? faturaPix.id : `virtual-pix-${faturaAcerto.mes}-${faturaAcerto.ano}`
+            const faturaPixId = faturaPix ? faturaPix.id : `PIX_DEFAULT_ID-${faturaAcerto.mes}-${faturaAcerto.ano}`
 
             const compradorId = acerto.tipo === 'MEMBRO_PAGA' ? acerto.membroId : faturaAcerto.responsavelId
             const divisaoMembroId = acerto.tipo === 'MEMBRO_PAGA' ? faturaAcerto.responsavelId : acerto.membroId

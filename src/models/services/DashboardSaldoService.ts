@@ -28,7 +28,7 @@ export function separarGastosSaldoRealEPreviaCartao(
         let mes = fatura?.periodo.mes
         let ano = fatura?.periodo.ano
         if (!mes || !ano) {
-          const match = gasto.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+          const match = gasto.faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
           if (match) {
             mes = parseInt(match[1], 10)
             ano = parseInt(match[2], 10)
@@ -43,9 +43,11 @@ export function separarGastosSaldoRealEPreviaCartao(
           gastosSaldoReal.push(gasto)
         }
       } else {
-        // Settlement gastos sem detalhes (ex: carryover do rollover que traz o saldo inicial)
-        // devem ser incluídos em faturas não-abertas para compor o saldo inicial visual.
-        if (!faturaAberta) {
+        // Settlement gastos sem detalhes (ex: carryover do rollover que traz o saldo inicial ou audit-settlement persistido)
+        // Devem ser incluídos APENAS se a fatura estiver aberta.
+        // Se a fatura estiver fechada, o saldo já está consolidado no AcertoMembro daquela fatura,
+        // e incluí-los aqui causaria contagem dupla (Ghost Debt).
+        if (faturaAberta) {
           gastosSaldoReal.push(gasto)
         }
       }

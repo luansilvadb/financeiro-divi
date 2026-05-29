@@ -42,7 +42,9 @@ describe('FaturaService', () => {
           installments: 1,
           isSettlement: true
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
 
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
@@ -56,7 +58,13 @@ describe('FaturaService', () => {
     expect(acertoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
       faturaId: 'f1',
       membroId: 'm2',
-      totalConsumido: expect.objectContaining({ centavos: 12000 })
+      totalConsumido: expect.objectContaining({ centavos: 7000 })
+    }))
+
+    // RESOLUÇÃO DEFINITIVA: Validar registro de auditoria no histórico
+    expect(gastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      descricao: 'Acerto pendente: m2',
+      isSettlement: true
     }))
   })
 
@@ -65,7 +73,7 @@ describe('FaturaService', () => {
 
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
     const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), excluirPorFatura: vi.fn(), salvar: vi.fn() }
-    const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]) }
+    const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), salvar: vi.fn(), excluir: vi.fn() }
 
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
     await service.fecharFatura('f1', 'm2', new Date())
@@ -174,7 +182,9 @@ describe('FaturaService', () => {
           divisoes: [new DivisaoDeGasto('m2', Dinheiro.deCentavos(10000))],
           installments: 1
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
 
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
@@ -222,7 +232,9 @@ describe('FaturaService', () => {
           divisoes: [new DivisaoDeGasto('m2', Dinheiro.deCentavos(12000))],
           installments: 1
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
 
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
@@ -268,7 +280,9 @@ describe('FaturaService', () => {
           divisoes: [new DivisaoDeGasto('m2', Dinheiro.deCentavos(6000))],
           installments: 1
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
 
     const service = new FaturaService(faturaRepo as any, acertoRepo as any, gastoRepo as any)
@@ -314,7 +328,9 @@ describe('FaturaService', () => {
           divisoes: [new DivisaoDeGasto('m2', Dinheiro.deCentavos(6000))],
           installments: 1
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
     const antecipacaoRepo = {
       buscarPorFatura: vi.fn().mockResolvedValue([
@@ -352,7 +368,9 @@ describe('FaturaService', () => {
           method: 'card',
           cardOwner: 'm1'
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
     const antecipacaoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]) }
 
@@ -384,7 +402,9 @@ describe('FaturaService', () => {
           method: 'card',
           cardOwner: 'm1'
         })
-      ])
+      ]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
     }
     const antecipacaoRepo = {
       buscarPorFatura: vi.fn().mockResolvedValue([
@@ -408,7 +428,11 @@ describe('FaturaService', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
     const acertoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]), excluirPorFatura: vi.fn(), salvar: vi.fn() }
-    const gastoRepo = { buscarPorFatura: vi.fn().mockResolvedValue([]) }
+    const gastoRepo = { 
+      buscarPorFatura: vi.fn().mockResolvedValue([]),
+      salvar: vi.fn(),
+      excluir: vi.fn()
+    }
     const antecipacaoRepo = {
       buscarPorFatura: vi.fn().mockResolvedValue([
         { membroId: 'm2', valor: Dinheiro.deReais(50) }

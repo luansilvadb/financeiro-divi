@@ -9,6 +9,9 @@ import { Dinheiro } from '../entities/Dinheiro'
 import { AcertoMembro, type TipoAcerto } from '../entities/AcertoMembro'
 import { valorParcelaAtual } from '../entities/ParcelaCalculator'
 
+import { Gasto } from '../entities/Gasto'
+import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
+
 export class FaturaService implements IFaturaService {
   constructor(
     private faturaRepo: IFaturaRepository,
@@ -31,6 +34,13 @@ export class FaturaService implements IFaturaService {
     // Buscar acertos antigos antes de excluir para preservar dados de pagamento
     const acertosAntigos = await this.acertoRepo.buscarPorFatura(faturaId)
     await this.acertoRepo.excluirPorFatura(faturaId)
+    
+    // Remover gastos de auditoria antigos para evitar duplicidade no histórico
+    const todosGastos = await this.gastoRepo.buscarPorFatura(faturaId)
+    const gastosAuditoriaAntigos = todosGastos.filter(g => g.id.startsWith('audit-settlement-'))
+    for (const g of gastosAuditoriaAntigos) {
+      await this.gastoRepo.excluir(g.id)
+    }
 
     const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
     const responsavelFinalId = responsavelId || fatura.responsavelId
@@ -43,17 +53,17 @@ export class FaturaService implements IFaturaService {
     const consumoMembros: Record<string, number> = {}
 
     for (const g of gastos) {
+      // REGRA DE OURO: Registros de liquidação (isSettlement), Auditoria ou Saldo Inicial 
+      // NÃO são consumo. Eles são registros de ESTADO ou PAGAMENTO.
+      // Ignorá-los evita a contagem dupla e o "Recursive Debt delirium".
       if (g.isSettlement) {
-        consumoMembros[g.compradorId] = (consumoMembros[g.compradorId] || 0) - g.valorTotal.centavos
-        for (const div of g.divisoes) {
-          consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + div.valor.centavos
-        }
-      } else {
-        for (const div of g.divisoes) {
-          const valorParcela = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
-          if (valorParcela.centavos > 0) {
-            consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcela.centavos
-          }
+        continue
+      }
+
+      for (const div of g.divisoes) {
+        const valorParcela = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
+        if (valorParcela.centavos > 0) {
+          consumoMembros[div.membroId] = (consumoMembros[div.membroId] || 0) + valorParcela.centavos
         }
       }
     }
@@ -84,6 +94,19 @@ export class FaturaService implements IFaturaService {
           liquido
         })
         await this.acertoRepo.salvar(acerto)
+
+        // RESOLUÇÃO DEFINITIVA: Persistir rastro no Ledger (Gasto de Auditoria)
+        const valorAcerto = Dinheiro.deCentavos(Math.abs(liquido))
+        const auditGasto = new Gasto({
+          id: `audit-settlement-${acerto.id}`,
+          faturaId: faturaId,
+          descricao: `Acerto pendente: ${membroId}`,
+          valorTotal: valorAcerto,
+          compradorId: acerto.tipo === 'MEMBRO_PAGA' ? responsavelFinalId : membroId,
+          divisoes: [new DivisaoDeGasto(acerto.tipo === 'MEMBRO_PAGA' ? membroId : responsavelFinalId, valorAcerto)],
+          isSettlement: true
+        })
+        await this.gastoRepo.salvar(auditGasto)
       }
     }
   }

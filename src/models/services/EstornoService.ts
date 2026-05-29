@@ -53,7 +53,7 @@ export class EstornoService implements IEstornoService {
       } else {
         // Se a fatura não existe no banco de dados (ex: virtual-pix-5-2026),
         // extraímos o mês e ano correspondentes diretamente de gasto.faturaId
-        const match = gasto.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+        const match = gasto.faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
         if (match) {
           mes = parseInt(match[1], 10)
           ano = parseInt(match[2], 10)

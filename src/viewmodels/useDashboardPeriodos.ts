@@ -29,23 +29,12 @@ export function useDashboardPeriodos(
     const abertas = getFaturasAbertas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
     const fechadas = getFaturasFechadas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
     
-    return [...abertas, ...fechadas].sort((a, b) => {
-      // Mantém a ordem estável baseada no ID do cartão
-      if (a.cartaoId < b.cartaoId) return -1
-      if (a.cartaoId > b.cartaoId) return 1
-      return 0
-    })
-  }
-
-  const buscarFaturaNoPeriodo = (p: { mes: number; ano: number }, cartaoId?: string) => {
-    const faturas = buscarFaturasNoPeriodo(p)
-    if (!cartaoId) return faturas[0]
-    return faturas.find(f => f.cartaoId === cartaoId)
+    return [...abertas, ...fechadas]
   }
 
   const criarFaturaVirtual = (p: { mes: number; ano: number }, cartaoId: string, responsavelId: string): Fatura => {
     return new Fatura({
-      id: `virtual-${p.mes}-${p.ano}`,
+      id: `${cartaoId}-${p.mes}-${p.ano}`,
       cartaoId,
       periodo: { mes: p.mes, ano: p.ano },
       responsavelId,
@@ -56,39 +45,49 @@ export function useDashboardPeriodos(
   const faturasPeriodoSelecionado = computed(() => {
     const p = periodoSelecionado.value
     const faturasExistentes = buscarFaturasNoPeriodo(p)
-    if (faturasExistentes.length === 0) {
-      return [
-        criarFaturaVirtual(
-          p,
-          getCartoes()[0]?.id || 'PIX_DEFAULT_ID',
-          getMembros()[0]?.id || 'virtual-member'
-        )
-      ]
+    const todosCartoes = getCartoes()
+    const membros = getMembros()
+    
+    // Se não houver cartões, garante ao menos uma fatura de PIX virtual (ou real se existir)
+    if (todosCartoes.length === 0) {
+      const existePix = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
+      if (existePix) return [existePix]
+      return [criarFaturaVirtual(p, 'PIX_DEFAULT_ID', membros[0]?.id || 'virtual-member')]
     }
-    return faturasExistentes
+
+    // Para cada cartão, tenta achar a fatura real ou cria uma virtual
+    const listaFinal: Fatura[] = todosCartoes.map(cartao => {
+      const existente = faturasExistentes.find(f => f.cartaoId === cartao.id)
+      if (existente) return existente
+      return criarFaturaVirtual(p, cartao.id, cartao.responsavelPadraoId || membros[0]?.id || 'virtual-member')
+    })
+
+    // Adiciona fatura de PIX (real ou virtual) na lista
+    const pixExistente = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
+    if (pixExistente) {
+      listaFinal.push(pixExistente)
+    } else {
+      listaFinal.push(criarFaturaVirtual(p, 'PIX_DEFAULT_ID', 'PIX_SYSTEM_OWNER'))
+    }
+
+    return listaFinal.sort((a, b) => {
+      // Mantém a ordem estável baseada no ID do cartão
+      if (a.cartaoId < b.cartaoId) return -1
+      if (a.cartaoId > b.cartaoId) return 1
+      return 0
+    })
   })
 
   const faturaPixPeriodoSelecionado = computed(() => {
     const p = periodoSelecionado.value
-    const faturaPix = buscarFaturaNoPeriodo(p, 'PIX_DEFAULT_ID')
-    if (faturaPix) return faturaPix
+    const pix = faturasPeriodoSelecionado.value.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
+    if (pix) return pix
 
-    return new Fatura({
-      id: `virtual-pix-${p.mes}-${p.ano}`,
-      cartaoId: 'PIX_DEFAULT_ID',
-      periodo: { mes: p.mes, ano: p.ano },
-      responsavelId: 'PIX_SYSTEM_OWNER',
-      status: 'ABERTA'
-    })
+    return criarFaturaVirtual(p, 'PIX_DEFAULT_ID', 'PIX_SYSTEM_OWNER')
   })
 
   const faturasPeriodoIds = computed(() => {
-    const ids = faturasPeriodoSelecionado.value.map(f => f.id)
-    const pixId = faturaPixPeriodoSelecionado.value?.id
-    if (pixId && !ids.includes(pixId)) {
-      ids.push(pixId)
-    }
-    return ids
+    return faturasPeriodoSelecionado.value.map(f => f.id)
   })
 
   const verificarPeriodoTrancado = (p: { mes: number; ano: number }): boolean => {
@@ -123,12 +122,7 @@ export function useDashboardPeriodos(
   }, { immediate: true })
 
   const faturaAtivaVisualizada = computed(() => {
-    const p = periodoSelecionado.value
-    return buscarFaturaNoPeriodo(p) || criarFaturaVirtual(
-      p,
-      getCartoes()[0]?.id || 'PIX_DEFAULT_ID',
-      getMembros()[0]?.id || 'virtual-member'
-    )
+    return faturasPeriodoSelecionado.value[0]
   })
 
   const listaMesesSeletor = computed(() => {

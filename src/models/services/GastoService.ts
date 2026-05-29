@@ -85,7 +85,7 @@ export class GastoService implements IGastoService {
       mes = faturaAtual.periodo.mes
       ano = faturaAtual.periodo.ano
     } else {
-      const match = dados.faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+      const match = dados.faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
       if (match) {
         mes = parseInt(match[1], 10)
         ano = parseInt(match[2], 10)

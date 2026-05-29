@@ -31,6 +31,7 @@ const mockCartoesEFaturas = {
   atualizarGastoCompletoManual: vi.fn(),
   gastos: ref([]),
   acertos: ref([]),
+  faturas: ref([]),
   inicializar: vi.fn(),
 }
 
@@ -362,7 +363,7 @@ describe('useDashboardViewModel', () => {
     await vm.confirmarLancarBill(dadosLancamento)
 
     expect(mockContasFixas.lancarGastoContaFixa).toHaveBeenCalledWith(
-      expect.stringContaining('virtual'),
+      expect.stringContaining('PIX_DEFAULT_ID'),
       vm.billSelecionada.value,
       15000,
       'm1',
@@ -537,13 +538,18 @@ describe('useDashboardViewModel', () => {
   })
 
   it('should consolidate expenses from multiple invoices of the same period in gastosFaturaSelecionada', () => {
+    const fat1 = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    const fat2 = new Fatura({ id: 'f2', cartaoId: 'c2', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+
     const propsComMultiplasFaturas: DashboardProps = {
       ...dummyProps,
-      faturasAbertas: [
-        new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' }),
-        new Fatura({ id: 'f2', cartaoId: 'c2', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
-      ]
+      cartoes: [
+        new Cartao({ id: 'c1', nome: 'Nubank', diaFechamento: 10, responsavelPadraoId: 'm1' }),
+        new Cartao({ id: 'c2', nome: 'Inter', diaFechamento: 15, responsavelPadraoId: 'm1' })
+      ],
+      faturasAbertas: [fat1, fat2]
     }
+    mockCartoesEFaturas.faturas.value = [fat1, fat2]
     mockCartoesEFaturas.gastos.value = [
       { id: 'g1', faturaId: 'f1', descricao: 'Gasto Cartão 1', divisoes: [] },
       { id: 'g2', faturaId: 'f2', descricao: 'Gasto Cartão 2', divisoes: [] },
@@ -642,13 +648,13 @@ describe('useDashboardViewModel', () => {
     }
     
     mockCartoesEFaturas.gastos.value = [
-      { id: 'g-pix-virtual', faturaId: 'virtual-pix-6-2026', descricao: 'Reprepasse Netting', divisoes: [] }
+      { id: 'g-pix-virtual', faturaId: 'PIX_DEFAULT_ID-6-2026', descricao: 'Reprepasse Netting', divisoes: [] }
     ] as any
 
     const vm = createViewModel(propsSemFaturas, vi.fn())
     vm.periodoSelecionado.value = { mes: 6, ano: 2026 }
 
-    expect(vm.faturasPeriodoIds.value).toContain('virtual-pix-6-2026')
+    expect(vm.faturasPeriodoIds.value).toContain('PIX_DEFAULT_ID-6-2026')
     expect(vm.gastosFaturaSelecionada.value.length).toBe(1)
     expect(vm.gastosFaturaSelecionada.value[0].id).toBe('g-pix-virtual')
   })

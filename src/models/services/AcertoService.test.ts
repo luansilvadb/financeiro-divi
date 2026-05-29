@@ -301,7 +301,7 @@ describe('AcertoService', () => {
     
     expect(gastoSalvo.isSettlement).toBe(true)
     expect(gastoSalvo.method).toBe('pix')
-    expect(gastoSalvo.faturaId).toBe('virtual-pix-5-2026') // fallback virtual-pix
+    expect(gastoSalvo.faturaId).toBe('PIX_DEFAULT_ID-5-2026') // fallback PIX_DEFAULT_ID
     expect(gastoSalvo.valorTotal.centavos).toBe(3000)
     expect(gastoSalvo.compradorId).toBe('membro-responsavel')
     expect(gastoSalvo.divisoes[0].membroId).toBe('membro-comum')
@@ -488,7 +488,7 @@ describe('AcertoService', () => {
 
     const gastoPix = new Gasto({
       id: 'g-pix-acerto-virtual',
-      faturaId: 'virtual-pix-5-2026',
+      faturaId: 'PIX_DEFAULT_ID-5-2026',
       descricao: 'Pix de acerto: membro-comum',
       valorTotal: Dinheiro.deCentavos(3000),
       compradorId: 'membro-comum',

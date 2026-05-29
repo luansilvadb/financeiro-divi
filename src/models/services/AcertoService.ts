@@ -24,7 +24,7 @@ export class AcertoService implements IAcertoService {
     if (this.gastoRepo) {
       const fatura = await this.faturaRepo.buscarPorId(acerto.faturaId)
       if (fatura) {
-        let faturaPixId = `virtual-pix-${fatura.periodo.mes}-${fatura.periodo.ano}`
+        let faturaPixId = `PIX_DEFAULT_ID-${fatura.periodo.mes}-${fatura.periodo.ano}`
         if (typeof this.faturaRepo.listarTodas === 'function') {
           const todasFaturas = await this.faturaRepo.listarTodas()
           const faturaPix = todasFaturas.find(

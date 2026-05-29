@@ -36,7 +36,9 @@ export class FaturaRolloverService implements IFaturaRolloverService {
           totalInstallments: divisor, // Preserva o divisor original
           isLoan: g.isLoan,
           borrowerId: g.borrowerId,
-          recurringBillId: g.recurringBillId
+          recurringBillId: g.recurringBillId,
+          method: g.method,
+          cardOwner: g.cardOwner
         })
       })
   }

@@ -55,6 +55,7 @@ const {
   parcelasFuturasDetalhadas,
   contasFixas,
   gastosFaturaSelecionada,
+  gastosComAcertosVirtuais,
   previaCartaoAbertoPorMembroCentavos,
   totalPreviaCartaoAbertoCentavos,
   getMembroNome,
@@ -202,9 +203,9 @@ defineExpose({
     </section>
 
     <!-- Feed de Lançamentos Recentes (Design System Family) -->
-    <section class="space-y-4" :class="{ 'opacity-70 grayscale-[0.3] pointer-events-none transition-all duration-500': faturaSelecionadaTrancada }">
+    <section class="space-y-4" :class="{ 'opacity-70 grayscale-[0.3] transition-all duration-500': faturaSelecionadaTrancada }">
       <ActivityFeed 
-        :gastos="gastosFaturaSelecionada"
+        :gastos="gastosComAcertosVirtuais"
         :membros="props.membros"
         :is-month-locked="faturaSelecionadaTrancada"
         @excluir="abrirConfirmacaoEstornoGasto"

@@ -94,9 +94,61 @@ export function useDashboardViewModel(
   } = cartoesEFaturas
 
   const gastosFaturaSelecionada = computed(() => {
-    const ids = periodos.faturasPeriodoIds.value
-    return globalGastos.value.filter(g => ids.includes(g.faturaId))
+    const p = periodos.periodoSelecionado.value
+    return globalGastos.value.filter(g => gastoPertenceAoPeriodo(g, p.mes, p.ano))
   })
+
+  const previsoesDoPeriodo = computed(() => {
+    const p = periodos.periodoSelecionado.value
+    if (periodos.faturaSelecionadaTrancada.value) return []
+
+    const gastosAtuais = gastosFaturaSelecionada.value
+    
+    // 1. Contas Fixas não lançadas para o período (Apenas as que possuem valor fixo projetado)
+    const templatesNaoLancados = contasFixas.value
+      .filter(conta => {
+        const jaLancado = gastosAtuais.some(g => g.recurringBillId === conta.id)
+        const temValorProjetado = (conta.fixedValueCentavos || 0) > 0
+        return !jaLancado && temValorProjetado
+      })
+      .map(conta => {
+        const valorCentavos = conta.fixedValueCentavos || 0
+        return new Gasto({
+          id: `forecast-bill-${conta.id}-${p.mes}-${p.ano}`,
+          faturaId: `forecast-${p.mes}-${p.ano}`,
+          descricao: `Previsão: ${conta.name}`,
+          valorTotal: Dinheiro.deCentavos(valorCentavos),
+          compradorId: props.membros[0]?.id || 'PREVISAO',
+          divisoes: [new DivisaoDeGasto(props.membros[0]?.id || 'PREVISAO', Dinheiro.deCentavos(valorCentavos))],
+          isSettlement: false,
+          method: 'pix',
+          installments: 1
+        })
+      })
+
+    // 2. Gastos Projetados de Períodos Futuros (Antecipação Absoluta)
+    // Mostramos os gastos que já existem no banco mas para meses posteriores
+    const gastosFuturos = globalGastos.value.filter(g => {
+      const periodoGasto = extrairPeriodoDeFaturaId(g.faturaId)
+      if (!periodoGasto) return false
+      const isFuture = (periodoGasto.ano > p.ano) || (periodoGasto.ano === p.ano && periodoGasto.mes > p.mes)
+      return isFuture && !g.isSettlement
+    }).map(g => new Gasto({
+      ...g,
+      id: `upcoming-${g.id}` // Marca como lançamento futuro para o feed
+    }))
+
+    return [
+      ...templatesNaoLancados,
+      ...gastosFuturos
+    ]
+  })
+
+  const gastosComAcertosVirtuais = computed(() => [
+    ...gastosFaturaSelecionada.value,
+    ...acertosVirtuaisParaNetting.value,
+    ...previsoesDoPeriodo.value
+  ])
 
   const faturasPeriodoSelecionadoLista = computed(() => periodos.faturasPeriodoSelecionado.value)
 
@@ -208,8 +260,8 @@ export function useDashboardViewModel(
   }
 
   const parcelasFuturasDetalhadas = computed(() => {
-    const ids = periodos.faturasPeriodoIds.value
-    const gastosDoPeriodo = globalGastos.value.filter(g => ids.includes(g.faturaId))
+    const p = periodos.periodoSelecionado.value
+    const gastosDoPeriodo = globalGastos.value.filter(g => gastoPertenceAoPeriodo(g, p.mes, p.ano))
     return gastosDoPeriodo
       .filter(g => g.installments > 1)
       .map(g => {
@@ -231,12 +283,21 @@ export function useDashboardViewModel(
   })
 
   const totalPeriodoSelecionado = computed(() => {
-    const ids = periodos.faturasPeriodoIds.value
-    return ids.reduce((sum, id) => sum + calcularTotalFatura(id), 0)
+    const p = periodos.periodoSelecionado.value
+    // Filtra gastos de liquidação/auditoria para não somar o rateio ao total de gastos reais
+    const gastosDoPeriodo = globalGastos.value.filter(g => gastoPertenceAoPeriodo(g, p.mes, p.ano) && !g.isSettlement)
+    return gastosDoPeriodo.reduce((sum, g) => {
+        const vp = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
+        return sum + vp.centavos
+    }, 0)
   })
 
   const totalLancamentosPeriodoSelecionado = computed(() => {
-    return gastosFaturaSelecionada.value.filter(g => !g.isSettlement).length
+    // Conta apenas gastos reais e saldos iniciais de rollover, ignorando registros de auditoria redundantes
+    return gastosComAcertosVirtuais.value.filter(g => 
+      !g.id.startsWith('audit-settlement-') &&
+      (!g.isSettlement || g.descricao.includes('Saldo Inicial'))
+    ).length
   })
 
   // GAP 2: resumo de pendências do período para exibir antes de encerrar o mês
@@ -383,7 +444,8 @@ export function useDashboardViewModel(
   }
 
   const extrairPeriodoDeFaturaId = (faturaId: string): { mes: number; ano: number } | null => {
-    const match = faturaId.match(/virtual-(?:pix-)?(\d+)-(\d+)/)
+    // Tenta casar com o padrão final -mes-ano (ex: Nubank-5-2026 ou PIX_DEFAULT_ID-5-2026 ou virtual-5-2026)
+    const match = faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
     if (match) {
       return {
         mes: parseInt(match[1], 10),
@@ -469,6 +531,26 @@ export function useDashboardViewModel(
 
     if (uiState.itemTypeParaEstornar.value === 'Lançamento') {
       const gasto = uiState.itemParaEstornar.value
+      
+      // Se for um gasto de auditoria (audit-settlement), o estorno significa REABRIR a fatura
+      if (gasto.id.startsWith('audit-settlement-')) {
+        await reabrirFaturaManualComTrava(gasto.faturaId)
+        uiState.showBottomSheetConfirmacaoEstorno.value = false
+        uiState.itemParaEstornar.value = null
+        return
+      }
+
+      // Se for uma previsão virtual de conta fixa
+      if (gasto.id.startsWith('forecast-bill-')) {
+        toast.show(
+          'Esta é uma previsão automática. Para removê-la, exclua a Conta Fixa nas configurações ou lance o gasto real.',
+          'success'
+        )
+        uiState.showBottomSheetConfirmacaoEstorno.value = false
+        uiState.itemParaEstornar.value = null
+        return
+      }
+
       const isComum = !gasto.cardOwner && !gasto.isSettlement
       if (isComum) {
         const acertos = acertosDaFatura(gasto.faturaId)
@@ -486,7 +568,6 @@ export function useDashboardViewModel(
     try {
       if (uiState.itemTypeParaEstornar.value === 'Conta Fixa') {
         const bill = uiState.itemParaEstornar.value
-        // Verifica se existe QUALQUER gasto vinculado a este ID de conta fixa em QUALQUER período
         const temLancamentos = globalGastos.value.some(g => g.recurringBillId === bill.id)
         
         if (temLancamentos) {
@@ -501,11 +582,17 @@ export function useDashboardViewModel(
       }
 
       const handlers: Record<string, () => Promise<void>> = {
-        'Lançamento': () => localGastoService.excluirGasto(uiState.itemParaEstornar.value!.id).then(() => cartoesEFaturas.inicializar()),
+        'Lançamento': async () => {
+          const id = uiState.itemParaEstornar.value!.id
+          const realId = id.startsWith('upcoming-') ? id.replace('upcoming-', '') : id
+          await localGastoService.excluirGasto(realId)
+          await cartoesEFaturas.inicializar()
+          toast.show('Lançamento estornado com sucesso', 'success')
+        },
         'Conta Fixa': async () => {
           await excluirContaFixa(uiState.itemParaEstornar.value!.id)
-          // Fecha o modal de configuração de onde veio o comando de exclusão
           uiState.showBottomSheetConfigCF.value = false
+          toast.show('Conta fixa removida', 'success')
         }
       }
       await handlers[uiState.itemTypeParaEstornar.value]?.()
@@ -575,6 +662,7 @@ export function useDashboardViewModel(
     parcelasFuturasDetalhadas,
     contasFixas,
     gastosFaturaSelecionada,
+    gastosComAcertosVirtuais,
     gastosSaldoRealSelecionado,
     gastosPrevisaoCartaoAberto,
     previaCartaoAbertoPorMembroCentavos,
@@ -604,6 +692,27 @@ export function useDashboardViewModel(
     iniciarPix: (acerto: AcertoMembro) => uiState.iniciarPix(acerto, formatarDinheiro),
     abrirNovoPeriodoBottomSheet: () => uiState.abrirNovoPeriodoBottomSheet(periodos.faturaAtivaVisualizada.value),
     abrirConfirmacaoEstornoGasto: (gasto: any) => {
+      // Se for um gasto de auditoria (audit-settlement), o estorno significa REABRIR a fatura
+      if (gasto.id.startsWith('audit-settlement-')) {
+        reabrirFaturaManualComTrava(gasto.faturaId)
+        return
+      }
+
+      // Se o período estiver trancado e não for auditoria, avisa o usuário
+      if (periodos.faturaSelecionadaTrancada.value) {
+        toast.show('Este mês está arquivado. Reabra o período para estornar este lançamento.', 'error')
+        return
+      }
+
+      // Se for uma previsão virtual de conta fixa, apenas informa como removê-la definitivamente
+      if (gasto.id.startsWith('forecast-bill-')) {
+        toast.show(
+          'Esta é uma previsão automática. Para removê-la, exclua a Conta Fixa nas configurações ou lance o gasto real.',
+          'success'
+        )
+        return
+      }
+
       const isComum = !gasto.cardOwner && !gasto.isSettlement
       if (isComum) {
         const acertos = acertosDaFatura(gasto.faturaId)
@@ -616,13 +725,35 @@ export function useDashboardViewModel(
           return
         }
       }
-      uiState.abrirConfirmacaoEstornoGasto(gasto)
+      
+      // Seta o item e abre o modal manualmente para garantir reatividade
+      uiState.itemParaEstornar.value = gasto
+      uiState.itemTypeParaEstornar.value = 'Lançamento'
+      uiState.showBottomSheetConfirmacaoEstorno.value = true
     },
     excluirGasto: async (id: string) => {
       if (periodos.faturaSelecionadaTrancada.value) return
       
-      const gasto = globalGastos.value.find(g => g.id === id)
+      // Se for uma previsão virtual de conta fixa, apenas informa como removê-la definitivamente
+      if (id.startsWith('forecast-bill-')) {
+        toast.show(
+          'Esta é uma previsão automática. Para removê-la, exclua a Conta Fixa nas configurações ou lance o gasto real.',
+          'success'
+        )
+        return
+      }
+
+      // Se for um lançamento futuro marcado, removemos o prefixo para encontrar o registro real
+      const realId = id.startsWith('upcoming-') ? id.replace('upcoming-', '') : id
+
+      const gasto = globalGastos.value.find(g => g.id === realId)
       if (gasto) {
+        // Se for um gasto de auditoria, delega para a reabertura da fatura
+        if (gasto.id.startsWith('audit-settlement-')) {
+          await reabrirFaturaManualComTrava(gasto.faturaId)
+          return
+        }
+
         const isComum = !gasto.cardOwner && !gasto.isSettlement
         if (isComum) {
           const acertos = acertosDaFatura(gasto.faturaId)
@@ -638,8 +769,9 @@ export function useDashboardViewModel(
       }
 
       try {
-        await localGastoService.excluirGasto(id)
+        await localGastoService.excluirGasto(realId)
         await cartoesEFaturas.inicializar()
+        toast.show('Lançamento estornado com sucesso', 'success')
       } catch (error: any) {
         toast.show(error.message || 'Erro ao excluir gasto', 'error')
       }

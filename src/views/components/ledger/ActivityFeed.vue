@@ -27,6 +27,10 @@ const getMembroNome = (id: string) => {
   }
   return membro?.nome || 'Membro desconhecido'
 }
+
+const isGastoFuturo = (g: Gasto) => {
+  return g.id.startsWith('upcoming-')
+}
 </script>
 
 <template>
@@ -76,10 +80,28 @@ const getMembroNome = (id: string) => {
                 </span>
               </span>
               <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span class="text-[10px] font-bold text-ember uppercase tracking-wider">
-                  {{ g.isLoan ? 'Empréstimo' : g.isSettlement ? 'Acerto' : g.method === 'card' ? 'Cartão' : 'Pix' }}
+                <span 
+                  class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
+                  :class="{
+                    'bg-ember text-white': !g.id.startsWith('forecast-') && !g.id.startsWith('audit-settlement-') && !isGastoFuturo(g),
+                    'bg-ash/20 text-ash': g.id.startsWith('forecast-'),
+                    'bg-midnight text-white': g.id.startsWith('audit-settlement-'),
+                    'bg-ember/40 text-charcoal': isGastoFuturo(g)
+                  }"
+                >
+                  {{ 
+                    g.id.startsWith('forecast-bill-') ? 'Previsão Fixa' :
+                    g.id.startsWith('audit-settlement-') ? 'Rateio' :
+                    isGastoFuturo(g) ? 'Próximo Lançamento' :
+                    g.isLoan ? 'Empréstimo' : 
+                    g.isSettlement ? 'Acerto' : 
+                    g.method === 'card' ? 'Cartão' : 'Pix' 
+                  }}
                 </span>
-                <span class="text-[10px] text-ash">
+                <span v-if="g.id.startsWith('forecast-bill-')" class="text-[10px] text-ash italic">
+                  (Aguardando lançamento)
+                </span>
+                <span v-else class="text-[10px] text-ash">
                   • Pago por <strong class="text-charcoal font-semibold">{{ getMembroNome(g.compradorId) }}</strong>
                 </span>
               </div>
@@ -113,14 +135,13 @@ const getMembroNome = (id: string) => {
                 size="sm"
                 class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
                 @click="emit('excluir', g)"
-                :disabled="props.isMonthLocked"
               >
                 <Trash2 class="w-3.5 h-3.5 mr-1.5" />
                 Estornar
               </Button>
             </div>
             <p v-if="props.isMonthLocked" class="text-[9px] text-ash mt-1 animate-in fade-in">
-              Reabra o mês para ajustar ou estornar
+              Mês arquivado • Estorno reabre o período
             </p>
           </div>
         </div>
