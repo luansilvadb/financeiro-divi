@@ -71,6 +71,8 @@ export function useDashboardPeriodos(
     }
 
     return listaFinal.sort((a, b) => {
+      if (a.cartaoId === 'PIX_DEFAULT_ID') return 1
+      if (b.cartaoId === 'PIX_DEFAULT_ID') return -1
       // Mantém a ordem estável baseada no ID do cartão
       if (a.cartaoId < b.cartaoId) return -1
       if (a.cartaoId > b.cartaoId) return 1

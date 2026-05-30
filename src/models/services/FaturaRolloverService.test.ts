@@ -124,4 +124,37 @@ describe('FaturaRolloverService', () => {
       status: 'ABERTA'
     }))
   })
+
+  it('deve executar rollover e criar novo periodo mesmo se faturasAbertas for vazio', async () => {
+    const mockFaturaRepo = { buscarPorId: vi.fn(), buscarPorCartaoEPeriodo: vi.fn(), salvar: vi.fn(), listarTodas: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaService = { fecharFatura: vi.fn(), reabrirFatura: vi.fn(), assegurarFaturasAbertas: vi.fn() }
+    const service = new FaturaRolloverService(mockFaturaRepo as any, mockGastoRepo as any, mockFaturaService as any)
+
+    await service.executarRolloverPeriodo({
+      nomeNovoPeriodo: 'Junho 2026',
+      faturasAbertas: [],
+      cartoes: [{ id: 'c1', responsavelPadraoId: 'm1' }],
+      saldosAcumulados: { m1: 10000, m2: -10000 },
+      nomePeriodoAnterior: 'Maio 2026'
+    })
+
+    // Deve salvar a fatura PIX e a do cartão no novo período
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: 6, ano: 2026 },
+      status: 'ABERTA'
+    }))
+    expect(mockFaturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      cartaoId: 'c1',
+      periodo: { mes: 6, ano: 2026 },
+      status: 'ABERTA'
+    }))
+
+    // Deve ter processado carryover de netting (saldo inicial pendente)
+    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'carryover-PIX_DEFAULT_ID-6-2026-m2-m1-10000',
+      descricao: 'Saldo Inicial Pendente (Maio 2026)'
+    }))
+  })
 })

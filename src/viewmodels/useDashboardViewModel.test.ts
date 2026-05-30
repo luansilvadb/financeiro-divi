@@ -29,9 +29,9 @@ const mockCartoesEFaturas = {
   reabrirFaturaManual: vi.fn(),
   quitarAcertoMembro: vi.fn(),
   atualizarGastoCompletoManual: vi.fn(),
-  gastos: ref([]),
-  acertos: ref([]),
-  faturas: ref([]),
+  gastos: ref<Gasto[]>([]),
+  acertos: ref<AcertoMembro[]>([]),
+  faturas: ref<Fatura[]>([]),
   inicializar: vi.fn(),
 }
 

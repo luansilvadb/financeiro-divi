@@ -87,7 +87,7 @@ export function useCasasMultitenant() {
         return
       }
 
-      const newTenant = await response.json()
+      await response.json()
       form.nomeNovaCasa = ''
       await carregarCasas()
     } catch (err) {
@@ -117,7 +117,7 @@ export function useCasasMultitenant() {
         return
       }
 
-      const tenant = await response.json()
+      await response.json()
       form.codigoConvite = ''
       await carregarCasas()
     } catch (err) {

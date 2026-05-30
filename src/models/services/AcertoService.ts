@@ -141,6 +141,7 @@ export class AcertoService implements IAcertoService {
       acerto.pago = true
       acerto.dataPagamento = dataPagamento
       await this.acertoRepo.salvar(acerto)
+      await this.verificarEQuitarFatura(acerto.faturaId)
     }
   }
 }

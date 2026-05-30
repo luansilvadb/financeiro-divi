@@ -121,7 +121,7 @@ describe('DashboardSaldoService', () => {
     expect(result.gastosSaldoReal).toEqual([])
   })
 
-  it('deve incluir gastos de settlement sem detalhes de netting (ex: carryover) apenas se a fatura estiver fechada', () => {
+  it('deve incluir gastos de settlement sem detalhes de netting (ex: carryover) apenas se a fatura estiver aberta', () => {
     const faturaPixFechada = new Fatura({ id: 'pix-abril', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 4, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'FECHADA' })
     
     const carryoverAberto = new Gasto({
@@ -149,8 +149,8 @@ describe('DashboardSaldoService', () => {
     const resultAberto = separarGastosSaldoRealEPreviaCartao([carryoverAberto], [faturaPix])
     const resultFechado = separarGastosSaldoRealEPreviaCartao([carryoverFechado], [faturaPixFechada])
 
-    expect(resultAberto.gastosSaldoReal).toEqual([])
-    expect(resultFechado.gastosSaldoReal.map(g => g.id)).toEqual(['g-carryover-fechado'])
+    expect(resultAberto.gastosSaldoReal.map(g => g.id)).toEqual(['g-carryover-aberto'])
+    expect(resultFechado.gastosSaldoReal).toEqual([])
   })
 
   it('deve ignorar gasto de netting fisico se houver uma fatura de cartao fechada no mesmo periodo para evitar contagem dupla', () => {

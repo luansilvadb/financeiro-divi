@@ -557,4 +557,118 @@ describe('AcertoService', () => {
     expect(acertoAtualizado.pago).toBe(false)
     expect(gastoRepo.excluir).toHaveBeenCalledWith('g-pix-acerto-virtual')
   })
+
+  it('deve transicionar fatura para ACERTADA ao marcarPago acerto com divida ja amortizada mas pago=false', async () => {
+    const acerto = new AcertoMembro({
+      id: 'a1',
+      faturaId: 'f1',
+      membroId: 'm2',
+      totalConsumido: Dinheiro.deCentavos(10000),
+      valorPago: Dinheiro.deCentavos(10000),
+      pago: false
+    })
+
+    const fatura = new Fatura({
+      id: 'f1',
+      cartaoId: 'c1',
+      periodo: { mes: 5, ano: 2026 },
+      responsavelId: 'm1',
+      status: 'FECHADA',
+      dataPagamentoBanco: new Date()
+    })
+
+    const acertoRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(acerto),
+      buscarPorFatura: vi.fn().mockResolvedValue([acerto]),
+      salvar: vi.fn()
+    }
+    const faturaRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(fatura),
+      salvar: vi.fn(),
+      listarTodas: vi.fn().mockResolvedValue([fatura])
+    }
+    const gastoRepo = {
+      salvar: vi.fn(),
+      buscarPorFatura: vi.fn().mockResolvedValue([])
+    }
+
+    const service = new AcertoService(acertoRepo as any, faturaRepo as any, gastoRepo as any)
+    await service.marcarPago('a1', new Date())
+
+    expect(acerto.pago).toBe(true)
+    expect(acertoRepo.salvar).toHaveBeenCalledWith(acerto)
+    expect(faturaRepo.salvar).toHaveBeenCalled()
+    const faturaAcertada = faturaRepo.salvar.mock.calls[0][0]
+    expect(faturaAcertada.status).toBe('ACERTADA')
+  })
+
+  it('deve estornar com sucesso o acerto do tipo MEMBRO_PAGA via EstornoService mesmo sem settlementDetails no gasto (Fallback Legado)', async () => {
+    const { EstornoService } = await import('./EstornoService')
+
+    const acerto = new AcertoMembro({
+      id: 'a-legado',
+      faturaId: 'f-cartao-1',
+      membroId: 'membro-comum',
+      totalConsumido: Dinheiro.deCentavos(5000),
+      tipo: 'MEMBRO_PAGA',
+      valorPago: Dinheiro.deCentavos(3000),
+      pago: false
+    })
+
+    const fatura = new Fatura({
+      id: 'f-cartao-1',
+      cartaoId: 'c1',
+      periodo: { mes: 5, ano: 2026 },
+      responsavelId: 'membro-responsavel',
+      status: 'FECHADA'
+    })
+
+    const faturaPix = new Fatura({
+      id: 'PIX_DEFAULT_ID-5-2026',
+      cartaoId: 'PIX_DEFAULT_ID',
+      periodo: { mes: 5, ano: 2026 },
+      responsavelId: 'PIX_SYSTEM_OWNER',
+      status: 'ABERTA'
+    })
+
+    const gastoPixSemDetails = new Gasto({
+      id: 'g-pix-acerto-legado',
+      faturaId: 'PIX_DEFAULT_ID-5-2026',
+      descricao: 'Pix de acerto: membro-comum',
+      valorTotal: Dinheiro.deCentavos(3000),
+      compradorId: 'membro-comum',
+      divisoes: [new DivisaoDeGasto('membro-responsavel', Dinheiro.deCentavos(3000))],
+      isSettlement: true,
+      method: 'pix'
+    })
+
+    const acertoRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(acerto),
+      buscarPorFatura: vi.fn().mockResolvedValue([acerto]),
+      salvar: vi.fn()
+    }
+    const faturaRepo = {
+      buscarPorId: vi.fn().mockImplementation(async (id) => {
+        if (id === 'f-cartao-1') return fatura
+        if (id === 'PIX_DEFAULT_ID-5-2026') return faturaPix
+        return null
+      }),
+      listarTodas: vi.fn().mockResolvedValue([fatura, faturaPix]),
+      salvar: vi.fn()
+    }
+    const gastoRepo = {
+      buscarPorId: vi.fn().mockResolvedValue(gastoPixSemDetails),
+      listarTodos: vi.fn().mockResolvedValue([gastoPixSemDetails]),
+      excluir: vi.fn(),
+      excluirMuitos: vi.fn()
+    }
+
+    const estornoService = new EstornoService(gastoRepo as any, faturaRepo as any, acertoRepo as any)
+    await estornoService.excluirGasto('g-pix-acerto-legado')
+
+    expect(acertoRepo.salvar).toHaveBeenCalled()
+    const acertoAtualizado = acertoRepo.salvar.mock.calls[0][0] as AcertoMembro
+    expect(acertoAtualizado.valorPago.centavos).toBe(0) // 3000 - 3000
+    expect(acertoAtualizado.pago).toBe(false)
+  })
 })

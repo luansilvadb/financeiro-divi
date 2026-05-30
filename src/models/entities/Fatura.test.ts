@@ -50,7 +50,7 @@ describe('Fatura', () => {
 
   it('fechar - deve falhar se a fatura nao estiver ABERTA', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'FECHADA' })
-    expect(() => fatura.fechar()).toThrow('Apenas faturas ABERTAS podem ser fechadas')
+    expect(() => fatura.fechar({ dataPagamentoBanco: new Date() })).toThrow('Apenas faturas ABERTAS podem ser fechadas')
   })
 
   it('marcarAcertada - deve retornar nova fatura ACERTADA', () => {

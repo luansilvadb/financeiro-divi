@@ -17,7 +17,7 @@ export class FaturaService implements IFaturaService {
     private faturaRepo: IFaturaRepository,
     private acertoRepo: IAcertoMembroRepository,
     private gastoRepo: IGastoRepository,
-    private antecipacaoRepo?: IAntecipacaoFaturaRepository
+    private antecipacaoRepo: IAntecipacaoFaturaRepository
   ) {}
 
   async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco: Date = new Date()): Promise<void> {
@@ -31,34 +31,46 @@ export class FaturaService implements IFaturaService {
     const fechada = fatura.fechar({ responsavelId, dataPagamentoBanco })
     await this.faturaRepo.salvar(fechada)
 
-    // Buscar acertos antigos antes de excluir para preservar dados de pagamento
+    const responsavelFinalId = responsavelId || fatura.responsavelId
+    const acertosAntigos = await this.limparRegistrosAntigos(faturaId)
+    const consumosEAntecipacoes = await this.calcularConsumosEAntecipacoes(faturaId)
+
+    await this.processarAcertosEAuditoria(
+      faturaId,
+      responsavelFinalId,
+      consumosEAntecipacoes,
+      acertosAntigos
+    )
+  }
+
+  private async limparRegistrosAntigos(faturaId: string): Promise<AcertoMembro[]> {
     const acertosAntigos = await this.acertoRepo.buscarPorFatura(faturaId)
     await this.acertoRepo.excluirPorFatura(faturaId)
     
-    // Remover gastos de auditoria antigos para evitar duplicidade no histórico
     const todosGastos = await this.gastoRepo.buscarPorFatura(faturaId)
     const gastosAuditoriaAntigos = todosGastos.filter(g => g.id.startsWith('audit-settlement-'))
     for (const g of gastosAuditoriaAntigos) {
       await this.gastoRepo.excluir(g.id)
     }
+    
+    return acertosAntigos
+  }
 
-    const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
-    const responsavelFinalId = responsavelId || fatura.responsavelId
-    const antecipacoes = this.antecipacaoRepo ? await this.antecipacaoRepo.buscarPorFatura(faturaId) : []
+  private async calcularConsumosEAntecipacoes(faturaId: string): Promise<{ 
+    consumoMembros: Record<string, number>, 
+    antecipacoesPorMembro: Record<string, number> 
+  }> {
+    const antecipacoes = await this.antecipacaoRepo.buscarPorFatura(faturaId)
     const antecipacoesPorMembro: Record<string, number> = {}
     for (const ant of antecipacoes) {
       antecipacoesPorMembro[ant.membroId] = (antecipacoesPorMembro[ant.membroId] || 0) + ant.valor.centavos
     }
 
+    const gastos = await this.gastoRepo.buscarPorFatura(faturaId)
     const consumoMembros: Record<string, number> = {}
 
     for (const g of gastos) {
-      // REGRA DE OURO: Registros de liquidação (isSettlement), Auditoria ou Saldo Inicial 
-      // NÃO são consumo. Eles são registros de ESTADO ou PAGAMENTO.
-      // Ignorá-los evita a contagem dupla e o "Recursive Debt delirium".
-      if (g.isSettlement) {
-        continue
-      }
+      if (g.isSettlement) continue
 
       for (const div of g.divisoes) {
         const valorParcela = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
@@ -68,21 +80,29 @@ export class FaturaService implements IFaturaService {
       }
     }
 
+    return { consumoMembros, antecipacoesPorMembro }
+  }
+
+  private async processarAcertosEAuditoria(
+    faturaId: string,
+    responsavelFinalId: string,
+    dados: { consumoMembros: Record<string, number>, antecipacoesPorMembro: Record<string, number> },
+    acertosAntigos: AcertoMembro[]
+  ): Promise<void> {
+    const { consumoMembros, antecipacoesPorMembro } = dados
     const membrosComAcerto = new Set([
       ...Object.keys(consumoMembros),
       ...Object.keys(antecipacoesPorMembro)
     ])
 
     for (const membroId of membrosComAcerto) {
-      if (membroId === responsavelFinalId) {
-        continue
-      }
+      if (membroId === responsavelFinalId) continue
 
       const centavos = consumoMembros[membroId] || 0
       const totalAntecipado = antecipacoesPorMembro[membroId] || 0
       const liquido = centavos - totalAntecipado
+      
       if (liquido !== 0) {
-        // Localizar se já existia um acerto pago/reembolsado para esse membro
         const antigo = acertosAntigos.find(a => a.membroId === membroId)
 
         const acerto = this.criarAcertoRecalculado({
@@ -95,7 +115,6 @@ export class FaturaService implements IFaturaService {
         })
         await this.acertoRepo.salvar(acerto)
 
-        // RESOLUÇÃO DEFINITIVA: Persistir rastro no Ledger (Gasto de Auditoria)
         const valorAcerto = Dinheiro.deCentavos(Math.abs(liquido))
         const auditGasto = new Gasto({
           id: `audit-settlement-${acerto.id}`,
@@ -158,13 +177,13 @@ export class FaturaService implements IFaturaService {
         proximoAno += 1
       }
 
-      const faturasProximo = (await this.faturaRepo.listarTodas()) || []
+      const faturasProximo = await this.faturaRepo.listarTodas()
       const faturaPixProximo = faturasProximo.find(
         f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === proximoMes && f.periodo.ano === proximoAno
       )
 
       if (faturaPixProximo) {
-        const todosGastos = (await this.gastoRepo.listarTodos()) || []
+        const todosGastos = await this.gastoRepo.listarTodos()
         const temNettingNoProximoPeriodo = todosGastos.some(
           g => g.faturaId === faturaPixProximo.id && g.isSettlement === true
         )
@@ -190,7 +209,6 @@ export class FaturaService implements IFaturaService {
     const todasFaturas = await this.faturaRepo.listarTodas()
     const faturasAtualizadas = [...todasFaturas]
 
-    // Garantir fatura de Pix default
     const temFaturaPix = todasFaturas.some(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === mes && f.periodo.ano === ano)
     if (!temFaturaPix) {
       const novaFaturaPix = new Fatura({

@@ -74,7 +74,6 @@ export class FaturaRolloverService implements IFaturaRolloverService {
     nomePeriodoAnterior: string
   }): Promise<void> {
     const { nomeNovoPeriodo, faturasAbertas, cartoes, saldosAcumulados, nomePeriodoAnterior } = dados
-    if (faturasAbertas.length === 0) return
 
     // 1. Fechar as faturas abertas do período via FaturaService para gerar acertos
     // Isso garante que o período anterior fique "trancado" no dashboard (status FECHADA)

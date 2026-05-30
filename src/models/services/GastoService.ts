@@ -57,6 +57,22 @@ export class GastoService implements IGastoService {
     toMemberId: string
     method: string
   }): Promise<void> {
+    await this.gerarGastoNetting(dados)
+    
+    if (this.acertoRepo) {
+      const faturasFechadas = await this.obterFaturasParaBaixa(dados.faturaId)
+      await this.processarBaixaDeAcertos(faturasFechadas, dados)
+    }
+  }
+
+  private async gerarGastoNetting(dados: {
+    faturaId: string
+    descricao: string
+    valor: number
+    fromMemberId: string
+    toMemberId: string
+    method: string
+  }): Promise<void> {
     const total = Dinheiro.deReais(dados.valor)
     const deterministicId = `netting-${dados.faturaId}-${dados.fromMemberId}-${dados.toMemberId}-${dados.valor}`
     const acertoGasto = new Gasto({
@@ -76,78 +92,83 @@ export class GastoService implements IGastoService {
       isLoan: false
     })
     await this.gastoRepo.salvar(acertoGasto)
+  }
 
+  private async obterFaturasParaBaixa(faturaId: string): Promise<Fatura[]> {
     let mes: number | undefined
     let ano: number | undefined
 
-    const faturaAtual = await this.faturaRepo.buscarPorId(dados.faturaId)
+    const faturaAtual = await this.faturaRepo.buscarPorId(faturaId)
     if (faturaAtual) {
       mes = faturaAtual.periodo.mes
       ano = faturaAtual.periodo.ano
     } else {
-      const match = dados.faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
+      const match = faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
       if (match) {
         mes = parseInt(match[1], 10)
         ano = parseInt(match[2], 10)
       }
     }
 
-    if (mes !== undefined && ano !== undefined && this.acertoRepo) {
-      let anteriorMes = mes - 1
-      let anteriorAno = ano
-      if (anteriorMes < 1) {
-        anteriorMes = 12
-        anteriorAno -= 1
-      }
+    if (mes === undefined || ano === undefined) {
+      return []
+    }
 
-      const todasFaturas = await this.faturaRepo.listarTodas()
-      
-      // Busca faturas fechadas no período anterior E no período atual
-      const faturasParaAbater = todasFaturas.filter(
-        f => (
-          (f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno) || 
-          (f.periodo.mes === mes && f.periodo.ano === ano)
-        ) && f.status === 'FECHADA'
-      )
+    let anteriorMes = mes - 1
+    let anteriorAno = ano
+    if (anteriorMes < 1) {
+      anteriorMes = 12
+      anteriorAno -= 1
+    }
 
-      let restPagadorCentavos = total.centavos
-      let restRecebedorCentavos = total.centavos
+    const todasFaturas = await this.faturaRepo.listarTodas()
+    return todasFaturas.filter(
+      f => (
+        (f.periodo.mes === anteriorMes && f.periodo.ano === anteriorAno) || 
+        (f.periodo.mes === mes && f.periodo.ano === ano)
+      ) && f.status === 'FECHADA'
+    )
+  }
 
-      for (const fatTarget of faturasParaAbater) {
-        const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
+  private async processarBaixaDeAcertos(
+    faturasFechadas: Fatura[],
+    dados: { valor: number, fromMemberId: string, toMemberId: string }
+  ): Promise<void> {
+    if (!this.acertoRepo) return
 
-        // 1. Abater dívida de quem paga (se for devedor comum: tipo MEMBRO_PAGA)
-        const acertoPagador = acertosMembro.find(a => a.membroId === dados.fromMemberId && a.tipo === 'MEMBRO_PAGA' && !a.pago)
-        if (acertoPagador && restPagadorCentavos > 0) {
-          const faltaPagarCentavos = acertoPagador.valorAcerto.centavos - acertoPagador.valorPago.centavos
-          if (faltaPagarCentavos > 0) {
-            const valorAbateCentavos = Math.min(restPagadorCentavos, faltaPagarCentavos)
-            acertoPagador.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
-            await this.acertoRepo.salvar(acertoPagador)
-            restPagadorCentavos -= valorAbateCentavos
-          }
-        }
+    const total = Dinheiro.deReais(dados.valor)
+    let restPagadorCentavos = total.centavos
+    let restRecebedorCentavos = total.centavos
 
-        // 2. Abater crédito de quem recebe (se for credor comum: tipo RESPONSAVEL_PAGA)
-        const acertoRecebedor = acertosMembro.find(a => a.membroId === dados.toMemberId && a.tipo === 'RESPONSAVEL_PAGA' && !a.pago)
-        if (acertoRecebedor && restRecebedorCentavos > 0) {
-          const faltaPagarCentavos = acertoRecebedor.valorAcerto.centavos - acertoRecebedor.valorPago.centavos
-          if (faltaPagarCentavos > 0) {
-            const valorAbateCentavos = Math.min(restRecebedorCentavos, faltaPagarCentavos)
-            acertoRecebedor.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
-            await this.acertoRepo.salvar(acertoRecebedor)
-            restRecebedorCentavos -= valorAbateCentavos
-          }
-        }
+    for (const fatTarget of faturasFechadas) {
+      const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
 
-        const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatTarget.id)
-        const todosQuitados = acertosAtualizados.every(a => a.pago)
-        if (todosQuitados && fatTarget.dataPagamentoBanco && fatTarget.status !== 'ACERTADA') {
-          const acertada = fatTarget.marcarAcertada()
-          await this.faturaRepo.salvar(acertada)
-        }
+      const acertoPagador = acertosMembro.find(a => a.membroId === dados.fromMemberId && a.tipo === 'MEMBRO_PAGA' && !a.pago)
+      restPagadorCentavos = await this.abaterDividaAcerto(acertoPagador, restPagadorCentavos)
+
+      const acertoRecebedor = acertosMembro.find(a => a.membroId === dados.toMemberId && a.tipo === 'RESPONSAVEL_PAGA' && !a.pago)
+      restRecebedorCentavos = await this.abaterDividaAcerto(acertoRecebedor, restRecebedorCentavos)
+
+      const acertosAtualizados = await this.acertoRepo.buscarPorFatura(fatTarget.id)
+      const todosQuitados = acertosAtualizados.every(a => a.pago)
+      if (todosQuitados && fatTarget.dataPagamentoBanco && fatTarget.status !== 'ACERTADA') {
+        const acertada = fatTarget.marcarAcertada()
+        await this.faturaRepo.salvar(acertada)
       }
     }
+  }
+
+  private async abaterDividaAcerto(acerto: any, restCentavos: number): Promise<number> {
+    if (acerto && restCentavos > 0) {
+      const faltaPagarCentavos = acerto.valorAcerto.centavos - acerto.valorPago.centavos
+      if (faltaPagarCentavos > 0) {
+        const valorAbateCentavos = Math.min(restCentavos, faltaPagarCentavos)
+        acerto.registrarReembolso(Dinheiro.deCentavos(valorAbateCentavos), new Date())
+        await this.acertoRepo!.salvar(acerto)
+        return restCentavos - valorAbateCentavos
+      }
+    }
+    return restCentavos
   }
 
   async lancarGastoContaFixa(dados: {

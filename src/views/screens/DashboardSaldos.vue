@@ -78,7 +78,6 @@ const {
   faturasPeriodoSelecionado,
   abrirFecharFatura,
   reabrirFaturaManualComTrava,
-  showToast,
   totalLancamentosPeriodoSelecionado,
   reabrirPeriodoSelecionado
   } = vm

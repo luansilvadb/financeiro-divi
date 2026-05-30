@@ -8,8 +8,7 @@ import BottomSheetAjustarGasto from '../components/ledger/BottomSheetAjustarGast
 import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfirmacaoEstorno.vue'
 import BottomSheet from '../components/ui/BottomSheet.vue'
 import Button from '../components/ui/Button.vue'
-import SectionLabel from '../components/ui/SectionLabel.vue'
-import { AlertTriangle, ChevronDown, Lock, Home, Check, Copy, LogOut, X, Info } from 'lucide-vue-next'
+import { AlertTriangle, ChevronDown, Lock, Home, Check, Copy, LogOut, X } from 'lucide-vue-next'
 
 const props = defineProps<{
   vm: any

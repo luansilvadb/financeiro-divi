@@ -616,7 +616,6 @@ export function useDashboardViewModel(
   const reabrirPeriodoSelecionado = async () => {
     const p = periodos.periodoSelecionado.value
     const faturasDoPeriodo = props.faturasFechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    const faturasDoPeriodoIds = [...faturasDoPeriodo.map(f => f.id), ...props.faturasAbertas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano).map(f => f.id)]
 
     // GAP 1: bloquear se qualquer acerto do período já foi pago (total ou parcialmente)
     const acertosDoPeriodo = faturasDoPeriodo.flatMap(f =>

@@ -13,8 +13,8 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
     const wrapper = mount(DashboardSaldos, {
       props: {
         membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
-        faturasFechadas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'FECHADA', periodo: { mes: 5, ano: 2026 } }] as any,
-        acertosPendentes: [{ id: 'a1', faturaId: 'f1', membroId: 'm2', valorAcerto: { centavos: 8000 }, tipo: 'MEMBRO_PAGA', pago: false }] as any,
+        faturasFechadas: [{ id: 'c1-5-2026', cartaoId: 'c1', responsavelId: 'm1', status: 'FECHADA', periodo: { mes: 5, ano: 2026 } }] as any,
+        acertosPendentes: [{ id: 'a1', faturaId: 'c1-5-2026', membroId: 'm2', valorAcerto: { centavos: 8000 }, tipo: 'MEMBRO_PAGA', pago: false }] as any,
         faturasAbertas: [] as any,
         cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
         calcularConsumo: () => 0
@@ -31,7 +31,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
         membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
         faturasFechadas: [] as any,
         acertosPendentes: [] as any,
-        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        faturasAbertas: [{ id: 'c1-6-2026', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
         cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
         calcularConsumo: () => 0,
         calcularAdiantamento: () => 0
@@ -45,7 +45,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
 
     const mockG = new Gasto({
       id: 'g-teste-saldo',
-      faturaId: 'f1',
+      faturaId: 'c1-6-2026',
       descricao: 'Teste',
       valorTotal: Dinheiro.deCentavos(10000),
       compradorId: 'm1',
@@ -67,14 +67,14 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
         membros: [{ id: 'm1', nome: 'Joao' }, { id: 'm2', nome: 'Maria' }],
         faturasFechadas: [] as any,
         acertosPendentes: [] as any,
-        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        faturasAbertas: [{ id: 'c1-6-2026', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
         cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
         calcularConsumo: () => 15000,
         calcularAdiantamento: () => 0
       }
     })
 
-    const card = wrapper.find('[data-testid="proximas-faturas-card-f1"]')
+    const card = wrapper.find('[data-testid="proximas-faturas-card-c1-6-2026"]')
     expect(card.exists()).toBe(false)
   })
 
@@ -84,7 +84,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
         membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
         faturasFechadas: [] as any,
         acertosPendentes: [] as any,
-        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        faturasAbertas: [{ id: 'c1-6-2026', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
         cartoes: [{ id: 'c1', nome: 'Nubank', responsavelPadraoId: 'm1' }] as any,
         calcularConsumo: () => 0,
         gastos: [] as any
@@ -99,7 +99,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
 
     const mockG = new Gasto({
       id: 'g-teste-feed',
-      faturaId: 'f1',
+      faturaId: 'c1-6-2026',
       descricao: 'Lanche Barato',
       valorTotal: Dinheiro.deCentavos(1000),
       compradorId: 'm1',
@@ -120,7 +120,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
         membros: [{ id: 'm1', nome: 'João' }, { id: 'm2', nome: 'Maria' }],
         faturasFechadas: [] as any,
         acertosPendentes: [] as any,
-        faturasAbertas: [{ id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
+        faturasAbertas: [{ id: 'c1-6-2026', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 6, ano: 2026 } }] as any,
         cartoes: [{ id: 'c1', nome: 'Nubank', responsavelPadraoId: 'm1' }] as any,
         calcularConsumo: () => 0,
         gastos: [] as any
@@ -164,7 +164,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
         faturasFechadas: faturasFechadasMock,
         acertosPendentes: [],
         faturasAbertas: [
-          { id: 'f1', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 5, ano: 2026 } }
+          { id: 'c1-5-2026', cartaoId: 'c1', responsavelId: 'm1', status: 'ABERTA', periodo: { mes: 5, ano: 2026 } }
         ] as any,
         cartoes: [{ id: 'c1', nome: 'Nubank' }] as any,
         calcularConsumo: () => 0
@@ -240,8 +240,8 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
       props: {
         membros: [{ id: 'luan', nome: 'Luan' }, { id: 'joao', nome: 'Joao' }],
         faturasAbertas: [
-          new Fatura({ id: 'pix-maio', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' }),
-          new Fatura({ id: 'card-maio', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'luan', status: 'ABERTA' })
+          new Fatura({ id: 'PIX_DEFAULT_ID-5-2026', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA' }),
+          new Fatura({ id: 'c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'luan', status: 'ABERTA' })
         ],
         faturasFechadas: [],
         acertosPendentes: [],
@@ -258,7 +258,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
 
     const mockG = new Gasto({
       id: 'g-cartao-aberto',
-      faturaId: 'card-maio',
+      faturaId: 'c1-5-2026',
       descricao: 'Compra Nubank',
       valorTotal: Dinheiro.deCentavos(15000),
       compradorId: 'luan',
@@ -284,7 +284,7 @@ describe('DashboardSaldos - Cartões & Faturas', () => {
         faturasFechadas: [] as any,
         acertosPendentes: [] as any,
         faturasAbertas: [
-          { id: 'f1', cartaoId: 'PIX_DEFAULT_ID', responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA', periodo: { mes: 5, ano: 2026 } }
+          { id: 'PIX_DEFAULT_ID-5-2026', cartaoId: 'PIX_DEFAULT_ID', responsavelId: 'PIX_SYSTEM_OWNER', status: 'ABERTA', periodo: { mes: 5, ano: 2026 } }
         ] as any,
         cartoes: [] as any,
         calcularConsumo: () => 0,

@@ -173,6 +173,10 @@ export class LancamentoService implements ILancamentoService {
         todasFaturasPersistidas
       )
 
+      if (faturaFutura && faturaFutura.status !== 'ABERTA') {
+        throw new Error(`Não é possível lançar o parcelamento: a fatura futura de ${currentMes}/${currentAno} já está fechada ou arquivada.`)
+      }
+
       const gastoFuturo = this.construirGasto({
         faturaId: faturaFutura.id,
         descricao,

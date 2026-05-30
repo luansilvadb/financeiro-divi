@@ -83,12 +83,13 @@ export class EstornoService implements IEstornoService {
           if (estornoRestanteCentavos <= 0) break
 
           const acertosMembro = await this.acertoRepo.buscarPorFatura(fatTarget.id)
-          // Procura acertos do comprador do Pix ou o membro comum envolvido se for do tipo RESPONSAVEL_PAGA
           const membroIdDoAcerto = gasto.settlementDetails
             ? (gasto.settlementDetails.fromMemberId === fatTarget.responsavelId
                 ? gasto.settlementDetails.toMemberId
                 : gasto.settlementDetails.fromMemberId)
-            : gasto.compradorId
+            : (gasto.compradorId === fatTarget.responsavelId
+                ? (gasto.divisoes[0]?.membroId || gasto.compradorId)
+                : gasto.compradorId)
 
           const acertoComPagamento = acertosMembro.find(a => a.membroId === membroIdDoAcerto && a.valorPago.centavos > 0)
 

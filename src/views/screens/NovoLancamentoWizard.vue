@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useNovoLancamentoWizard } from '../../viewmodels/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../viewmodels/useCartoesEFaturas'
 import { obterPeriodoSelecionado } from '../../shared/utils/periodoStorage'

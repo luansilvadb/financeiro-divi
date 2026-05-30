@@ -115,7 +115,7 @@ describe('FaturaService', () => {
       salvar: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, {} as any, {} as any)
+    const service = new FaturaService(faturaRepo as any, {} as any, {} as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
 
     const cartoes = [
       { id: 'c_existente', responsavelPadraoId: 'm1' },
@@ -141,7 +141,7 @@ describe('FaturaService', () => {
       salvar: vi.fn()
     }
 
-    const service = new FaturaService(faturaRepo as any, {} as any, {} as any)
+    const service = new FaturaService(faturaRepo as any, {} as any, {} as any, { buscarPorFatura: vi.fn().mockResolvedValue([]) } as any)
     const cartoes = [{ id: 'c1', responsavelPadraoId: 'm1' }]
 
     const result = await service.assegurarFaturasAbertas(cartoes, 5, 2026)

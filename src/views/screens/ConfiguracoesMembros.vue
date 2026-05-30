@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
-import { UserMinus, UserCheck, Users, CreditCard, Copy, Share2 } from 'lucide-vue-next'
+import { UserMinus, UserCheck, Users, CreditCard, Share2 } from 'lucide-vue-next'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
