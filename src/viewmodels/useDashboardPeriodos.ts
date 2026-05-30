@@ -92,10 +92,6 @@ export function useDashboardPeriodos(
     return criarFaturaVirtual(p, 'PIX_DEFAULT_ID', 'PIX_SYSTEM_OWNER')
   })
 
-  const faturasPeriodoIds = computed(() => {
-    return faturasPeriodoSelecionado.value.map(f => f.id)
-  })
-
   const verificarPeriodoTrancado = (p: { mes: number; ano: number }): boolean => {
     const temFaturaPixAberta = getFaturasAbertas().some(f =>
       f.cartaoId === 'PIX_DEFAULT_ID' &&
@@ -169,7 +165,6 @@ export function useDashboardPeriodos(
     faturaSelecionadaFechada,
     faturaAtivaVisualizada,
     faturasPeriodoSelecionado,
-    faturasPeriodoIds,
     faturaPixPeriodoSelecionado,
     listaMesesSeletor,
     mesesAbertosOpcoes,

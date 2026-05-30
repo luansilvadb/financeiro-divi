@@ -1,6 +1,6 @@
 import type { Fatura } from '../../models/entities/Fatura'
 
-export const extrairPeriodoDeFaturaId = (faturaId: string): { mes: number; ano: number } | null => {
+const extrairPeriodoDeFaturaId = (faturaId: string): { mes: number; ano: number } | null => {
   const match = faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
   if (match) {
     return {

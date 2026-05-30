@@ -40,8 +40,8 @@ export function useContasFixas() {
             await contaFixaRepository.salvar(template)
           }
         }
-      } finally {
-        // ... ou simplesmente sem try/catch
+      } catch (e) {
+        console.error('Erro ao carregar contas fixas:', e)
       }
     }
 

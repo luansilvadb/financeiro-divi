@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { cn } from '../../../shared/utils/cn'
-
 interface Props {
   variant?: 'default' | 'recessed' | 'dark' | 'featured'
   class?: any
@@ -15,10 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
   <!-- Card Padrão (White) -->
   <div 
     v-if="props.variant === 'default' || props.variant === 'featured'"
-    :class="cn(
-      'rounded-card bg-card shadow-subtle transition-all duration-300 p-8',
-      props.class
-    )"
+    :class="['rounded-card bg-card shadow-subtle transition-all duration-300 p-6 sm:p-8', props.class]"
   >
     <slot />
   </div>
@@ -26,10 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
   <!-- Card Recessed (Parchment) -->
   <div 
     v-else-if="props.variant === 'recessed'"
-    :class="cn(
-      'rounded-card-lg bg-parchment p-[22.8px] transition-all duration-300',
-      props.class
-    )"
+    :class="['rounded-card-lg bg-parchment p-[22.8px] transition-all duration-300', props.class]"
   >
     <slot />
   </div>
@@ -37,10 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
   <!-- Card Escuro / Phone Mockup (Obsidian) -->
   <div 
     v-else-if="props.variant === 'dark'"
-    :class="cn(
-      'rounded-card-lg bg-obsidian shadow-lg text-white p-6',
-      props.class
-    )"
+    :class="['rounded-card-lg bg-obsidian shadow-lg text-white p-6', props.class]"
   >
     <slot />
   </div>

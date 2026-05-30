@@ -94,7 +94,7 @@ const emit = defineEmits(['close', 'confirm'])
     <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
       <div class="grid grid-cols-2 gap-3">
         <Button variant="secondary" @click="emit('close')">Cancelar</Button>
-        <Button variant="primary" class="bg-charcoal text-white hover:bg-midnight border-none" @click="emit('confirm')">
+        <Button variant="primary" class="!bg-charcoal text-white hover:!bg-midnight border-none" @click="emit('confirm')">
           Arquivar Mês
         </Button>
       </div>

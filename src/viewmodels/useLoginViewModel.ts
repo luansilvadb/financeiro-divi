@@ -50,12 +50,6 @@ export function useLoginViewModel() {
     return success
   }
 
-  const handleLogout = async () => {
-    await tenantSessionService.logout()
-    isAuthed.value = false
-    localStorage.removeItem('divi_username')
-  }
-
   return {
     username,
     password,
@@ -64,7 +58,6 @@ export function useLoginViewModel() {
     membroId,
     isAuthed,
     handleLogin,
-    handleRegister,
-    handleLogout
+    handleRegister
   }
 }

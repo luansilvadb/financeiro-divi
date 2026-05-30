@@ -10,9 +10,6 @@ export class FaturaService implements IFaturaService {
   async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco: Date = new Date()): Promise<void> {
     const fatura = await this.faturaRepo.buscarPorId(faturaId)
     await this.faturaRepo.salvar(fatura!.fechar({ responsavelId, dataPagamentoBanco }))
-    
-    // O modelo informal não gera mais registros de AcertoMembro ou Auditoria no fechamento.
-    // O fechamento é apenas um marcador visual de que o responsável quitou a fatura no banco.
   }
 
   async reabrirFatura(faturaId: string): Promise<void> {

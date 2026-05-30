@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { cn } from '../../../shared/utils/cn'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'inverted'
@@ -14,7 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const classes = computed(() => {
-  return cn(
+  return [
     'inline-flex items-center justify-center whitespace-nowrap transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
     // Sizes
     props.size === 'default' && 'h-11 px-6 py-2 text-sm font-medium',
@@ -28,7 +27,7 @@ const classes = computed(() => {
     props.variant === 'ghost' && 'text-ember hover:opacity-80 font-medium p-0 border-none bg-transparent',
     props.variant === 'inverted' && 'bg-white text-midnight hover:bg-parchment rounded-pill font-medium shadow-subtle',
     props.class
-  )
+  ].filter(Boolean).join(' ')
 })
 </script>
 

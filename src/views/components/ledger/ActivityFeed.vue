@@ -34,9 +34,9 @@ const isGastoFuturo = (g: Gasto) => {
 </script>
 
 <template>
-  <Card class="p-0 overflow-hidden shadow-subtle bg-white text-graphite">
+  <Card class="!p-0 overflow-hidden shadow-subtle bg-white text-graphite">
     <!-- Cabeçalho Padronizado -->
-    <div class="py-7 px-6 border-b border-stone bg-parchment flex items-center">
+    <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex items-center">
       <div class="flex items-center gap-5">
         <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
           <Clock class="w-5 h-5" />

@@ -9,27 +9,12 @@ export class Dinheiro {
     return new Dinheiro(centavos)
   }
 
-  formatar(): string {
-    return (this.centavos / 100).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).replace(/\s/g, '\u00a0'); // Fix for non-breaking space in some environments
-  }
-
   somar(outro: Dinheiro): Dinheiro {
     return new Dinheiro(this.centavos + outro.centavos)
   }
 
   subtrair(outro: Dinheiro): Dinheiro {
     return new Dinheiro(this.centavos - outro.centavos)
-  }
-
-  equals(outro: Dinheiro): boolean {
-    return this.centavos === outro.centavos
-  }
-
-  isPositivo(): boolean {
-    return this.centavos > 0
   }
 
   distribuir(n: number): Dinheiro[] {

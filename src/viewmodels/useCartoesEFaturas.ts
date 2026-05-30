@@ -7,21 +7,17 @@ import { cartaoRepository, gastoRepository, faturaService, gastoService } from '
 const cartoes = ref<Cartao[]>([])
 const faturas = ref<Fatura[]>([])
 const gastos = ref<Gasto[]>([])
-const estaCarregando = ref(false)
-
 export const useCartoesEFaturas = () => {
   const sync = async () => {
-    estaCarregando.value = true
     const [c, g] = await Promise.all([cartaoRepository.listarTodos(), gastoRepository.listarTodos()])
     cartoes.value = c; gastos.value = g
     const hoje = new Date()
     faturas.value = await faturaService.assegurarFaturasAbertas(c, hoje.getMonth() + 1, hoje.getFullYear())
-    estaCarregando.value = false
   }
   const mutar = async (acao: () => Promise<any>) => { await acao(); return sync(); }
 
   return {
-    cartoes, faturas, gastos, estaCarregando,
+    cartoes, faturas, gastos,
     faturasAbertas: computed(() => faturas.value.filter(f => f.status === 'ABERTA')),
     faturasFechadas: computed(() => faturas.value.filter(f => f.status !== 'ABERTA')),
     
@@ -32,6 +28,6 @@ export const useCartoesEFaturas = () => {
     reabrirFatura: (faturaId: string) => mutar(() => faturaService.reabrirFatura(faturaId)),
     atualizarGasto: (gastoId: string, dados: Parameters<typeof gastoService.atualizarGastoCompleto>[1]) => mutar(() => gastoService.atualizarGastoCompleto(gastoId, dados)),
     
-    resetar: () => { cartoes.value = faturas.value = gastos.value = []; estaCarregando.value = false }
+    resetar: () => { cartoes.value = faturas.value = gastos.value = []; }
   }
 }

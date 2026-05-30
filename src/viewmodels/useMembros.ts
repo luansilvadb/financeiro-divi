@@ -2,8 +2,6 @@ import { ref, computed } from 'vue'
 import { Membro } from '../models/entities/Membro'
 
 import { membroRepository, membroService, tenantSessionService } from '../shared/container'
-import { obterPeriodoSelecionado } from '../shared/utils/periodoStorage'
-
 const membros = ref<Membro[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
@@ -43,8 +41,7 @@ export function useMembros() {
   }
 
   const desativarMembro = async (id: string) => {
-    const periodo = obterPeriodoSelecionado()
-    await membroService.desativarMembro(id, periodo)
+    await membroService.desativarMembro(id)
     await carregar()
   }
 

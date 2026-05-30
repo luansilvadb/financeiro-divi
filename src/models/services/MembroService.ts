@@ -13,7 +13,7 @@ export class MembroService implements IMembroService {
     return novo
   }
 
-  async desativarMembro(id: string, _periodoCorrente?: { mes: number; ano: number }): Promise<void> {
+  async desativarMembro(id: string): Promise<void> {
     const membro = await this.repository.buscarPorId(id)
     if (!membro) throw new Error('Membro não encontrado')
 

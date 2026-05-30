@@ -20,8 +20,8 @@ const detailedBreakdown = computed(() => {
 </script>
 
 <template>
-  <Card class="p-0 overflow-hidden shadow-subtle bg-card rounded-card">
-    <div class="p-6 border-b border-stone bg-parchment flex justify-between items-center">
+  <Card class="!p-0 overflow-hidden shadow-subtle bg-card rounded-card">
+    <div class="py-5 px-5 sm:py-6 sm:px-6 border-b border-stone bg-parchment flex justify-between items-center">
       <div class="flex items-center gap-4">
         <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
           <Search class="w-5 h-5" />

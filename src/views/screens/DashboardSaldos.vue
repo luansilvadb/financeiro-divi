@@ -167,7 +167,7 @@ defineExpose({
         <Button 
           v-else
           variant="primary" 
-          class="w-full md:w-auto bg-ember hover:bg-ember/90 border-transparent text-white" 
+          class="w-full md:w-auto !bg-ember hover:!bg-ember/90 border-transparent text-white" 
           @click="abrirNovoPeriodoBottomSheet"
         >
           Encerrar Mês
