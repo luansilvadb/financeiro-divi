@@ -50,7 +50,7 @@ describe('ContasFixasPanel', () => {
         contasFixas,
         gastos,
         membros,
-        isMonthLocked: false,
+        isMonthClosed: false,
       },
     })
 
@@ -72,7 +72,7 @@ describe('ContasFixasPanel', () => {
         contasFixas,
         gastos,
         membros,
-        isMonthLocked: false,
+        isMonthClosed: false,
       },
     })
 
@@ -102,6 +102,32 @@ describe('ContasFixasPanel', () => {
     expect(wrapper.emitted('estornar')?.[0]).toEqual([contasFixas[0]])
     expect(wrapper.emitted('configurar')?.[0]).toEqual([contasFixas[0]])
     expect(wrapper.emitted('novo')).toHaveLength(1)
+
+    vi.useRealTimers()
+  })
+
+  it('mantem eventos de contas fixas disponiveis quando o periodo esta fechado', async () => {
+    vi.useFakeTimers()
+
+    const wrapper = mount(ContasFixasPanel, {
+      props: {
+        contasFixas,
+        gastos,
+        membros,
+        isMonthClosed: true,
+      },
+    })
+
+    const cardEnergia = wrapper.find('[data-testid="conta-fixa-card-energia"]')
+    await cardEnergia.trigger('pointerdown')
+    await cardEnergia.trigger('pointerup')
+    await vi.advanceTimersByTimeAsync(300)
+
+    await wrapper.find('[data-testid="nova-conta-fixa"]').trigger('click')
+
+    expect(wrapper.emitted('lancar')?.[0]).toEqual([contasFixas[1]])
+    expect(wrapper.emitted('novo')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Reabra o mês')
 
     vi.useRealTimers()
   })

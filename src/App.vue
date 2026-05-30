@@ -22,69 +22,51 @@ const { isAnyBottomSheetOpen } = useBottomSheetState()
 const { ativos, membros: todosMembros, inicializar: inicializarMembros, carregar: recarregarMembros } = useMembros()
 const {
   cartoes,
-  acertos,
   inicializar: inicializarCartoes,
   faturasAbertas,
-  faturasFechadas,
-  calcularConsumoMembro
+  faturasFechadas
 } = useCartoesEFaturas()
 const { carregarTemplates: inicializarContasFixas } = useContasFixas()
 
 const isAuthed = ref(tenantSessionService.isAuthenticated())
 const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
+const isMonthClosed = ref(false)
 const toast = useToast()
+
+const handlePeriodoStatusChanged = (fechado: boolean) => {
+  isMonthClosed.value = fechado
+}
+
+const handleFabClick = () => {
+  if (isMonthClosed.value) {
+    toast.show('Este mês está encerrado. Reabra o período para fazer novos lançamentos.', 'error')
+    return
+  }
+  currentView.value = 'wizard'
+}
 
 const inicializarSocket = (tenantId: string) => {
   socketService.conectar(tenantId)
 
-  // Debounce: agrupa múltiplos eventos de dados em um único reload.
-  // Ao fechar uma fatura, o backend dispara faturas_alteradas + N acertos_alterados
-  // em sequência rápida. Sem debounce, cada evento dispara um reload completo.
   let debounceTimerDados: ReturnType<typeof setTimeout> | null = null
   const recarregarDadosDebounced = () => {
     if (debounceTimerDados) clearTimeout(debounceTimerDados)
     debounceTimerDados = setTimeout(async () => {
-      console.log('[Socket] Recarregando dados (debounced)...')
       await inicializarCartoes()
     }, 300)
   }
 
-  socketService.on('gastos_alterados', () => {
-    console.log('[Socket] Evento gastos_alterados recebido!')
-    recarregarDadosDebounced()
-  })
-
-  socketService.on('cartoes_alterados', () => {
-    console.log('[Socket] Evento cartoes_alterados recebido!')
-    recarregarDadosDebounced()
-  })
-
-  socketService.on('faturas_alteradas', () => {
-    console.log('[Socket] Evento faturas_alteradas recebido!')
-    recarregarDadosDebounced()
-  })
-
-  socketService.on('acertos_alterados', () => {
-    console.log('[Socket] Evento acertos_alterados recebido!')
-    recarregarDadosDebounced()
-  })
-
-  socketService.on('membros_alterados', async () => {
-    console.log('[Socket] Evento membros_alterados recebido! Recarregando membros...')
-    await recarregarMembros()
-  })
-
-  socketService.on('contas_fixas_alteradas', async () => {
-    console.log('[Socket] Evento contas_fixas_alteradas recebido! Recarregando contas fixas...')
-    await inicializarContasFixas()
-  })
+  socketService.on('gastos_alterados', recarregarDadosDebounced)
+  socketService.on('cartoes_alterados', recarregarDadosDebounced)
+  socketService.on('faturas_alteradas', recarregarDadosDebounced)
+  socketService.on('membros_alterados', async () => await recarregarMembros())
+  socketService.on('contas_fixas_alteradas', async () => await inicializarContasFixas())
 }
 
 
 onMounted(async () => {
   if (isAuthed.value) {
     try {
-      // Garante que a sessão (com tenantId) está carregada antes de qualquer fetch
       await tenantSessionService.inicializarSessao()
       hasTenant.value = !!tenantSessionService.getActiveTenantId()
       if (hasTenant.value) {
@@ -111,13 +93,10 @@ const handleSalvarTransacao = async () => {
     currentView.value = 'dashboard'
   }
 }
-const isPeriodLocked = ref(false)
-
 const handleAuthSuccess = async () => {
   isAuthed.value = true
   hasTenant.value = !!tenantSessionService.getActiveTenantId()
   if (hasTenant.value) {
-    // Usa `carregar` (force reload) pois `inicializar` pode ter flag inicializado=true de tentativa anterior sem tenant
     try {
       await Promise.all([
         recarregarMembros(),
@@ -174,12 +153,11 @@ const handleLogout = async () => {
           :membros="todosMembros"
           :faturasAbertas="faturasAbertas"
           :faturasFechadas="faturasFechadas"
-          :acertosPendentes="acertos"
           :cartoes="cartoes"
-          :calcular-consumo="calcularConsumoMembro"
+          
           :active-tab="activeTab"
           @openSettings="currentView = 'settings'"
-          @periodoStatusChanged="(locked) => isPeriodLocked = locked"
+          @periodoStatusChanged="handlePeriodoStatusChanged"
         />
       </main>
     </div>
@@ -191,9 +169,9 @@ const handleLogout = async () => {
         data-fixed-wrapper
       >
         <button
-          :disabled="isPeriodLocked"
-          class="w-14 h-14 rounded-full shadow-lg active:scale-95 flex items-center justify-center transition-all duration-300 bg-midnight hover:bg-charcoal text-white border-none focus:outline-none disabled:opacity-40 disabled:scale-100 disabled:shadow-none pointer-events-auto"
-          @click="currentView = 'wizard'"
+          class="w-14 h-14 rounded-full shadow-lg active:scale-95 flex items-center justify-center transition-all duration-300 bg-midnight hover:bg-charcoal text-white border-none focus:outline-none pointer-events-auto"
+          :class="isMonthClosed ? 'opacity-50 grayscale cursor-not-allowed' : ''"
+          @click="handleFabClick"
           data-testid="novo-lancamento-fab"
         >
           <Plus class="w-7 h-7 stroke-[3px]" />

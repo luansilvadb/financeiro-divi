@@ -98,7 +98,6 @@ const handleAtivar = async (id: string) => {
 
 <template>
   <div class="flex flex-col flex-grow h-full min-h-0 w-full overflow-hidden text-graphite">
-    <!-- Header e Abas fixas no topo do fluxo (não rolam) -->
     <div class="shrink-0 space-y-6 px-4 pt-6 pb-4 sm:px-8 border-b border-stone/50 bg-white">
       <div class="flex items-center justify-between">
         <div class="space-y-2">
@@ -106,7 +105,6 @@ const handleAtivar = async (id: string) => {
         </div>
       </div>
 
-      <!-- Abas Estilo Pílula -->
       <div class="flex p-1.5 bg-parchment rounded-full w-full border border-stone">
         <button 
           @click="activeTab = 'membros'"
@@ -142,15 +140,12 @@ const handleAtivar = async (id: string) => {
       </div>
     </div>
 
-    <!-- Conteúdo das Abas: Área com Scroll -->
     <div class="flex-grow overflow-y-auto custom-scrollbar px-4 py-6 sm:px-8 space-y-6 min-w-0">
       <div class="grid relative items-start w-full min-w-0">
-        <!-- Conteúdo Aba 1: Moradores -->
         <div 
           class="col-start-1 row-start-1 transition-all duration-500 ease-spring space-y-4 w-full min-w-0"
           :class="activeTab === 'membros' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
         >
-          <!-- Quick Invite Bar -->
           <Card v-if="activeTenantObj" class="p-3 sm:p-4 bg-white border border-stone shadow-subtle rounded-card flex items-center gap-3 w-full min-w-0">
             <div class="w-10 h-10 shrink-0 rounded-full bg-ember/10 flex items-center justify-center text-ember">
               <Share2 class="w-4 h-4" />
@@ -168,7 +163,6 @@ const handleAtivar = async (id: string) => {
             </button>
           </Card>
 
-          <!-- Compact Add Section -->
           <Card class="p-5 bg-white border border-stone shadow-subtle rounded-card">
             <div class="flex flex-col gap-4">
               <div class="flex items-center justify-between">
@@ -218,7 +212,6 @@ const handleAtivar = async (id: string) => {
             </div>
           </Card>
 
-          <!-- Member List -->
           <div class="space-y-2">
             <div class="flex items-center justify-between px-1">
               <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Moradores ({{ membros.length }})</h4>
@@ -258,9 +251,8 @@ const handleAtivar = async (id: string) => {
               <p class="text-xs text-ash italic">Nenhum morador cadastrado.</p>
             </div>
           </div>
-        </div> <!-- Fecha Aba 1 -->
+        </div>
 
-        <!-- Conteúdo Aba 2: Cartões -->
         <div 
           class="col-start-1 row-start-1 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] w-full min-w-0"
           :class="activeTab === 'cartoes' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
@@ -270,7 +262,6 @@ const handleAtivar = async (id: string) => {
       </div>
     </div>
 
-    <!-- Footer Fixo (não rola) -->
     <div class="shrink-0 p-4 sm:px-8 sm:pb-8 border-t border-stone bg-white flex justify-end">
       <Button variant="secondary" class="w-full sm:w-auto" @click="emit('voltar')">Fechar</Button>
     </div>

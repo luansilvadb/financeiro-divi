@@ -5,7 +5,7 @@ import Button from '../../ui/Button.vue'
 
 defineProps<{
   nettingTransferencias: any[]
-  faturaSelecionadaTrancada: boolean
+  faturaSelecionadaFechada: boolean
   getMembroNome: (id: string) => string
 }>()
 
@@ -56,17 +56,11 @@ const emit = defineEmits<{
           <div class="w-full md:w-auto flex flex-col items-center">
             <Button 
               @click="$emit('abrirNetting', t)"
-              :disabled="faturaSelecionadaTrancada"
-              :aria-disabled="faturaSelecionadaTrancada"
-              :aria-describedby="faturaSelecionadaTrancada ? 'netting-disabled-reason-' + t.from + '-' + t.to : undefined"
               variant="primary"
               class="w-full"
             >
               Confirmar Pix
             </Button>
-            <p v-if="faturaSelecionadaTrancada" :id="'netting-disabled-reason-' + t.from + '-' + t.to" class="text-[10px] text-ash mt-1.5 text-center max-w-[150px] leading-tight animate-in fade-in">
-              Reabra o mês para confirmar
-            </p>
           </div>
         </div>
       </div>

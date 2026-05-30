@@ -1,8 +1,7 @@
 import { ref } from 'vue'
 import type { ContaFixa } from '../models/entities/ContaFixa'
 import type { Gasto } from '../models/entities/Gasto'
-import type { IContaFixaRepository } from '../models/repositories/IContaFixaRepository'
-import type { IGastoService } from '../models/services/IGastoService'
+
 import { contaFixaRepository, gastoService, tenantSessionService } from '../shared/container'
 
 const CONTAS_PADRAO: ContaFixa[] = [
@@ -17,25 +16,14 @@ const contasFixas = ref<ContaFixa[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
 
-export interface ContasFixasDependencies {
-  contaFixaRepository?: IContaFixaRepository
-  gastoService?: IGastoService
-}
-
-export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
-  const contaFixaRepo = dependencies.contaFixaRepository || contaFixaRepository
-  const servicoGasto = dependencies.gastoService || gastoService
+export function useContasFixas() {
 
   const carregarTemplates = async () => {
-    console.log('[DEBUG] carregarTemplates chamado. Estado inicializado:', inicializado.value)
     if (promiseInicializacao) {
-      console.log('[DEBUG] carregarTemplates: Já existe promiseInicializacao em andamento.')
       return promiseInicializacao
     }
 
-    console.log('[DEBUG] carregarTemplates: isAuthenticated:', tenantSessionService.isAuthenticated(), 'activeTenantId:', tenantSessionService.getActiveTenantId())
     if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
-      console.log('[DEBUG] carregarTemplates: Autenticado mas sem tenant. Carregando CONTAS_PADRAO.')
       contasFixas.value = [...CONTAS_PADRAO]
       inicializado.value = true
       return
@@ -43,25 +31,18 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
 
     const carregar = async () => {
       try {
-        console.log('[DEBUG] carregarTemplates: Chamando contaFixaRepo.listarTodas()...')
-        const saved = await contaFixaRepo.listarTodas()
-        console.log('[DEBUG] carregarTemplates: Retorno de listarTodas():', JSON.stringify(saved))
+        const saved = await contaFixaRepository.listarTodas()
         if (saved && saved.length > 0) {
           contasFixas.value = saved
-          console.log('[DEBUG] carregarTemplates: contasFixas atualizado com saved. Total itens:', contasFixas.value.length)
         } else {
-          console.log('[DEBUG] carregarTemplates: Nenhum saved. Carregando CONTAS_PADRAO e salvando no repositório...')
           contasFixas.value = [...CONTAS_PADRAO]
           for (const template of CONTAS_PADRAO) {
-            await contaFixaRepo.salvar(template)
+            await contaFixaRepository.salvar(template)
           }
-          console.log('[DEBUG] carregarTemplates: CONTAS_PADRAO gravadas. Total itens:', contasFixas.value.length)
         }
-      } catch (error) {
-        console.error('[DEBUG] Erro em carregarTemplates no contaFixaRepo.listarTodas():', error)
-        throw error
+      } finally {
+        // ... ou simplesmente sem try/catch
       }
-      inicializado.value = true
     }
 
     promiseInicializacao = carregar()
@@ -79,17 +60,13 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
     } else {
       contasFixas.value.push(template)
     }
-    await contaFixaRepo.salvar(template)
+    await contaFixaRepository.salvar(template)
   }
 
   const excluirContaFixa = async (id: string) => {
-    if (!id) {
-      console.error('[DEBUG] excluirContaFixa: ID não fornecido')
-      return
-    }
     contasFixas.value = contasFixas.value.filter(c => c.id !== id)
-    await contaFixaRepo.excluir(id)
-    await servicoGasto.removerAssociacaoContaFixa(id)
+    await contaFixaRepository.excluir(id)
+    await gastoService.removerAssociacaoContaFixa(id)
   }
 
   const verificarStatusPaga = (conta: ContaFixa, gastos: Gasto[]) => {
@@ -108,7 +85,7 @@ export function useContasFixas(dependencies: ContasFixasDependencies = {}) {
     compradorId: string,
     participantes: string[]
   ) => {
-    await servicoGasto.lancarGastoContaFixa({
+    await gastoService.lancarGastoContaFixa({
       faturaId,
       conta,
       valorCentavos,

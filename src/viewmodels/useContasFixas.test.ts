@@ -5,56 +5,60 @@ import { Dinheiro } from '../models/entities/Dinheiro'
 import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import type { ContaFixa } from '../models/entities/ContaFixa'
 
-describe('useContasFixas', () => {
-  let mockContas: ContaFixa[] = []
-  const mockRepo = {
-    listarTodas: vi.fn().mockImplementation(async () => mockContas),
-    salvar: vi.fn().mockImplementation(async (conta) => {
-      const idx = mockContas.findIndex(c => c.id === conta.id)
-      if (idx > -1) mockContas[idx] = conta
-      else mockContas.push(conta)
-    }),
-    excluir: vi.fn().mockImplementation(async (id) => {
-      mockContas = mockContas.filter(c => c.id !== id)
-    })
-  }
-
-  const mockGastoService = {
+vi.mock('../shared/container', () => ({
+  contaFixaRepository: {
+    listarTodas: vi.fn(),
+    salvar: vi.fn(),
+    excluir: vi.fn()
+  },
+  gastoService: {
     lancarGastoContaFixa: vi.fn(),
     lancarGastoOuEmprestimo: vi.fn(),
     excluirGasto: vi.fn(),
     registrarAcertoNetting: vi.fn(),
     removerAssociacaoContaFixa: vi.fn()
+  },
+  tenantSessionService: {
+    isAuthenticated: vi.fn(() => false)
   }
+}))
+
+import { contaFixaRepository, gastoService } from '../shared/container'
+
+describe('useContasFixas', () => {
+  let mockContas: ContaFixa[] = []
+  const mockGastoService = gastoService as any
 
   beforeEach(() => {
     localStorage.clear()
     mockContas = []
-    const { resetar } = useContasFixas({
-      contaFixaRepository: mockRepo,
-      gastoService: mockGastoService as any
-    })
-    resetar()
     vi.clearAllMocks()
+
+    vi.mocked(contaFixaRepository.listarTodas).mockImplementation(async () => mockContas)
+    vi.mocked(contaFixaRepository.salvar).mockImplementation(async (conta: any) => {
+      const idx = mockContas.findIndex(c => c.id === conta.id)
+      if (idx > -1) mockContas[idx] = conta
+      else mockContas.push(conta)
+    })
+    vi.mocked(contaFixaRepository.excluir).mockImplementation(async (id: string) => {
+      mockContas = mockContas.filter(c => c.id !== id)
+    })
+
+    const { resetar } = useContasFixas()
+    resetar()
   })
 
   const esperarTick = () => new Promise(resolve => setTimeout(resolve, 0))
 
   it('deve carregar contas fixas padrao ao inicializar se vazio', async () => {
-    const { contasFixas, carregarTemplates } = useContasFixas({
-      contaFixaRepository: mockRepo,
-      gastoService: mockGastoService as any
-    })
+    const { contasFixas, carregarTemplates } = useContasFixas()
     await carregarTemplates()
     expect(contasFixas.value.length).toBe(5)
     expect(contasFixas.value[0].id).toBe('aluguel')
   })
 
   it('deve cadastrar, atualizar e remover um template customizado', async () => {
-    const { contasFixas, salvarContaFixa, excluirContaFixa, carregarTemplates } = useContasFixas({
-      contaFixaRepository: mockRepo,
-      gastoService: mockGastoService as any
-    })
+    const { contasFixas, salvarContaFixa, excluirContaFixa, carregarTemplates } = useContasFixas()
     await carregarTemplates()
     
     await salvarContaFixa({
@@ -81,7 +85,7 @@ describe('useContasFixas', () => {
   })
 
   it('deve calcular dinamicamente o status de pagamento baseado em gastos reais', async () => {
-    const { verificarStatusPaga } = useContasFixas({ contaFixaRepository: mockRepo })
+    const { verificarStatusPaga } = useContasFixas()
     await esperarTick()
     
     const contaAluguel = {
@@ -113,16 +117,7 @@ describe('useContasFixas', () => {
   })
 
   it('deve lancar gasto de conta fixa delegando ao GastoService', async () => {
-    const mockGastoService = {
-      lancarGastoContaFixa: vi.fn(),
-      lancarGastoOuEmprestimo: vi.fn(),
-      excluirGasto: vi.fn(),
-      registrarAcertoNetting: vi.fn()
-    }
-    const { lancarGastoContaFixa } = useContasFixas({
-      contaFixaRepository: mockRepo,
-      gastoService: mockGastoService as any
-    })
+    const { lancarGastoContaFixa } = useContasFixas()
     await esperarTick()
 
     const contaAluguel = {
@@ -145,14 +140,7 @@ describe('useContasFixas', () => {
   })
 
   it('deve chamar removerAssociacaoContaFixa do GastoService ao excluir um template de conta fixa', async () => {
-    const mockGastoService = {
-      lancarGastoContaFixa: vi.fn(),
-      removerAssociacaoContaFixa: vi.fn()
-    }
-    const { excluirContaFixa } = useContasFixas({
-      contaFixaRepository: mockRepo,
-      gastoService: mockGastoService as any
-    })
+    const { excluirContaFixa } = useContasFixas()
     await esperarTick()
 
     await excluirContaFixa('aluguel')

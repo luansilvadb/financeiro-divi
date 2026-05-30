@@ -10,7 +10,7 @@ import { useToast } from '../../../composables/useToast'
 
 const { activeTenantId } = useCasasMultitenant()
 const { ativos, membros } = useMembros()
-const { cartoes, adicionarCartao, excluirCartaoManual } = useCartoesEFaturas()
+const { cartoes, adicionarCartao, excluirCartao } = useCartoesEFaturas()
 const toast = useToast()
 
 const nome = ref('')
@@ -61,7 +61,7 @@ const adicionarCard = async () => {
 
 const handleExcluir = async (id: string) => {
   try {
-    await excluirCartaoManual(id)
+    await excluirCartao(id)
   } catch (error: any) {
     toast.show(error.message || 'Erro ao excluir cartão', 'error')
   }

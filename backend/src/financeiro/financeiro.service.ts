@@ -1,21 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
-
-function serializeBigInt(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-  if (typeof obj === 'bigint') return Number(obj);
-  if (Array.isArray(obj)) return obj.map(serializeBigInt);
-  if (typeof obj === 'object') {
-    const newObj: any = {};
-    for (const key of Object.keys(obj)) {
-      newObj[key] = serializeBigInt(obj[key]);
-    }
-    return newObj;
-  }
-  return obj;
-}
+import { serializeBigInt } from '../shared/utils/serialization';
 
 @Injectable()
 export class FinanceiroService {
@@ -26,13 +13,12 @@ export class FinanceiroService {
     private gateway: FinanceiroGateway
   ) {}
 
-  // --- TENANTS ---
   async obterPreviewConvite(inviteCode: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { inviteCode: inviteCode.toUpperCase() },
       include: {
         membros: {
-          where: { userId: null }, // Apenas membros sem usuário vinculado (slots livres)
+          where: { userId: null },
           select: { id: true, nome: true, avatar: true }
         }
       }
@@ -58,7 +44,6 @@ export class FinanceiroService {
       },
     });
 
-    // Cria o membro fundador na casa
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
     await this.prisma.membroCasa.create({
       data: {
@@ -83,7 +68,6 @@ export class FinanceiroService {
       throw new NotFoundException('Código de convite inválido ou casa não encontrada.');
     }
 
-    // Verifica se o usuário já participa dessa casa
     const existing = await this.prisma.membroCasa.findFirst({
       where: {
         tenantId: tenant.id,
@@ -98,7 +82,6 @@ export class FinanceiroService {
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
     const username = user ? user.username : 'Convidado';
 
-    // Tenta encontrar um perfil de membro existente com o mesmo nome na casa sem userId vinculado
     const perfilExistente = await this.prisma.membroCasa.findFirst({
       where: {
         tenantId: tenant.id,
@@ -131,7 +114,6 @@ export class FinanceiroService {
     return serializeBigInt(tenant);
   }
 
-  // --- MEMBROS ---
   async listarMembros(tenantId: string) {
     const membros = await this.prisma.membroCasa.findMany({
       where: { tenantId },
@@ -143,14 +125,11 @@ export class FinanceiroService {
     let { id, nome, avatar, userId, username, password } = membroData;
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
 
-    // Se o admin forneceu username e password, criamos o usuário automaticamente
     if (!userId && username && password) {
       try {
         const newUser = await this.authService.register(username, password);
         userId = newUser.userId;
       } catch (err) {
-        // Se já existe, tentamos vincular o usuário existente (se o admin souber o login correto)
-        // Ou retornamos o erro se for conflito real.
         throw err;
       }
     }
@@ -177,7 +156,6 @@ export class FinanceiroService {
     return result;
   }
 
-  // --- CARTOES ---
   async listarCartoes(tenantId: string) {
     const cartoes = await this.prisma.cartao.findMany({
       where: { tenantId },
@@ -210,14 +188,6 @@ export class FinanceiroService {
   }
 
   async excluirCartao(tenantId: string, id: string) {
-    // Bloquear exclusão se o cartão possuir faturas vinculadas
-    const faturasCount = await this.prisma.fatura.count({
-      where: { tenantId, cartaoId: id },
-    });
-    if (faturasCount > 0) {
-      throw new BadRequestException('Não é possível excluir um cartão que possui faturas ou gastos registrados.');
-    }
-
     await this.prisma.cartao.delete({
       where: {
         id_tenantId: { id, tenantId },
@@ -227,7 +197,6 @@ export class FinanceiroService {
     return { success: true };
   }
 
-  // --- FATURAS ---
   async listarFaturas(tenantId: string) {
     const faturas = await this.prisma.fatura.findMany({
       where: { tenantId },
@@ -290,7 +259,6 @@ export class FinanceiroService {
     return serialized;
   }
 
-  // --- GASTOS ---
   async listarGastos(tenantId: string) {
     const gastos = await this.prisma.gasto.findMany({
       where: { tenantId },
@@ -320,8 +288,6 @@ export class FinanceiroService {
       grupoParcelasId,
       divisoes,
     } = g;
-
-
 
     await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
 
@@ -383,71 +349,6 @@ export class FinanceiroService {
   }
 
   async excluirGasto(tenantId: string, id: string) {
-    const gasto = await this.prisma.gasto.findUnique({ where: { id_tenantId: { id, tenantId } } });
-
-
-    // Reverter saldos em AcertoMembro se for um gasto de liquidação
-    if (gasto && gasto.isSettlement) {
-      const fatura = await this.prisma.fatura.findUnique({ where: { id_tenantId: { id: gasto.faturaId, tenantId } } });
-      if (fatura) {
-        let anteriorMes = fatura.mes - 1;
-        let anteriorAno = fatura.ano;
-        if (anteriorMes < 1) {
-          anteriorMes = 12;
-          anteriorAno -= 1;
-        }
-
-        // Busca faturas fechadas/acertadas no mês anterior ou atual para reverter o valor pago
-        const faturasParaReverter = await this.prisma.fatura.findMany({
-          where: {
-            tenantId,
-            OR: [
-              { mes: anteriorMes, ano: anteriorAno },
-              { mes: fatura.mes, ano: fatura.ano }
-            ],
-            status: { in: ['FECHADA', 'ACERTADA'] }
-          }
-        });
-
-        let estornoRestante = Number(gasto.valorTotalCentavos);
-
-        for (const fatTarget of faturasParaReverter) {
-          if (estornoRestante <= 0) break;
-
-          const acertosMembro = await this.prisma.acertoMembro.findMany({
-            where: { tenantId, faturaId: fatTarget.id, membroId: gasto.compradorId }
-          });
-
-          for (const acerto of acertosMembro) {
-            const vPago = Number(acerto.valorPagoCentavos);
-            if (vPago > 0) {
-              const valorEstorno = Math.min(estornoRestante, vPago);
-              const novoVPago = vPago - valorEstorno;
-              const vAcerto = Number(acerto.totalConsumidoCentavos) - Number(acerto.totalAntecipadoCentavos);
-
-              await this.prisma.acertoMembro.update({
-                where: { id_tenantId: { id: acerto.id, tenantId } },
-                data: {
-                  valorPagoCentavos: BigInt(novoVPago),
-                  pago: novoVPago >= vAcerto && vAcerto > 0,
-                  dataPagamento: novoVPago >= vAcerto ? acerto.dataPagamento : null
-                }
-              });
-
-              estornoRestante -= valorEstorno;
-
-              if (fatTarget.status === 'ACERTADA' && novoVPago < vAcerto) {
-                await this.prisma.fatura.update({
-                  where: { id_tenantId: { id: fatTarget.id, tenantId } },
-                  data: { status: 'FECHADA' }
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
     await this.prisma.gasto.delete({
       where: {
         id_tenantId: { id, tenantId },
@@ -468,7 +369,6 @@ export class FinanceiroService {
     return { success: true };
   }
 
-  // --- CONTAS FIXAS ---
   async listarContasFixas(tenantId: string) {
     const contas = await this.prisma.contaFixa.findMany({
       where: { tenantId },
@@ -510,110 +410,5 @@ export class FinanceiroService {
     });
     this.gateway.notificarAlteracao(tenantId, 'contas_fixas_alteradas');
     return { success: true };
-  }
-
-  // --- ACERTOS ---
-  async listarAcertos(tenantId: string) {
-    const acertos = await this.prisma.acertoMembro.findMany({
-      where: { tenantId },
-    });
-    return serializeBigInt(acertos);
-  }
-
-  async listarAntecipacoesFatura(tenantId: string) {
-    const antecipacoes = await this.prisma.antecipacaoFatura.findMany({ where: { tenantId } });
-    return serializeBigInt(antecipacoes);
-  }
-
-  async salvarAntecipacaoFatura(tenantId: string, data: any) {
-    const { id, faturaId, membroId, responsavelId, valorCentavos, observacao } = data;
-    if (typeof valorCentavos !== 'number' || valorCentavos <= 0) {
-      throw new BadRequestException('Valor da antecipacao deve ser maior que zero');
-    }
-
-    const dataAntecipacao = new Date(data.data);
-    if (Number.isNaN(dataAntecipacao.getTime())) {
-      throw new BadRequestException('Data da antecipacao invalida');
-    }
-
-    const saved = await this.prisma.antecipacaoFatura.upsert({
-      where: { id_tenantId: { id, tenantId } },
-      create: {
-        id,
-        tenantId,
-        faturaId,
-        membroId,
-        responsavelId,
-        valorCentavos: BigInt(valorCentavos),
-        data: dataAntecipacao,
-        observacao: observacao || null,
-      },
-      update: {
-        faturaId,
-        membroId,
-        responsavelId,
-        valorCentavos: BigInt(valorCentavos),
-        data: dataAntecipacao,
-        observacao: observacao || null,
-      },
-    });
-    const result = serializeBigInt(saved);
-    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
-    return result;
-  }
-
-  async excluirAntecipacaoFatura(tenantId: string, id: string) {
-    await this.prisma.antecipacaoFatura.delete({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
-    });
-    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
-    return { success: true };
-  }
-
-  async salvarAcerto(tenantId: string, acertoData: any) {
-    const {
-      id,
-      faturaId,
-      membroId,
-      totalConsumidoCentavos,
-      totalAntecipadoCentavos,
-      tipo,
-      valorPagoCentavos,
-      pago,
-      dataPagamento,
-    } = acertoData;
-
-    const upserted = await this.prisma.acertoMembro.upsert({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
-      create: {
-        id,
-        tenantId,
-        faturaId,
-        membroId,
-        totalConsumidoCentavos: BigInt(totalConsumidoCentavos || 0),
-        totalAntecipadoCentavos: BigInt(totalAntecipadoCentavos || 0),
-        tipo: tipo || 'MEMBRO_PAGA',
-        valorPagoCentavos: BigInt(valorPagoCentavos || 0),
-        pago: pago || false,
-        dataPagamento: dataPagamento ? new Date(dataPagamento) : null,
-      },
-      update: {
-        faturaId,
-        membroId,
-        totalConsumidoCentavos: BigInt(totalConsumidoCentavos || 0),
-        totalAntecipadoCentavos: BigInt(totalAntecipadoCentavos || 0),
-        tipo: tipo || 'MEMBRO_PAGA',
-        valorPagoCentavos: BigInt(valorPagoCentavos || 0),
-        pago: pago || false,
-        dataPagamento: dataPagamento ? new Date(dataPagamento) : null,
-      },
-    });
-    const result = serializeBigInt(upserted);
-    this.gateway.notificarAlteracao(tenantId, 'acertos_alterados');
-    return result;
   }
 }

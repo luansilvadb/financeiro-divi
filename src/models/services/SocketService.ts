@@ -18,7 +18,6 @@ export class SocketService {
     }
 
     this.currentTenantId = tenantId
-    console.log(`[SocketService] Conectando ao socket em ${this.baseUrl} para o tenant ${tenantId}`)
     
     this.socket = io(this.baseUrl, {
       transports: ['websocket'],
@@ -27,14 +26,7 @@ export class SocketService {
 
     this.socket.on('connect', () => {
       const token = localStorage.getItem('divi_jwt_token') || ''
-      console.log(`[SocketService] Conectado. Enviando joinTenant para ${tenantId}`)
-      this.socket?.emit('joinTenant', { tenantId, token }, (res: any) => {
-        console.log('[SocketService] Resposta do joinTenant:', res)
-      })
-    })
-
-    this.socket.on('disconnect', (reason) => {
-      console.log('[SocketService] Desconectado:', reason)
+      this.socket?.emit('joinTenant', { tenantId, token })
     })
 
     this.socket.on('connect_error', (error) => {
@@ -44,7 +36,6 @@ export class SocketService {
 
   desconectar(): void {
     if (this.socket) {
-      console.log('[SocketService] Desconectando socket')
       this.socket.disconnect()
       this.socket = null
     }
@@ -57,12 +48,6 @@ export class SocketService {
       this.socket.on(event, callback)
     } else {
       console.warn(`[SocketService] Tentou registrar evento "${event}" sem socket conectado.`)
-    }
-  }
-
-  off(event: string): void {
-    if (this.socket) {
-      this.socket.off(event)
     }
   }
 }

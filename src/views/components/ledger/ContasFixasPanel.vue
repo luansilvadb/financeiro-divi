@@ -9,7 +9,7 @@ const props = defineProps<{
   contasFixas: ContaFixa[]
   gastos: Gasto[]
   membros: { id: string; nome: string }[]
-  isMonthLocked: boolean
+  isMonthClosed: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,7 +37,6 @@ const obterNomeMembro = (id?: string) => {
 }
 
 const handleClick = () => {
-  if (props.isMonthLocked) return
   emit('novo')
 }
 </script>
@@ -88,7 +87,7 @@ const handleClick = () => {
           :paga="verificarPaga(bill)"
           :status-gasto="obterStatusGasto(bill)"
           :obter-nome-membro="obterNomeMembro"
-          :is-month-locked="isMonthLocked"
+          :is-month-closed="props.isMonthClosed"
           @lancar="$emit('lancar', bill)"
           @estornar="$emit('estornar', bill)"
           @configurar="$emit('configurar', bill)"
@@ -98,19 +97,15 @@ const handleClick = () => {
       <div class="flex flex-col items-center gap-2 mt-2">
         <button
           @click="handleClick"
-          :disabled="isMonthLocked"
           :class="[
             'relative overflow-hidden group w-full flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone bg-transparent text-ash font-bold text-xs uppercase tracking-widest transition-all duration-300 select-none cursor-pointer',
-            isMonthLocked ? 'opacity-40 cursor-not-allowed' : 'hover:border-ember hover:bg-ember/5 active:scale-[0.98]'
+            'hover:border-ember hover:bg-ember/5 active:scale-[0.98]'
           ]"
           data-testid="nova-conta-fixa"
         >
           <Plus class="w-4 h-4 transition-transform group-hover:scale-110 text-ash group-hover:text-ember" />
           <span class="text-ash group-hover:text-ember font-bold text-xs uppercase tracking-widest">Adicionar conta fixa</span>
         </button>
-        <p v-if="isMonthLocked" class="text-[9px] text-ash animate-in fade-in">
-          Reabra o mês para gerenciar contas fixas
-        </p>
       </div>
     </div>
   </Card>

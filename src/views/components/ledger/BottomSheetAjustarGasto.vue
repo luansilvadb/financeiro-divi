@@ -26,7 +26,6 @@ const activeCardOwner = ref<string | null>(null)
 const selectedSplit = ref<string[]>([])
 const installmentsInput = ref(1)
 
-// Monitora alterações do gasto recebido por prop para sincronizar o formulário
 watch(() => props.gasto, (newG) => {
   if (newG) {
     descInput.value = newG.descricao || ''
@@ -82,7 +81,6 @@ const infoParcelamento = computed(() => {
   return `${installmentsInput.value}x de R$ ${parcela}`
 })
 
-// Recálculo dinâmico das parcelas do rateio
 const calculatedSharesDesc = computed(() => {
   const n = selectedSplit.value.length
   if (n === 0 || valorInput.value <= 0) return 'Digite um valor e selecione participantes'
@@ -166,15 +164,12 @@ const handleConfirm = () => {
 <template>
   <BottomSheet :model-value="props.visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[460px]" max-height="95dvh">
     <div class="flex flex-col h-full overflow-hidden flex-grow">
-        <!-- Header -->
         <div class="p-6 pb-4 sm:p-8 sm:pb-4 border-b border-stone shrink-0 text-center">
           <h3 class="text-3xl font-display text-charcoal">Corrigir <span class="text-ember">Lançamento</span></h3>
         </div>
 
-        <!-- Conteúdo Scrollable -->
         <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
           <div class="space-y-6">
-          <!-- Descrição -->
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Descrição</label>
             <input 
@@ -185,7 +180,6 @@ const handleConfirm = () => {
             />
           </div>
 
-          <!-- Valor Total -->
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Valor Total</label>
             <div class="relative">
@@ -200,7 +194,6 @@ const handleConfirm = () => {
             </div>
           </div>
 
-          <!-- Canal de Pagamento -->
           <div v-if="!props.gasto?.isLoan" class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Método / Cartão</label>
             <div class="grid grid-cols-3 gap-2">
@@ -225,7 +218,6 @@ const handleConfirm = () => {
             </div>
           </div>
 
-          <!-- Parcelamento -->
           <div v-if="activeMethod === 'card' || props.gasto?.isLoan" class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Parcelamento</label>
             <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-stone bg-canvas">
@@ -242,7 +234,6 @@ const handleConfirm = () => {
             </div>
           </div>
 
-          <!-- Quem pagou -->
           <div class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">
               {{ props.gasto?.isLoan ? 'Quem emprestou?' : activeMethod === 'pix' ? 'Quem fez o Pix?' : `Quem usou o cartão?` }}
@@ -260,7 +251,6 @@ const handleConfirm = () => {
             </div>
           </div>
 
-          <!-- Participantes (Split) -->
           <div v-if="!props.gasto?.isLoan" class="space-y-2">
             <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Dividir com</label>
             <div class="grid grid-cols-3 gap-2">
@@ -280,7 +270,6 @@ const handleConfirm = () => {
             </div>
           </div>
 
-          <!-- Quadro Final / Prévia do Rateio -->
           <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
             <Info class="w-5 h-5 shrink-0 mt-0.5" />
             <div class="space-y-1">
@@ -288,10 +277,11 @@ const handleConfirm = () => {
               <p class="text-xs font-semibold leading-relaxed">{{ calculatedSharesDesc }}</p>
             </div>
           </div>
+
+
           </div>
         </div>
 
-        <!-- Rodapé -->
         <div class="p-6 sm:p-8 pt-4 border-t border-stone shrink-0 bg-white grid grid-cols-2 gap-3">
           <Button variant="secondary" @click="emit('cancel')">Voltar</Button>
           <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>

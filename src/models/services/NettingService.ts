@@ -18,9 +18,6 @@ export function calcularSaldosUnificados(
   const saldosCentavos: Record<string, number> = {}
   membros.forEach(m => { saldosCentavos[m.id] = 0 })
 
-  const ensureKey = (id: string) => {
-    if (saldosCentavos[id] === undefined) saldosCentavos[id] = 0
-  }
 
   gastos.forEach(g => {
     if (g.isLoan) {
@@ -28,13 +25,22 @@ export function calcularSaldosUnificados(
       if (valorParcela.centavos > 0) {
         const valorParcelaCentavos = valorParcela.centavos
         if (g.compradorId) {
-          ensureKey(g.compradorId)
-          saldosCentavos[g.compradorId] += valorParcelaCentavos
+          saldosCentavos[g.compradorId] = (saldosCentavos[g.compradorId] || 0) + valorParcelaCentavos
         }
         if (g.borrowerId) {
-          ensureKey(g.borrowerId)
-          saldosCentavos[g.borrowerId] -= valorParcelaCentavos
+          saldosCentavos[g.borrowerId] = (saldosCentavos[g.borrowerId] || 0) - valorParcelaCentavos
         }
+      }
+    } else if (g.isSettlement && g.settlementDetails) {
+      // Gastos de liquidação (Pix de acerto) transferem saldo diretamente entre membros
+      const valor = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
+      if (valor.centavos > 0) {
+        const fromId = g.settlementDetails.fromMemberId
+        const toId = g.settlementDetails.toMemberId
+        
+        saldosCentavos[fromId] = (saldosCentavos[fromId] || 0) + valor.centavos
+        // Quem recebe (to) diminui seu saldo (recebeu o que era devido)
+        saldosCentavos[toId] = (saldosCentavos[toId] || 0) - valor.centavos
       }
     } else {
       const pagadorId = (g.method === 'card' && g.cardOwner) ? g.cardOwner : g.compradorId
@@ -44,15 +50,13 @@ export function calcularSaldosUnificados(
         const valorDebito = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
         if (valorDebito.centavos > 0) {
           const valorDebitoCentavos = valorDebito.centavos
-          ensureKey(div.membroId)
-          saldosCentavos[div.membroId] -= valorDebitoCentavos
+          saldosCentavos[div.membroId] = (saldosCentavos[div.membroId] || 0) - valorDebitoCentavos
           totalDebitosCentavos += valorDebitoCentavos
         }
       })
 
       if (pagadorId) {
-        ensureKey(pagadorId)
-        saldosCentavos[pagadorId] += totalDebitosCentavos
+        saldosCentavos[pagadorId] = (saldosCentavos[pagadorId] || 0) + totalDebitosCentavos
       }
     }
   })

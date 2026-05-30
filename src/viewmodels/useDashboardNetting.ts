@@ -2,11 +2,11 @@ import { computed, type Ref } from 'vue'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
 
 export function useDashboardNetting(
-  getMembros: () => { id: string; nome: string; ativo?: boolean }[],
+  membros: Ref<{ id: string; nome: string; ativo?: boolean }[]>,
   gastosSaldoReal: Ref<any[]>
 ) {
   const saldosUnificadosAtivosCentavos = computed(() =>
-    calcularSaldosUnificados(getMembros(), gastosSaldoReal.value)
+    calcularSaldosUnificados(membros.value, gastosSaldoReal.value)
   )
 
   const saldosUnificadosAtivos = computed(() => {
@@ -21,7 +21,7 @@ export function useDashboardNetting(
   const nettingTransferencias = computed(() => calcularTransacoesNetting(saldosUnificadosAtivosCentavos.value))
 
   const membrosVisiveis = computed(() => {
-    return getMembros().filter(m => {
+    return membros.value.filter(m => {
       if (m.ativo !== false) return true
       const saldoCentavos = saldosUnificadosAtivosCentavos.value[m.id] || 0
       return Math.abs(saldoCentavos) > 0

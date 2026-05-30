@@ -9,7 +9,7 @@ import IllustrationMascot from '../ui/IllustrationMascot.vue'
 interface Props {
   gastos: Gasto[]
   membros: { id: string; nome: string }[]
-  isMonthLocked: boolean
+  isMonthClosed: boolean
 }
 
 const props = defineProps<Props>()
@@ -124,6 +124,7 @@ const isGastoFuturo = (g: Gasto) => {
                 variant="secondary"
                 size="sm"
                 class="h-8 px-3 text-[10px] border border-stone"
+                :disabled="props.isMonthClosed"
                 @click="emit('ajustar', g)"
               >
                 <Edit3 class="w-3.5 h-3.5 mr-1.5" />
@@ -133,15 +134,13 @@ const isGastoFuturo = (g: Gasto) => {
                 variant="secondary"
                 size="sm"
                 class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
+                :disabled="props.isMonthClosed"
                 @click="emit('excluir', g)"
               >
                 <Trash2 class="w-3.5 h-3.5 mr-1.5" />
                 Estornar
               </Button>
             </div>
-            <p v-if="props.isMonthLocked" class="text-[9px] text-ash mt-1 animate-in fade-in">
-              Mês arquivado
-            </p>
           </div>
         </div>
       </div>

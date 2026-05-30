@@ -31,7 +31,6 @@ export class AuthService {
       },
     });
 
-    // Se houver um convite, vinculamos o usuário à casa
     if (inviteCode) {
       const tenant = await this.prisma.tenant.findUnique({
         where: { inviteCode: inviteCode.toUpperCase() }
@@ -46,7 +45,6 @@ export class AuthService {
           });
 
           if (membroExistente) {
-            // Vincula a conta ao morador pré-existente selecionado
             await this.prisma.membroCasa.update({
               where: {
                 id_tenantId: { id: membroId, tenantId: tenant.id }
@@ -58,7 +56,6 @@ export class AuthService {
         }
 
         if (!vinculado) {
-          // Se não selecionou um morador correspondente, cria um novo morador na casa associado a este usuário
           await this.prisma.membroCasa.create({
             data: {
               id: `membro-${crypto.randomUUID()}`,
@@ -111,6 +108,10 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
+    if (!userId) {
+      throw new UnauthorizedException('Token inválido ou sem ID de usuário.');
+    }
+
     const user = await this.prisma.usuario.findUnique({
       where: { id: userId },
       include: {
@@ -126,7 +127,6 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado.');
     }
 
-    // Retorna os dados do usuário e a lista de Tenants (casas) de que ele participa
     const tenantsList = user.perfisMembro.map(p => ({
       id: p.tenant.id,
       name: p.tenant.name,

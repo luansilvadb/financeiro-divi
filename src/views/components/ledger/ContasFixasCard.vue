@@ -7,7 +7,7 @@ const props = defineProps<{
   paga: boolean
   statusGasto: { valorCentavos: number; pagoPor: string } | null
   obterNomeMembro: (id?: string) => string | undefined
-  isMonthLocked: boolean
+  isMonthClosed: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,12 +47,10 @@ let animationFrameId: number | null = null
 const DURATION_LONG = 800 // ms para segurar completo (long press)
 
 const triggerAction = () => {
-  if (props.isMonthLocked) return
   emit('configurar', props.bill)
 }
 
 const triggerTapAction = () => {
-  if (props.isMonthLocked) return
   if (props.paga) {
     emit('estornar', props.bill)
   } else {
@@ -82,8 +80,6 @@ const cancelInteraction = () => {
 }
 
 const onPointerDown = (e: PointerEvent) => {
-  if (props.isMonthLocked) return
-  
   const card = cardRef.value
   if (!card) return
 
@@ -185,10 +181,9 @@ onUnmounted(() => {
     @pointerup="onPointerUp"
     @pointerleave="onPointerLeave"
     @pointercancel="onPointerLeave"
-    class="relative overflow-hidden group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 select-none cursor-pointer"
+    class="relative overflow-hidden group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 select-none cursor-pointer hover:border-ember/30"
     :class="[
-      paga ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone hover:border-ember/30',
-      isMonthLocked ? 'opacity-60 cursor-not-allowed' : ''
+      paga ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone'
     ]"
     :data-testid="`conta-fixa-card-${bill.id}`"
   >

@@ -7,7 +7,5 @@ export interface IFaturaRepository {
   salvar(fatura: Fatura): Promise<void>
   salvarMuitas(faturas: Fatura[]): Promise<void>
   listarTodas(): Promise<Fatura[]>
-  executarMigracoesEDesduplicacao(): Promise<void>
   assegurarObterOuCriarFatura(cartaoId: string, mes: number, ano: number, responsavelId: string): Promise<Fatura>
-  excluirFaturasAbertasSemGastosPorCartao(cartaoId: string): Promise<void>
 }

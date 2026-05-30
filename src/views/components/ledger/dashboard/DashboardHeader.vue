@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ChevronDown, Lock, Home, Settings } from 'lucide-vue-next'
+import { CheckCircle2, ChevronDown, Home, Settings } from 'lucide-vue-next'
 import IllustrationMascot from '../../ui/IllustrationMascot.vue'
 
 defineProps<{
   currentYear: string | number
   currentMonthName: string
-  faturaSelecionadaTrancada: boolean
+  faturaSelecionadaFechada: boolean
   isAuthed: boolean
   activeTenantObj: any
 }>()
@@ -37,7 +37,7 @@ const emit = defineEmits<{
         </span>
         <div class="flex items-center gap-2">
           <span class="text-2xl font-black text-charcoal tracking-tighter group-hover:text-ember transition-colors">{{ currentMonthName }}</span>
-          <Lock v-if="faturaSelecionadaTrancada" class="w-4 h-4 text-ash/60 animate-in zoom-in-50 duration-300" />
+          <CheckCircle2 v-if="faturaSelecionadaFechada" class="w-4 h-4 text-meadow animate-in zoom-in-50 duration-300" />
         </div>
       </div>
     </div>

@@ -11,6 +11,15 @@ export interface ItemExtrato {
   saldoAcumulado: Dinheiro
 }
 
+export interface BreakdownGranular {
+  pixFez: number
+  pixConsumo: number
+  cardFez: number
+  cardConsumo: number
+  loanFez: number
+  loanTomou: number
+}
+
 export class ExtratoService {
   /**
    * Calcula o extrato detalhado para um membro específico a partir de uma lista de gastos.
@@ -70,5 +79,52 @@ export class ExtratoService {
         saldoAcumulado
       }
     })
+  }
+
+  /**
+   * Calcula os acumuladores granulares (PIX, Cartão, Empréstimo) para todos os moradores
+   */
+  static obterBreakdownGranular(membros: { id: string }[], gastos: Gasto[]): Record<string, BreakdownGranular> {
+    const breakdown: Record<string, BreakdownGranular> = {}
+
+    membros.forEach(m => {
+      breakdown[m.id] = { pixFez: 0, pixConsumo: 0, cardFez: 0, cardConsumo: 0, loanFez: 0, loanTomou: 0 }
+    })
+
+    gastos.forEach(g => {
+      const valorParcela = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments).centavos
+      
+      if (g.isLoan) {
+        if (g.compradorId && breakdown[g.compradorId]) {
+          breakdown[g.compradorId].loanFez += valorParcela
+        }
+        if (g.borrowerId && breakdown[g.borrowerId]) {
+          breakdown[g.borrowerId].loanTomou += valorParcela
+        }
+      } else {
+        if (g.method === 'pix' || g.isSettlement) {
+          if (g.compradorId && breakdown[g.compradorId]) {
+            breakdown[g.compradorId].pixFez += valorParcela
+          }
+          g.divisoes.forEach(d => {
+            if (breakdown[d.membroId]) {
+              breakdown[d.membroId].pixConsumo += valorParcelaAtual(d.valor, g.installments, g.totalInstallments).centavos
+            }
+          })
+        } else {
+          const pagadorId = g.cardOwner || g.compradorId
+          if (pagadorId && breakdown[pagadorId]) {
+            breakdown[pagadorId].cardFez += valorParcela
+          }
+          g.divisoes.forEach(d => {
+            if (breakdown[d.membroId]) {
+              breakdown[d.membroId].cardConsumo += valorParcelaAtual(d.valor, g.installments, g.totalInstallments).centavos
+            }
+          })
+        }
+      }
+    })
+
+    return breakdown
   }
 }

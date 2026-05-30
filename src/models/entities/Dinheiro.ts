@@ -33,7 +33,6 @@ export class Dinheiro {
   }
 
   distribuir(n: number): Dinheiro[] {
-    if (n <= 0) throw new Error("Número de partes deve ser maior que zero")
     if (n === 1) return [new Dinheiro(this.centavos)]
 
     const quociente = Math.trunc(this.centavos / n)

@@ -1,4 +1,4 @@
-export type FaturaStatus = 'ABERTA' | 'FECHADA' | 'ACERTADA'
+export type FaturaStatus = 'ABERTA' | 'FECHADA'
 
 export interface FaturaPeriodo {
   mes: number // 1 a 12
@@ -14,33 +14,6 @@ export interface FaturaProps {
   dataPagamentoBanco?: Date
 }
 
-export function determinarPeriodoFatura(dataGasto: Date, diaFechamento: number): FaturaPeriodo {
-  if (diaFechamento < 1 || diaFechamento > 31) {
-    throw new Error('diaFechamento deve ser entre 1 e 31')
-  }
-
-  // Obter partes da data no fuso de São Paulo / Brasília
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric'
-  })
-  const partes = formatter.formatToParts(dataGasto)
-  const diaGasto = parseInt(partes.find(p => p.type === 'day')!.value)
-  let mes = parseInt(partes.find(p => p.type === 'month')!.value)
-  let ano = parseInt(partes.find(p => p.type === 'year')!.value)
-
-  // Se o dia do gasto for maior ou igual ao dia de fechamento, cai na fatura do mês seguinte
-  if (diaGasto >= diaFechamento) {
-    mes += 1
-    if (mes > 12) {
-      mes = 1
-      ano += 1
-    }
-  }
-  return { mes, ano }
-}
 
 export class Fatura {
   public readonly id: string
@@ -59,12 +32,8 @@ export class Fatura {
     this.dataPagamentoBanco = props.dataPagamentoBanco
   }
 
-  validarOperacaoPermitida() {
-    // Retorna void sem lançar erro para permitir operações flexíveis em faturas fechadas
-  }
-
   fechar(opts: { responsavelId?: string; dataPagamentoBanco: Date }): Fatura {
-    if (this.status !== 'ABERTA') throw new Error('Apenas faturas ABERTAS podem ser fechadas')
+    // Permite "fechar" (marcar como paga) a qualquer momento
     return new Fatura({
       id: this.id,
       cartaoId: this.cartaoId,
@@ -75,36 +44,8 @@ export class Fatura {
     })
   }
 
-  marcarAcertada(): Fatura {
-    if (this.status !== 'FECHADA') throw new Error('Apenas faturas FECHADAS podem ser acertadas')
-    return new Fatura({
-      id: this.id,
-      cartaoId: this.cartaoId,
-      periodo: this.periodo,
-      responsavelId: this.responsavelId,
-      status: 'ACERTADA',
-      dataPagamentoBanco: this.dataPagamentoBanco
-    })
-  }
-
-  desmarcarAcertada(): Fatura {
-    if (this.status === 'ACERTADA') {
-      return new Fatura({
-        id: this.id,
-        cartaoId: this.cartaoId,
-        periodo: this.periodo,
-        responsavelId: this.responsavelId,
-        status: 'FECHADA',
-        dataPagamentoBanco: this.dataPagamentoBanco
-      })
-    }
-    return this
-  }
 
   reabrir(): Fatura {
-    if (this.status !== 'FECHADA' && this.status !== 'ACERTADA') {
-      throw new Error('Apenas faturas FECHADAS ou ACERTADAS podem ser reabertas')
-    }
     return new Fatura({
       id: this.id,
       cartaoId: this.cartaoId,

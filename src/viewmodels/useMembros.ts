@@ -1,24 +1,14 @@
 import { ref, computed } from 'vue'
 import { Membro } from '../models/entities/Membro'
-import type { IMembroRepository } from '../models/repositories/IMembroRepository'
-import type { IMembroService } from '../models/services/IMembroService'
+
 import { membroRepository, membroService, tenantSessionService } from '../shared/container'
 import { obterPeriodoSelecionado } from '../shared/utils/periodoStorage'
 
-export interface MembrosDependencies {
-  membroRepository?: IMembroRepository
-  membroService?: IMembroService
-}
-
-const defaultRepo = membroRepository
-const defaultService = membroService
 const membros = ref<Membro[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
 
-export function useMembros(dependencies: MembrosDependencies = {}) {
-  const repo = dependencies.membroRepository || defaultRepo
-  const service = dependencies.membroService || defaultService
+export function useMembros() {
 
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
@@ -29,7 +19,7 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
       inicializado.value = true
       return
     }
-    let lista = await repo.listarTodos()
+    let lista = await membroRepository.listarTodos()
     membros.value = lista
     inicializado.value = true
   }
@@ -48,18 +38,18 @@ export function useMembros(dependencies: MembrosDependencies = {}) {
   }
 
   const adicionarMembro = async (nome: string, username?: string, password?: string) => {
-    await service.adicionarMembro(nome, username, password)
+    await membroService.adicionarMembro(nome, username, password)
     await carregar()
   }
 
   const desativarMembro = async (id: string) => {
     const periodo = obterPeriodoSelecionado()
-    await service.desativarMembro(id, periodo)
+    await membroService.desativarMembro(id, periodo)
     await carregar()
   }
 
   const ativarMembro = async (id: string) => {
-    await service.ativarMembro(id)
+    await membroService.ativarMembro(id)
     await carregar()
   }
 

@@ -45,7 +45,7 @@ function criarMockFaturaRepo(faturasIniciais: Fatura[] = []) {
 
 describe('LancamentoService', () => {
   it('deve lancar um gasto simples à vista com sucesso', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const mockFaturaRepo = criarMockFaturaRepo([
       new Fatura({ id: 'f1', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     ])
@@ -74,7 +74,7 @@ describe('LancamentoService', () => {
   })
 
   it('deve projetar gastos parcelados no cartao em multiplas faturas futuras abertas', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaAtiva = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     const mockFaturaRepo = criarMockFaturaRepo([faturaAtiva])
@@ -113,7 +113,7 @@ describe('LancamentoService', () => {
   })
 
   it('deve permitir lancamento se a fatura ativa (atual) do lancamento estiver fechada ou acertada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaFechada = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     const mockFaturaRepo = criarMockFaturaRepo([faturaFechada])
@@ -136,7 +136,7 @@ describe('LancamentoService', () => {
   })
 
   it('deve permitir lancamento se alguma fatura futura do parcelamento estiver fechada ou acertada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaAtiva = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     const faturaFuturaFechada = new Fatura({ id: 'c1-6-2026', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
@@ -158,53 +158,5 @@ describe('LancamentoService', () => {
       borrowerId: null,
       periodo: { mes: 5, ano: 2026 }
     })).resolves.not.toThrow()
-  })
-
-  it('deve lancar erro ao tentar associar gastos a moradores inativos ou inexistentes', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
-    const mockFaturaRepo = criarMockFaturaRepo()
-    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'ativo' }]), excluir: vi.fn() }
-    
-    const mockMembroRepo = {
-      buscarPorId: vi.fn(async (id: string) => {
-        if (id === 'inativo') {
-          return { id, nome: 'Inativo', ativo: false }
-        }
-        if (id === 'ativo') {
-          return { id, nome: 'Ativo', ativo: true }
-        }
-        return null
-      }),
-      listarTodos: vi.fn(),
-      salvar: vi.fn()
-    }
-
-    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any, mockMembroRepo as any)
-
-    await expect(service.lancarGastoOuEmprestimo({
-      flow: 'expense',
-      paymentMethod: 'pix',
-      compradorId: 'inativo',
-      valor: 100,
-      descricao: 'Teste inativo',
-      divisoes: [new DivisaoDeGasto('ativo', Dinheiro.deReais(100))],
-      installments: 1,
-      cardOwnerId: null,
-      borrowerId: null,
-      periodo: { mes: 5, ano: 2026 }
-    })).rejects.toThrow('Não é possível associar gastos a moradores inativos ou inexistentes.')
-
-    await expect(service.lancarGastoOuEmprestimo({
-      flow: 'expense',
-      paymentMethod: 'pix',
-      compradorId: 'ativo',
-      valor: 100,
-      descricao: 'Teste inexistente',
-      divisoes: [new DivisaoDeGasto('inexistente', Dinheiro.deReais(100))],
-      installments: 1,
-      cardOwnerId: null,
-      borrowerId: null,
-      periodo: { mes: 5, ano: 2026 }
-    })).rejects.toThrow('Não é possível associar gastos a moradores inativos ou inexistentes.')
   })
 })

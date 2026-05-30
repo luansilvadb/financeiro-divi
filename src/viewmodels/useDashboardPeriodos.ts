@@ -48,21 +48,18 @@ export function useDashboardPeriodos(
     const todosCartoes = getCartoes()
     const membros = getMembros()
     
-    // Se não houver cartões, garante ao menos uma fatura de PIX virtual (ou real se existir)
     if (todosCartoes.length === 0) {
       const existePix = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
-      if (existePix) return [existePix]
-      return [criarFaturaVirtual(p, 'PIX_DEFAULT_ID', membros[0]?.id || 'virtual-member')]
+      if (existePix) return faturasExistentes
+      return [...faturasExistentes, criarFaturaVirtual(p, 'PIX_DEFAULT_ID', membros[0]?.id || 'virtual-member')]
     }
 
-    // Para cada cartão, tenta achar a fatura real ou cria uma virtual
     const listaFinal: Fatura[] = todosCartoes.map(cartao => {
       const existente = faturasExistentes.find(f => f.cartaoId === cartao.id)
       if (existente) return existente
       return criarFaturaVirtual(p, cartao.id, cartao.responsavelPadraoId || membros[0]?.id || 'virtual-member')
     })
 
-    // Adiciona fatura de PIX (real ou virtual) na lista
     const pixExistente = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
     if (pixExistente) {
       listaFinal.push(pixExistente)
@@ -70,10 +67,17 @@ export function useDashboardPeriodos(
       listaFinal.push(criarFaturaVirtual(p, 'PIX_DEFAULT_ID', 'PIX_SYSTEM_OWNER'))
     }
 
+    for (const fatura of faturasExistentes) {
+      const jaIncluida = listaFinal.some(f => f.id === fatura.id)
+      const cartaoAindaExiste = todosCartoes.some(cartao => cartao.id === fatura.cartaoId)
+      if (!jaIncluida && !cartaoAindaExiste && fatura.cartaoId !== 'PIX_DEFAULT_ID') {
+        listaFinal.push(fatura)
+      }
+    }
+
     return listaFinal.sort((a, b) => {
       if (a.cartaoId === 'PIX_DEFAULT_ID') return 1
       if (b.cartaoId === 'PIX_DEFAULT_ID') return -1
-      // Mantém a ordem estável baseada no ID do cartão
       if (a.cartaoId < b.cartaoId) return -1
       if (a.cartaoId > b.cartaoId) return 1
       return 0
@@ -117,9 +121,9 @@ export function useDashboardPeriodos(
     return getFaturasFechadas().some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
   }
 
-  const faturaSelecionadaTrancada = computed(() => verificarPeriodoTrancado(periodoSelecionado.value))
+  const faturaSelecionadaFechada = computed(() => verificarPeriodoTrancado(periodoSelecionado.value))
 
-  watch(faturaSelecionadaTrancada, (isLocked) => {
+  watch(faturaSelecionadaFechada, (isLocked) => {
     emit('periodoStatusChanged', isLocked)
   }, { immediate: true })
 
@@ -162,7 +166,7 @@ export function useDashboardPeriodos(
 
   return {
     periodoSelecionado,
-    faturaSelecionadaTrancada,
+    faturaSelecionadaFechada,
     faturaAtivaVisualizada,
     faturasPeriodoSelecionado,
     faturasPeriodoIds,

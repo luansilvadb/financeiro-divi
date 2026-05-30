@@ -73,7 +73,6 @@ function voltar() {
   <div class="min-h-screen bg-[#fbfaf9] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-[440px]">
 
-      <!-- Header -->
       <div class="text-center mb-10">
         <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#ff3e00] text-white font-bold text-3xl mb-5 shadow-lg">
           ÷
@@ -86,11 +85,9 @@ function voltar() {
         </p>
       </div>
 
-      <!-- Tela: Início -->
       <Transition name="slide-up" mode="out-in">
         <div v-if="modo === 'inicio'" key="inicio" class="space-y-3">
 
-          <!-- Opção: Criar casa -->
           <button
             @click="modo = 'criar'"
             class="group w-full bg-white border border-[#f2f0ed] rounded-2xl p-5 text-left hover:border-[#ff3e00]/40 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
@@ -107,7 +104,6 @@ function voltar() {
             </div>
           </button>
 
-          <!-- Opção: Entrar em uma casa -->
           <button
             @click="modo = 'entrar'"
             class="group w-full bg-white border border-[#f2f0ed] rounded-2xl p-5 text-left hover:border-[#121212]/30 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
@@ -124,7 +120,6 @@ function voltar() {
             </div>
           </button>
 
-          <!-- Separador -->
           <div class="pt-2">
             <button
               @click="$emit('logout')"
@@ -136,9 +131,7 @@ function voltar() {
           </div>
         </div>
 
-        <!-- Tela: Criar Casa -->
         <div v-else-if="modo === 'criar'" key="criar">
-          <!-- Sucesso: Casa criada -->
           <Transition name="fade" mode="out-in">
             <div v-if="estado.casaCriada" key="sucesso" class="text-center space-y-6">
               <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 mb-2">
@@ -168,7 +161,6 @@ function voltar() {
               </button>
             </div>
 
-            <!-- Form: Criar -->
             <div v-else key="form-criar" class="space-y-5">
               <div class="flex items-center gap-3 mb-6">
                 <button @click="voltar" class="text-[#a7a7a7] hover:text-[#343433] transition-colors">
@@ -217,7 +209,6 @@ function voltar() {
           </Transition>
         </div>
 
-        <!-- Tela: Entrar por Código -->
         <div v-else-if="modo === 'entrar'" key="entrar" class="space-y-5">
           <div class="flex items-center gap-3 mb-6">
             <button @click="voltar" class="text-[#a7a7a7] hover:text-[#343433] transition-colors">

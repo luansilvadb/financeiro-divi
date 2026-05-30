@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useNovoLancamentoWizard } from '../../viewmodels/useNovoLancamentoWizard'
 import { useCartoesEFaturas } from '../../viewmodels/useCartoesEFaturas'
 import { obterPeriodoSelecionado } from '../../shared/utils/periodoStorage'
+import { DivisaoDeGasto } from '../../models/entities/DivisaoDeGasto'
+import { Dinheiro } from '../../models/entities/Dinheiro'
+import { gastoService } from '../../shared/container'
 import {
   Wallet,
   CreditCard,
@@ -11,7 +13,6 @@ import {
   Minus,
   Check
 } from 'lucide-vue-next'
-import { useToast } from '../../composables/useToast'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -35,42 +36,48 @@ const isCartaoTrancado = (cartaoId: string) => {
   )
 }
 
-const {
-  step,
-  totalSteps,
-  wizFlow,
-  wizPayment,
-  wizCardOwner,
-  valor,
-  descricao,
-  compradorSelecionadoId,
-  borrowerId,
-  installments,
-  participantesDivisao,
-  canAdvance,
-  next,
-  prev,
-  limparRascunho,
-  finalizarGastoOuEmprestimo
-} = useNovoLancamentoWizard(() => props.membros)
-const toast = useToast()
+type WizardState = 'FLOW_SELECTION' | 'LENDER_SELECTION' | 'BORROWER_SELECTION' | 'BUYER_SELECTION' | 'VALUE' | 'DESCRIPTION' | 'SPLIT'
 
-const handleCancelar = () => {
-  limparRascunho()
-  emit('cancelar')
-}
+const wizFlow = ref<'expense' | 'loan' | null>(null)
+const wizPayment = ref<'pix' | 'card' | null>(null)
+const wizCardOwner = ref<string | null>(null)
 
-
-const quickChips = computed(() => {
-  if (wizFlow.value === 'loan') {
-    return ['Empréstimo', 'Luz dele', 'Uber compartilhado', 'Supermercado']
-  }
-  return ['Mercado', 'Ifood', 'Luz', 'Internet', 'Água', 'Limpeza']
+const steps = computed<WizardState[]>(() => {
+  if (!wizFlow.value) return ['FLOW_SELECTION']
+  if (wizFlow.value === 'loan') return ['FLOW_SELECTION', 'LENDER_SELECTION', 'BORROWER_SELECTION', 'VALUE', 'DESCRIPTION']
+  return ['FLOW_SELECTION', 'BUYER_SELECTION', 'VALUE', 'DESCRIPTION', 'SPLIT']
 })
 
-const selecionarChip = (chip: string) => {
-  descricao.value = chip
-}
+const stepIndex = ref(0)
+const currentState = computed(() => steps.value[stepIndex.value])
+const progress = computed(() => ((stepIndex.value + 1) / steps.value.length) * 100)
+
+const next = () => stepIndex.value++
+const prev = () => stepIndex.value--
+
+const valor = ref(0)
+const descricao = ref('')
+const compradorSelecionadoId = ref('')
+const borrowerId = ref<string | null>(null)
+const installments = ref(1)
+const participantesDivisao = ref<string[]>(props.membros.map(m => m.id))
+
+const canAdvance = computed(() => {
+  switch (currentState.value) {
+    case 'BUYER_SELECTION':
+    case 'LENDER_SELECTION': return !!compradorSelecionadoId.value
+    case 'BORROWER_SELECTION': return !!borrowerId.value
+    case 'VALUE': return valor.value > 0
+    case 'DESCRIPTION': return descricao.value.trim().length > 0
+    case 'SPLIT': return participantesDivisao.value.length > 0
+    default: return true
+  }
+})
+
+const quickChips = computed(() => wizFlow.value === 'loan' 
+  ? ['Empréstimo', 'Luz dele', 'Uber compartilhado', 'Supermercado']
+  : ['Mercado', 'Ifood', 'Luz', 'Internet', 'Água', 'Limpeza']
+)
 
 const selecionarFluxo = (flow: 'expense' | 'loan', payment: 'pix' | 'card', cardOwner: string | null) => {
   wizFlow.value = flow
@@ -79,84 +86,37 @@ const selecionarFluxo = (flow: 'expense' | 'loan', payment: 'pix' | 'card', card
   next()
 }
 
-const ajustarParcelas = (delta: number) => {
-  installments.value = Math.max(1, installments.value + delta)
-}
-
-const isValorStep = computed(() => (step.value === 3 && wizFlow.value === 'expense') || (step.value === 4 && wizFlow.value === 'loan'))
-const hasValorError = computed(() => isValorStep.value && (valor.value === undefined || valor.value === null || Number(valor.value) <= 0))
-const showInputWarning = ref(false)
-const inputShake = ref(false)
-
-const triggerShake = () => {
-  inputShake.value = true
-  showInputWarning.value = true
-  setTimeout(() => {
-    inputShake.value = false
-  }, 500)
-}
-
-const handleNext = () => {
-  if (isValorStep.value && hasValorError.value) {
-    triggerShake()
-    return
-  }
-  next()
-}
-
 const infoParcelamento = computed(() => {
   if (installments.value <= 1) return 'À vista'
-  const valReais = Number(valor.value) || 0
-  const parcela = (valReais / installments.value).toFixed(2).replace('.', ',')
+  const parcela = (Number(valor.value) / installments.value).toFixed(2).replace('.', ',')
   return `${installments.value}x de R$ ${parcela}`
 })
 
-const dividirComTodos = () => {
-  participantesDivisao.value = props.membros.map(m => m.id)
-}
-
-const dividirApenasEu = () => {
-  if (compradorSelecionadoId.value) {
-    participantesDivisao.value = [compradorSelecionadoId.value]
-  }
-}
-
 const toggleSplitMember = (id: string) => {
   const idx = participantesDivisao.value.indexOf(id)
-  if (idx >= 0) {
-    participantesDivisao.value.splice(idx, 1)
-  } else {
-    participantesDivisao.value.push(id)
-  }
+  if (idx >= 0) participantesDivisao.value.splice(idx, 1)
+  else participantesDivisao.value.push(id)
 }
 
-const splitSummaryTitle = computed(() => {
-  const count = participantesDivisao.value.length
-  return `Rateio entre ${count} ${count === 1 ? 'pessoa' : 'pessoas'}`
-})
-
-const splitSummaryDesc = computed(() => {
-  const count = participantesDivisao.value.length
-  if (count === 0) return 'Selecione quem vai dividir'
-  const valReais = Number(valor.value) || 0
-  
-  if (installments.value > 1) {
-    const cadaUmTotal = (valReais / count).toFixed(2).replace('.', ',')
-    const cadaUmParcela = (valReais / installments.value / count).toFixed(2).replace('.', ',')
-    return `Cada um paga R$ ${cadaUmParcela}/mês (R$ ${cadaUmTotal} no total em ${installments.value}x)`
-  }
-  
-  const cadaUm = (valReais / count).toFixed(2).replace('.', ',')
-  return `Cada um paga R$ ${cadaUm}`
-})
-
 const handleGravar = async () => {
-  try {
-    await finalizarGastoOuEmprestimo()
-    emit('salvar')
-  } catch (error: any) {
-    toast.show(error.message || 'Erro ao salvar transação', 'error')
-  }
+  const dValor = Dinheiro.deReais(Number(valor.value))
+  const divisoes = wizFlow.value === 'loan' 
+    ? [new DivisaoDeGasto(borrowerId.value!, dValor)]
+    : participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.distribuir(participantesDivisao.value.length)[i]))
+
+  await gastoService.lancarGastoOuEmprestimo({
+    flow: wizFlow.value!,
+    paymentMethod: wizPayment.value!,
+    compradorId: compradorSelecionadoId.value,
+    valor: Number(valor.value),
+    descricao: descricao.value,
+    divisoes,
+    installments: installments.value,
+    cardOwnerId: wizCardOwner.value,
+    borrowerId: borrowerId.value,
+    periodo: obterPeriodoSelecionado()
+  })
+  emit('salvar')
 }
 </script>
 
@@ -169,29 +129,26 @@ const handleGravar = async () => {
       <div class="flex items-start justify-between gap-4 mb-4">
         <div class="min-w-0">
           <p class="inline-flex text-xs font-semibold text-ash bg-stone rounded-full px-2.5 py-1">
-            Passo {{ step }} de {{ totalSteps }}
+            Passo {{ stepIndex + 1 }} de {{ steps.length }}
           </p>
           <h2 class="mt-3 text-[23px] leading-[1.2] font-semibold text-charcoal tracking-[-0.44px]">
-            <template v-if="step === 1">Como você pagou?</template>
-            <template v-else-if="step === 2">
-              <template v-if="wizFlow === 'loan'">Quem está emprestando?</template>
-              <template v-else-if="wizPayment === 'card'">Quem usou o cartão?</template>
-              <template v-else>Quem foi que pagou?</template>
-            </template>
-            <template v-else-if="step === 3 && wizFlow === 'loan'">Quem pegou emprestado?</template>
-            <template v-else-if="isValorStep">Qual foi o valor total?</template>
-            <template v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')">Qual a descrição?</template>
-            <template v-else-if="step === 5 && wizFlow === 'expense'">Com quem dividir?</template>
+            <template v-if="currentState === 'FLOW_SELECTION'">Como você pagou?</template>
+            <template v-else-if="currentState === 'LENDER_SELECTION'">Quem está emprestando?</template>
+            <template v-else-if="currentState === 'BUYER_SELECTION'">{{ wizPayment === 'card' ? 'Quem usou o cartão?' : 'Quem foi que pagou?' }}</template>
+            <template v-else-if="currentState === 'BORROWER_SELECTION'">Quem pegou emprestado?</template>
+            <template v-else-if="currentState === 'VALUE'">Qual foi o valor total?</template>
+            <template v-else-if="currentState === 'DESCRIPTION'">Qual a descrição?</template>
+            <template v-else-if="currentState === 'SPLIT'">Com quem dividir?</template>
           </h2>
         </div>
       </div>
 
-      <div v-if="step === 2 && wizPayment === 'card'" class="mt-4 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10 flex gap-3 items-center animate-in fade-in slide-in-from-top-1">
+      <div v-if="currentState === 'BUYER_SELECTION' && wizPayment === 'card'" class="mt-4 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10 flex gap-3 items-center animate-in fade-in slide-in-from-top-1">
         <CreditCard class="w-4 h-4 text-sky-600 shrink-0" />
         <p class="text-[11px] font-medium text-sky-700 leading-tight">
           O crédito de reembolso será atribuído ao dono do cartão: 
-          <strong v-if="cartoes.find(c => c.id === wizCardOwner)">
-            {{ props.membros.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)?.responsavelPadraoId)?.nome || 'Responsável' }}
+          <strong>
+            {{ props.membros.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)!.responsavelPadraoId)!.nome }}
           </strong>
         </p>
       </div>
@@ -199,14 +156,14 @@ const handleGravar = async () => {
       <div class="mt-4 h-1.5 rounded-full bg-stone overflow-hidden">
         <div
           class="h-full rounded-full bg-midnight transition-all duration-300"
-          :style="{ width: `${(step / totalSteps) * 100}%` }"
+          :style="{ width: `${progress}%` }"
         />
       </div>
     </header>
 
     <div class="flex-1 p-5 sm:p-6 bg-white overflow-y-auto custom-scrollbar">
-      <div :key="step" class="w-full">
-          <div v-if="step === 1" class="grid gap-3">
+      <div :key="currentState" class="w-full">
+          <div v-if="currentState === 'FLOW_SELECTION'" class="grid gap-3">
             <button
               @click="selecionarFluxo('expense', 'pix', null)"
               class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
@@ -253,11 +210,11 @@ const handleGravar = async () => {
             </button>
           </div>
 
-          <div v-else-if="step === 2 || (step === 3 && wizFlow === 'loan')" class="grid grid-cols-2 gap-3">
+          <div v-else-if="currentState === 'BUYER_SELECTION' || currentState === 'LENDER_SELECTION' || currentState === 'BORROWER_SELECTION'" class="grid grid-cols-2 gap-3">
             <button
-              v-for="m in (step === 3 ? props.membros.filter(m => m.id !== compradorSelecionadoId) : props.membros)"
+              v-for="m in (currentState === 'BORROWER_SELECTION' ? props.membros.filter(m => m.id !== compradorSelecionadoId) : props.membros)"
               :key="m.id"
-              @click="step === 2 ? (compradorSelecionadoId = m.id, next()) : (borrowerId = m.id, next())"
+              @click="currentState === 'BORROWER_SELECTION' ? (borrowerId = m.id, next()) : (compradorSelecionadoId = m.id, next())"
               class="flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors"
             >
               <div class="w-12 h-12 rounded-full bg-white shadow-subtle flex items-center justify-center font-semibold text-charcoal">
@@ -267,11 +224,8 @@ const handleGravar = async () => {
             </button>
           </div>
 
-          <div v-else-if="isValorStep" class="space-y-5">
-            <div
-              class="rounded-card bg-parchment p-5 shadow-subtle transition-all duration-300"
-              :class="[inputShake && 'animate-shake']"
-            >
+          <div v-else-if="currentState === 'VALUE'" class="space-y-5">
+            <div class="rounded-card bg-parchment p-5 shadow-subtle transition-all duration-300">
               <label class="block text-xs font-semibold text-ash mb-2">Valor total</label>
               <div class="flex items-center gap-2">
                 <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">R$</span>
@@ -285,29 +239,26 @@ const handleGravar = async () => {
                   autofocus
                 />
               </div>
-              <p v-if="showInputWarning && hasValorError" class="text-xs text-coral font-semibold mt-3">
-                Valor inválido
-              </p>
             </div>
 
             <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="rounded-card bg-white shadow-subtle p-4 space-y-3">
               <label class="block text-xs font-semibold text-ash">Parcelamento</label>
               <div class="flex items-center justify-between gap-3">
-                <button type="button" @click="ajustarParcelas(-1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
+                <button type="button" @click="installments = Math.max(1, installments - 1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
                   <Minus class="w-4 h-4" />
                 </button>
                 <div class="text-center">
                   <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">{{ installments }}x</span>
                   <p class="text-xs text-ash">{{ infoParcelamento }}</p>
                 </div>
-                <button type="button" @click="ajustarParcelas(1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
+                <button type="button" @click="installments = Math.max(1, installments + 1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
                   <Plus class="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
 
-          <div v-else-if="(step === 4 && wizFlow === 'expense') || (step === 5 && wizFlow === 'loan')" class="space-y-5">
+          <div v-else-if="currentState === 'DESCRIPTION'" class="space-y-5">
             <div class="rounded-card bg-parchment p-4 shadow-subtle">
               <label class="block text-xs font-semibold text-ash mb-2">Descrição</label>
               <input
@@ -322,7 +273,7 @@ const handleGravar = async () => {
               <button
                 v-for="chip in quickChips"
                 :key="chip"
-                @click="selecionarChip(chip)"
+                @click="descricao = chip"
                 class="px-3.5 py-2 rounded-full bg-stone hover:bg-stone text-xs font-semibold text-graphite transition-colors"
               >
                 {{ chip }}
@@ -330,10 +281,10 @@ const handleGravar = async () => {
             </div>
           </div>
 
-          <div v-else-if="step === 5 && wizFlow === 'expense'" class="space-y-4">
+          <div v-else-if="currentState === 'SPLIT'" class="space-y-4">
             <div class="flex gap-2">
-              <button @click="dividirComTodos" class="px-3.5 py-2 rounded-full bg-midnight text-white text-xs font-semibold">Todos</button>
-              <button @click="dividirApenasEu" class="px-3.5 py-2 rounded-full bg-stone text-midnight text-xs font-semibold">Apenas eu</button>
+              <button @click="participantesDivisao = props.membros.map(m => m.id)" class="px-3.5 py-2 rounded-full bg-midnight text-white text-xs font-semibold">Todos</button>
+              <button @click="participantesDivisao = [compradorSelecionadoId]" class="px-3.5 py-2 rounded-full bg-stone text-midnight text-xs font-semibold">Apenas eu</button>
             </div>
 
             <div class="grid grid-cols-3 gap-2">
@@ -351,25 +302,6 @@ const handleGravar = async () => {
                 <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow" />
               </button>
             </div>
-
-            <div class="p-5 rounded-xl bg-meadow/5 border border-meadow/20 flex gap-4 items-center">
-              <!-- Mascote Ilustrado: Moedinha Feliz Meadow Green -->
-              <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0 animate-bounce" style="animation-duration: 5s;">
-                <circle cx="50" cy="50" r="40" fill="var(--color-meadow)" />
-                <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="3" />
-                <!-- Olhinhos Felizes -->
-                <circle cx="40" cy="45" r="4.5" fill="#000" />
-                <circle cx="60" cy="45" r="4.5" fill="#000" />
-                <!-- Sorriso -->
-                <path d="M42,56 Q50,64 58,56" stroke="#000" stroke-width="3.5" stroke-linecap="round" fill="none" />
-                <!-- Brilho Estrela -->
-                <path d="M78,22 L80,26 L85,27 L81,31 L82,36 L78,33 L74,36 L75,31 L71,27 L76,26 Z" fill="var(--color-sunburst)" />
-              </svg>
-              <div class="space-y-1 min-w-0">
-                <p class="text-[10px] font-bold text-meadow uppercase tracking-widest">{{ splitSummaryTitle }}</p>
-                <p class="text-xs font-semibold text-meadow leading-relaxed">{{ splitSummaryDesc }}</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -377,36 +309,22 @@ const handleGravar = async () => {
     <footer class="p-5 sm:p-6 border-t border-stone bg-white flex gap-3">
       <button
         class="flex-1 h-12 rounded-full bg-stone hover:bg-stone text-midnight text-sm font-semibold transition-colors"
-        @click="step === 1 ? handleCancelar() : prev()"
+        @click="stepIndex === 0 ? emit('cancelar') : prev()"
       >
-        {{ step === 1 ? 'Cancelar' : 'Voltar' }}
+        {{ stepIndex === 0 ? 'Cancelar' : 'Voltar' }}
       </button>
       <button
         class="flex-[2] h-12 rounded-full bg-midnight hover:bg-charcoal text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        :disabled="!canAdvance && !isValorStep"
-        @click="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5)) ? handleGravar() : handleNext()"
+        :disabled="!canAdvance"
+        @click="stepIndex === steps.length - 1 ? handleGravar() : next()"
       >
-        <template v-if="((wizFlow === 'loan' && step === 5) || (wizFlow === 'expense' && step === 5))">
-          Confirmar
-        </template>
-        <template v-else>
-          Avançar
-        </template>
+        {{ stepIndex === steps.length - 1 ? 'Confirmar' : 'Avançar' }}
       </button>
     </footer>
   </div>
 </template>
 
 <style scoped>
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
-  20%, 40%, 60%, 80% { transform: translateX(6px); }
-}
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;

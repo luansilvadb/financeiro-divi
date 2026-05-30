@@ -17,8 +17,6 @@ model Tenant {
   faturas    Fatura[]
   gastos     Gasto[]
   contasFixas ContaFixa[]
-  acertos    AcertoMembro[]
-  antecipacoesFatura AntecipacaoFatura[]
 
   @@map("tenants")
 }
@@ -142,42 +140,4 @@ model ContaFixa {
   @@map("contas_fixas")
 }
 
-model AcertoMembro {
-  id                     String
-  tenantId               String    @map("tenant_id") @db.Uuid
-  faturaId               String    @map("fatura_id")
-  membroId               String    @map("membro_id")
-  totalConsumidoCentavos BigInt    @map("total_consumido_centavos")
-  totalAntecipadoCentavos BigInt   @default(0) @map("total_antecipado_centavos")
-  tipo                   String    @default("MEMBRO_PAGA")
-  valorPagoCentavos      BigInt    @default(0) @map("valor_pago_centavos")
-  pago                   Boolean   @default(false)
-  dataPagamento          DateTime? @map("data_pagamento")
-  createdAt              DateTime  @default(now()) @map("created_at")
 
-  tenant                 Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@id([id, tenantId])
-  @@index([tenantId])
-  @@index([faturaId])
-  @@map("acertos_membro")
-}
-
-model AntecipacaoFatura {
-  id             String
-  tenantId       String   @map("tenant_id") @db.Uuid
-  faturaId       String   @map("fatura_id")
-  membroId       String   @map("membro_id")
-  responsavelId  String   @map("responsavel_id")
-  valorCentavos  BigInt   @map("valor_centavos")
-  data           DateTime
-  observacao     String?
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@id([id, tenantId])
-  @@index([tenantId])
-  @@index([faturaId])
-  @@map("antecipacoes_fatura")
-}

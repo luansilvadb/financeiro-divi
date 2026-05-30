@@ -36,10 +36,9 @@ vi.mock('./viewmodels/useCartoesEFaturas', () => ({
     faturasAbertas: ref([]),
     faturasFechadas: ref([]),
     inicializar: vi.fn(),
-    fecharFaturaManual: vi.fn(),
-    reabrirFaturaManual: vi.fn(),
+    fecharFatura: vi.fn(),
+    reabrirFatura: vi.fn(),
     quitarAcertoMembro: vi.fn(),
-    calcularConsumoMembro: vi.fn(() => 0),
     calcularAdiantamentoMembro: vi.fn(() => 0),
   }),
 }))
