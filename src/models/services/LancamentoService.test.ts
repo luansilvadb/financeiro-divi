@@ -112,7 +112,7 @@ describe('LancamentoService', () => {
     expect(faturasSalvas[1].periodo).toEqual({ mes: 7, ano: 2026 })
   })
 
-  it('deve lancar erro se a fatura ativa (atual) do lancamento estiver fechada ou acertada', async () => {
+  it('deve permitir lancamento se a fatura ativa (atual) do lancamento estiver fechada ou acertada', async () => {
     const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaFechada = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
@@ -126,20 +126,19 @@ describe('LancamentoService', () => {
       paymentMethod: 'card',
       compradorId: 'm1',
       valor: 100,
-      descricao: 'Tentativa bloqueada',
+      descricao: 'Tentativa permitida',
       divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
       installments: 1,
       cardOwnerId: 'c1',
       borrowerId: null,
       periodo: { mes: 5, ano: 2026 }
-    })).rejects.toThrow('Fatura não está ABERTA')
+    })).resolves.not.toThrow()
   })
 
-  it('deve lancar erro se alguma fatura futura do parcelamento estiver fechada ou acertada', async () => {
+  it('deve permitir lancamento se alguma fatura futura do parcelamento estiver fechada ou acertada', async () => {
     const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), buscarPorFatura: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaAtiva = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
-    // Fatura do mês seguinte (6/2026) já está fechada por algum motivo
     const faturaFuturaFechada = new Fatura({ id: 'c1-6-2026', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     
     const mockFaturaRepo = criarMockFaturaRepo([faturaAtiva, faturaFuturaFechada])
@@ -152,13 +151,13 @@ describe('LancamentoService', () => {
       paymentMethod: 'card',
       compradorId: 'm1',
       valor: 300,
-      descricao: 'Parcelamento que invade fatura fechada',
+      descricao: 'Parcelamento permitido',
       divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(300))],
       installments: 3,
       cardOwnerId: 'c1',
       borrowerId: null,
       periodo: { mes: 5, ano: 2026 }
-    })).rejects.toThrow('Não é possível lançar o parcelamento: a fatura futura de 6/2026 já está fechada ou arquivada.')
+    })).resolves.not.toThrow()
   })
 
   it('deve lancar erro ao tentar associar gastos a moradores inativos ou inexistentes', async () => {

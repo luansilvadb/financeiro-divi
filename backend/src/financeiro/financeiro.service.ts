@@ -321,16 +321,7 @@ export class FinanceiroService {
       divisoes,
     } = g;
 
-    // GAP 5: bloquear edição de gasto em fatura fechada ou acertada
-    // Acertos de netting (isSettlement) são permitidos mesmo em fatura fechada
-    if (faturaId && !isSettlement) {
-      const fatura = await tx.fatura.findUnique({ where: { id_tenantId: { id: faturaId, tenantId } } });
-      if (fatura && (fatura.status === 'FECHADA' || fatura.status === 'ACERTADA')) {
-        throw new BadRequestException(
-          `Não é possível editar um gasto em uma fatura com status "${fatura.status}". Reabra a fatura primeiro.`
-        );
-      }
-    }
+
 
     await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
 
@@ -393,14 +384,7 @@ export class FinanceiroService {
 
   async excluirGasto(tenantId: string, id: string) {
     const gasto = await this.prisma.gasto.findUnique({ where: { id_tenantId: { id, tenantId } } });
-    if (gasto && gasto.faturaId && !gasto.isSettlement) {
-      const fatura = await this.prisma.fatura.findUnique({ where: { id_tenantId: { id: gasto.faturaId, tenantId } } });
-      if (fatura && (fatura.status === 'FECHADA' || fatura.status === 'ACERTADA')) {
-        throw new BadRequestException(
-          `Não é possível excluir um gasto em uma fatura com status "${fatura.status}". Reabra a fatura primeiro.`
-        );
-      }
-    }
+
 
     // Reverter saldos em AcertoMembro se for um gasto de liquidação
     if (gasto && gasto.isSettlement) {

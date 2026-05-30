@@ -356,7 +356,6 @@ export function useDashboardViewModel(
 
 
   const confirmarAjusteGasto = async (dados: any) => {
-    if (periodos.faturaSelecionadaTrancada.value) return
     if (!uiState.gastoParaAjustar.value) return
     try {
       await atualizarGastoCompletoManual(uiState.gastoParaAjustar.value.id, dados)
@@ -397,7 +396,6 @@ export function useDashboardViewModel(
   }
 
   const confirmarLancarBill = async (dados: { valorCentavos: number; compradorId: string; splitIds: string[] }) => {
-    if (periodos.faturaSelecionadaTrancada.value) return
     const activeFaturaId = periodos.faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
     try {
@@ -410,7 +408,6 @@ export function useDashboardViewModel(
   }
 
   const confirmarSalvarTemplate = (template: any) => {
-    if (periodos.faturaSelecionadaTrancada.value) return
     salvarContaFixa(template)
     uiState.showBottomSheetConfigCF.value = false
   }
@@ -501,7 +498,7 @@ export function useDashboardViewModel(
   }
 
   const confirmarBaixaNetting = async (dados: { from: string; to: string; valor: number; method: string; descricao: string }) => {
-    if (periodos.faturaSelecionadaTrancada.value || uiState.isSubmittingPix.value) return
+    if (uiState.isSubmittingPix.value) return
     const activeFaturaId = periodos.faturaPixPeriodoSelecionado.value?.id
     if (!activeFaturaId) return
 
@@ -697,11 +694,7 @@ export function useDashboardViewModel(
         return
       }
 
-      // Se o período estiver trancado e não for auditoria, avisa o usuário
-      if (periodos.faturaSelecionadaTrancada.value) {
-        toast.show('Este mês está arquivado. Reabra o período para estornar este lançamento.', 'error')
-        return
-      }
+      // Removido o bloqueio para permitir estorno informal mesmo em períodos arquivados
 
       // Se for uma previsão virtual de conta fixa, apenas informa como removê-la definitivamente
       if (gasto.id.startsWith('forecast-bill-')) {
@@ -731,8 +724,6 @@ export function useDashboardViewModel(
       uiState.showBottomSheetConfirmacaoEstorno.value = true
     },
     excluirGasto: async (id: string) => {
-      if (periodos.faturaSelecionadaTrancada.value) return
-      
       // Se for uma previsão virtual de conta fixa, apenas informa como removê-la definitivamente
       if (id.startsWith('forecast-bill-')) {
         toast.show(

@@ -327,44 +327,10 @@ export class GastoService implements IGastoService {
       })
     )
 
-    const possuiFechada = statusFaturas.some(sf => sf.fatura && sf.fatura.status !== 'ABERTA')
-
-    if (possuiFechada) {
-      this.validarAlteracoesGrupoComFaturasFechadas(original, dados)
-    }
-
     if (original.totalInstallments !== dados.installments || original.method !== dados.method) {
-      if (possuiFechada) {
-        throw new Error('Não é possível alterar o parcelamento ou método de pagamento de um gasto que possui parcelas em faturas fechadas')
-      }
       await this.relancarGrupoParcelas(gastoId, original, dados, gastosDoGrupo)
     } else {
       await this.atualizarParcelasAbertas(statusFaturas, dados, resolvedCardOwner, cartaoReal, todosCartoes)
-    }
-  }
-
-  private validarAlteracoesGrupoComFaturasFechadas(
-    original: Gasto,
-    dados: AtualizarGastoDados
-  ): void {
-    const valorMudou = !original.valorTotal.equals(dados.valorTotal)
-    const totalInstallmentsMudou = original.totalInstallments !== dados.installments
-    const methodMudou = original.method !== dados.method
-    const compradorMudou = original.compradorId !== dados.compradorId
-    
-    let divisoesMudaram = original.divisoes.length !== dados.divisoes.length
-    if (!divisoesMudaram) {
-      for (const dOriginal of original.divisoes) {
-        const dNova = dados.divisoes.find(dn => dn.membroId === dOriginal.membroId)
-        if (!dNova || !dNova.valor.equals(dOriginal.valor)) {
-          divisoesMudaram = true
-          break
-        }
-      }
-    }
-
-    if (valorMudou || totalInstallmentsMudou || methodMudou || compradorMudou || divisoesMudaram) {
-      throw new Error('Não é possível alterar o valor, parcelamento, comprador ou divisões de um gasto que possui parcelas em faturas fechadas. Reabra as faturas anteriores para ajustar o rateio histórico.')
     }
   }
 
@@ -410,10 +376,6 @@ export class GastoService implements IGastoService {
     const todasFaturasPersistidas = await this.faturaRepo.listarTodas()
 
     for (const sf of statusFaturas) {
-      if (sf.fatura && sf.fatura.status !== 'ABERTA') {
-        continue
-      }
-
       const g = sf.gasto
       let novaFaturaId = g.faturaId
 

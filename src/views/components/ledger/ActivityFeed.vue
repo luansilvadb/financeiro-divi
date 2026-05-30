@@ -125,7 +125,6 @@ const isGastoFuturo = (g: Gasto) => {
                 size="sm"
                 class="h-8 px-3 text-[10px] border border-stone"
                 @click="emit('ajustar', g)"
-                :disabled="props.isMonthLocked"
               >
                 <Edit3 class="w-3.5 h-3.5 mr-1.5" />
                 Ajustar
@@ -141,7 +140,7 @@ const isGastoFuturo = (g: Gasto) => {
               </Button>
             </div>
             <p v-if="props.isMonthLocked" class="text-[9px] text-ash mt-1 animate-in fade-in">
-              Mês arquivado • Estorno reabre o período
+              Mês arquivado
             </p>
           </div>
         </div>

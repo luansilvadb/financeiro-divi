@@ -29,9 +29,9 @@ describe('Fatura', () => {
     expect(() => determinarPeriodoFatura(dataGasto, 32)).toThrow('diaFechamento deve ser entre 1 e 31')
   })
 
-  it('deve rejeitar operacoes quando fatura nao esta ABERTA', () => {
+  it('deve permitir operacoes quando fatura nao esta ABERTA', () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'r1', status: 'FECHADA' })
-    expect(() => fatura.validarOperacaoPermitida()).toThrow('Fatura não está ABERTA')
+    expect(() => fatura.validarOperacaoPermitida()).not.toThrow()
   })
 
   it('fechar - deve retornar nova fatura FECHADA e preservar a data de pagamento', () => {

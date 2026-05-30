@@ -373,12 +373,12 @@ describe('useDashboardViewModel', () => {
     expect(mockCartoesEFaturas.inicializar).toHaveBeenCalled()
   })
 
-  it('should NOT launch bill templates if period is locked', async () => {
+  it('should launch bill even if period is locked', async () => {
     const propsWithLockedMonth: DashboardProps = {
       ...dummyProps,
       faturasFechadas: [
         new Fatura({
-          id: 'f1',
+          id: 'f-c1-5-2026',
           cartaoId: 'c1',
           periodo: { mes: 5, ano: 2026 },
           responsavelId: 'm1',
@@ -386,7 +386,6 @@ describe('useDashboardViewModel', () => {
         })
       ]
     }
-    // Mockar Date para garantir que Maio/2026 seja o inicial
     vi.setSystemTime(new Date(2026, 4, 1))
 
     const vm = createViewModel(propsWithLockedMonth, vi.fn())
@@ -400,13 +399,13 @@ describe('useDashboardViewModel', () => {
     const dadosLancamento = { valorCentavos: 15000, compradorId: 'm1', splitIds: ['m1', 'm2'] }
     await vm.confirmarLancarBill(dadosLancamento)
 
-    expect(mockContasFixas.lancarGastoContaFixa).not.toHaveBeenCalled()
-    expect(vm.showPopupLancar.value).toBe(true) 
+    expect(mockContasFixas.lancarGastoContaFixa).toHaveBeenCalled()
+    expect(vm.showPopupLancar.value).toBe(false) 
 
     vi.useRealTimers()
   })
 
-  it('should NOT adjust expense if period is locked', async () => {
+  it('should adjust expense even if period is locked', async () => {
     const propsWithLockedMonth: DashboardProps = {
       ...dummyProps,
       faturasFechadas: [
@@ -425,11 +424,11 @@ describe('useDashboardViewModel', () => {
     vm.gastoParaAjustar.value = { id: 'g1' } as any
     await vm.confirmarAjusteGasto({ descricao: 'Novo' } as any)
 
-    expect(mockCartoesEFaturas.atualizarGastoCompletoManual).not.toHaveBeenCalled()
+    expect(mockCartoesEFaturas.atualizarGastoCompletoManual).toHaveBeenCalledWith('g1', { descricao: 'Novo' })
     vi.useRealTimers()
   })
 
-  it('should NOT delete expense if period is locked', async () => {
+  it('should delete expense even if period is locked', async () => {
     const propsWithLockedMonth: DashboardProps = {
       ...dummyProps,
       faturasFechadas: [
@@ -447,7 +446,7 @@ describe('useDashboardViewModel', () => {
     
     await vm.excluirGasto('g1')
 
-    expect(mockGastoService.excluirGasto).not.toHaveBeenCalled()
+    expect(mockGastoService.excluirGasto).toHaveBeenCalledWith('g1')
     vi.useRealTimers()
   })
 

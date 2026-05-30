@@ -60,9 +60,7 @@ export class Fatura {
   }
 
   validarOperacaoPermitida() {
-    if (this.status !== 'ABERTA') {
-      throw new Error('Fatura não está ABERTA')
-    }
+    // Retorna void sem lançar erro para permitir operações flexíveis em faturas fechadas
   }
 
   fechar(opts: { responsavelId?: string; dataPagamentoBanco: Date }): Fatura {
