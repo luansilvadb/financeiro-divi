@@ -37,13 +37,13 @@ defineProps<{
           <div>
             <span class="font-bold text-base block text-charcoal">{{ m.nome }}</span>
             <span class="text-[11px] text-ash block mt-0.5">
-              {{ (saldosUnificadosAtivos[m.id] ?? 0) > 0.005 ? 'Crédito acumulado' : (saldosUnificadosAtivos[m.id] ?? 0) < -0.005 ? 'Débito pendente' : 'Tudo em dia' }}
+              {{ saldosUnificadosAtivos[m.id] > 0.005 ? 'Crédito acumulado' : saldosUnificadosAtivos[m.id] < -0.005 ? 'Débito pendente' : 'Tudo em dia' }}
             </span>
           </div>
         </div>
         <div class="text-right">
-          <span :class="['font-display text-xl block', (saldosUnificadosAtivos[m.id] ?? 0) > 0.005 ? 'text-meadow' : (saldosUnificadosAtivos[m.id] ?? 0) < -0.005 ? 'text-coral' : 'text-ash']">
-            {{ (saldosUnificadosAtivos[m.id] ?? 0) > 0.005 ? '+' : '' }}R$ {{ (saldosUnificadosAtivos[m.id] ?? 0).toFixed(2).replace('.', ',') }}
+          <span :class="['font-display text-xl block', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-ash']">
+            {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id].toFixed(2).replace('.', ',') }}
           </span>
         </div>
       </div>

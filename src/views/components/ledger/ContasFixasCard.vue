@@ -2,11 +2,12 @@
 import { ref, onUnmounted } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
 
+import type { Gasto } from '../../../models/entities/Gasto'
+
 const props = defineProps<{
   bill: ContaFixa
-  paga: boolean
-  statusGasto: { valorCentavos: number; pagoPor: string } | null
-  obterNomeMembro: (id?: string) => string | undefined
+  gasto?: Gasto
+  obterNomeMembro: (id: string) => string
   isMonthClosed: boolean
 }>()
 
@@ -51,7 +52,7 @@ const triggerAction = () => {
 }
 
 const triggerTapAction = () => {
-  if (props.paga) {
+  if (props.gasto) {
     emit('estornar', props.bill)
   } else {
     emit('lancar', props.bill)
@@ -183,16 +184,15 @@ onUnmounted(() => {
     @pointercancel="onPointerLeave"
     class="relative overflow-hidden group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 select-none cursor-pointer hover:border-ember/30"
     :class="[
-      paga ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone'
+      gasto ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone'
     ]"
     :data-testid="`conta-fixa-card-${bill.id}`"
   >
-    <!-- Ripple overlay controlado com aceleração por hardware nativa da GPU para o tap -->
     <div 
       v-if="ripple.active"
       class="absolute rounded-full pointer-events-none"
       :class="[
-        paga ? 'bg-coral/25' : 'bg-ember/20',
+        gasto ? 'bg-coral/25' : 'bg-ember/20',
         ripple.type === 'tap' ? 'ripple-transition' : ''
       ]"
       :style="{
@@ -211,9 +211,9 @@ onUnmounted(() => {
       </div>
       <div class="min-w-0 flex-1">
         <span class="font-bold text-sm block text-charcoal truncate tracking-[-0.17px]">{{ bill.name }}</span>
-        <div v-if="paga && statusGasto" class="flex items-center mt-1">
+        <div v-if="gasto" class="flex items-center mt-1">
           <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
-            R$ {{ (statusGasto.valorCentavos / 100).toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(statusGasto.pagoPor) }}
+            R$ {{ (gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(gasto.compradorId) }}
           </span>
         </div>
       </div>

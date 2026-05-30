@@ -19,26 +19,9 @@ const emit = defineEmits<{
   (e: 'estornar', bill: ContaFixa): void
 }>()
 
-const verificarPaga = (conta: ContaFixa) => {
-  return props.gastos.some(g => g.recurringBillId === conta.id)
-}
+const obterGasto = (conta: ContaFixa) => props.gastos.find(g => g.recurringBillId === conta.id)
 
-const obterStatusGasto = (conta: ContaFixa) => {
-  const g = props.gastos.find(g => g.recurringBillId === conta.id)
-  if (!g) return null
-  return {
-    valorCentavos: g.valorTotal.centavos,
-    pagoPor: g.compradorId
-  }
-}
-
-const obterNomeMembro = (id?: string) => {
-  return props.membros.find(m => m.id === id)?.nome || id
-}
-
-const handleClick = () => {
-  emit('novo')
-}
+const obterNomeMembro = (id: string) => props.membros.find(m => m.id === id)!.nome
 </script>
 
 <template>
@@ -84,8 +67,7 @@ const handleClick = () => {
           v-for="bill in contasFixas" 
           :key="bill.id" 
           :bill="bill"
-          :paga="verificarPaga(bill)"
-          :status-gasto="obterStatusGasto(bill)"
+          :gasto="obterGasto(bill)"
           :obter-nome-membro="obterNomeMembro"
           :is-month-closed="props.isMonthClosed"
           @lancar="$emit('lancar', bill)"
@@ -96,7 +78,7 @@ const handleClick = () => {
 
       <div class="flex flex-col items-center gap-2 mt-2">
         <button
-          @click="handleClick"
+          @click="$emit('novo')"
           :class="[
             'relative overflow-hidden group w-full flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed border-stone bg-transparent text-ash font-bold text-xs uppercase tracking-widest transition-all duration-300 select-none cursor-pointer',
             'hover:border-ember hover:bg-ember/5 active:scale-[0.98]'
