@@ -47,7 +47,7 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
 
   return {
     ...pd, 
-    ...useDashboardNetting(computed(() => props.membros), g), 
+    ...useDashboardNetting(computed(() => props.membros), sel), 
     ...ui, 
     contasFixas: cf.contasFixas, 
     gastosFaturaSelecionada: sel, 

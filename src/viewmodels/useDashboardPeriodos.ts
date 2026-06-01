@@ -150,18 +150,26 @@ export function useDashboardPeriodos(
 
   const currentMonthName = computed(() => {
     const fat = faturaAtivaVisualizada.value
+    console.log('[DEBUG] currentMonthName re-evaluated:', fat?.periodo)
     if (!fat) return 'Mês'
     return NOMES_MESES[fat.periodo.mes - 1]
   })
 
   const currentYear = computed(() => {
     const fat = faturaAtivaVisualizada.value
+    console.log('[DEBUG] currentYear re-evaluated:', fat?.periodo)
     if (!fat) return 'Atual'
     return fat.periodo.ano.toString()
   })
 
+  const setPeriodoSelecionado = (mes: number, ano: number) => {
+    console.log('[DEBUG] setPeriodoSelecionado called with:', mes, ano)
+    periodoSelecionado.value = { mes, ano }
+  }
+
   return {
     periodoSelecionado,
+    setPeriodoSelecionado,
     faturaSelecionadaFechada,
     faturaAtivaVisualizada,
     faturasPeriodoSelecionado,

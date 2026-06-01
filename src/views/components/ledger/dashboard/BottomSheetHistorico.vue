@@ -14,6 +14,7 @@ const emit = defineEmits(['close'])
 
 const {
   periodoSelecionado,
+  setPeriodoSelecionado,
   mesesAbertosOpcoes,
   mesesTrancadosOpcoes,
   formatarMesAno
@@ -76,9 +77,9 @@ watch(isDropdownAbertosOpen, async (aberto) => {
                 v-for="op in mesesAbertosOpcoes" 
                 :key="op.nome" 
                 :ref="(el) => { if (el && periodoSelecionado.mes === op.mes && periodoSelecionado.ano === op.ano) itemSelecionadoRef = el as HTMLElement }"
-                @mousedown.prevent="periodoSelecionado.mes = op.mes; periodoSelecionado.ano = op.ano; isDropdownAbertosOpen = false; emit('close')" 
-                @keydown.enter.prevent="periodoSelecionado.mes = op.mes; periodoSelecionado.ano = op.ano; isDropdownAbertosOpen = false; emit('close')"
-                @keydown.space.prevent="periodoSelecionado.mes = op.mes; periodoSelecionado.ano = op.ano; isDropdownAbertosOpen = false; emit('close')"
+                @mousedown.prevent="() => { console.log('[DEBUG] Periodo clicado (aberto):', op.mes, op.ano); setPeriodoSelecionado(op.mes, op.ano); isDropdownAbertosOpen = false; emit('close') }" 
+                @keydown.enter.prevent="() => { console.log('[DEBUG] Periodo clicado (aberto):', op.mes, op.ano); setPeriodoSelecionado(op.mes, op.ano); isDropdownAbertosOpen = false; emit('close') }"
+                @keydown.space.prevent="() => { console.log('[DEBUG] Periodo clicado (aberto):', op.mes, op.ano); setPeriodoSelecionado(op.mes, op.ano); isDropdownAbertosOpen = false; emit('close') }"
                 role="button"
                 tabindex="0"
                 class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors flex items-center gap-3"
@@ -100,9 +101,9 @@ watch(isDropdownAbertosOpen, async (aberto) => {
           <div 
             v-for="item in mesesTrancadosOpcoes" 
             :key="item.nome"
-            @click="periodoSelecionado.mes = item.mes; periodoSelecionado.ano = item.ano; emit('close')"
-            @keydown.enter.prevent="periodoSelecionado.mes = item.mes; periodoSelecionado.ano = item.ano; emit('close')"
-            @keydown.space.prevent="periodoSelecionado.mes = item.mes; periodoSelecionado.ano = item.ano; emit('close')"
+            @click="() => { console.log('[DEBUG] Periodo clicado (fechado):', item.mes, item.ano); setPeriodoSelecionado(item.mes, item.ano); emit('close') }"
+            @keydown.enter.prevent="() => { console.log('[DEBUG] Periodo clicado (fechado):', item.mes, item.ano); setPeriodoSelecionado(item.mes, item.ano); emit('close') }"
+            @keydown.space.prevent="() => { console.log('[DEBUG] Periodo clicado (fechado):', item.mes, item.ano); setPeriodoSelecionado(item.mes, item.ano); emit('close') }"
             :aria-label="'Selecionar período arquivado ' + item.nome"
             role="button"
             tabindex="0"
