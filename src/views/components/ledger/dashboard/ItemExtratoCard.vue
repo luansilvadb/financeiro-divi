@@ -14,23 +14,23 @@ const formatarBRL = (centavos: number) => {
 </script>
 
 <template>
-  <div class="p-3 rounded-lg border border-stone bg-canvas flex justify-between items-center gap-4 hover:border-ember/30 transition-colors">
-    <div class="space-y-1 min-w-0">
-      <span class="text-xs font-bold text-charcoal block truncate">{{ item.descricao }}</span>
-      <div class="flex items-center gap-2">
-        <span v-if="item.valorPago.centavos > 0" class="text-[9px] font-bold text-meadow bg-meadow/10 px-1.5 py-0.5 rounded">
-          PAGOU: +R$ {{ formatarBRL(item.valorPago.centavos) }}
+  <div class="p-3.5 rounded-xl border border-stone bg-canvas flex justify-between items-center gap-4 hover:border-ember/30 transition-all duration-300 shadow-subtle group">
+    <div class="space-y-1.5 min-w-0 flex-1">
+      <span class="text-xs font-bold text-charcoal block truncate tracking-tight">{{ item.descricao }}</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span v-if="item.valorPago.centavos > 0" class="text-[9px] font-bold text-[#00a83d] bg-[#00a83d]/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
+          Pagou +R$ {{ formatarBRL(item.valorPago.centavos) }}
         </span>
-        <span v-if="item.valorConsumido.centavos > 0" class="text-[9px] font-bold text-coral bg-coral/10 px-1.5 py-0.5 rounded">
-          USOU: -R$ {{ formatarBRL(item.valorConsumido.centavos) }}
+        <span v-if="item.valorConsumido.centavos > 0" class="text-[9px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
+          Consumiu -R$ {{ formatarBRL(item.valorConsumido.centavos) }}
         </span>
       </div>
     </div>
     <div class="text-right shrink-0">
-      <span class="text-[11px] font-display text-charcoal block font-bold">
+      <span class="text-[13px] font-display text-charcoal block font-bold tracking-tight group-hover:text-ember transition-colors">
         {{ item.saldoAcumulado.centavos > 0 ? '+' : '' }}R$ {{ formatarBRL(item.saldoAcumulado.centavos) }}
       </span>
-      <span class="text-[9px] text-ash uppercase tracking-tighter">Saldo Acumulado</span>
+      <p class="text-[8px] text-graphite uppercase font-semibold tracking-[0.1em] opacity-60">Acumulado</p>
     </div>
   </div>
 </template>

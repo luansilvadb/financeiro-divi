@@ -39,18 +39,18 @@ const {
       </div>
 
       <div class="space-y-3">
-        <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Alternar de Casa</h4>
+        <h4 class="text-[9px] font-semibold uppercase tracking-widest text-ash">Alternar de Casa</h4>
         <div class="grid gap-2">
           <div 
             v-for="casa in casas" 
             :key="casa.id"
             @click="selecionarCasa(casa.id)"
             class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
-            :class="activeTenantId === casa.id ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas text-charcoal'"
+            :class="activeTenantId === casa.id ? 'border-ember bg-ember/5 text-ember font-semibold' : 'border-stone bg-canvas text-charcoal'"
           >
             <div class="flex items-center gap-3">
               <Home class="w-4 h-4 shrink-0" :class="activeTenantId === casa.id ? 'text-ember' : 'text-ash'" />
-              <span class="text-sm font-semibold">{{ casa.name }}</span>
+              <span class="text-sm font-medium">{{ casa.name }}</span>
             </div>
             <div class="flex items-center gap-2" @click.stop>
               <code class="text-[10px] bg-stone/50 px-2 py-1 rounded text-ash font-mono select-all">
@@ -71,30 +71,30 @@ const {
       <hr class="border-stone/60 my-6" />
 
       <div class="space-y-3">
-        <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Criar Nova Casa</h4>
+        <h4 class="text-[9px] font-bold uppercase tracking-widest text-graphite">Criar Nova Casa</h4>
         <div class="flex gap-2">
           <input 
             v-model="form.nomeNovaCasa"
             placeholder="Ex: República Central"
-            class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
+            class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
           />
           <Button size="sm" @click="criarNovaCasa">Criar</Button>
         </div>
       </div>
 
       <div class="space-y-3 pt-2">
-        <h4 class="text-[9px] font-bold uppercase tracking-widest text-ash">Entrar com Código</h4>
+        <h4 class="text-[9px] font-bold uppercase tracking-widest text-graphite">Entrar com Código</h4>
         <div class="flex gap-2">
           <input 
             v-model="form.codigoConvite"
             placeholder="Ex: CASA-7F2A1"
-            class="flex-1 bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-2 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00]"
+            class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
           />
           <Button size="sm" @click="entrarPorCodigo">Entrar</Button>
         </div>
       </div>
 
-      <div v-if="form.errorCasa" class="text-xs text-coral font-semibold pt-2">
+      <div v-if="form.errorCasa" class="text-xs text-coral font-medium pt-2">
         {{ form.errorCasa }}
       </div>
     </div>
@@ -102,7 +102,7 @@ const {
     <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0 flex justify-between items-center">
       <button 
         @click="handleLogoutClick" 
-        class="flex items-center gap-2 text-xs font-bold text-coral hover:underline focus:outline-none"
+        class="flex items-center gap-2 text-xs font-semibold text-coral hover:underline focus:outline-none"
       >
         <LogOut class="w-4 h-4" />
         Sair da Conta

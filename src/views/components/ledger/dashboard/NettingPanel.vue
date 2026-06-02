@@ -15,51 +15,51 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <Card class="!p-0 overflow-hidden shadow-subtle bg-white text-graphite border-l-4 border-l-ember">
+  <Card class="!p-0 overflow-hidden shadow-subtle bg-white text-graphite">
     <!-- Cabeçalho Padronizado -->
-    <div class="py-5 px-5 sm:py-6 sm:px-6 border-b border-stone bg-parchment flex justify-between items-center">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-xl bg-midnight text-white flex items-center justify-center">
-          <Sparkles class="w-5 h-5" />
+    <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex justify-between items-center">
+      <div class="flex items-center gap-5">
+        <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
+          <Sparkles class="w-5 h-5" aria-hidden="true" />
         </div>
         <div>
-          <h3 class="font-bold text-lg leading-tight text-charcoal">Acertos Otimizados</h3>
-          <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5">
-            Compensação inteligente de dívidas
+          <h2 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Acertos Inteligentes</h2>
+          <p class="text-[11px] text-graphite uppercase tracking-widest mt-0.5 font-semibold">
+            Compensação otimizada de saldos
           </p>
         </div>
       </div>
     </div>
 
-    <div class="p-6 grid gap-4">
+    <div class="p-4 sm:p-6 grid gap-4">
       <div 
         v-for="t in nettingTransferencias" 
         :key="t.from + '-' + t.to" 
-        class="p-5 border border-stone bg-canvas shadow-none rounded-xl"
+        class="p-5 border border-stone bg-canvas rounded-2xl shadow-subtle hover:border-ember/30 transition-all duration-300"
       >
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex flex-col gap-5">
           <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-ember/10 flex items-center justify-center shrink-0">
-              <ArrowUpRight class="w-5 h-5 text-ember" />
+            <div class="w-12 h-12 rounded-full bg-ember/10 flex items-center justify-center shrink-0 shadow-subtle">
+              <ArrowUpRight class="w-6 h-6 text-ember" />
             </div>
-            <div>
-              <p class="text-sm leading-relaxed">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm leading-snug text-graphite font-medium">
                 <span class="font-bold text-charcoal">{{ getMembroNome(t.from) }}</span> 
                 deve enviar para 
                 <span class="font-bold text-charcoal">{{ getMembroNome(t.to) }}</span>
               </p>
-              <p class="font-display text-2xl text-ember mt-1">
+              <p class="font-display text-3xl text-ember mt-1 tracking-tight">
                 R$ {{ t.val.toFixed(2).replace('.', ',') }}
               </p>
             </div>
           </div>
-          <div class="w-full md:w-auto flex flex-col items-center">
+          <div class="w-full">
             <Button 
               @click="$emit('abrirNetting', t)"
               variant="primary"
-              class="w-full"
+              class="w-full h-12 font-bold uppercase tracking-widest text-[10px] shadow-sm"
             >
-              Confirmar Pix
+              Registrar Pagamento
             </Button>
           </div>
         </div>

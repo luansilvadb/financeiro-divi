@@ -10,14 +10,14 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-  <div :class="['inline-flex items-center gap-3 rounded-tags border border-ember/20 bg-ember/5 px-4 py-1.5 shrink-0', $props.class]">
+  <div :class="['inline-flex items-center gap-2.5 rounded-tags border border-ember/20 bg-ember/5 px-4 py-2 shrink-0 shadow-sm', $props.class]">
     <span 
       :class="[
         'h-2 w-2 shrink-0 rounded-full bg-ember',
         pulse ? 'animate-pulse' : ''
       ]"  
     />
-    <span class="font-sans text-[11px] font-bold uppercase tracking-[0.12em] text-ember whitespace-nowrap">
+    <span class="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-ember whitespace-nowrap leading-none">
       <slot />
     </span>
   </div>

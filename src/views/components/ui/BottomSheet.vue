@@ -27,20 +27,21 @@
         >
           <!-- Drag handle -->
           <div class="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0">
-            <div class="h-1 w-10 rounded-full bg-stone" />
+            <div class="h-1.5 w-12 rounded-full bg-stone/60" />
           </div>
 
           <!-- Header -->
-          <div v-if="title || $slots.header" class="flex items-center justify-between px-5 pb-3 shrink-0">
+          <div v-if="title || $slots.header" class="flex items-center justify-between px-6 pb-4 shrink-0">
             <slot name="header">
-              <h2 class="text-heading text-charcoal">{{ title }}</h2>
+              <h2 class="text-heading font-bold text-charcoal tracking-tight">{{ title }}</h2>
             </slot>
             <button
               v-if="showClose"
-              class="rounded-full p-1.5 text-ash transition hover:bg-stone hover:text-charcoal cursor-pointer"
+              class="w-10 h-10 rounded-full flex items-center justify-center text-ash transition-all hover:bg-stone hover:text-charcoal cursor-pointer border-none bg-transparent focus-visible:ring-2 focus-visible:ring-ember focus-visible:outline-none"
               @click="close"
+              aria-label="Fechar"
             >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

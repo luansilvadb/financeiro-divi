@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { tenantSessionService } from '../../shared/container'
-import { Home, Plus, Key, ArrowRight, LogOut, Check } from 'lucide-vue-next'
+import { Home, Plus, Key, ArrowRight, LogOut, Check, ChevronLeft } from 'lucide-vue-next'
+import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 
 const emit = defineEmits<{
   'casa-selecionada': []
@@ -70,60 +71,61 @@ function voltar() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#fbfaf9] flex items-center justify-center px-4 py-12">
-    <div class="w-full max-w-[440px]">
+  <div class="min-h-screen bg-canvas flex items-center justify-center px-4 py-12">
+    <!-- Card Container -->
+    <div class="w-full max-w-[440px] bg-card rounded-2xl shadow-subtle p-8 sm:p-10 transition-all duration-300">
 
-      <div class="text-center mb-10">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#ff3e00] text-white font-bold text-3xl mb-5 shadow-lg">
-          ÷
+      <div class="text-center mb-10 relative">
+        <div class="inline-flex justify-center mb-5 transform hover:rotate-12 transition-transform duration-300 pointer-events-none">
+          <IllustrationMascot variant="ember" :size="56" mood="happy" class="animate-wobble" />
         </div>
-        <h1 class="text-2xl font-semibold tracking-tight text-[#343433] mb-1">
+        <h1 class="text-display text-4xl mb-1">
           Olá, {{ username }} 👋
         </h1>
-        <p class="text-sm text-[#848281]">
-          Para começar, você precisa de uma <strong class="text-[#474645]">casa</strong>
+        <p class="text-body text-ash font-semibold">
+          Para começar, você precisa de uma <strong class="text-charcoal font-bold uppercase tracking-tighter">casa</strong>
         </p>
       </div>
 
       <Transition name="slide-up" mode="out-in">
-        <div v-if="modo === 'inicio'" key="inicio" class="space-y-3">
+        <div v-if="modo === 'inicio'" key="inicio" class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
           <button
             @click="modo = 'criar'"
-            class="group w-full bg-white border border-[#f2f0ed] rounded-2xl p-5 text-left hover:border-[#ff3e00]/40 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+            class="group w-full bg-parchment border-none rounded-2xl p-5 text-left hover:bg-stone shadow-subtle transition-all duration-300 active:scale-[0.98] cursor-pointer"
           >
             <div class="flex items-center gap-4">
-              <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-[#ff3e00]/10 flex items-center justify-center group-hover:bg-[#ff3e00]/20 transition-colors">
-                <Plus class="w-5 h-5 text-[#ff3e00]" />
+              <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-white shadow-subtle flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus class="w-6 h-6 text-ember" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-semibold text-[#343433] text-sm">Criar uma casa nova</p>
-                <p class="text-xs text-[#848281] mt-0.5">Comece do zero e convide outras pessoas</p>
+                <p class="font-bold text-charcoal text-base tracking-tight">Criar uma casa nova</p>
+                <p class="text-xs text-graphite font-medium mt-0.5">Comece do zero e convide outras pessoas</p>
               </div>
-              <ArrowRight class="w-4 h-4 text-[#c5c3c1] group-hover:text-[#ff3e00] transition-colors flex-shrink-0" />
+              <ArrowRight class="w-4 h-4 text-stone group-hover:text-ember transition-colors flex-shrink-0" />
             </div>
           </button>
 
           <button
             @click="modo = 'entrar'"
-            class="group w-full bg-white border border-[#f2f0ed] rounded-2xl p-5 text-left hover:border-[#121212]/30 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+            class="group w-full bg-parchment border-none rounded-2xl p-5 text-left hover:bg-stone shadow-subtle transition-all duration-300 active:scale-[0.98] cursor-pointer"
           >
             <div class="flex items-center gap-4">
-              <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-[#121212]/8 flex items-center justify-center group-hover:bg-[#121212]/12 transition-colors">
-                <Key class="w-5 h-5 text-[#343433]" />
+              <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-white shadow-subtle flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Key class="w-6 h-6 text-charcoal" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-semibold text-[#343433] text-sm">Entrar em uma casa existente</p>
-                <p class="text-xs text-[#848281] mt-0.5">Use o código de convite que você recebeu</p>
+                <p class="font-bold text-charcoal text-base tracking-tight">Entrar em uma casa</p>
+                <p class="text-xs text-graphite font-medium mt-0.5">Use o código de convite recebido</p>
               </div>
-              <ArrowRight class="w-4 h-4 text-[#c5c3c1] group-hover:text-[#343433] transition-colors flex-shrink-0" />
+              <ArrowRight class="w-4 h-4 text-stone group-hover:text-charcoal transition-colors flex-shrink-0" />
             </div>
           </button>
 
-          <div class="pt-2">
+          <div class="pt-6">
             <button
               @click="$emit('logout')"
-              class="w-full flex items-center justify-center gap-2 text-xs text-[#a7a7a7] hover:text-[#ff3e00] transition-colors py-2"
+              class="w-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-ash hover:text-ember transition-colors py-2 bg-transparent border-none cursor-pointer"
             >
               <LogOut class="w-3.5 h-3.5" />
               Sair da conta
@@ -133,97 +135,95 @@ function voltar() {
 
         <div v-else-if="modo === 'criar'" key="criar">
           <Transition name="fade" mode="out-in">
-            <div v-if="estado.casaCriada" key="sucesso" class="text-center space-y-6">
-              <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 mb-2">
-                <Check class="w-8 h-8 text-emerald-500" />
-              </div>
-              <div>
-                <h2 class="text-lg font-semibold text-[#343433]">Casa criada! 🏡</h2>
-                <p class="text-sm text-[#848281] mt-1">
-                  <strong class="text-[#343433]">{{ estado.casaCriada.name }}</strong> está pronta.
-                  Compartilhe o código abaixo para convidar outras pessoas:
+            <div v-if="estado.casaCriada" key="sucesso" class="text-center animate-in zoom-in-95 duration-500">
+              <div class="mb-8">
+                <div class="w-20 h-20 bg-meadow/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-meadow/20">
+                  <Check class="w-10 h-10 text-meadow" />
+                </div>
+                <h2 class="text-2xl font-bold text-charcoal tracking-tight">Casa criada! 🏡</h2>
+                <p class="text-body text-graphite mt-1">
+                  <strong class="text-charcoal font-bold">{{ estado.casaCriada.name }}</strong> está pronta.
                 </p>
               </div>
 
-              <div class="bg-[#f7f5f3] border border-[#ebe9e6] rounded-2xl p-5">
-                <p class="text-xs text-[#a7a7a7] mb-1 uppercase tracking-wider font-medium">Código de convite</p>
-                <p class="text-2xl font-bold text-[#ff3e00] tracking-widest font-mono">
+              <div class="bg-parchment shadow-subtle rounded-2xl p-6 mb-8">
+                <p class="text-[10px] text-graphite mb-2 uppercase tracking-widest font-bold">Código de convite</p>
+                <p class="text-3xl font-bold text-ember tracking-[0.2em] font-mono">
                   {{ estado.casaCriada.inviteCode }}
                 </p>
+                <p class="text-[10px] text-ash mt-4 leading-relaxed font-medium">Compartilhe este código com as pessoas <br/>que vão morar com você.</p>
               </div>
 
               <button
                 @click="irParaDashboard"
-                class="w-full bg-[#121212] hover:bg-[#343433] text-white font-medium py-3.5 px-6 rounded-full text-sm tracking-wide transition-all duration-200 shadow-md flex items-center justify-center gap-2"
+                class="w-full bg-midnight hover:bg-charcoal text-white font-bold py-4 px-6 rounded-pill text-xs tracking-widest uppercase transition-all duration-300 shadow-md flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95"
               >
                 Ir para o Dashboard
                 <ArrowRight class="w-4 h-4" />
               </button>
             </div>
 
-            <div v-else key="form-criar" class="space-y-5">
-              <div class="flex items-center gap-3 mb-6">
-                <button @click="voltar" class="text-[#a7a7a7] hover:text-[#343433] transition-colors">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                  </svg>
+            <div v-else key="form-criar" class="animate-in fade-in slide-in-from-right-4 duration-500">
+              <header class="flex items-center gap-4 mb-8">
+                <button @click="voltar" class="w-10 h-10 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
+                  <ChevronLeft class="w-5 h-5" />
                 </button>
                 <div>
-                  <h2 class="text-base font-semibold text-[#343433]">Nova Casa</h2>
-                  <p class="text-xs text-[#848281]">Dê um nome para a sua casa</p>
+                  <h2 class="text-xl font-bold text-charcoal tracking-tight leading-none">Nova Casa</h2>
+                  <p class="text-xs text-graphite font-semibold mt-1">Dê um nome para a sua casa</p>
                 </div>
-              </div>
+              </header>
 
-              <div class="space-y-2">
-                <label class="block text-xs font-semibold text-[#474645] uppercase tracking-wider">
-                  Nome da Casa
-                </label>
-                <input
-                  v-model="nomeCasa"
-                  type="text"
-                  placeholder="Ex: Casa da Família Silva"
-                  maxlength="60"
-                  autofocus
-                  @keydown.enter="criarCasa"
-                  class="w-full bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-3 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#ff3e00] focus:ring-1 focus:ring-[#ff3e00] transition-all duration-200"
-                />
-              </div>
-
-              <Transition name="fade">
-                <div v-if="estado.erro" class="bg-red-50 border border-red-200/60 text-red-600 text-xs px-4 py-3 rounded-lg flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>{{ estado.erro }}</span>
+              <div class="space-y-6">
+                <div class="space-y-2">
+                  <label class="block text-[10px] font-bold text-charcoal uppercase tracking-widest ml-1">
+                    Nome da Casa
+                  </label>
+                  <input
+                    v-model="nomeCasa"
+                    type="text"
+                    placeholder="Ex: Casa da Família Silva"
+                    maxlength="60"
+                    autofocus
+                    @keydown.enter="criarCasa"
+                    class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 text-body text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all duration-200"
+                  />
                 </div>
-              </Transition>
 
-              <button
-                @click="criarCasa"
-                :disabled="estado.loading || !nomeCasa.trim()"
-                class="w-full bg-[#ff3e00] hover:bg-[#e03500] disabled:opacity-50 text-white font-medium py-3.5 px-6 rounded-full text-sm tracking-wide transition-all duration-200 shadow-md flex items-center justify-center gap-2"
-              >
-                <span v-if="estado.loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
-                <Home class="w-4 h-4" v-else />
-                Criar Casa
-              </button>
+                <Transition name="fade">
+                  <div v-if="estado.erro" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
+                    <span>⚠️</span>
+                    <span>{{ estado.erro }}</span>
+                  </div>
+                </Transition>
+
+                <button
+                  @click="criarCasa"
+                  :disabled="estado.loading || !nomeCasa.trim()"
+                  class="w-full bg-ember hover:opacity-90 disabled:opacity-50 text-white font-bold py-4 px-6 rounded-pill text-xs tracking-widest uppercase transition-all duration-300 shadow-md flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95"
+                >
+                  <span v-if="estado.loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                  <Home class="w-4 h-4" v-else />
+                  Criar Casa
+                </button>
+              </div>
             </div>
           </Transition>
         </div>
 
-        <div v-else-if="modo === 'entrar'" key="entrar" class="space-y-5">
-          <div class="flex items-center gap-3 mb-6">
-            <button @click="voltar" class="text-[#a7a7a7] hover:text-[#343433] transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
+        <div v-else-if="modo === 'entrar'" key="entrar" class="animate-in fade-in slide-in-from-right-4 duration-500 space-y-5">
+          <div class="flex items-center gap-4 mb-8">
+            <button @click="voltar" class="w-10 h-10 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
+              <ChevronLeft class="w-5 h-5" />
             </button>
             <div>
-              <h2 class="text-base font-semibold text-[#343433]">Entrar em uma Casa</h2>
-              <p class="text-xs text-[#848281]">Insira o código de convite</p>
+              <h2 class="text-xl font-bold text-charcoal tracking-tight leading-none">Entrar em Casa</h2>
+              <p class="text-xs text-graphite font-semibold mt-1">Insira o código de convite</p>
             </div>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-xs font-semibold text-[#474645] uppercase tracking-wider">
+            <label class="block text-[10px] font-bold text-charcoal uppercase tracking-widest ml-1">
               Código de Convite
             </label>
             <input
@@ -232,12 +232,12 @@ function voltar() {
               placeholder="Ex: CASA-AB12C"
               autofocus
               @keydown.enter="entrarCasa"
-              class="w-full bg-[#fbfaf9] border border-[#f2f0ed] rounded-xl px-4 py-3 text-sm text-[#343433] placeholder-[#a7a7a7] focus:outline-none focus:border-[#121212] focus:ring-1 focus:ring-[#121212] transition-all duration-200 font-mono uppercase tracking-widest"
+              class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 text-lg font-bold text-charcoal placeholder-stone focus:outline-none focus:border-midnight font-mono uppercase tracking-[0.2em] transition-all duration-200 text-center"
             />
           </div>
 
           <Transition name="fade">
-            <div v-if="estado.erro" class="bg-red-50 border border-red-200/60 text-red-600 text-xs px-4 py-3 rounded-lg flex items-center gap-2">
+            <div v-if="estado.erro" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
               <span>⚠️</span>
               <span>{{ estado.erro }}</span>
             </div>
@@ -246,7 +246,7 @@ function voltar() {
           <button
             @click="entrarCasa"
             :disabled="estado.loading || !codigoConvite.trim()"
-            class="w-full bg-[#121212] hover:bg-[#343433] disabled:opacity-50 text-white font-medium py-3.5 px-6 rounded-full text-sm tracking-wide transition-all duration-200 shadow-md flex items-center justify-center gap-2"
+            class="w-full bg-midnight hover:bg-charcoal disabled:opacity-50 text-white font-bold py-4 px-6 rounded-pill text-xs tracking-widest uppercase transition-all duration-300 shadow-md flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95"
           >
             <span v-if="estado.loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
             <Key class="w-4 h-4" v-else />
@@ -262,7 +262,7 @@ function voltar() {
 <style scoped>
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.25s ease;
+  transition: all 0.4s var(--ease-spring);
 }
 .slide-up-enter-from {
   opacity: 0;

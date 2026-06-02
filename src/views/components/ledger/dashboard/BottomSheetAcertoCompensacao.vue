@@ -50,22 +50,22 @@ defineExpose({
     <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
         <div class="space-y-2 text-center">
           <h3 class="text-3xl font-display text-charcoal">Registrar <span class="text-ember">Acerto</span></h3>
-          <p class="text-xs text-ash leading-relaxed">
+          <p class="text-sm text-graphite font-medium leading-relaxed">
             Confirmar a transferência entre moradores para equilibrar os saldos da casa.
           </p>
         </div>
 
-        <div class="space-y-5">
+        <div class="space-y-6">
           <!-- Valor Input -->
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Valor do Repasse</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Valor do Repasse</label>
             <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ash text-sm font-bold">R$</span>
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
               <input 
                 v-model.number="valorReal"
                 type="number"
                 step="0.01"
-                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
+                class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
                 placeholder="0,00"
               />
             </div>
@@ -73,29 +73,29 @@ defineExpose({
 
           <!-- Descrição -->
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Descrição</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Descrição</label>
             <input 
               v-model="descricao"
               type="text"
               readonly
-              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal cursor-default transition-all"
+              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-stone/30 outline-none font-bold text-sm text-charcoal cursor-default transition-all"
             />
           </div>
 
           <!-- Método de Acerto -->
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Método de Baixa</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método de Baixa</label>
             <div class="grid grid-cols-3 gap-2">
               <button 
                 v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}, {id:'mutual', n:'Ajuste', icon: RefreshCcw}]"
                 :key="m.id"
                 type="button"
                 @click="method = m.id as any"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
                 :class="[
                   method === m.id 
                     ? 'bg-midnight text-white font-bold border-stone shadow-sm' 
-                    : 'bg-stone border border-stone text-charcoal hover:bg-stone'
+                    : 'bg-stone text-charcoal hover:bg-ash/20'
                 ]"
               >
                 <component :is="m.icon" class="w-4 h-4" />
@@ -106,9 +106,9 @@ defineExpose({
         </div>
 
         <!-- Rodapé Ações -->
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-stone">
-          <Button variant="secondary" @click="emit('cancel')" :disabled="loading">Cancelar</Button>
-          <Button variant="primary" @click="handleConfirmar" :disabled="valorReal <= 0 || loading">
+        <div class="grid grid-cols-2 gap-3 pt-6 border-t border-stone">
+          <Button variant="secondary" class="font-bold uppercase tracking-widest text-xs h-12" @click="emit('cancel')" :disabled="loading">Cancelar</Button>
+          <Button variant="primary" class="font-bold uppercase tracking-widest text-xs h-12" @click="handleConfirmar" :disabled="valorReal <= 0 || loading">
             <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
             {{ loading ? 'Salvando...' : 'Confirmar' }}
           </Button>
@@ -119,7 +119,7 @@ defineExpose({
 
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
@@ -127,5 +127,8 @@ defineExpose({
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--color-stone);
   border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ash);
 }
 </style>

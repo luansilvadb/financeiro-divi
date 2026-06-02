@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Check } from 'lucide-vue-next'
+import MembroAvatar from '../ui/MembroAvatar.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -34,34 +35,35 @@ const toggle = (id: string) => {
     emit('update:modelValue', id)
   }
 }
+
+const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['ember', 'sky', 'meadow', 'sunburst', 'flamingo']
 </script>
 
 <template>
   <div class="grid grid-cols-3 gap-3">
     <button 
-      v-for="m in props.membros" 
+      v-for="(m, idx) in props.membros" 
       :key="m.id"
       type="button"
       @click="toggle(m.id)"
-      class="p-4 border rounded-xl flex flex-col items-center gap-3 transition-all relative overflow-hidden"
+      class="p-4 border rounded-2xl flex flex-col items-center gap-3 transition-all duration-300 relative overflow-hidden group cursor-pointer border-none"
       :class="[
         isSelected(m.id) 
-          ? 'border-ember bg-ember/5 text-ember shadow-sm' 
-          : 'border-stone bg-canvas text-ash hover:border-ember/30'
+          ? 'bg-white shadow-subtle scale-[1.02] z-10' 
+          : 'bg-parchment opacity-70 hover:opacity-100 hover:bg-stone/50'
       ]"
     >
-      <div 
-        class="w-10 h-10 rounded-full flex items-center justify-center font-display text-sm transition-colors"
-        :class="[
-          isSelected(m.id) ? 'bg-ember text-white' : 'bg-stone text-charcoal'
-        ]"
-      >
-        {{ m.nome[0].toUpperCase() }}
-      </div>
-      <span class="font-bold text-[10px] uppercase tracking-wider truncate w-full text-center">{{ m.nome }}</span>
+      <MembroAvatar 
+        :nome="m.nome" 
+        :variant="isSelected(m.id) ? 'ember' : variants[idx % variants.length]" 
+        size="lg"
+        class="transition-all duration-500"
+        :class="isSelected(m.id) ? '!bg-midnight !text-white' : ''"
+      />
+      <span class="font-bold text-[10px] uppercase tracking-[0.1em] truncate w-full text-center text-charcoal leading-none">{{ m.nome }}</span>
       
-      <div v-if="isSelected(m.id)" class="absolute top-1 right-1">
-        <Check class="w-3 h-3 text-ember" />
+      <div v-if="isSelected(m.id)" class="absolute top-2 right-2 animate-in zoom-in-50 duration-300">
+        <Check class="w-3.5 h-3.5 text-[#00a83d]" stroke-width="4" />
       </div>
       
       <slot name="badge" :membro="m" :selected="isSelected(m.id)"></slot>

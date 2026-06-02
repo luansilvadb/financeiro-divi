@@ -43,14 +43,14 @@
       <div v-if="itemName || (itemValue !== undefined && itemValue !== null)" class="w-full p-6 rounded-card bg-parchment shadow-subtle border-none">
         <div class="flex justify-between items-center gap-4">
           <div class="text-left flex-1 min-w-0">
-            <p class="text-caption font-bold uppercase text-ash tracking-widest mb-1">
+            <p class="text-[10px] font-bold uppercase text-graphite tracking-widest mb-1">
               {{ itemType === 'Conta Fixa' ? 'Nome da Conta' : 'Item selecionado' }}
             </p>
-            <p class="text-body font-semibold text-charcoal truncate">{{ itemName || 'Sem descrição' }}</p>
+            <p class="text-base font-bold text-charcoal truncate">{{ itemName || 'Sem descrição' }}</p>
           </div>
           <div v-if="itemValue" class="text-right shrink-0">
-            <p class="text-caption font-bold uppercase text-ash tracking-widest mb-1">Valor</p>
-            <p class="text-heading-sm font-bold text-ember">R$ {{ itemValue.toFixed(2).replace('.', ',') }}</p>
+            <p class="text-[10px] font-bold uppercase text-graphite tracking-widest mb-1">Valor</p>
+            <p class="text-xl font-bold text-ember tracking-tight">R$ {{ itemValue.toFixed(2).replace('.', ',') }}</p>
           </div>
         </div>
       </div>
@@ -59,18 +59,17 @@
       <div class="flex flex-col gap-4 w-full pt-4">
         <Button 
           variant="primary" 
-          class="w-full h-14 text-body font-semibold bg-midnight text-white rounded-pill hover:bg-charcoal transition-all"
+          class="w-full h-14 text-sm font-bold bg-midnight text-white rounded-pill hover:bg-charcoal transition-all uppercase tracking-widest"
           @click="$emit('confirm')"
         >
           {{ itemType === 'Conta Fixa' ? 'Sim, excluir modelo' : 'Sim, confirmar estorno' }}
         </Button>
-        <Button 
-          variant="secondary" 
-          class="w-full h-14 text-body font-semibold bg-stone text-charcoal rounded-pill hover:bg-stone/80 border-none transition-all"
+        <button 
           @click="$emit('cancel')"
+          class="w-full h-14 text-sm font-bold bg-stone text-charcoal rounded-pill hover:bg-ash/20 transition-all uppercase tracking-widest border-none cursor-pointer"
         >
           {{ itemType === 'Conta Fixa' ? 'Não, manter modelo' : 'Não, manter lançamento' }}
-        </Button>
+        </button>
       </div>
     </div>
   </BottomSheet>

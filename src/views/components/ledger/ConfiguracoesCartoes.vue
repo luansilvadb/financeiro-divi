@@ -4,12 +4,12 @@ import { useCartoesEFaturas } from '../../../viewmodels/useCartoesEFaturas'
 import { useMembros } from '../../../viewmodels/useMembros'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
-import { Trash2, CreditCard, Calendar, User, ChevronDown } from 'lucide-vue-next'
+import { Trash2, CreditCard, Calendar, User, ChevronDown, Check } from 'lucide-vue-next'
 import { useCasasMultitenant } from '../../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../../composables/useToast'
 
 const { activeTenantId } = useCasasMultitenant()
-const { ativos, membros } = useMembros()
+const { ativos } = useMembros()
 const { cartoes, adicionarCartao, excluirCartao } = useCartoesEFaturas()
 const toast = useToast()
 
@@ -71,32 +71,32 @@ const handleExcluir = async (id: string) => {
 <template>
   <div class="space-y-10 w-full overflow-x-hidden">
     <!-- Adicionar Novo -->
-    <Card class="p-8 shadow-subtle bg-card rounded-card space-y-6">
+    <Card class="p-8 shadow-subtle bg-card rounded-2xl space-y-6">
       <div class="space-y-4">
         <div class="space-y-2">
-          <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Nome do Cartão</label>
+          <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Nome do Cartão</label>
           <input 
             v-model="nome" 
             type="text" 
             placeholder="Ex: Nubank, C6, etc." 
-            class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
+            class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
           />
         </div>
 
         <div class="space-y-4">
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Dia Fechamento</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Dia de Fechamento</label>
             <div class="relative" tabindex="0" @blur="isDiaDropdownOpen = false">
-              <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none z-10" />
+              <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-graphite pointer-events-none z-10 opacity-60" />
               <div 
                 @click="toggleDiaDropdown"
-                class="w-full pl-11 pr-10 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none"
-                :class="isDiaDropdownOpen ? 'border-ember ring-2 ring-ember/20' : ''"
+                class="w-full pl-12 pr-10 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none"
+                :class="isDiaDropdownOpen ? 'border-ember ring-4 ring-ember/10' : 'shadow-subtle'"
               >
-                <span class="block truncate">{{ diaFechamento ? 'Dia ' + diaFechamento : 'Selecione...' }}</span>
+                <span class="block truncate">{{ diaFechamento ? 'Dia ' + diaFechamento : 'Selecione o dia...' }}</span>
               </div>
               <ChevronDown 
-                class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none transition-transform duration-200" 
+                class="absolute right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-graphite pointer-events-none transition-transform duration-300" 
                 :class="isDiaDropdownOpen ? 'rotate-180' : ''"
               />
               
@@ -104,35 +104,36 @@ const handleExcluir = async (id: string) => {
               <div 
                 v-if="isDiaDropdownOpen" 
                 ref="diaDropdownRef"
-                class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
+                class="absolute left-0 w-full mt-2 max-h-48 overflow-y-auto bg-card border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar animate-in fade-in zoom-in-95 duration-200"
               >
                 <div 
                   v-for="d in 31" 
                   :key="d" 
                   @mousedown.prevent="diaFechamento = d; isDiaDropdownOpen = false" 
-                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors"
+                  class="px-5 py-3 text-sm font-bold hover:bg-stone cursor-pointer transition-colors flex items-center justify-between"
                   :class="diaFechamento === d ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
                 >
                   Dia {{ d }}
+                  <Check v-if="diaFechamento === d" class="w-4 h-4 text-ember" />
                 </div>
               </div>
             </div>
           </div>
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">
-              Responsável (Membros: {{ membros.length }}, Ativos: {{ ativos.length }})
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">
+              Responsável Principal
             </label>
             <div class="relative" tabindex="0" @blur="isResponsavelDropdownOpen = false">
-              <User class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none z-10" />
+              <User class="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-graphite pointer-events-none z-10 opacity-60" />
               <div 
                 @click="toggleResponsavelDropdown"
-                class="w-full pl-11 pr-10 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none"
-                :class="isResponsavelDropdownOpen ? 'border-ember ring-2 ring-ember/20' : ''"
+                class="w-full pl-12 pr-10 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm cursor-pointer select-none"
+                :class="isResponsavelDropdownOpen ? 'border-ember ring-4 ring-ember/10' : 'shadow-subtle'"
               >
-                <span class="block truncate">{{ responsavelId ? ativos.find(m => m.id === responsavelId)?.nome : 'Escolha...' }}</span>
+                <span class="block truncate">{{ responsavelId ? ativos.find(m => m.id === responsavelId)?.nome : 'Escolha o dono do cartão...' }}</span>
               </div>
               <ChevronDown 
-                class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ash pointer-events-none transition-transform duration-200"
+                class="absolute right-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-graphite pointer-events-none transition-transform duration-300"
                 :class="isResponsavelDropdownOpen ? 'rotate-180' : ''"
               />
               
@@ -140,16 +141,17 @@ const handleExcluir = async (id: string) => {
               <div 
                 v-if="isResponsavelDropdownOpen" 
                 ref="responsavelDropdownRef"
-                class="absolute left-0 w-full mt-1.5 max-h-48 overflow-y-auto bg-canvas border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar"
+                class="absolute left-0 w-full mt-2 max-h-48 overflow-y-auto bg-card border border-stone rounded-xl shadow-xl z-50 py-2 custom-scrollbar animate-in fade-in zoom-in-95 duration-200"
               >
                 <div 
                   v-for="m in ativos" 
                   :key="m.id" 
                   @mousedown.prevent="responsavelId = m.id; isResponsavelDropdownOpen = false" 
-                  class="px-4 py-3 text-sm font-medium hover:bg-stone cursor-pointer transition-colors truncate"
+                  class="px-5 py-3 text-sm font-bold hover:bg-stone cursor-pointer transition-colors flex items-center justify-between truncate"
                   :class="responsavelId === m.id ? 'text-ember bg-ember/5 is-selected' : 'text-charcoal'"
                 >
                   {{ m.nome }}
+                  <Check v-if="responsavelId === m.id" class="w-4 h-4 text-ember" />
                 </div>
               </div>
             </div>
@@ -158,55 +160,56 @@ const handleExcluir = async (id: string) => {
 
         <Button 
           @click="adicionarCard" 
-          class="w-full h-12"
+          class="w-full h-14 font-bold uppercase tracking-widest text-xs"
           variant="primary"
           :disabled="!nome || !responsavelId || !activeTenantId"
         >
           Cadastrar Cartão
         </Button>
-        <p v-if="!activeTenantId" class="text-xs text-coral font-bold text-center mt-2">
-          Crie ou selecione uma casa no menu superior antes de cadastrar cartões!
-        </p>
+        <div v-if="!activeTenantId" class="p-4 bg-coral/5 border border-coral/10 rounded-xl mt-4 animate-in fade-in duration-500">
+          <p class="text-[10px] text-coral font-bold text-center uppercase tracking-widest">
+            Crie ou selecione uma casa no menu superior antes de cadastrar cartões!
+          </p>
+        </div>
       </div>
     </Card>
 
     <!-- Lista -->
     <div class="space-y-4">
-      <div class="flex items-center gap-2 mb-2">
-        <CreditCard class="w-4 h-4 text-ash" />
-        <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Cartões Ativos</h4>
+      <div class="flex items-center gap-3 mb-4 ml-1">
+        <CreditCard class="w-5 h-5 text-ember" />
+        <h4 class="text-xs font-bold uppercase tracking-[0.2em] text-graphite">Cartões da Casa</h4>
       </div>
 
       <div class="grid gap-3">
-        <Card 
+        <div 
           v-for="c in cartoes" 
           :key="c.id" 
-          class="p-4 flex justify-between items-center bg-card border border-stone shadow-subtle hover:border-ember/30 transition-all rounded-card"
+          class="p-5 flex justify-between items-center bg-card border border-stone shadow-subtle hover:border-ember/30 transition-all duration-300 rounded-2xl group"
         >
           <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-xl bg-stone flex items-center justify-center">
-              <CreditCard class="w-5 h-5 text-charcoal" />
+            <div class="w-12 h-12 rounded-xl bg-canvas shadow-subtle flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+              <CreditCard class="w-6 h-6 text-ember" />
             </div>
             <div>
-              <span class="font-bold text-charcoal block">{{ c.nome }}</span>
-              <p class="text-[10px] text-ash font-medium uppercase tracking-wider mt-0.5">
+              <span class="font-bold text-charcoal text-base block tracking-tight">{{ c.nome }}</span>
+              <p class="text-[10px] text-graphite font-bold uppercase tracking-widest mt-1 opacity-70">
                 Dia {{ c.diaFechamento }} • {{ ativos.find(m => m.id === c.responsavelPadraoId)?.nome || 'N/A' }}
               </p>
             </div>
           </div>
           
-          <Button 
-            variant="secondary"
-            size="icon"
+          <button 
             @click="handleExcluir(c.id)" 
-            class="bg-coral/10 text-coral hover:bg-coral/20 border border-transparent rounded-full h-10 w-10 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
+            class="bg-coral/5 text-coral hover:bg-coral hover:text-white border-none rounded-full h-11 w-11 flex items-center justify-center transition-all duration-300 active:scale-90 cursor-pointer"
+            aria-label="Excluir cartão"
           >
-            <Trash2 class="w-4 h-4" />
-          </Button>
-        </Card>
+            <Trash2 class="w-5 h-5" />
+          </button>
+        </div>
         
-        <div v-if="cartoes.length === 0" class="text-center py-10 border border-dashed border-stone rounded-xl">
-          <p class="text-sm text-ash italic">Nenhum cartão cadastrado.</p>
+        <div v-if="cartoes.length === 0" class="text-center py-12 border border-dashed border-stone rounded-2xl bg-canvas/30">
+          <p class="text-sm text-graphite font-semibold italic opacity-60">Nenhum cartão cadastrado ainda.</p>
         </div>
       </div>
     </div>

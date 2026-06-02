@@ -128,10 +128,10 @@ const handleGravar = async () => {
     <header class="p-5 sm:p-6 border-b border-stone flex-shrink-0">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div class="min-w-0">
-          <p class="inline-flex text-xs font-semibold text-ash bg-stone rounded-full px-2.5 py-1">
+          <p class="inline-flex text-xs font-bold text-graphite bg-stone rounded-full px-2.5 py-1 uppercase tracking-wider">
             Passo {{ stepIndex + 1 }} de {{ steps.length }}
           </p>
-          <h2 class="mt-3 text-[23px] leading-[1.2] font-semibold text-charcoal tracking-[-0.44px]">
+          <h2 class="mt-3 text-[23px] leading-[1.2] font-bold text-charcoal tracking-tighter">
             <template v-if="currentState === 'FLOW_SELECTION'">Como você pagou?</template>
             <template v-else-if="currentState === 'LENDER_SELECTION'">Quem está emprestando?</template>
             <template v-else-if="currentState === 'BUYER_SELECTION'">{{ wizPayment === 'card' ? 'Quem usou o cartão?' : 'Quem foi que pagou?' }}</template>
@@ -143,9 +143,9 @@ const handleGravar = async () => {
         </div>
       </div>
 
-      <div v-if="currentState === 'BUYER_SELECTION' && wizPayment === 'card'" class="mt-4 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10 flex gap-3 items-center animate-in fade-in slide-in-from-top-1">
-        <CreditCard class="w-4 h-4 text-sky-600 shrink-0" />
-        <p class="text-[11px] font-medium text-sky-700 leading-tight">
+      <div v-if="currentState === 'BUYER_SELECTION' && wizPayment === 'card'" class="mt-4 p-3 rounded-xl bg-sky/10 border border-sky/20 flex gap-3 items-center animate-in fade-in slide-in-from-top-1">
+        <CreditCard class="w-4 h-4 text-sky shrink-0" aria-hidden="true" />
+        <p class="text-[11px] font-semibold text-sky leading-tight">
           O crédito de reembolso será atribuído ao dono do cartão: 
           <strong>
             {{ props.membros.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)!.responsavelPadraoId)!.nome }}
@@ -153,9 +153,16 @@ const handleGravar = async () => {
         </p>
       </div>
 
-      <div class="mt-4 h-1.5 rounded-full bg-stone overflow-hidden">
+      <div 
+        class="mt-4 h-1.5 rounded-full bg-stone overflow-hidden"
+        role="progressbar"
+        :aria-valuenow="progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-label="`Progresso do lançamento: ${Math.round(progress)}%`"
+      >
         <div
-          class="h-full rounded-full bg-midnight transition-all duration-300"
+          class="h-full rounded-full bg-midnight transition-all duration-500 ease-spring"
           :style="{ width: `${progress}%` }"
         />
       </div>
@@ -163,17 +170,19 @@ const handleGravar = async () => {
 
     <div class="flex-1 p-5 sm:p-6 bg-white overflow-y-auto custom-scrollbar">
       <div :key="currentState" class="w-full">
-          <div v-if="currentState === 'FLOW_SELECTION'" class="grid gap-3">
+          <div v-if="currentState === 'FLOW_SELECTION'" class="grid gap-3" role="listbox" aria-label="Opções de pagamento">
             <button
               @click="selecionarFluxo('expense', 'pix', null)"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
+              role="option"
+              :aria-selected="wizFlow === 'expense' && wizPayment === 'pix'"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left border-none cursor-pointer"
             >
               <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <Wallet class="w-5 h-5" />
+                <Wallet class="w-5 h-5" aria-hidden="true" />
               </div>
               <div class="min-w-0">
-                <strong class="block text-[15px] font-semibold text-charcoal tracking-[-0.2px]">PIX ou Dinheiro</strong>
-                <span class="text-xs text-ash">Gasto à vista do caixa</span>
+                <strong class="block text-[15px] font-bold text-charcoal tracking-tight">PIX ou Dinheiro</strong>
+                <span class="text-xs text-graphite font-semibold">Gasto à vista do caixa</span>
               </div>
             </button>
 
@@ -182,59 +191,71 @@ const handleGravar = async () => {
               :key="c.id"
               :disabled="isCartaoTrancado(c.id)"
               @click="selecionarFluxo('expense', 'card', c.id)"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed"
+              role="option"
+              :aria-selected="wizCardOwner === c.id"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
             >
               <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <CreditCard class="w-5 h-5" />
+                <CreditCard class="w-5 h-5" aria-hidden="true" />
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <strong class="text-[15px] font-semibold text-charcoal tracking-[-0.2px]">Cartão {{ c.nome }}</strong>
-                  <span v-if="isCartaoTrancado(c.id)" class="text-[9px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded border border-coral/20 shrink-0">FATURA FECHADA</span>
+                  <strong class="text-[15px] font-bold text-charcoal tracking-tight">Cartão {{ c.nome }}</strong>
+                  <span v-if="isCartaoTrancado(c.id)" class="text-[10px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded border border-coral/20 shrink-0">FECHADA</span>
                 </div>
-                <span class="text-xs text-ash">Despesa sob fatura</span>
+                <span class="text-xs text-graphite font-semibold">Despesa sob fatura</span>
               </div>
             </button>
 
             <button
               @click="selecionarFluxo('loan', 'pix', null)"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left"
+              role="option"
+              :aria-selected="wizFlow === 'loan'"
+              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left border-none cursor-pointer"
             >
               <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <Handshake class="w-5 h-5" />
+                <Handshake class="w-5 h-5" aria-hidden="true" />
               </div>
               <div class="min-w-0">
-                <strong class="block text-[15px] font-semibold text-charcoal tracking-[-0.2px]">Empréstimo pessoal</strong>
-                <span class="text-xs text-ash">Direto entre moradores</span>
+                <strong class="block text-[15px] font-bold text-charcoal tracking-tight">Empréstimo pessoal</strong>
+                <span class="text-xs text-graphite font-semibold">Direto entre moradores</span>
               </div>
             </button>
           </div>
 
-          <div v-else-if="currentState === 'BUYER_SELECTION' || currentState === 'LENDER_SELECTION' || currentState === 'BORROWER_SELECTION'" class="grid grid-cols-2 gap-3">
+          <div 
+            v-else-if="currentState === 'BUYER_SELECTION' || currentState === 'LENDER_SELECTION' || currentState === 'BORROWER_SELECTION'" 
+            class="grid grid-cols-2 gap-3"
+            role="listbox"
+            :aria-label="currentState === 'BORROWER_SELECTION' ? 'Selecionar quem pegou emprestado' : 'Selecionar quem pagou'"
+          >
             <button
               v-for="m in (currentState === 'BORROWER_SELECTION' ? props.membros.filter(m => m.id !== compradorSelecionadoId) : props.membros)"
               :key="m.id"
               @click="currentState === 'BORROWER_SELECTION' ? (borrowerId = m.id, next()) : (compradorSelecionadoId = m.id, next())"
-              class="flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors"
+              role="option"
+              :aria-selected="borrowerId === m.id || compradorSelecionadoId === m.id"
+              class="flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors border-none cursor-pointer"
             >
-              <div class="w-12 h-12 rounded-full bg-white shadow-subtle flex items-center justify-center font-semibold text-charcoal">
+              <div class="w-12 h-12 rounded-full bg-white shadow-subtle flex items-center justify-center font-bold text-charcoal">
                 {{ m.nome[0] }}
               </div>
-              <span class="font-semibold text-xs text-charcoal">{{ m.nome }}</span>
+              <span class="font-semibold text-xs text-charcoal uppercase tracking-wider">{{ m.nome }}</span>
             </button>
           </div>
 
           <div v-else-if="currentState === 'VALUE'" class="space-y-5">
             <div class="rounded-card bg-parchment p-5 shadow-subtle transition-all duration-300">
-              <label class="block text-xs font-semibold text-ash mb-2">Valor total</label>
+              <label for="wizard-value-input" class="block text-[10px] font-bold text-graphite uppercase tracking-widest mb-2">Valor total do lançamento</label>
               <div class="flex items-center gap-2">
-                <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">R$</span>
+                <span class="text-[23px] font-bold text-charcoal tracking-tight" aria-hidden="true">R$</span>
                 <input
+                  id="wizard-value-input"
                   v-model.number="valor"
                   type="number"
                   step="0.01"
                   min="0"
-                  class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent outline-none text-[40px] leading-none font-semibold text-midnight tracking-[-1px] placeholder:text-smoke"
+                  class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-stone"
                   placeholder="0,00"
                   autofocus
                 />
@@ -242,17 +263,27 @@ const handleGravar = async () => {
             </div>
 
             <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="rounded-card bg-white shadow-subtle p-4 space-y-3">
-              <label class="block text-xs font-semibold text-ash">Parcelamento</label>
+              <span class="block text-[10px] font-bold text-graphite uppercase tracking-widest">Opções de Parcelamento</span>
               <div class="flex items-center justify-between gap-3">
-                <button type="button" @click="installments = Math.max(1, installments - 1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
-                  <Minus class="w-4 h-4" />
+                <button 
+                  type="button" 
+                  @click="installments = Math.max(1, installments - 1)" 
+                  class="w-10 h-10 rounded-full bg-stone hover:opacity-80 flex items-center justify-center border-none cursor-pointer transition-opacity"
+                  aria-label="Diminuir parcelas"
+                >
+                  <Minus class="w-4 h-4" aria-hidden="true" />
                 </button>
-                <div class="text-center">
-                  <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">{{ installments }}x</span>
-                  <p class="text-xs text-ash">{{ infoParcelamento }}</p>
+                <div class="text-center" aria-live="polite">
+                  <span class="text-[23px] font-bold text-charcoal tracking-tight">{{ installments }}x</span>
+                  <p class="text-xs font-semibold text-graphite">{{ infoParcelamento }}</p>
                 </div>
-                <button type="button" @click="installments = Math.max(1, installments + 1)" class="w-10 h-10 rounded-full bg-stone hover:bg-stone flex items-center justify-center">
-                  <Plus class="w-4 h-4" />
+                <button 
+                  type="button" 
+                  @click="installments = Math.max(1, installments + 1)" 
+                  class="w-10 h-10 rounded-full bg-stone hover:opacity-80 flex items-center justify-center border-none cursor-pointer transition-opacity"
+                  aria-label="Aumentar parcelas"
+                >
+                  <Plus class="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -260,21 +291,22 @@ const handleGravar = async () => {
 
           <div v-else-if="currentState === 'DESCRIPTION'" class="space-y-5">
             <div class="rounded-card bg-parchment p-4 shadow-subtle">
-              <label class="block text-xs font-semibold text-ash mb-2">Descrição</label>
+              <label for="wizard-description-input" class="block text-[10px] font-bold text-graphite uppercase tracking-widest mb-2">O que foi comprado?</label>
               <input
+                id="wizard-description-input"
                 v-model="descricao"
                 type="text"
-                class="w-full bg-transparent outline-none text-[23px] font-semibold text-charcoal tracking-[-0.44px] placeholder:text-smoke"
-                placeholder="Descreva aqui..."
+                class="w-full bg-transparent border-none outline-none text-[23px] font-bold text-charcoal tracking-tight placeholder:text-stone"
+                placeholder="Ex: Supermercado do mês"
                 autofocus
               />
             </div>
-            <div class="flex gap-2 flex-wrap">
+            <div class="flex gap-2 flex-wrap" role="group" aria-label="Sugestões rápidas">
               <button
                 v-for="chip in quickChips"
                 :key="chip"
                 @click="descricao = chip"
-                class="px-3.5 py-2 rounded-full bg-stone hover:bg-stone text-xs font-semibold text-graphite transition-colors"
+                class="px-3.5 py-2 rounded-full bg-stone hover:bg-ash/20 text-[11px] font-bold text-graphite transition-colors border-none cursor-pointer uppercase tracking-wider"
               >
                 {{ chip }}
               </button>
@@ -282,24 +314,26 @@ const handleGravar = async () => {
           </div>
 
           <div v-else-if="currentState === 'SPLIT'" class="space-y-4">
-            <div class="flex gap-2">
-              <button @click="participantesDivisao = props.membros.map(m => m.id)" class="px-3.5 py-2 rounded-full bg-midnight text-white text-xs font-semibold">Todos</button>
-              <button @click="participantesDivisao = [compradorSelecionadoId]" class="px-3.5 py-2 rounded-full bg-stone text-midnight text-xs font-semibold">Apenas eu</button>
+            <div class="flex gap-2" role="group" aria-label="Atalhos de divisão">
+              <button @click="participantesDivisao = props.membros.map(m => m.id)" class="px-3.5 py-2 rounded-full bg-midnight text-white text-[10px] font-bold uppercase tracking-wider border-none cursor-pointer hover:bg-charcoal transition-colors">Todos</button>
+              <button @click="participantesDivisao = [compradorSelecionadoId]" class="px-3.5 py-2 rounded-full bg-stone text-charcoal text-[10px] font-bold uppercase tracking-wider border-none cursor-pointer hover:bg-ash/20 transition-colors">Apenas eu</button>
             </div>
 
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-3 gap-2" role="listbox" aria-multiselectable="true" aria-label="Selecionar membros para dividir">
               <button
                 v-for="m in props.membros"
                 :key="m.id"
                 @click="toggleSplitMember(m.id)"
-                class="relative flex flex-col items-center gap-2 p-3 rounded-card transition-colors"
-                :class="[participantesDivisao.includes(m.id) ? 'bg-white shadow-subtle' : 'bg-parchment']"
+                role="option"
+                :aria-selected="participantesDivisao.includes(m.id)"
+                class="relative flex flex-col items-center gap-2 p-3 rounded-card transition-all duration-300 border-none cursor-pointer"
+                :class="[participantesDivisao.includes(m.id) ? 'bg-white shadow-subtle scale-[1.02]' : 'bg-parchment opacity-80']"
               >
-                <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold" :class="[participantesDivisao.includes(m.id) ? 'bg-midnight text-white' : 'bg-white text-charcoal shadow-subtle']">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold" :class="[participantesDivisao.includes(m.id) ? 'bg-midnight text-white' : 'bg-white text-charcoal shadow-subtle']">
                   {{ m.nome[0] }}
                 </div>
-                <span class="text-[11px] font-semibold text-graphite truncate max-w-full">{{ m.nome }}</span>
-                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow" />
+                <span class="text-[10px] font-bold text-charcoal uppercase tracking-tight truncate max-w-full">{{ m.nome }}</span>
+                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-[#00a83d] animate-in zoom-in-50 duration-300" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -308,13 +342,13 @@ const handleGravar = async () => {
 
     <footer class="p-5 sm:p-6 border-t border-stone bg-white flex gap-3">
       <button
-        class="flex-1 h-12 rounded-full bg-stone hover:bg-stone text-midnight text-sm font-semibold transition-colors"
+        class="flex-1 h-12 rounded-full bg-stone hover:bg-ash/20 text-charcoal text-sm font-bold uppercase tracking-widest transition-colors border-none cursor-pointer"
         @click="stepIndex === 0 ? emit('cancelar') : prev()"
       >
         {{ stepIndex === 0 ? 'Cancelar' : 'Voltar' }}
       </button>
       <button
-        class="flex-[2] h-12 rounded-full bg-midnight hover:bg-charcoal text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        class="flex-[2] h-12 rounded-full bg-midnight hover:bg-charcoal text-white text-sm font-bold uppercase tracking-widest transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
         :disabled="!canAdvance"
         @click="stepIndex === steps.length - 1 ? handleGravar() : next()"
       >
@@ -325,15 +359,12 @@ const handleGravar = async () => {
 </template>
 
 <style scoped>
-
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--color-stone);
   border-radius: 9999px;

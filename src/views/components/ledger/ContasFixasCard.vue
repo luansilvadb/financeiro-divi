@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
-
+import { Check } from 'lucide-vue-next'
 import type { Gasto } from '../../../models/entities/Gasto'
 
 const props = defineProps<{
@@ -206,16 +206,25 @@ onUnmounted(() => {
     ></div>
 
     <div class="flex items-center gap-4 min-w-0 flex-1 pointer-events-none">
-      <div class="w-10 h-10 rounded-lg bg-card border border-stone flex items-center justify-center text-xl shadow-subtle">
+      <div class="w-10 h-10 rounded-lg bg-white border border-stone flex items-center justify-center text-xl shadow-subtle group-hover:scale-110 transition-transform duration-500">
         {{ bill.icon }}
       </div>
       <div class="min-w-0 flex-1">
-        <span class="font-bold text-sm block text-charcoal truncate tracking-[-0.17px]">{{ bill.name }}</span>
-        <div v-if="gasto" class="flex items-center mt-1">
-          <span class="text-[10px] text-meadow font-bold uppercase tracking-wider">
+        <span class="font-bold text-sm block text-charcoal truncate tracking-tight">{{ bill.name }}</span>
+        <div v-if="gasto" class="flex items-center mt-0.5">
+          <span class="text-[10px] text-[#00a83d] font-semibold uppercase tracking-wider">
             R$ {{ (gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(gasto.compradorId) }}
           </span>
         </div>
+        <div v-else class="flex items-center mt-0.5">
+          <span class="text-[10px] text-graphite font-semibold uppercase tracking-widest opacity-60">Aguardando lançamento</span>
+        </div>
+      </div>
+    </div>
+    
+    <div v-if="gasto" class="shrink-0 pointer-events-none">
+      <div class="w-6 h-6 rounded-full bg-[#00a83d] flex items-center justify-center shadow-sm animate-in zoom-in-50 duration-500">
+        <Check class="w-3.5 h-3.5 text-white" stroke-width="4" />
       </div>
     </div>
 

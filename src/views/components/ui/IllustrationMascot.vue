@@ -1,6 +1,6 @@
 <template>
-  <div :style="{ width: size + 'px', height: size + 'px' }" class="relative select-none pointer-events-none">
-    <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible">
+  <div :style="{ width: size + 'px', height: size + 'px' }" class="relative select-none pointer-events-none mascot-container">
+    <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible animate-breathe">
       <!-- Body Shadow (subtle depth) -->
       <path
         :d="blobPath"
@@ -12,10 +12,11 @@
       <path
         :d="blobPath"
         :fill="fillColor"
+        class="transition-colors duration-700"
       />
       
       <!-- Eyes -->
-      <g class="eyes">
+      <g class="eyes animate-blink">
         <template v-if="mood === 'happy'">
           <circle cx="38" cy="42" r="3" fill="black" />
           <circle cx="62" cy="42" r="3" fill="black" />
@@ -39,13 +40,13 @@
         <circle v-else-if="mood === 'surprised'" cx="50" cy="65" r="3" fill="black" />
       </g>
 
-      <!-- Stick limbs (optional, but requested in DESIGN.md) -->
+      <!-- Stick limbs -->
       <g class="limbs" stroke="black" stroke-width="2" stroke-linecap="round" fill="none">
         <!-- Legs -->
-        <path d="M35 78 L32 90" />
-        <path d="M65 78 L68 90" />
-        <!-- Arms (waving if happy) -->
-        <path v-if="mood === 'happy'" d="M22 55 Q10 50 8 40" />
+        <path d="M35 78 L32 90" class="animate-leg-left" />
+        <path d="M65 78 L68 90" class="animate-leg-right" />
+        <!-- Arms -->
+        <path v-if="mood === 'happy'" d="M22 55 Q10 50 8 40" class="animate-arm-wave" />
         <path v-if="mood === 'happy'" d="M78 55 Q90 60 92 70" />
       </g>
     </svg>
@@ -75,7 +76,7 @@ const props = defineProps({
 const fillColor = computed(() => {
   const colors: Record<string, string> = {
     ember: '#ff3e00',
-    meadow: '#00ca48',
+    meadow: '#00a83d',
     sky: '#0090ff',
     sunburst: '#ffbb26',
     flamingo: '#ff58ae'
@@ -83,6 +84,50 @@ const fillColor = computed(() => {
   return colors[props.variant] || colors.ember;
 });
 
-// A slightly irregular, organic blob shape
 const blobPath = "M20,50 Q20,15 50,20 Q80,25 85,55 Q90,85 50,80 Q10,75 15,50 Z";
 </script>
+
+<style scoped>
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03, 0.97); }
+}
+
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0); }
+  50% { transform: rotate(-15deg); }
+}
+
+@keyframes leg-wiggle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(1px); }
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.animate-blink {
+  animation: blink 5s infinite;
+  transform-origin: center 42px;
+}
+
+.animate-arm-wave {
+  animation: wave 2s ease-in-out infinite;
+  transform-origin: 22px 55px;
+}
+
+.animate-leg-left, .animate-leg-right {
+  animation: leg-wiggle 3s ease-in-out infinite;
+}
+
+.animate-leg-right {
+  animation-delay: 1.5s;
+}
+</style>

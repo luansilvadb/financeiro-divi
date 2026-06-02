@@ -1,44 +1,46 @@
 <template>
-  <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) $emit('cancel') }" width-class="md:w-[420px]">
-    <div class="p-6 sm:p-8 space-y-5 flex flex-col flex-grow overflow-y-auto custom-scrollbar">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-full bg-parchment shadow-subtle flex items-center justify-center text-base shrink-0">
+  <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) $emit('cancel') }" width-class="md:w-[440px]" max-height="90dvh">
+    <div class="p-6 sm:p-8 space-y-6 flex flex-col flex-grow overflow-y-auto custom-scrollbar text-graphite">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-canvas shadow-subtle flex items-center justify-center text-2xl shrink-0 border border-stone">
           {{ bill?.icon }}
         </div>
         <div class="min-w-0">
-          <h3 class="text-[19px] leading-tight font-semibold text-charcoal tracking-[-0.25px]">
-            Lancar {{ bill?.name }}
+          <h3 class="text-2xl font-bold text-charcoal tracking-tighter leading-none">
+            Lançar {{ bill?.name }}
           </h3>
-          <p class="text-xs text-ash mt-1 leading-snug">
-            Registre valor, pagador e divisao.
+          <p class="text-[10px] font-bold uppercase tracking-widest text-ember mt-1.5">
+            Conta fixa recorrente
           </p>
         </div>
       </div>
 
-      <div class="rounded-card bg-parchment shadow-subtle p-4">
-        <label class="block text-xs font-semibold text-ash tracking-[-0.14px] mb-2">Valor do talao</label>
-        <div class="flex items-center gap-2">
-          <span class="text-[23px] font-semibold text-charcoal tracking-[-0.44px]">R$</span>
+      <div class="rounded-2xl bg-parchment shadow-subtle p-6 border border-stone/50 transition-all duration-300">
+        <label for="fixed-bill-value" class="block text-[10px] font-bold text-graphite uppercase tracking-widest mb-3 ml-1">Valor do Talão</label>
+        <div class="flex items-center gap-2.5">
+          <span class="text-[24px] font-bold text-charcoal tracking-tight" aria-hidden="true">R$</span>
           <input
+            id="fixed-bill-value"
             type="number"
             step="0.01"
             v-model.number="valorReal"
             data-testid="valor-conta-fixa"
-            class="w-full bg-transparent outline-none text-[32px] leading-none font-semibold text-midnight tracking-[-0.8px] placeholder:text-smoke"
+            class="w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-stone/40"
             placeholder="0,00"
+            autofocus
           />
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold text-charcoal tracking-[-0.14px]">Quem pagou?</label>
-        <div class="flex gap-2 flex-wrap">
+      <div class="space-y-3">
+        <label class="block text-[10px] font-bold text-graphite uppercase tracking-widest ml-1">Quem pagou este mês?</label>
+        <div class="grid grid-cols-3 gap-2">
           <button
             v-for="m in membros"
             :key="m.id"
             @click="compradorId = m.id"
-            class="px-3.5 py-2 rounded-full text-xs font-semibold transition-colors shadow-subtle"
-            :class="compradorId === m.id ? 'bg-midnight text-white' : 'bg-stone text-graphite hover:bg-stone'"
+            class="py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 border-none cursor-pointer"
+            :class="compradorId === m.id ? 'bg-midnight text-white shadow-sm scale-[1.02]' : 'bg-stone hover:bg-ash/20 text-charcoal'"
             :data-testid="`pagador-${m.id}`"
           >
             {{ m.nome }}
@@ -46,47 +48,54 @@
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold text-charcoal tracking-[-0.14px]">Dividir com quem?</label>
-        <div class="flex gap-2 flex-wrap">
+      <div class="space-y-3">
+        <label class="block text-[10px] font-bold text-graphite uppercase tracking-widest ml-1">Dividir com a casa</label>
+        <div class="grid grid-cols-3 gap-2">
           <button
             v-for="m in membros"
             :key="m.id"
             @click="toggleSplit(m.id)"
-            class="px-3.5 py-2 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-subtle"
-            :class="splitIds.includes(m.id) ? 'bg-white text-charcoal' : 'bg-stone text-ash hover:bg-stone'"
+            class="relative py-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex flex-col items-center gap-2 border-none cursor-pointer"
+            :class="splitIds.includes(m.id) ? 'bg-white shadow-subtle scale-[1.02] text-charcoal' : 'bg-stone/50 text-graphite opacity-60 hover:opacity-100'"
             :data-testid="`split-${m.id}`"
           >
-            <span
-              class="w-2 h-2 rounded-full"
-              :class="splitIds.includes(m.id) ? 'bg-meadow' : 'bg-ash/30'"
-            ></span>
-            {{ m.nome }}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center font-display text-sm" :class="splitIds.includes(m.id) ? 'bg-midnight text-white' : 'bg-canvas text-charcoal'">
+              {{ m.nome[0] }}
+            </div>
+            <span>{{ m.nome }}</span>
+            <div v-if="splitIds.includes(m.id)" class="absolute top-1 right-1 animate-in zoom-in-50 duration-300">
+              <Check class="w-3 h-3 text-[#00a83d]" stroke-width="4" />
+            </div>
           </button>
         </div>
       </div>
 
-      <div class="rounded-card bg-parchment p-4 shadow-subtle text-xs leading-relaxed text-graphite">
-        <p class="font-semibold text-charcoal mb-1">Resumo da divisao</p>
-        <p>
-          R$ {{ (valorReal || 0).toFixed(2).replace('.', ',') }} pago por
-          <strong>{{ obterNome(compradorId) }}</strong>, dividido entre
-          <strong>{{ splitIds.length }}</strong> pessoa{{ splitIds.length === 1 ? '' : 's' }}.
-          Cada uma assume <strong>R$ {{ obterDivisao().replace('.', ',') }}</strong>.
-        </p>
+      <div class="rounded-2xl bg-[#00a83d]/5 border border-[#00a83d]/10 p-5 text-[11px] leading-relaxed text-[#00a83d] flex gap-4 items-center">
+        <div class="w-10 h-10 rounded-full bg-[#00a83d]/10 flex items-center justify-center shrink-0">
+          <Info class="w-5 h-5 text-[#00a83d]" />
+        </div>
+        <div class="space-y-0.5">
+          <p class="font-bold uppercase tracking-widest">Resumo do Rateio</p>
+          <p class="font-semibold">
+            R$ {{ (valorReal || 0).toFixed(2).replace('.', ',') }} pagos por
+            <span class="text-charcoal">{{ obterNome(compradorId) }}</span>, dividido entre
+            <span class="text-charcoal">{{ splitIds.length }}</span> pessoa{{ splitIds.length === 1 ? '' : 's' }}.
+            Cada uma assume <span class="font-bold text-charcoal">R$ {{ obterDivisao().replace('.', ',') }}</span>.
+          </p>
+        </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 pt-1">
-        <button @click="$emit('cancel')" class="px-4 py-3 text-xs font-semibold bg-stone hover:bg-stone text-midnight rounded-full transition-colors">
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button @click="$emit('cancel')" class="h-14 text-xs font-bold uppercase tracking-widest bg-stone hover:bg-ash/20 text-charcoal rounded-pill transition-all border-none cursor-pointer">
           Cancelar
         </button>
         <button
           @click="confirmar"
-          class="px-4 py-3 text-xs font-semibold bg-midnight hover:bg-charcoal text-white rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          class="h-14 text-xs font-bold uppercase tracking-widest bg-midnight hover:bg-charcoal text-white rounded-pill transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer active:scale-95"
           :disabled="valorReal <= 0 || !compradorId || splitIds.length === 0"
           data-testid="confirmar-conta-fixa"
         >
-          Lancar conta
+          Confirmar Lançamento
         </button>
       </div>
     </div>
@@ -97,6 +106,7 @@
 import { ref, watch } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
 import BottomSheet from '../ui/BottomSheet.vue'
+import { Check, Info } from 'lucide-vue-next'
 
 const props = defineProps<{
   visible: boolean

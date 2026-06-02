@@ -1,71 +1,56 @@
 <script setup lang="ts">
-import { Clock, Edit3, Trash2 } from 'lucide-vue-next'
+import { Edit3, Trash2 } from 'lucide-vue-next'
 import { Gasto } from '../../../models/entities/Gasto'
 import { computed } from 'vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import IllustrationMascot from '../ui/IllustrationMascot.vue'
 
-interface Props {
+const props = defineProps<{
   gastos: Gasto[]
   membros: { id: string; nome: string }[]
   isMonthClosed: boolean
-}
+}>()
 
-const props = defineProps<Props>()
 const emit = defineEmits(['excluir', 'ajustar'])
+
+const getMembroNome = (id: string) => {
+  return props.membros.find(m => m.id === id)?.nome || '?'
+}
 
 const sortedGastos = computed(() => {
   return [...props.gastos].sort((a, b) => b.id.localeCompare(a.id))
 })
-
-const getMembroNome = (id: string) => {
-  if (!id) return 'Desconhecido'
-  const membro = props.membros.find(m => m.id === id)
-  if (!membro) {
-    console.warn(`Member ID not found in ActivityFeed: ${id}. Available members:`, props.membros.map(m => ({ id: m.id, nome: m.nome })))
-  }
-  return membro?.nome || 'Membro desconhecido'
-}
-
-const isGastoFuturo = (g: Gasto) => {
-  return g.id.startsWith('upcoming-')
-}
 </script>
 
 <template>
-  <Card class="!p-0 overflow-hidden shadow-subtle bg-white text-graphite">
-    <!-- Cabeçalho Padronizado -->
-    <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex items-center">
+  <Card class="!p-0 overflow-hidden shadow-subtle bg-white text-graphite min-h-[400px] flex flex-col">
+    <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex justify-between items-center shrink-0">
       <div class="flex items-center gap-5">
         <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
-          <Clock class="w-5 h-5" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 20v-6M9 20V10M15 20V4M3 20h18"/></svg>
         </div>
         <div>
-          <h3 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Últimos Lançamentos</h3>
-          <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5 font-medium">
-            Atividade recente no período
+          <h2 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Atividades</h2>
+          <p class="text-[11px] text-graphite uppercase tracking-widest mt-0.5 font-semibold">
+            Últimos registros da casa
           </p>
         </div>
       </div>
     </div>
 
-    <div class="p-6">
-      <div v-if="sortedGastos.length === 0" class="text-center py-16 border border-dashed border-stone rounded-xl space-y-4 bg-canvas/30">
-        <!-- Mascote Azul Celeste com Lupa -->
-        <div class="animate-float">
-          <IllustrationMascot variant="sky" :size="80" mood="chill" />
-        </div>
-        <div class="space-y-1">
-          <p class="text-xs font-bold text-charcoal uppercase tracking-wider">Tudo deserto por aqui</p>
-          <p class="text-[11px] text-ash max-w-[220px] mx-auto leading-normal">
-            Nenhum gasto ou acerto registrado neste período ainda.
-          </p>
-        </div>
+    <div v-if="sortedGastos.length === 0" class="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6">
+      <div class="animate-float">
+        <IllustrationMascot variant="sunburst" :size="100" mood="happy" />
       </div>
+      <div class="space-y-1">
+        <p class="text-sm font-semibold text-charcoal uppercase tracking-widest">Tudo limpo por aqui</p>
+        <p class="text-xs text-graphite max-w-[200px] mx-auto leading-relaxed font-medium">Nenhum gasto registrado. Clique no botão de + para começar!</p>
+      </div>
+    </div>
 
-
-      <div v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    <div v-else class="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
+      <TransitionGroup name="list" tag="div" class="space-y-4">
         <div 
           v-for="g in sortedGastos" 
           :key="g.id"
@@ -73,36 +58,34 @@ const isGastoFuturo = (g: Gasto) => {
         >
           <div class="flex justify-between items-start gap-4">
             <div class="space-y-1">
-              <span class="font-bold text-sm text-charcoal block">
+              <span class="font-semibold text-sm text-charcoal block">
                 {{ g.descricao }}
-                <span v-if="g.totalInstallments > 1" class="text-xs text-ash font-medium">
+                <span v-if="g.totalInstallments > 1" class="text-xs text-graphite font-semibold">
                   ({{ g.totalInstallments - g.installments + 1 }}/{{ g.totalInstallments }})
                 </span>
               </span>
               <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span 
-                  class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
+                  class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
                   :class="{
-                    'bg-ember text-white': !g.id.startsWith('forecast-') && !g.id.startsWith('audit-settlement-') && !isGastoFuturo(g),
-                    'bg-ash/20 text-ash': g.id.startsWith('forecast-'),
-                    'bg-midnight text-white': g.id.startsWith('audit-settlement-'),
-                    'bg-ember/40 text-charcoal': isGastoFuturo(g)
+                    'bg-ember text-white': !g.id.startsWith('forecast-') && !g.id.startsWith('audit-settlement-'),
+                    'bg-stone text-graphite': g.id.startsWith('forecast-'),
+                    'bg-midnight text-white': g.id.startsWith('audit-settlement-')
                   }"
                 >
                   {{ 
                     g.id.startsWith('forecast-bill-') ? 'Previsão Fixa' :
                     g.id.startsWith('audit-settlement-') ? 'Rateio' :
-                    isGastoFuturo(g) ? 'Próximo Lançamento' :
                     g.isLoan ? 'Empréstimo' : 
                     g.isSettlement ? 'Acerto' : 
                     g.method === 'card' ? 'Cartão' : 'Pix' 
                   }}
                 </span>
-                <span v-if="g.id.startsWith('forecast-bill-')" class="text-[10px] text-ash italic">
+                <span v-if="g.id.startsWith('forecast-bill-')" class="text-[10px] text-graphite font-semibold italic">
                   (Aguardando lançamento)
                 </span>
-                <span v-else class="text-[10px] text-ash">
-                  • Pago por <strong class="text-charcoal font-semibold">{{ getMembroNome(g.compradorId) }}</strong>
+                <span v-else class="text-[10px] text-graphite font-medium">
+                  • Pago por <strong class="text-charcoal font-bold">{{ getMembroNome(g.compradorId) }}</strong>
                 </span>
               </div>
             </div>
@@ -110,7 +93,7 @@ const isGastoFuturo = (g: Gasto) => {
               <span class="font-display text-lg text-charcoal">
                 R$ {{ ((g.totalInstallments > 1 ? (g.valorTotal.centavos / g.totalInstallments) : g.valorTotal.centavos) / 100).toFixed(2).replace('.', ',') }}
               </span>
-              <span v-if="g.totalInstallments > 1" class="text-[9px] text-ash block">
+              <span v-if="g.totalInstallments > 1" class="text-[10px] text-graphite font-semibold block">
                 Total: R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}
               </span>
             </div>
@@ -123,43 +106,61 @@ const isGastoFuturo = (g: Gasto) => {
                 v-if="!g.isSettlement"
                 variant="secondary"
                 size="sm"
-                class="h-8 px-3 text-[10px] border border-stone"
+                class="h-9 px-4 text-xs border border-stone font-semibold"
                 :disabled="props.isMonthClosed"
+                :aria-label="'Ajustar ' + g.descricao"
                 @click="emit('ajustar', g)"
               >
-                <Edit3 class="w-3.5 h-3.5 mr-1.5" />
+                <Edit3 class="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
                 Ajustar
               </Button>
               <Button 
-                variant="secondary"
+                variant="secondary" 
                 size="sm"
-                class="h-8 px-3 text-[10px] text-coral hover:bg-coral/5 border border-transparent"
+                class="h-9 px-4 text-xs text-coral hover:bg-coral/5 border border-transparent font-semibold"
                 :disabled="props.isMonthClosed"
+                :aria-label="'Estornar ' + g.descricao"
                 @click="emit('excluir', g)"
               >
-                <Trash2 class="w-3.5 h-3.5 mr-1.5" />
+                <Trash2 class="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
                 Estornar
               </Button>
             </div>
           </div>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </Card>
 </template>
 
 <style scoped>
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s var(--ease-spring);
+}
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+.list-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(-10px);
+}
+.list-move {
+  transition: transform 0.5s var(--ease-spring);
+}
+
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-border);
+  background-color: var(--color-stone);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(203, 213, 225, 0.3);
+  background-color: var(--color-ash);
 }
 </style>

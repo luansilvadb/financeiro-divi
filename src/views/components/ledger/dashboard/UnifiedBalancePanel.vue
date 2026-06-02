@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { TrendingUp } from 'lucide-vue-next'
 import Card from '../../ui/Card.vue'
+import MembroAvatar from '../../ui/MembroAvatar.vue'
 
 defineProps<{
   membrosVisiveis: { id: string; nome: string }[]
   saldosUnificadosAtivos: Record<string, number>
 }>()
+
+const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['ember', 'sky', 'meadow', 'sunburst', 'flamingo']
 </script>
 
 <template>
@@ -13,36 +16,34 @@ defineProps<{
     <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex items-center">
       <div class="flex items-center gap-5">
         <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
-          <TrendingUp class="w-5 h-5" />
+          <TrendingUp class="w-5 h-5" aria-hidden="true" />
         </div>
         <div>
-          <h3 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Saldos Unificados</h3>
-          <p class="text-[11px] text-ash uppercase tracking-wider mt-0.5 font-medium">
+          <h2 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Saldos Unificados</h2>
+          <p class="text-[11px] text-graphite uppercase tracking-widest mt-0.5 font-semibold">
             Créditos e débitos da casa
           </p>
         </div>
       </div>
     </div>
 
-    <div class="p-6 space-y-4 relative z-10">
+    <div class="p-3 sm:p-6 space-y-3 sm:space-y-4 relative z-10">
       <div 
-        v-for="m in membrosVisiveis" 
+        v-for="(m, idx) in membrosVisiveis" 
         :key="m.id" 
-        class="group flex justify-between items-center p-4 rounded-xl border border-stone bg-canvas hover:border-ember/30 hover:bg-white transition-all duration-300"
+        class="group flex justify-between items-center p-3 sm:p-4 rounded-2xl border border-stone bg-canvas hover:border-ember/30 hover:bg-white transition-all duration-300"
       >
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-full bg-ember/10 flex items-center justify-center font-display text-lg text-ember">
-            {{ m.nome[0] }}
-          </div>
+        <div class="flex items-center gap-3 sm:gap-4">
+          <MembroAvatar :nome="m.nome" :variant="variants[idx % variants.length]" size="md" />
           <div>
-            <span class="font-bold text-base block text-charcoal">{{ m.nome }}</span>
-            <span class="text-[11px] text-ash block mt-0.5">
+            <span class="font-bold text-sm sm:text-base block text-charcoal leading-tight">{{ m.nome }}</span>
+            <span class="text-[10px] sm:text-[11px] text-graphite block mt-0.5 font-semibold uppercase tracking-wider opacity-60">
               {{ saldosUnificadosAtivos[m.id] > 0.005 ? 'Crédito acumulado' : saldosUnificadosAtivos[m.id] < -0.005 ? 'Débito pendente' : 'Tudo em dia' }}
             </span>
           </div>
         </div>
         <div class="text-right">
-          <span :class="['font-display text-xl block', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-ash']">
+          <span :class="['font-display text-xl sm:text-2xl block tracking-tighter', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-[#00a83d]' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-graphite']">
             {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id].toFixed(2).replace('.', ',') }}
           </span>
         </div>

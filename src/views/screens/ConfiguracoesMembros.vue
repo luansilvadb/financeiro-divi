@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { UserMinus, UserCheck, Users, CreditCard, Share2 } from 'lucide-vue-next'
+import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
 import Card from '../components/ui/Card.vue'
 import Button from '../components/ui/Button.vue'
@@ -58,6 +59,8 @@ const activeTab = ref<'membros' | 'cartoes'>('membros')
 
 const emit = defineEmits(['voltar'])
 
+const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['ember', 'sky', 'meadow', 'sunburst', 'flamingo']
+
 const handleAdicionar = async () => {
   const nomeValido = !!novoNome.value.trim()
   const credenciaisValidas = !mostrarCredenciais.value || (!!novoUsername.value.trim() && !!novoPassword.value.trim())
@@ -108,15 +111,15 @@ const handleAtivar = async (id: string) => {
       <div class="flex p-1.5 bg-parchment rounded-full w-full border border-stone">
         <button 
           @click="activeTab = 'membros'"
-          class="flex-1 relative px-3 sm:px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
+          class="flex-1 relative px-3 sm:px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group border-none bg-transparent cursor-pointer"
           :class="activeTab === 'membros' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
         >
           <div 
-            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
+            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-spring"
             :class="activeTab === 'membros' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'"
           />
           <Users 
-            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]" 
+            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-spring" 
             :class="activeTab === 'membros' ? 'text-ember scale-110' : 'scale-100 group-hover:text-ember/50'" 
           />
           <span class="relative z-10">Moradores</span>
@@ -124,15 +127,15 @@ const handleAtivar = async (id: string) => {
 
         <button 
           @click="activeTab = 'cartoes'"
-          class="flex-1 relative px-3 sm:px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group"
+          class="flex-1 relative px-3 sm:px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2.5 outline-none group border-none bg-transparent cursor-pointer"
           :class="activeTab === 'cartoes' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
         >
           <div 
-            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
+            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-spring"
             :class="activeTab === 'cartoes' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'"
           />
           <CreditCard 
-            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]" 
+            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-spring" 
             :class="activeTab === 'cartoes' ? 'text-ember scale-110' : 'scale-100 group-hover:text-ember/50'" 
           />
           <span class="relative z-10">Cartões</span>
@@ -146,92 +149,96 @@ const handleAtivar = async (id: string) => {
           class="col-start-1 row-start-1 transition-all duration-500 ease-spring space-y-4 w-full min-w-0"
           :class="activeTab === 'membros' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
         >
-          <Card v-if="activeTenantObj" class="p-3 sm:p-4 bg-white border border-stone shadow-subtle rounded-card flex items-center gap-3 w-full min-w-0">
-            <div class="w-10 h-10 shrink-0 rounded-full bg-ember/10 flex items-center justify-center text-ember">
-              <Share2 class="w-4 h-4" />
+          <Card v-if="activeTenantObj" class="p-4 sm:p-5 bg-white border border-stone shadow-subtle rounded-2xl flex items-center gap-4 w-full min-w-0">
+            <div class="w-12 h-12 shrink-0 rounded-xl bg-canvas shadow-subtle flex items-center justify-center text-ember">
+              <Share2 class="w-5 h-5" />
             </div>
             <div class="flex-grow min-w-0">
-              <p class="text-[10px] font-bold text-ash uppercase tracking-widest leading-none mb-1">Convite</p>
+              <p class="text-[10px] font-bold text-graphite uppercase tracking-widest leading-none mb-1.5">Link de Convite</p>
               <p class="text-xs font-bold text-charcoal truncate">{{ getInviteLink() }}</p>
             </div>
             <button 
               @click="handleCopyLink"
-              class="shrink-0 h-10 px-4 rounded-pill font-bold uppercase tracking-widest text-[10px] transition-all"
-              :class="copied ? 'bg-meadow text-white' : 'bg-charcoal text-white hover:bg-midnight'"
+              class="shrink-0 h-10 px-5 rounded-pill font-bold uppercase tracking-widest text-[10px] transition-all border-none cursor-pointer active:scale-95"
+              :class="copied ? 'bg-[#00a83d] text-white shadow-sm' : 'bg-charcoal text-white hover:bg-midnight'"
             >
               {{ copied ? 'Copiado!' : 'Copiar' }}
             </button>
           </Card>
 
-          <Card class="p-5 bg-white border border-stone shadow-subtle rounded-card">
-            <div class="flex flex-col gap-4">
-              <div class="flex items-center justify-between">
-                <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Novo Morador</h4>
-                <button 
-                  @click="toggleCredenciais"
-                  class="text-[10px] font-bold uppercase tracking-widest hover:underline transition-colors duration-150 select-none [touch-action:manipulation] [-webkit-tap-highlight-color:transparent]"
-                  :class="mostrarCredenciais ? 'text-ash' : 'text-ember'"
-                >
-                  {{ mostrarCredenciais ? 'Remover Login' : '+ Criar Login' }}
-                </button>
-              </div>
-
-              <div class="flex gap-2 w-full min-w-0">
-                <input 
-                  v-model="novoNome"
-                  type="text" 
-                  placeholder="Nome do morador"
-                  class="flex-grow min-w-0 w-full px-4 py-2.5 rounded-lg border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
-                  @keyup.enter="handleAdicionar"
-                />
-                <Button 
-                  @click="handleAdicionar"
-                  :disabled="!novoNome.trim() || !activeTenantId || (mostrarCredenciais && (!novoUsername.trim() || !novoPassword.trim()))"
-                  class="shrink-0 h-11 px-4 sm:px-6 bg-ember text-white rounded-lg font-bold uppercase tracking-widest text-[10px]"
-                >
-                  Adicionar
-                </Button>
-              </div>
-
-              <div v-show="mostrarCredenciais" class="grid grid-cols-2 gap-2 p-3 bg-parchment rounded-lg border border-stone/50">
-                <input 
-                  v-model="novoUsername"
-                  type="text" 
-                  placeholder="Usuário"
-                  :disabled="!mostrarCredenciais"
-                  class="px-3 py-2 rounded-md border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember text-xs"
-                />
-                <input 
-                  v-model="novoPassword"
-                  type="password" 
-                  placeholder="Senha"
-                  :disabled="!mostrarCredenciais"
-                  class="px-3 py-2 rounded-md border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember text-xs"
-                />
-              </div>
+          <Card class="p-6 bg-white border border-stone shadow-subtle rounded-2xl space-y-5">
+            <div class="flex items-center justify-between">
+              <h4 class="text-[10px] font-bold uppercase tracking-widest text-graphite ml-1">Novo Morador</h4>
+              <button 
+                @click="toggleCredenciais"
+                class="text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition-opacity select-none border-none bg-transparent cursor-pointer"
+                :class="mostrarCredenciais ? 'text-graphite' : 'text-ember'"
+              >
+                {{ mostrarCredenciais ? '− Ocultar Login' : '+ Gerar Acesso' }}
+              </button>
             </div>
+
+            <div class="flex gap-2 w-full min-w-0">
+              <input 
+                v-model="novoNome"
+                type="text" 
+                placeholder="Ex: Luana Oliveira"
+                class="flex-grow min-w-0 w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+                @keyup.enter="handleAdicionar"
+              />
+              <Button 
+                @click="handleAdicionar"
+                :disabled="!novoNome.trim() || !activeTenantId || (mostrarCredenciais && (!novoUsername.trim() || !novoPassword.trim()))"
+                class="shrink-0 h-11 px-6 bg-ember text-white rounded-xl font-bold uppercase tracking-widest text-[10px]"
+              >
+                Adicionar
+              </Button>
+            </div>
+
+            <Transition name="fade-slide">
+              <div v-show="mostrarCredenciais" class="grid grid-cols-2 gap-3 p-4 bg-parchment rounded-xl border border-stone/50 shadow-subtle">
+                <div class="space-y-1">
+                  <label class="text-[8px] font-bold uppercase text-graphite tracking-widest ml-1">Usuário</label>
+                  <input 
+                    v-model="novoUsername"
+                    type="text" 
+                    placeholder="luana.ol"
+                    :disabled="!mostrarCredenciais"
+                    class="w-full px-3 py-2.5 rounded-lg border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember text-xs"
+                  />
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[8px] font-bold uppercase text-graphite tracking-widest ml-1">Senha</label>
+                  <input 
+                    v-model="novoPassword"
+                    type="password" 
+                    placeholder="••••••••"
+                    :disabled="!mostrarCredenciais"
+                    class="w-full px-3 py-2.5 rounded-lg border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember text-xs"
+                  />
+                </div>
+              </div>
+            </Transition>
           </Card>
 
-          <div class="space-y-2">
+          <div class="space-y-3">
             <div class="flex items-center justify-between px-1">
-              <h4 class="text-[10px] font-bold uppercase tracking-widest text-ash">Moradores ({{ membros.length }})</h4>
+              <h4 class="text-[10px] font-bold uppercase tracking-widest text-graphite">Moradores ({{ membros.length }})</h4>
             </div>
             
-            <div class="grid gap-2">
+            <div class="grid gap-3">
               <div 
-                v-for="membro in membros" 
+                v-for="(membro, idx) in membros" 
                 :key="membro.id"
-                class="p-3 flex justify-between items-center bg-white border border-stone rounded-xl hover:border-ember/30 transition-all"
-                :class="{ 'opacity-60 bg-canvas/50': !membro.ativo }"
+                class="p-4 flex justify-between items-center bg-white border border-stone rounded-2xl hover:border-ember/30 transition-all duration-300 group"
+                :class="{ 'opacity-60 bg-canvas/30 grayscale-[0.5]': !membro.ativo }"
               >
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-full bg-parchment flex items-center justify-center font-display text-sm text-charcoal border border-stone">
-                    {{ membro.nome[0] }}
-                  </div>
+                <div class="flex items-center gap-4">
+                  <MembroAvatar :nome="membro.nome" :variant="variants[idx % variants.length]" size="md" />
                   <div>
-                    <span class="text-sm font-bold text-charcoal leading-none">{{ membro.nome }}</span>
-                    <p class="text-[9px] font-bold uppercase tracking-widest" :class="membro.ativo ? 'text-meadow' : 'text-ash'">
-                      {{ membro.ativo ? 'Ativo' : 'Inativo' }}
+                    <span class="text-sm font-bold text-charcoal leading-none block">{{ membro.nome }}</span>
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] mt-1" :class="membro.ativo ? 'text-[#00a83d]' : 'text-ash'">
+                      {{ membro.ativo ? 'Ativo na casa' : 'Desativado' }}
                     </p>
                   </div>
                 </div>
@@ -239,16 +246,16 @@ const handleAtivar = async (id: string) => {
                 <button 
                   @click="membro.ativo ? handleDesativar(membro.id) : handleAtivar(membro.id)"
                   :title="membro.ativo ? 'Desativar morador' : 'Reativar morador'"
-                  class="w-8 h-8 flex items-center justify-center rounded-full border border-stone text-ash hover:border-coral hover:text-coral transition-all"
+                  class="w-10 h-10 flex items-center justify-center rounded-full border border-stone bg-transparent text-ash hover:border-coral hover:text-coral hover:bg-coral/5 transition-all cursor-pointer active:scale-90"
                 >
-                  <UserMinus v-if="membro.ativo" class="w-3.5 h-3.5" />
-                  <UserCheck v-else class="w-3.5 h-3.5" />
+                  <UserMinus v-if="membro.ativo" class="w-4 h-4" />
+                  <UserCheck v-else class="w-4 h-4" />
                 </button>
               </div>
             </div>
             
-            <div v-if="membros.length === 0" class="text-center py-10 bg-parchment border-2 border-dashed border-stone rounded-card">
-              <p class="text-xs text-ash italic">Nenhum morador cadastrado.</p>
+            <div v-if="membros.length === 0" class="text-center py-12 border border-dashed border-stone rounded-2xl bg-canvas/30 animate-in fade-in">
+              <p class="text-sm text-graphite font-bold italic opacity-40">Nenhum morador cadastrado ainda.</p>
             </div>
           </div>
         </div>

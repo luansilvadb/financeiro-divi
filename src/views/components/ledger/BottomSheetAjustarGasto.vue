@@ -171,71 +171,71 @@ const handleConfirm = () => {
         <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
           <div class="space-y-6">
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Descrição</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Descrição</label>
             <input 
               type="text" 
               v-model="descInput" 
-              class="w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all" 
+              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all" 
               placeholder="Ex: Supermercado"
             />
           </div>
 
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Valor Total</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Valor Total</label>
             <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ash text-sm font-bold">R$</span>
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
               <input 
                 v-model.number="valorInput"
                 type="number"
                 step="0.01"
-                class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
+                class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
                 placeholder="0,00"
               />
             </div>
           </div>
 
           <div v-if="!props.gasto?.isLoan" class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Método / Cartão</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método / Cartão</label>
             <div class="grid grid-cols-3 gap-2">
               <button 
                 @click="selectMethod('pix', null)"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'pix' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
+                :class="activeMethod === 'pix' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-ash/20 text-charcoal'"
               >
-                <Wallet class="w-4 h-4" />
+                <Wallet class="w-4 h-4" aria-hidden="true" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">Pix</span>
               </button>
               <button 
                 v-for="c in props.cartoes"
                 :key="c.id"
                 @click="selectMethod('card', c.id)"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200"
-                :class="activeMethod === 'card' && activeCardOwner === c.id ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
+                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
+                :class="activeMethod === 'card' && activeCardOwner === c.id ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-ash/20 text-charcoal'"
               >
-                <CreditCard class="w-4 h-4" />
+                <CreditCard class="w-4 h-4" aria-hidden="true" />
                 <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.nome }}</span>
               </button>
             </div>
           </div>
 
           <div v-if="activeMethod === 'card' || props.gasto?.isLoan" class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Parcelamento</label>
-            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-stone bg-canvas">
-              <button type="button" @click="ajustarParcelas(-1)" class="w-9 h-9 rounded-full bg-stone hover:bg-stone/80 text-charcoal flex items-center justify-center transition-colors">
-                <Minus class="w-4 h-4" />
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Parcelamento</label>
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-stone bg-canvas shadow-subtle">
+              <button type="button" @click="ajustarParcelas(-1)" class="w-10 h-10 rounded-full bg-stone hover:bg-ash/20 text-charcoal flex items-center justify-center transition-colors border-none cursor-pointer">
+                <Minus class="w-4 h-4" aria-hidden="true" />
               </button>
               <div class="text-center">
-                <span class="text-base font-bold text-charcoal">{{ installmentsInput }}x</span>
-                <p class="text-[11px] text-ash">{{ infoParcelamento }}</p>
+                <span class="text-lg font-bold text-charcoal tracking-tight">{{ installmentsInput }}x</span>
+                <p class="text-[10px] font-semibold text-graphite">{{ infoParcelamento }}</p>
               </div>
-              <button type="button" @click="ajustarParcelas(1)" class="w-9 h-9 rounded-full bg-stone hover:bg-stone/80 text-charcoal flex items-center justify-center transition-colors">
-                <Plus class="w-4 h-4" />
+              <button type="button" @click="ajustarParcelas(1)" class="w-10 h-10 rounded-full bg-stone hover:bg-ash/20 text-charcoal flex items-center justify-center transition-colors border-none cursor-pointer">
+                <Plus class="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">
               {{ props.gasto?.isLoan ? 'Quem emprestou?' : activeMethod === 'pix' ? 'Quem fez o Pix?' : `Quem usou o cartão?` }}
             </label>
             <div class="grid grid-cols-3 gap-2">
@@ -243,8 +243,8 @@ const handleConfirm = () => {
                 v-for="m in props.membros"
                 :key="m.id"
                 @click="quemPaga = m.id"
-                class="py-3 rounded-xl border font-bold text-xs transition-all duration-200"
-                :class="quemPaga === m.id ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-stone text-charcoal border border-stone'"
+                class="py-3.5 rounded-xl font-bold text-xs transition-all duration-200 border-none cursor-pointer"
+                :class="quemPaga === m.id ? 'bg-midnight text-white shadow-sm scale-[1.02]' : 'bg-stone hover:bg-ash/20 text-charcoal'"
               >
                 {{ m.nome }}
               </button>
@@ -252,26 +252,26 @@ const handleConfirm = () => {
           </div>
 
           <div v-if="!props.gasto?.isLoan" class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-ash tracking-widest ml-1">Dividir com</label>
+            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Dividir com</label>
             <div class="grid grid-cols-3 gap-2">
               <button 
                 v-for="m in props.membros"
                 :key="m.id"
                 @click="toggleSplit(m.id)"
-                class="relative py-4 rounded-xl border font-bold text-xs transition-all duration-200 flex flex-col items-center gap-2"
-                :class="selectedSplit.includes(m.id) ? 'bg-ember/5 border-ember text-ember font-bold' : 'bg-stone border-stone text-ash hover:bg-stone'"
+                class="relative py-4 rounded-xl font-bold text-xs transition-all duration-300 flex flex-col items-center gap-2 border-none cursor-pointer"
+                :class="selectedSplit.includes(m.id) ? 'bg-ember/10 text-ember scale-[1.02] shadow-subtle' : 'bg-stone text-graphite hover:bg-ash/20'"
               >
-                <Users class="w-4 h-4" />
-                <span>{{ m.nome }}</span>
-                <div v-if="selectedSplit.includes(m.id)" class="absolute top-1.5 right-1.5">
-                  <Check class="w-3 h-3 text-ember" />
+                <Users class="w-5 h-5" aria-hidden="true" />
+                <span class="uppercase tracking-tight">{{ m.nome }}</span>
+                <div v-if="selectedSplit.includes(m.id)" class="absolute top-1.5 right-1.5 animate-in zoom-in-50 duration-300">
+                  <Check class="w-3.5 h-3.5 text-[#00a83d]" />
                 </div>
               </button>
             </div>
           </div>
 
-          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-meadow/5 border border-meadow/20 text-meadow">
-            <Info class="w-5 h-5 shrink-0 mt-0.5" />
+          <div v-if="!props.gasto?.isLoan" class="flex gap-4 p-4 rounded-xl bg-[#00a83d]/5 border border-[#00a83d]/20 text-[#00a83d]">
+            <Info class="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
             <div class="space-y-1">
               <p class="text-[10px] font-bold uppercase tracking-widest">Resumo do Rateio</p>
               <p class="text-xs font-semibold leading-relaxed">{{ calculatedSharesDesc }}</p>
@@ -283,8 +283,8 @@ const handleConfirm = () => {
         </div>
 
         <div class="p-6 sm:p-8 pt-4 border-t border-stone shrink-0 bg-white grid grid-cols-2 gap-3">
-          <Button variant="secondary" @click="emit('cancel')">Voltar</Button>
-          <Button variant="primary" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar</Button>
+          <Button variant="secondary" class="font-bold uppercase tracking-widest text-xs h-12" @click="emit('cancel')">Voltar</Button>
+          <Button variant="primary" class="font-bold uppercase tracking-widest text-xs h-12" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar Alterações</Button>
         </div>
     </div>
   </BottomSheet>
@@ -292,7 +292,7 @@ const handleConfirm = () => {
 
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
@@ -300,5 +300,8 @@ const handleConfirm = () => {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--color-stone);
   border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ash);
 }
 </style>
