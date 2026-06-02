@@ -86,10 +86,6 @@ defineExpose({
       <SkeletonMimic
         v-if="props.isLoading"
         :variant="props.activeTab === 'faturas' ? 'faturas' : 'hoje'"
-        :member-rows="getSkeletonRows(membrosVisiveis.length)"
-        :fixed-bill-rows="getSkeletonRows(contasFixas.length)"
-        :activity-rows="getSkeletonRows(gastosFaturaSelecionada.length)"
-        :netting-rows="Math.min(nettingTransferencias.length, 3)"
         key="skeleton"
       />
       <div v-else key="content" class="space-y-12">
