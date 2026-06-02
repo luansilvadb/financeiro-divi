@@ -1,10 +1,9 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import SkeletonBlock from './SkeletonBlock.vue'
+import skeletonBlockSource from './SkeletonBlock.vue?raw'
 
-const source = readFileSync(resolve(process.cwd(), 'src/views/components/ui/SkeletonBlock.vue'), 'utf8')
+const source = skeletonBlockSource
 
 describe('SkeletonBlock', () => {
   it('aplica forma, tom e custom properties configuraveis', () => {

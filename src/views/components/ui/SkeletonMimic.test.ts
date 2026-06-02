@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-// @ts-expect-error Vitest executes this source check in Node while the app tsconfig omits Node types.
-import { readFileSync } from 'node:fs'
 import SkeletonMimic from './SkeletonMimic.vue'
+import skeletonMimicSource from './SkeletonMimic.vue?raw'
+import mainCssSource from '../../../main.css?raw'
 
-const mimicSource = readFileSync('src/views/components/ui/SkeletonMimic.vue', 'utf8')
-const mainCssSource = readFileSync('src/main.css', 'utf8')
+const mimicSource = skeletonMimicSource
 
 describe('SkeletonMimic', () => {
   it('anuncia a carga uma vez e esconde a arvore visual', () => {
