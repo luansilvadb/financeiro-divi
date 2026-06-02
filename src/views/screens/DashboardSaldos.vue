@@ -57,7 +57,6 @@ const {
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
 const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
-const getSkeletonRows = (count: number, fallback = 3, max = 5) => Math.min(Math.max(count, fallback), max)
 
 const {
   isAuthed,
