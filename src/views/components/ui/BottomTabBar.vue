@@ -18,7 +18,10 @@ const tabs = [
   <div class="fixed bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
     <nav class="relative w-full max-w-[420px] pointer-events-auto nav-stable">
       <!-- Floating Island Background -->
-      <div class="absolute inset-0 bg-white/90 backdrop-blur-xl border border-stone shadow-lg rounded-pill pointer-events-none" />
+      <div class="absolute inset-0 bg-white/70 backdrop-blur-2xl border border-stone/50 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-pill pointer-events-none">
+        <!-- Subtle Inner Highlight for Premium Depth -->
+        <div class="absolute inset-0 rounded-pill ring-1 ring-white/40 ring-inset shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]" />
+      </div>
       
       <div class="relative flex items-center justify-around h-16 sm:h-18 px-4">
         <template v-for="(tab, index) in tabs" :key="tab.id">
@@ -27,17 +30,23 @@ const tabs = [
           
           <button
             @click="emit('update:modelValue', tab.id)"
-            class="flex-1 flex flex-col items-center justify-center h-full relative group outline-none cursor-pointer border-none bg-transparent"
+            class="flex-1 flex flex-col items-center justify-center h-full relative group outline-none cursor-pointer border-none bg-transparent rounded-pill transition-colors duration-500"
             :class="modelValue === tab.id ? 'text-ember' : 'text-graphite/50 hover:text-charcoal'"
           >
+            <!-- Pill Highlight Background -->
+            <div
+              class="absolute inset-1 rounded-full bg-ember/5 transition-all duration-500 ease-spring"
+              :class="modelValue === tab.id ? 'scale-100 opacity-100' : 'scale-75 opacity-0'"
+            />
+
             <div 
-              class="flex flex-col items-center justify-center gap-1.5 transition-all duration-500 ease-spring"
-              :class="modelValue === tab.id ? '-translate-y-1 scale-110' : 'translate-y-0 group-active:scale-90'"
+              class="relative flex flex-col items-center justify-center gap-1.5 transition-all duration-500 ease-spring"
+              :class="modelValue === tab.id ? '-translate-y-0.5 scale-105' : 'translate-y-0 group-active:scale-90'"
             >
               <component 
                 :is="tab.icon" 
                 class="w-5.5 h-5.5 transition-all duration-500 ease-spring"
-                :class="modelValue === tab.id ? 'stroke-[2.5px]' : 'stroke-[1.8px]'"
+                :class="modelValue === tab.id ? 'stroke-[2.5px] drop-shadow-[0_2px_8px_rgba(255,62,0,0.2)]' : 'stroke-[1.8px]'"
               />
               <span 
                 class="text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-500 leading-none"
@@ -46,10 +55,10 @@ const tabs = [
               </span>
             </div>
             
-            <!-- Active Indicator (Ember Glow) -->
+            <!-- Active Indicator (Ember Glow Dot) -->
             <div 
-              class="absolute bottom-1 w-8 h-1 rounded-full bg-ember shadow-[0_0_12px_rgba(255,62,0,0.4)] transition-all duration-500 ease-spring origin-center"
-              :class="modelValue === tab.id ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'"
+              class="absolute bottom-1.5 w-1 h-1 rounded-full bg-ember shadow-[0_0_8px_rgba(255,62,0,0.6)] transition-all duration-500 ease-spring origin-center"
+              :class="modelValue === tab.id ? 'scale-100 opacity-100' : 'scale-0 opacity-0'"
             />
           </button>
         </template>
