@@ -214,10 +214,10 @@ const handleLogout = async () => {
           <Transition name="fab-zoom">
             <div
               v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-              class="fixed bottom-7 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
+              class="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
             >
               <button
-                class="w-16 h-16 rounded-full shadow-[0_8px_32px_rgba(255,62,0,0.4)] active:scale-90 flex items-center justify-center transition-all duration-500 ease-spring bg-ember hover:bg-ember/90 text-white border-none focus:outline-none pointer-events-auto cursor-pointer group fab-stable"
+                class="w-16 h-16 rounded-full shadow-[0_12px_40px_rgba(255,62,0,0.5)] active:scale-90 flex items-center justify-center transition-all duration-500 ease-spring bg-ember hover:bg-ember/90 text-white border-none focus:outline-none pointer-events-auto cursor-pointer group fab-stable"
                 :class="isMonthClosed ? 'opacity-50 grayscale cursor-not-allowed' : ''"
                 @click="handleFabClick"
                 aria-label="Novo lançamento"
