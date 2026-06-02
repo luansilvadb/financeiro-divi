@@ -21,14 +21,13 @@ const delay = (index: number, offset = 0) => `${index * 80 + offset}ms`
 </script>
 
 <template>
+  <span class="sr-only" role="status">Carregando dados do dashboard</span>
+
   <section
     class="skeleton-theme"
     aria-busy="true"
-    aria-live="polite"
     data-testid="skeleton-mimic"
   >
-    <span class="sr-only" role="status">Carregando dados do dashboard</span>
-
     <div
       class="pointer-events-none select-none"
       aria-hidden="true"

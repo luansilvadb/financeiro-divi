@@ -9,8 +9,12 @@ const mimicSource = skeletonMimicSource
 describe('SkeletonMimic', () => {
   it('anuncia a carga uma vez e esconde a arvore visual', () => {
     const wrapper = mount(SkeletonMimic)
-    expect(wrapper.get('[data-testid="skeleton-mimic"]').attributes('aria-busy')).toBe('true')
+    const busySection = wrapper.get('[data-testid="skeleton-mimic"]')
+
     expect(wrapper.get('[role="status"]').text()).toBe('Carregando dados do dashboard')
+    expect(busySection.attributes('aria-busy')).toBe('true')
+    expect(busySection.attributes('aria-live')).toBeUndefined()
+    expect(busySection.find('[role="status"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="skeleton-visual"]').attributes('aria-hidden')).toBe('true')
   })
 
@@ -42,10 +46,19 @@ describe('SkeletonMimic', () => {
   })
 
   it('mantem tokens locais para light dark e velocidade customizavel', () => {
-    expect(mimicSource).toContain('.skeleton-theme')
-    expect(mimicSource).toContain(':global(.dark) .skeleton-theme')
-    expect(mimicSource).toContain('--skeleton-duration: 1.8s')
-    expect(mimicSource).toContain('--skeleton-ease:')
+    const lightTokens = mimicSource.match(/\.skeleton-theme\s*{([\s\S]*?)}/)?.[1]
+    const darkTokens = mimicSource.match(/:global\(\.dark\) \.skeleton-theme\s*{([\s\S]*?)}/)?.[1]
+
+    expect(lightTokens).toContain('--skeleton-base:')
+    expect(lightTokens).toContain('--skeleton-soft:')
+    expect(lightTokens).toContain('--skeleton-strong:')
+    expect(lightTokens).toContain('--skeleton-highlight:')
+    expect(lightTokens).toContain('--skeleton-duration: 1.8s')
+    expect(lightTokens).toContain('--skeleton-ease:')
+    expect(darkTokens).toContain('--skeleton-base:')
+    expect(darkTokens).toContain('--skeleton-soft:')
+    expect(darkTokens).toContain('--skeleton-strong:')
+    expect(darkTokens).toContain('--skeleton-highlight:')
   })
 
   it('remove o shimmer global legado', () => {
