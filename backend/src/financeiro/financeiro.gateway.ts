@@ -6,7 +6,7 @@ import {
   ConnectedSocket
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,6 +22,7 @@ export class FinanceiroGateway {
   server: Server;
 
   constructor(
+    @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
     private prisma: PrismaService,
   ) {}

@@ -1,13 +1,16 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => FinanceiroGateway))
+    private gateway: FinanceiroGateway,
   ) {}
 
   async register(username: string, passwordSecret: string, inviteCode?: string, membroId?: string) {
@@ -66,6 +69,9 @@ export class AuthService {
             }
           });
         }
+        
+        // Dispara o evento de Websocket para os usuários da casa que já estão no Dashboard
+        this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
       }
     }
 
