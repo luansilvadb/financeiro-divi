@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -61,7 +62,7 @@ export class AuthService {
         if (!vinculado) {
           await this.prisma.membroCasa.create({
             data: {
-              id: `membro-${crypto.randomUUID()}`,
+              id: `membro-${randomUUID()}`,
               tenantId: tenant.id,
               nome: user.username,
               avatar: user.username.substring(0, 2).toUpperCase(),

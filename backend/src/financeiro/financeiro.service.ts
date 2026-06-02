@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { serializeBigInt } from '../shared/utils/serialization';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class FinanceiroService {
@@ -47,7 +48,7 @@ export class FinanceiroService {
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
     await this.prisma.membroCasa.create({
       data: {
-        id: `membro-${crypto.randomUUID()}`,
+        id: `membro-${randomUUID()}`,
         tenantId: tenant.id,
         nome: user ? user.username : 'Membro Fundador',
         avatar: (user ? user.username : 'MF').substring(0, 2).toUpperCase(),
@@ -100,7 +101,7 @@ export class FinanceiroService {
     } else {
       await this.prisma.membroCasa.create({
         data: {
-          id: `membro-${crypto.randomUUID()}`,
+          id: `membro-${randomUUID()}`,
           tenantId: tenant.id,
           nome: username,
           avatar: username.substring(0, 2).toUpperCase(),
