@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Tab } from '../components/ui/BottomTabBar.vue'
 import { useDashboardViewModel } from '../../viewmodels/useDashboardViewModel'
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
@@ -73,6 +73,20 @@ const {
   handleLogoutClick
 } = useCasasMultitenant()
 
+const transitionName = ref('tab-slide-right')
+const tabOrder: Tab[] = ['hoje', 'faturas']
+
+watch(() => props.activeTab, (newTab, oldTab) => {
+  const newIndex = tabOrder.indexOf(newTab || 'hoje')
+  const oldIndex = tabOrder.indexOf(oldTab || 'hoje')
+
+  if (newIndex > oldIndex) {
+    transitionName.value = 'tab-slide-right'
+  } else if (newIndex < oldIndex) {
+    transitionName.value = 'tab-slide-left'
+  }
+})
+
 defineExpose({
   isDropdownAbertosOpen: vm.isDropdownAbertosOpen,
   periodoSelecionado: vm.periodoSelecionado
@@ -100,7 +114,7 @@ defineExpose({
 
           <!-- Container Estabilizado para evitar Jumper na BottomNav Mobile -->
           <div class="relative min-h-[100dvh] overflow-x-hidden -mx-4 px-4 sm:-mx-6 sm:px-6">
-            <Transition name="tab-slide" mode="out-in">
+            <Transition :name="transitionName" mode="out-in">
               <div v-if="isHoje" key="hoje" class="space-y-12 pb-32">
                 <div v-if="totalLancamentosPeriodoSelecionado === 0" class="py-16 flex flex-col items-center justify-center text-center space-y-8 bg-parchment/30 rounded-3xl border-2 border-dashed border-stone/50 mx-1">
                   <div class="animate-float">
