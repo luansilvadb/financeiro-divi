@@ -1,27 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type SkeletonShape = 'text' | 'rect' | 'circle'
-type SkeletonTone = 'soft' | 'base' | 'strong'
+interface Props {
+  shape?: 'text' | 'rect' | 'circle'
+  tone?: 'soft' | 'base' | 'strong'
+  width?: string
+  height?: string
+  radius?: string
+  delay?: string
+}
 
-const props = withDefaults(
-  defineProps<{
-    shape?: SkeletonShape
-    tone?: SkeletonTone
-    width?: string
-    height?: string
-    radius?: string
-    delay?: string
-  }>(),
-  {
-    shape: 'rect',
-    tone: 'base',
-    width: '100%',
-    height: '1rem',
-    radius: undefined,
-    delay: '0ms'
-  }
-)
+const props = withDefaults(defineProps<Props>(), {
+  shape: 'rect',
+  tone: 'base',
+  width: '100%',
+  height: '1rem',
+  radius: undefined,
+  delay: '0ms'
+})
 
 const blockStyle = computed(() => ({
   '--skeleton-width': props.width,
@@ -33,11 +29,14 @@ const blockStyle = computed(() => ({
 
 <template>
   <span
-    data-testid="skeleton-block"
-    aria-hidden="true"
-    class="skeleton-block"
-    :class="[`skeleton-block--${shape}`, `skeleton-block--${tone}`]"
+    :class="[
+      'skeleton-block',
+      `skeleton-block--${props.shape}`,
+      `skeleton-block--${props.tone}`
+    ]"
     :style="blockStyle"
+    aria-hidden="true"
+    data-testid="skeleton-block"
   />
 </template>
 
@@ -48,28 +47,25 @@ const blockStyle = computed(() => ({
   width: var(--skeleton-width);
   height: var(--skeleton-height);
   overflow: hidden;
-  background: var(--skeleton-fill);
-  border-radius: var(--skeleton-radius, 0.625rem);
-  contain: paint;
-  --skeleton-default-soft: rgb(73 87 80 / 8%);
-  --skeleton-default-base: rgb(73 87 80 / 13%);
-  --skeleton-default-strong: rgb(73 87 80 / 20%);
-  --skeleton-default-highlight: rgb(255 255 255 / 48%);
+  border-radius: var(--skeleton-radius, 0.75rem);
+  background: var(--skeleton-base, rgba(242, 240, 237, 0.88));
 }
 
 .skeleton-block::after {
   position: absolute;
   inset: 0;
-  content: '';
+  content: "";
   background: linear-gradient(
     100deg,
-    transparent 14%,
-    var(--skeleton-highlight, var(--skeleton-default-highlight)) 48%,
-    transparent 82%
+    transparent 18%,
+    var(--skeleton-highlight, rgba(255, 255, 255, 0.72)) 48%,
+    transparent 78%
   );
   transform: translate3d(-110%, 0, 0);
   animation: skeleton-shimmer var(--skeleton-duration, 1.8s)
-    var(--skeleton-ease, cubic-bezier(0.4, 0, 0.2, 1)) var(--skeleton-delay) infinite;
+    var(--skeleton-ease, cubic-bezier(0.4, 0, 0.2, 1))
+    var(--skeleton-delay)
+    infinite;
   will-change: transform;
 }
 
@@ -82,22 +78,11 @@ const blockStyle = computed(() => ({
 }
 
 .skeleton-block--soft {
-  --skeleton-fill: var(--skeleton-soft, var(--skeleton-default-soft));
-}
-
-.skeleton-block--base {
-  --skeleton-fill: var(--skeleton-base, var(--skeleton-default-base));
+  background: var(--skeleton-soft, rgba(242, 240, 237, 0.56));
 }
 
 .skeleton-block--strong {
-  --skeleton-fill: var(--skeleton-strong, var(--skeleton-default-strong));
-}
-
-:global(.dark) .skeleton-block {
-  --skeleton-default-soft: rgb(255 255 255 / 6%);
-  --skeleton-default-base: rgb(255 255 255 / 10%);
-  --skeleton-default-strong: rgb(255 255 255 / 16%);
-  --skeleton-default-highlight: rgb(255 255 255 / 12%);
+  background: var(--skeleton-strong, rgba(226, 223, 219, 0.96));
 }
 
 @keyframes skeleton-shimmer {
@@ -110,7 +95,7 @@ const blockStyle = computed(() => ({
   .skeleton-block::after {
     animation: none;
     transform: none;
-    will-change: auto;
+    opacity: 0.35;
   }
 }
 </style>
