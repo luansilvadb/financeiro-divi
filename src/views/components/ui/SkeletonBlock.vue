@@ -113,7 +113,8 @@ const blockStyle = computed(() => ({
 @media (prefers-reduced-motion: reduce) {
   .skeleton-block::after {
     animation: none;
-    transform: translate3d(0, 0, 0);
+    transform: none;
+    will-change: auto;
   }
 }
 </style>
