@@ -179,17 +179,29 @@
   }
 
   /* Dashboard Tab Transitions */
-  .tab-slide-enter-active,
-  .tab-slide-leave-active {
+  .tab-slide-right-enter-active,
+  .tab-slide-right-leave-active,
+  .tab-slide-left-enter-active,
+  .tab-slide-left-leave-active {
     transition: all 0.4s var(--ease-spring);
   }
 
-  .tab-slide-enter-from {
+  /* Navigating Right: Transition to the right */
+  .tab-slide-right-enter-from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  .tab-slide-right-leave-to {
     opacity: 0;
     transform: translateX(20px);
   }
 
-  .tab-slide-leave-to {
+  /* Navigating Left: Transition to the left */
+  .tab-slide-left-enter-from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  .tab-slide-left-leave-to {
     opacity: 0;
     transform: translateX(-20px);
   }
