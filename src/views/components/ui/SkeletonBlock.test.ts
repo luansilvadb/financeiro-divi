@@ -39,18 +39,26 @@ describe('SkeletonBlock', () => {
 describe('SkeletonBlock CSS', () => {
   it('mantem o shimmer animado na GPU', () => {
     expect(source).toMatch(
-      /\.skeleton-block::after\s*{[\s\S]*?transform:\s*translate3d\(-110%, 0, 0\);[\s\S]*?animation:\s*skeleton-shimmer[\s\S]*?will-change:\s*transform;/
+      /\.skeleton-block::after\s*{[\s\S]*?transform:\s*translate3d\(-110%, 0, 0\);[\s\S]*?animation:\s*skeleton-shimmer\s+var\(--skeleton-duration, 1\.8s\)\s+var\(--skeleton-ease, cubic-bezier\(0\.4, 0, 0\.2, 1\)\)\s+var\(--skeleton-delay\)\s+infinite;[\s\S]*?will-change:\s*transform;/
     )
     expect(source).toMatch(
       /@keyframes skeleton-shimmer\s*{[\s\S]*?transform:\s*translate3d\(110%, 0, 0\);/
     )
   })
 
-  it('oferece variantes de tom para dark mode', () => {
-    expect(source).toContain(':global(.dark) .skeleton-block')
-    expect(source).toContain(':global(.dark) .skeleton-block--soft')
-    expect(source).toContain(':global(.dark) .skeleton-block--base')
-    expect(source).toContain(':global(.dark) .skeleton-block--strong')
+  it('permite customizar os tons por tokens herdados', () => {
+    expect(source).toContain('--skeleton-fill: var(--skeleton-soft, var(--skeleton-default-soft));')
+    expect(source).toContain('--skeleton-fill: var(--skeleton-base, var(--skeleton-default-base));')
+    expect(source).toContain('--skeleton-fill: var(--skeleton-strong, var(--skeleton-default-strong));')
+  })
+
+  it('define fallbacks dark sem sobrescrever tokens herdados', () => {
+    const darkDefaults = source.match(/:global\(\.dark\) \.skeleton-block\s*{([\s\S]*?)}/)?.[1]
+
+    expect(darkDefaults).toContain('--skeleton-default-soft: rgb(255 255 255 / 6%)')
+    expect(darkDefaults).toContain('--skeleton-default-base: rgb(255 255 255 / 10%)')
+    expect(darkDefaults).toContain('--skeleton-default-strong: rgb(255 255 255 / 16%)')
+    expect(darkDefaults).toContain('--skeleton-default-highlight: rgb(255 255 255 / 12%)')
   })
 
   it('desativa animacao e hints de movimento quando reduced motion esta ativo', () => {

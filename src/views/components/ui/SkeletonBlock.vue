@@ -51,6 +51,10 @@ const blockStyle = computed(() => ({
   background: var(--skeleton-fill);
   border-radius: var(--skeleton-radius, 0.625rem);
   contain: paint;
+  --skeleton-default-soft: rgb(73 87 80 / 8%);
+  --skeleton-default-base: rgb(73 87 80 / 13%);
+  --skeleton-default-strong: rgb(73 87 80 / 20%);
+  --skeleton-default-highlight: rgb(255 255 255 / 48%);
 }
 
 .skeleton-block::after {
@@ -60,11 +64,12 @@ const blockStyle = computed(() => ({
   background: linear-gradient(
     100deg,
     transparent 14%,
-    var(--skeleton-highlight, rgb(255 255 255 / 48%)) 48%,
+    var(--skeleton-highlight, var(--skeleton-default-highlight)) 48%,
     transparent 82%
   );
   transform: translate3d(-110%, 0, 0);
-  animation: skeleton-shimmer 1.8s cubic-bezier(0.16, 1, 0.3, 1) var(--skeleton-delay) infinite;
+  animation: skeleton-shimmer var(--skeleton-duration, 1.8s)
+    var(--skeleton-ease, cubic-bezier(0.4, 0, 0.2, 1)) var(--skeleton-delay) infinite;
   will-change: transform;
 }
 
@@ -77,31 +82,22 @@ const blockStyle = computed(() => ({
 }
 
 .skeleton-block--soft {
-  --skeleton-fill: rgb(73 87 80 / 8%);
+  --skeleton-fill: var(--skeleton-soft, var(--skeleton-default-soft));
 }
 
 .skeleton-block--base {
-  --skeleton-fill: rgb(73 87 80 / 13%);
+  --skeleton-fill: var(--skeleton-base, var(--skeleton-default-base));
 }
 
 .skeleton-block--strong {
-  --skeleton-fill: rgb(73 87 80 / 20%);
+  --skeleton-fill: var(--skeleton-strong, var(--skeleton-default-strong));
 }
 
 :global(.dark) .skeleton-block {
-  --skeleton-highlight: rgb(255 255 255 / 12%);
-}
-
-:global(.dark) .skeleton-block--soft {
-  --skeleton-fill: rgb(255 255 255 / 6%);
-}
-
-:global(.dark) .skeleton-block--base {
-  --skeleton-fill: rgb(255 255 255 / 10%);
-}
-
-:global(.dark) .skeleton-block--strong {
-  --skeleton-fill: rgb(255 255 255 / 16%);
+  --skeleton-default-soft: rgb(255 255 255 / 6%);
+  --skeleton-default-base: rgb(255 255 255 / 10%);
+  --skeleton-default-strong: rgb(255 255 255 / 16%);
+  --skeleton-default-highlight: rgb(255 255 255 / 12%);
 }
 
 @keyframes skeleton-shimmer {
