@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import NovoLancamentoWizard from './views/screens/NovoLancamentoWizard.vue'
 import DashboardSaldos from './views/screens/DashboardSaldos.vue'
 import ConfiguracoesMembros from './views/screens/ConfiguracoesMembros.vue'
@@ -68,6 +68,8 @@ const inicializarSocket = (tenantId: string) => {
 
 
 onMounted(async () => {
+  window.addEventListener('divi:tenant-changed', handleCasaSelecionada)
+  
   if (isAuthed.value) {
     try {
       // Começamos com isLoading true para o skeleton estar pronto quando o splash sair
@@ -91,6 +93,10 @@ onMounted(async () => {
   } else {
     isInitializing.value = false
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('divi:tenant-changed', handleCasaSelecionada)
 })
 
 const handleSalvarTransacao = async () => {
@@ -125,8 +131,14 @@ const handleAuthSuccess = async () => {
 
 const handleCasaSelecionada = async () => {
   hasTenant.value = true
-  isLoading.value = true
+  
+  // Evita o "flashbang" do skeleton se a API responder rápido demais (< 150ms)
+  const skeletonTimer = setTimeout(() => {
+    isLoading.value = true
+  }, 150)
+
   try {
+    socketService.desconectar()
     await Promise.all([
       recarregarMembros(),
       inicializarCartoes(),
@@ -136,6 +148,7 @@ const handleCasaSelecionada = async () => {
   } catch (error: any) {
     console.error('Erro ao inicializar dados da nova casa:', error)
   } finally {
+    clearTimeout(skeletonTimer)
     isLoading.value = false
   }
 }

@@ -81,13 +81,12 @@ defineExpose({
 
 <template>
   <div class="space-y-12">
-    <Transition name="fade" mode="out-in" appear>
-      <SkeletonMimic
-        v-if="props.isLoading"
-        :variant="props.activeTab === 'faturas' ? 'faturas' : 'hoje'"
-        key="skeleton"
-      />
-      <div v-else key="content" class="space-y-12">
+    <SkeletonMimic
+      v-if="props.isLoading"
+      :variant="props.activeTab === 'faturas' ? 'faturas' : 'hoje'"
+      key="skeleton"
+    />
+    <div v-else key="content" class="space-y-12">
         <DashboardHeader
           :current-year="currentYear"
           :current-month-name="currentMonthName"
@@ -95,7 +94,7 @@ defineExpose({
           :is-authed="isAuthed"
           :active-tenant-obj="activeTenantObj"
           @open-historico="vm.abrirModal('historico')"
-          @open-casas="showBottomSheetCasas = true"
+          @open-casas="vm.abrirModal('casas')"
           @open-settings="$emit('openSettings')"
         />
 
@@ -231,18 +230,5 @@ defineExpose({
             :casasMultitenant="{ isAuthed, activeTenantId, casas, showBottomSheetCasas, form, copiedCode, activeTenantObj, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
           />
         </div>
-    </Transition>
   </div>
 </template>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease-spring;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

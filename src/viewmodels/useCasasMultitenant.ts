@@ -64,7 +64,7 @@ export function useCasasMultitenant() {
     tenantSessionService.setActiveTenant(id)
     activeTenantId.value = id
     showBottomSheetCasas.value = false
-    window.location.reload()
+    window.dispatchEvent(new CustomEvent('divi:tenant-changed'))
   }
 
   const criarNovaCasa = async () => {

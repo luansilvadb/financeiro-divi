@@ -36,6 +36,7 @@ model MembroCasa {
   tenantId  String   @map("tenant_id") @db.Uuid
   nome      String
   avatar    String
+  ativo     Boolean  @default(true)
   userId    String?  @map("user_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
   

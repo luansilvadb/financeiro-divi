@@ -122,8 +122,9 @@ export class FinanceiroService {
   }
 
   async salvarMembro(tenantId: string, membroData: any) {
-    let { id, nome, avatar, userId, username, password } = membroData;
+    let { id, nome, avatar, userId, username, password, ativo } = membroData;
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
+    const isActive = ativo !== undefined ? ativo : true;
 
     if (!userId && username && password) {
       try {
@@ -143,11 +144,13 @@ export class FinanceiroService {
         tenantId,
         nome,
         avatar: defaultAvatar,
+        ativo: isActive,
         userId,
       },
       update: {
         nome,
         avatar: defaultAvatar,
+        ativo: isActive,
         userId,
       },
     });

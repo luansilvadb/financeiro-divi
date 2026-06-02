@@ -115,11 +115,11 @@ const handleAtivar = async (id: string) => {
           :class="activeTab === 'membros' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
         >
           <div 
-            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-spring"
+            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-out"
             :class="activeTab === 'membros' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'"
           />
           <Users 
-            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-spring" 
+            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-out" 
             :class="activeTab === 'membros' ? 'text-ember scale-110' : 'scale-100 group-hover:text-ember/50'" 
           />
           <span class="relative z-10">Moradores</span>
@@ -131,11 +131,11 @@ const handleAtivar = async (id: string) => {
           :class="activeTab === 'cartoes' ? 'text-charcoal' : 'text-ash hover:text-graphite'"
         >
           <div 
-            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-spring"
+            class="absolute inset-0 bg-white shadow-subtle rounded-full transition-all duration-500 ease-out"
             :class="activeTab === 'cartoes' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'"
           />
           <CreditCard 
-            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-spring" 
+            class="w-4 h-4 relative z-10 transition-colors duration-500 ease-out" 
             :class="activeTab === 'cartoes' ? 'text-ember scale-110' : 'scale-100 group-hover:text-ember/50'" 
           />
           <span class="relative z-10">Cartões</span>
@@ -144,11 +144,8 @@ const handleAtivar = async (id: string) => {
     </div>
 
     <div class="flex-grow overflow-y-auto custom-scrollbar px-4 py-6 sm:px-8 space-y-6 min-w-0">
-      <div class="grid relative items-start w-full min-w-0">
-        <div 
-          class="col-start-1 row-start-1 transition-all duration-500 ease-spring space-y-4 w-full min-w-0"
-          :class="activeTab === 'membros' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
-        >
+      <Transition name="tab-fade" mode="out-in">
+        <div v-if="activeTab === 'membros'" class="space-y-4 w-full min-w-0">
           <Card v-if="activeTenantObj" class="p-4 sm:p-5 bg-white border border-stone shadow-subtle rounded-2xl flex items-center gap-4 w-full min-w-0">
             <div class="w-12 h-12 shrink-0 rounded-xl bg-canvas shadow-subtle flex items-center justify-center text-ember">
               <Share2 class="w-5 h-5" />
@@ -260,13 +257,10 @@ const handleAtivar = async (id: string) => {
           </div>
         </div>
 
-        <div 
-          class="col-start-1 row-start-1 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] w-full min-w-0"
-          :class="activeTab === 'cartoes' ? 'opacity-100 translate-y-0 z-10 delay-100 visible' : 'opacity-0 translate-y-4 pointer-events-none z-0 invisible max-h-0 overflow-hidden'"
-        >
+        <div v-else-if="activeTab === 'cartoes'" class="w-full min-w-0">
           <ConfiguracoesCartoes />
         </div>
-      </div>
+      </Transition>
     </div>
 
     <div class="shrink-0 p-4 sm:px-8 sm:pb-8 border-t border-stone bg-white flex justify-end">
@@ -274,3 +268,15 @@ const handleAtivar = async (id: string) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+.tab-fade-enter-from,
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+</style>

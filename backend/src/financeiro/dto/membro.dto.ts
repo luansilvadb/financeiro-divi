@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class MembroDto {
   @ApiProperty({
@@ -25,6 +25,14 @@ export class MembroDto {
   @IsOptional()
   @IsString()
   avatar?: string;
+
+  @ApiPropertyOptional({
+    description: 'Status de ativação do membro na casa',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  ativo?: boolean;
 
   @ApiPropertyOptional({
     description: 'ID do usuário associado (opcional se for um membro sem login na plataforma)',

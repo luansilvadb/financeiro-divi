@@ -26,6 +26,7 @@ onMounted(async () => {
   const code = params.get('invite')
   if (code) {
     inviteCode.value = code
+    isRegisterMode.value = true
     try {
       housePreview.value = await tenantSessionService.getInvitePreview(code)
     } catch (e) {

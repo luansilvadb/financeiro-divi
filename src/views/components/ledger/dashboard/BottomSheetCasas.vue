@@ -9,18 +9,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['close'])
-
-const {
-  casas,
-  activeTenantId,
-  copiedCode,
-  form,
-  selecionarCasa,
-  copyInviteCode,
-  criarNovaCasa,
-  entrarPorCodigo,
-  handleLogoutClick
-} = props.casasMultitenant
 </script>
 
 <template>
@@ -42,14 +30,14 @@ const {
         <h4 class="text-[9px] font-semibold uppercase tracking-widest text-ash">Alternar de Casa</h4>
         <div class="grid gap-2">
           <div 
-            v-for="casa in casas" 
+            v-for="casa in casasMultitenant.casas" 
             :key="casa.id"
-            @click="selecionarCasa(casa.id)"
+            @click="casasMultitenant.selecionarCasa(casa.id); emit('close')"
             class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
-            :class="activeTenantId === casa.id ? 'border-ember bg-ember/5 text-ember font-semibold' : 'border-stone bg-canvas text-charcoal'"
+            :class="casasMultitenant.activeTenantId === casa.id ? 'border-ember bg-ember/5 text-ember font-semibold' : 'border-stone bg-canvas text-charcoal'"
           >
             <div class="flex items-center gap-3">
-              <Home class="w-4 h-4 shrink-0" :class="activeTenantId === casa.id ? 'text-ember' : 'text-ash'" />
+              <Home class="w-4 h-4 shrink-0" :class="casasMultitenant.activeTenantId === casa.id ? 'text-ember' : 'text-ash'" />
               <span class="text-sm font-medium">{{ casa.name }}</span>
             </div>
             <div class="flex items-center gap-2" @click.stop>
@@ -57,10 +45,10 @@ const {
                 {{ casa.inviteCode }}
               </code>
               <button 
-                @click="copyInviteCode(casa.inviteCode)" 
+                @click="casasMultitenant.copyInviteCode(casa.inviteCode)" 
                 class="p-1 hover:bg-stone rounded transition-colors"
               >
-                <Check v-if="copiedCode === casa.inviteCode" class="w-3.5 h-3.5 text-meadow" />
+                <Check v-if="casasMultitenant.copiedCode === casa.inviteCode" class="w-3.5 h-3.5 text-meadow" />
                 <Copy v-else class="w-3.5 h-3.5 text-ash" />
               </button>
             </div>
@@ -74,11 +62,11 @@ const {
         <h4 class="text-[9px] font-bold uppercase tracking-widest text-graphite">Criar Nova Casa</h4>
         <div class="flex gap-2">
           <input 
-            v-model="form.nomeNovaCasa"
+            v-model="casasMultitenant.form.nomeNovaCasa"
             placeholder="Ex: República Central"
             class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
           />
-          <Button size="sm" @click="criarNovaCasa">Criar</Button>
+          <Button size="sm" @click="casasMultitenant.criarNovaCasa">Criar</Button>
         </div>
       </div>
 
@@ -86,22 +74,22 @@ const {
         <h4 class="text-[9px] font-bold uppercase tracking-widest text-graphite">Entrar com Código</h4>
         <div class="flex gap-2">
           <input 
-            v-model="form.codigoConvite"
+            v-model="casasMultitenant.form.codigoConvite"
             placeholder="Ex: CASA-7F2A1"
             class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
           />
-          <Button size="sm" @click="entrarPorCodigo">Entrar</Button>
+          <Button size="sm" @click="casasMultitenant.entrarPorCodigo">Entrar</Button>
         </div>
       </div>
 
-      <div v-if="form.errorCasa" class="text-xs text-coral font-medium pt-2">
-        {{ form.errorCasa }}
+      <div v-if="casasMultitenant.form.errorCasa" class="text-xs text-coral font-medium pt-2">
+        {{ casasMultitenant.form.errorCasa }}
       </div>
     </div>
     
     <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0 flex justify-between items-center">
       <button 
-        @click="handleLogoutClick" 
+        @click="casasMultitenant.handleLogoutClick" 
         class="flex items-center gap-2 text-xs font-semibold text-coral hover:underline focus:outline-none"
       >
         <LogOut class="w-4 h-4" />
