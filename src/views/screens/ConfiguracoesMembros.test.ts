@@ -46,7 +46,7 @@ describe('ConfiguracoesMembros', () => {
     expect(wrapper.text()).toContain('Luan')
     expect(wrapper.text()).toContain('Maria')
     expect(wrapper.text()).toContain('Joao')
-    expect(wrapper.text()).toContain('Inativo')
+    expect(wrapper.text()).toContain('Desativado')
   })
 
   it('deve chamar adicionarMembro ao preencher o nome e clicar no botão', async () => {
@@ -71,7 +71,7 @@ describe('ConfiguracoesMembros', () => {
 
   it('não deve mostrar botão de desativar para membros já desativados', () => {
     const wrapper = mount(ConfiguracoesMembros)
-    const items = wrapper.findAll('.grid.gap-2 > div')
+    const items = wrapper.findAll('.grid.gap-3 > div')
     
     const itemDesativado = items.find(i => i.text().includes('Joao'))
     expect(itemDesativado?.find('button[title="Desativar morador"]').exists()).toBe(false)
@@ -112,10 +112,10 @@ describe('ConfiguracoesMembros', () => {
   it('deve alternar a visibilidade das credenciais ao clicar no botão', async () => {
     const wrapper = mount(ConfiguracoesMembros)
     
-    // Inicialmente o botão deve conter '+ Criar Login'
-    const btnToggle = wrapper.findAll('button').find(b => b.text().includes('Login'))
+    // Inicialmente o botão deve conter '+ Gerar Acesso'
+    const btnToggle = wrapper.findAll('button').find(b => b.text().includes('Gerar Acesso'))
     expect(btnToggle).toBeDefined()
-    expect(btnToggle!.text()).toContain('+ Criar Login')
+    expect(btnToggle!.text()).toContain('+ Gerar Acesso')
     
     // E o container de credenciais (v-show) deve estar oculto
     const formCredenciais = wrapper.find('.bg-parchment.grid-cols-2')
@@ -123,7 +123,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Clicar para mostrar as credenciais
     await btnToggle!.trigger('click')
-    expect(btnToggle!.text()).toContain('Remover Login')
+    expect(btnToggle!.text()).toContain('Ocultar Login')
     
     // O container não deve mais estar oculto
     expect(formCredenciais.attributes('style') || '').not.toContain('display: none')

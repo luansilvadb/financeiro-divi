@@ -28,12 +28,12 @@ describe('PopupLancarContaFixa', () => {
       global: { stubs: { Teleport: true } }
     })
 
-    expect(wrapper.text()).toContain('Lancar Energia')
-    expect(wrapper.text()).toContain('Valor do talao')
-    expect(wrapper.text()).toContain('Quem pagou?')
-    expect(wrapper.text()).toContain('Dividir com quem?')
-    expect(wrapper.text()).toContain('Resumo da divisao')
-    expect(wrapper.text()).toContain('Lancar conta')
+    expect(wrapper.text()).toContain('Lançar Energia')
+    expect(wrapper.text()).toContain('Valor do Talão')
+    expect(wrapper.text()).toContain('Quem pagou este mês?')
+    expect(wrapper.text()).toContain('Dividir com a casa')
+    expect(wrapper.text()).toContain('Resumo do Rateio')
+    expect(wrapper.text()).toContain('Confirmar Lançamento')
   })
 
   it('mantem o evento confirm com valor, comprador e divisao', async () => {

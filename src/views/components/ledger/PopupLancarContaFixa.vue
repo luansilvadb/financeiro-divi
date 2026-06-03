@@ -86,17 +86,21 @@
       </div>
 
       <div class="grid grid-cols-2 gap-3 pt-2">
-        <button @click="$emit('cancel')" class="h-14 text-xs font-bold uppercase tracking-widest bg-stone hover:bg-ash/20 text-charcoal rounded-pill transition-all border-none cursor-pointer">
+        <Button
+          variant="secondary"
+          @click="$emit('cancel')"
+          class="h-14 text-xs font-bold uppercase tracking-widest"
+        >
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           @click="confirmar"
-          class="h-14 text-xs font-bold uppercase tracking-widest bg-midnight hover:bg-charcoal text-white rounded-pill transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer active:scale-95"
+          class="h-14 text-xs font-bold uppercase tracking-widest bg-midnight hover:bg-charcoal text-white rounded-pill transition-all shadow-md"
           :disabled="valorReal <= 0 || !compradorId || splitIds.length === 0"
           data-testid="confirmar-conta-fixa"
         >
           Confirmar Lançamento
-        </button>
+        </Button>
       </div>
     </div>
   </BottomSheet>
@@ -106,6 +110,7 @@
 import { ref, watch } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
 import BottomSheet from '../ui/BottomSheet.vue'
+import Button from '../ui/Button.vue'
 import { Check, Info } from 'lucide-vue-next'
 
 const props = defineProps<{
