@@ -102,7 +102,7 @@ const handleGravar = async () => {
   const dValor = Dinheiro.deReais(Number(valor.value))
   const divisoes = wizFlow.value === 'loan' 
     ? [new DivisaoDeGasto(borrowerId.value!, dValor)]
-    : participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.distribuir(participantesDivisao.value.length)[i]))
+    : participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
 
   await gastoService.lancarGastoOuEmprestimo({
     flow: wizFlow.value!,
