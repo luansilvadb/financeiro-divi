@@ -26,5 +26,6 @@ export function valorParcelaAtual(
   totalInstallments: number
 ): Dinheiro {
   const { divisor, index } = calcularContextoParcela(installments, totalInstallments)
-  return valor.distribuir(divisor)[index] || Dinheiro.deCentavos(0)
+  // Otimizado: usa valorNoIndice para evitar alocação de array e loop O(n)
+  return valor.valorNoIndice(divisor, index)
 }
