@@ -44,7 +44,7 @@ describe('FaturaService', () => {
     ]
     const faturaRepo = {
       listarTodas: vi.fn().mockResolvedValue(faturasExistentes),
-      salvar: vi.fn()
+      salvarMuitas: vi.fn()
     }
     const service = new FaturaService(faturaRepo as any)
 
@@ -55,8 +55,8 @@ describe('FaturaService', () => {
 
     const result = await service.assegurarFaturasAbertas(cartoes, 5, 2026)
 
-    expect(faturaRepo.salvar).toHaveBeenCalledTimes(1)
-    expect(faturaRepo.salvar.mock.calls[0][0].cartaoId).toBe('c_novo')
+    expect(faturaRepo.salvarMuitas).toHaveBeenCalledTimes(1)
+    expect(faturaRepo.salvarMuitas.mock.calls[0][0][0].cartaoId).toBe('c_novo')
     expect(result.length).toBe(3)
   })
 })
