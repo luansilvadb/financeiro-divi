@@ -1,8 +1,32 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useToast } from '../../../composables/useToast'
-import { X } from 'lucide-vue-next'
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-vue-next'
 
-const { visible, message, hide } = useToast()
+const { visible, message, type, hide } = useToast()
+
+const config = computed(() => {
+  switch (type.value) {
+    case 'success':
+      return {
+        icon: CheckCircle2,
+        colorClass: 'text-meadow',
+        bgClass: 'bg-meadow/10'
+      }
+    case 'error':
+      return {
+        icon: AlertCircle,
+        colorClass: 'text-coral',
+        bgClass: 'bg-coral/10'
+      }
+    default:
+      return {
+        icon: Info,
+        colorClass: 'text-sky',
+        bgClass: 'bg-sky/10'
+      }
+  }
+})
 </script>
 
 <template>
@@ -15,13 +39,17 @@ const { visible, message, hide } = useToast()
       <!-- Borda Inset Simulatada para profundidade tátil -->
       <div class="absolute inset-0 rounded-card-lg shadow-subtle pointer-events-none"></div>
 
-      <!-- Ícone Alerta Sólido (Ember) -->
-      <div class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0 bg-ember/10">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-ember animate-in zoom-in-50 duration-500">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
+      <!-- Ícone Dinâmico -->
+      <div
+        class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-colors duration-500"
+        :class="config.bgClass"
+      >
+        <component
+          :is="config.icon"
+          class="w-5 h-5 animate-in zoom-in-50 duration-500"
+          :class="config.colorClass"
+          stroke-width="3"
+        />
       </div>
 
       <div class="flex-1 text-sm font-bold text-charcoal leading-tight tracking-tight">
