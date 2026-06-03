@@ -1,11 +1,16 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { tenantSessionService } from '../shared/container'
+import { useToast } from '../composables/useToast'
 
 export function useCasasMultitenant() {
   const isAuthed = ref(tenantSessionService.isAuthenticated())
   const activeTenantId = ref(tenantSessionService.getActiveTenantId())
   const casas = ref<any[]>([])
   const showBottomSheetCasas = ref(false)
+  const toast = useToast()
+  const isCreatingCasa = ref(false)
+  const isEnteringCasa = ref(false)
+
   const form = reactive({
     nomeNovaCasa: '',
     codigoConvite: '',
@@ -74,6 +79,7 @@ export function useCasasMultitenant() {
       return
     }
 
+    isCreatingCasa.value = true
     try {
       const response = await fetch(`${getApiUrl()}/financeiro/tenants`, {
         method: 'POST',
@@ -90,9 +96,12 @@ export function useCasasMultitenant() {
       await response.json()
       form.nomeNovaCasa = ''
       await carregarCasas()
+      toast.show('Casa criada com sucesso!', 'success')
     } catch (err) {
       form.errorCasa = 'Falha de conexão com o servidor'
       console.error(err)
+    } finally {
+      isCreatingCasa.value = false
     }
   }
 
@@ -104,6 +113,7 @@ export function useCasasMultitenant() {
       return
     }
 
+    isEnteringCasa.value = true
     try {
       const response = await fetch(`${getApiUrl()}/financeiro/tenants/entrar`, {
         method: 'POST',
@@ -120,9 +130,12 @@ export function useCasasMultitenant() {
       await response.json()
       form.codigoConvite = ''
       await carregarCasas()
+      toast.show('Você entrou na casa!', 'success')
     } catch (err) {
       form.errorCasa = 'Falha de conexão com o servidor'
       console.error(err)
+    } finally {
+      isEnteringCasa.value = false
     }
   }
 
@@ -130,6 +143,7 @@ export function useCasasMultitenant() {
     try {
       await navigator.clipboard.writeText(code)
       copiedCode.value = code
+      toast.show('Código de convite copiado!', 'success')
       setTimeout(() => { copiedCode.value = null }, 2000)
     } catch (err) {
       console.error('Falha ao copiar:', err)
@@ -152,6 +166,8 @@ export function useCasasMultitenant() {
     activeTenantId,
     casas,
     showBottomSheetCasas,
+    isCreatingCasa,
+    isEnteringCasa,
     form,
     copiedCode,
     activeTenantObj,

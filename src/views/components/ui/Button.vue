@@ -5,16 +5,18 @@ interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'inverted'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   class?: string
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'primary',
-  size: 'default'
+  size: 'default',
+  loading: false
 })
 
 const classes = computed(() => {
   return [
-    'inline-flex items-center justify-center whitespace-nowrap transition-all duration-300 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-95 cursor-pointer border-none select-none',
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap transition-all duration-300 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-95 cursor-pointer border-none select-none',
     // Sizes
     props.size === 'default' && 'h-12 px-6 text-sm font-bold uppercase tracking-widest',
     props.size === 'sm' && 'h-9 px-4 text-[10px] font-bold uppercase tracking-wider',
@@ -32,7 +34,8 @@ const classes = computed(() => {
 </script>
 
 <template>
-  <button :class="classes">
+  <button :class="classes" :disabled="loading" :aria-busy="loading">
+    <span v-if="loading" class="animate-spin inline-block w-4 h-4 border-2 border-current/30 border-t-current rounded-full" aria-hidden="true"></span>
     <slot />
   </button>
 </template>

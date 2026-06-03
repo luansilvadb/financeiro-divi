@@ -66,7 +66,13 @@ const emit = defineEmits(['close'])
             placeholder="Ex: República Central"
             class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
           />
-          <Button size="sm" @click="casasMultitenant.criarNovaCasa">Criar</Button>
+          <Button
+            size="sm"
+            :loading="casasMultitenant.isCreatingCasa"
+            @click="casasMultitenant.criarNovaCasa"
+          >
+            Criar
+          </Button>
         </div>
       </div>
 
@@ -78,7 +84,13 @@ const emit = defineEmits(['close'])
             placeholder="Ex: CASA-7F2A1"
             class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
           />
-          <Button size="sm" @click="casasMultitenant.entrarPorCodigo">Entrar</Button>
+          <Button
+            size="sm"
+            :loading="casasMultitenant.isEnteringCasa"
+            @click="casasMultitenant.entrarPorCodigo"
+          >
+            Entrar
+          </Button>
         </div>
       </div>
 
