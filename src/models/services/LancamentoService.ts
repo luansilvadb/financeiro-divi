@@ -68,7 +68,7 @@ export class LancamentoService implements ILancamentoService {
 
   async lancarGastoContaFixa(dados: { faturaId: string; conta: { id: string; name: string }; valorCentavos: number; compradorId: string; participantes: string[] }): Promise<void> {
     const total = Dinheiro.deCentavos(dados.valorCentavos)
-    const divisoes = total.distribuir(dados.participantes.length).map((v, i) => new DivisaoDeGasto(dados.participantes[i], v))
+    const divisoes = dados.participantes.map((membroId, i) => new DivisaoDeGasto(membroId, total.valorNoIndice(dados.participantes.length, i)))
     await this.gastoRepo.salvar(new Gasto({ id: `bill-${dados.faturaId}-${dados.conta.id}`, faturaId: dados.faturaId, descricao: `Talão: ${dados.conta.name}`, valorTotal: total, compradorId: dados.compradorId, divisoes, recurringBillId: dados.conta.id, installments: 1, isLoan: false }))
   }
 }
