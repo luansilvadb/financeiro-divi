@@ -341,11 +341,7 @@ export class FinanceiroService {
 
   async salvarMuitosGastos(tenantId: string, gastosList: any[]) {
     const result = await this.prisma.$transaction(async (tx) => {
-      const savedGastos = [];
-      for (const g of gastosList) {
-        savedGastos.push(await this.upsertGastoTx(tx, tenantId, g));
-      }
-      return savedGastos;
+      return Promise.all(gastosList.map(g => this.upsertGastoTx(tx, tenantId, g)));
     });
     const serialized = serializeBigInt(result);
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
