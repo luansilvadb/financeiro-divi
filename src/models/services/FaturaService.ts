@@ -23,36 +23,37 @@ export class FaturaService implements IFaturaService {
     ano: number
   ): Promise<Fatura[]> {
     const todasFaturas = await this.faturaRepo.listarTodas()
-    const faturasAtualizadas = [...todasFaturas]
+    const novasFaturas: Fatura[] = []
 
     const temFaturaPix = todasFaturas.some(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === mes && f.periodo.ano === ano)
     if (!temFaturaPix) {
-      const novaFaturaPix = new Fatura({
+      novasFaturas.push(new Fatura({
         id: `PIX_DEFAULT_ID-${mes}-${ano}`,
         cartaoId: 'PIX_DEFAULT_ID',
         periodo: { mes, ano },
         responsavelId: 'PIX_SYSTEM_OWNER',
         status: 'ABERTA'
-      })
-      await this.faturaRepo.salvar(novaFaturaPix)
-      faturasAtualizadas.push(novaFaturaPix)
+      }))
     }
 
     for (const card of cartoes) {
       const temFatura = todasFaturas.some(f => f.cartaoId === card.id && f.periodo.mes === mes && f.periodo.ano === ano)
       if (!temFatura) {
-        const novaFatura = new Fatura({
+        novasFaturas.push(new Fatura({
           id: `${card.id}-${mes}-${ano}`,
           cartaoId: card.id,
           periodo: { mes, ano },
           responsavelId: card.responsavelPadraoId,
           status: 'ABERTA'
-        })
-        await this.faturaRepo.salvar(novaFatura)
-        faturasAtualizadas.push(novaFatura)
+        }))
       }
     }
-    return faturasAtualizadas
+
+    if (novasFaturas.length > 0) {
+      await this.faturaRepo.salvarMuitas(novasFaturas)
+    }
+
+    return [...todasFaturas, ...novasFaturas]
   }
 }
 
