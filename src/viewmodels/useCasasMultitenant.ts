@@ -1,11 +1,16 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { tenantSessionService } from '../shared/container'
+import { useToast } from '../composables/useToast'
 
 export function useCasasMultitenant() {
+  const toast = useToast()
   const isAuthed = ref(tenantSessionService.isAuthenticated())
   const activeTenantId = ref(tenantSessionService.getActiveTenantId())
   const casas = ref<any[]>([])
   const showBottomSheetCasas = ref(false)
+  const isCreating = ref(false)
+  const isEntering = ref(false)
+
   const form = reactive({
     nomeNovaCasa: '',
     codigoConvite: '',
@@ -74,6 +79,7 @@ export function useCasasMultitenant() {
       return
     }
 
+    isCreating.value = true
     try {
       const response = await fetch(`${getApiUrl()}/financeiro/tenants`, {
         method: 'POST',
@@ -84,15 +90,20 @@ export function useCasasMultitenant() {
       if (!response.ok) {
         const err = await response.json().catch(() => ({}))
         form.errorCasa = err.message || 'Erro ao criar casa'
+        toast.show(form.errorCasa, 'error')
         return
       }
 
       await response.json()
       form.nomeNovaCasa = ''
       await carregarCasas()
+      toast.show('Casa criada com sucesso!', 'success')
     } catch (err) {
       form.errorCasa = 'Falha de conexão com o servidor'
+      toast.show(form.errorCasa, 'error')
       console.error(err)
+    } finally {
+      isCreating.value = false
     }
   }
 
@@ -104,6 +115,7 @@ export function useCasasMultitenant() {
       return
     }
 
+    isEntering.value = true
     try {
       const response = await fetch(`${getApiUrl()}/financeiro/tenants/entrar`, {
         method: 'POST',
@@ -114,15 +126,20 @@ export function useCasasMultitenant() {
       if (!response.ok) {
         const err = await response.json().catch(() => ({}))
         form.errorCasa = err.message || 'Código de convite inválido ou casa não encontrada.'
+        toast.show(form.errorCasa, 'error')
         return
       }
 
       await response.json()
       form.codigoConvite = ''
       await carregarCasas()
+      toast.show('Você entrou na casa!', 'success')
     } catch (err) {
       form.errorCasa = 'Falha de conexão com o servidor'
+      toast.show(form.errorCasa, 'error')
       console.error(err)
+    } finally {
+      isEntering.value = false
     }
   }
 
@@ -130,8 +147,10 @@ export function useCasasMultitenant() {
     try {
       await navigator.clipboard.writeText(code)
       copiedCode.value = code
+      toast.show('Link de convite copiado!', 'success')
       setTimeout(() => { copiedCode.value = null }, 2000)
     } catch (err) {
+      toast.show('Não foi possível copiar o link', 'error')
       console.error('Falha ao copiar:', err)
     }
   }
@@ -152,6 +171,8 @@ export function useCasasMultitenant() {
     activeTenantId,
     casas,
     showBottomSheetCasas,
+    isCreating,
+    isEntering,
     form,
     copiedCode,
     activeTenantObj,

@@ -26,7 +26,6 @@ const getInviteLink = () => {
 
 const handleCopyLink = () => {
   copyInviteCode(getInviteLink())
-  toast.show('Link de convite copiado!', 'success')
 }
 
 const novoNome = ref('')

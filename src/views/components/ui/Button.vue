@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Loader2 } from 'lucide-vue-next'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'inverted'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   class?: string
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'primary',
-  size: 'default'
+  size: 'default',
+  loading: false
 })
 
 const classes = computed(() => {
   return [
     'inline-flex items-center justify-center whitespace-nowrap transition-all duration-300 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-95 cursor-pointer border-none select-none',
+    props.loading && 'relative !text-transparent transition-none',
     // Sizes
     props.size === 'default' && 'h-12 px-6 text-sm font-bold uppercase tracking-widest',
     props.size === 'sm' && 'h-9 px-4 text-[10px] font-bold uppercase tracking-wider',
@@ -32,7 +36,10 @@ const classes = computed(() => {
 </script>
 
 <template>
-  <button :class="classes">
+  <button :class="classes" :disabled="loading" :aria-busy="loading">
+    <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-current">
+      <Loader2 class="w-5 h-5 animate-spin" />
+    </div>
     <slot />
   </button>
 </template>
