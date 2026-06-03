@@ -151,10 +151,27 @@ export class GastoService implements IGastoService {
 
   async removerAssociacaoContaFixa(contaFixaId: string): Promise<void> {
     const gastosAssociados = (await this.gastoRepo.listarTodos()).filter(g => g.recurringBillId === contaFixaId)
-    for (const g of gastosAssociados) {
-      await this.gastoRepo.salvar(new Gasto({
-        id: g.id, faturaId: g.faturaId, descricao: g.descricao, valorTotal: g.valorTotal, compradorId: g.compradorId, divisoes: g.divisoes, installments: g.installments, totalInstallments: g.totalInstallments, isLoan: g.isLoan, borrowerId: g.borrowerId, recurringBillId: null, isSettlement: g.isSettlement, settlementDetails: g.settlementDetails, method: g.method, cardOwner: g.cardOwner, grupoParcelasId: g.grupoParcelasId
-      }))
-    }
+    if (gastosAssociados.length === 0) return
+
+    const gastosParaSalvar = gastosAssociados.map(g => new Gasto({
+      id: g.id,
+      faturaId: g.faturaId,
+      descricao: g.descricao,
+      valorTotal: g.valorTotal,
+      compradorId: g.compradorId,
+      divisoes: g.divisoes,
+      installments: g.installments,
+      totalInstallments: g.totalInstallments,
+      isLoan: g.isLoan,
+      borrowerId: g.borrowerId,
+      recurringBillId: null,
+      isSettlement: g.isSettlement,
+      settlementDetails: g.settlementDetails,
+      method: g.method,
+      cardOwner: g.cardOwner,
+      grupoParcelasId: g.grupoParcelasId
+    }))
+
+    await this.gastoRepo.salvarMuitos(gastosParaSalvar)
   }
 }
