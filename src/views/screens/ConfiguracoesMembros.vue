@@ -175,13 +175,24 @@ const handleAtivar = async (id: string) => {
             </div>
 
             <div class="flex gap-2 w-full min-w-0">
-              <input 
-                v-model="novoNome"
-                type="text" 
-                placeholder="Ex: Luana Oliveira"
-                class="flex-grow min-w-0 w-full px-4 py-3 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
-                @keyup.enter="handleAdicionar"
-              />
+              <div class="relative flex-grow min-w-0">
+                <input
+                  v-model="novoNome"
+                  maxlength="50"
+                  type="text"
+                  placeholder="Ex: Luana Oliveira"
+                  aria-label="Nome do novo morador"
+                  class="w-full px-4 py-3 pr-12 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+                  @keyup.enter="handleAdicionar"
+                />
+                <span
+                  v-if="novoNome.length > 0"
+                  aria-live="polite"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-ash/60 animate-in fade-in zoom-in-95 duration-300"
+                >
+                  {{ novoNome.length }}/50
+                </span>
+              </div>
               <Button 
                 @click="handleAdicionar"
                 :disabled="!novoNome.trim() || !activeTenantId || (mostrarCredenciais && (!novoUsername.trim() || !novoPassword.trim()))"
