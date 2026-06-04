@@ -183,7 +183,7 @@ const handleAtivar = async (id: string) => {
                   placeholder="Ex: Luana Oliveira"
                   aria-label="Nome do novo morador"
                   class="w-full px-4 py-3 pr-12 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
-                  @keyup.enter="handleAdicionar"
+                  @keydown.enter.prevent="handleAdicionar"
                 />
                 <span
                   v-if="novoNome.length > 0"

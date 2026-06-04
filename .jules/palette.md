@@ -12,3 +12,7 @@
 ## 2024-06-04 - [Accessible Input Limits]
 **Learning:** Adding a `maxlength` constraint without a visual and accessible counter creates a confusing experience for users when their typing suddenly stops. Combining `maxlength` with an `aria-live="polite"` counter and a descriptive `aria-label` ensures both visual and screen-reader users understand input limitations without disruption.
 **Action:** Always pair character limits (`maxlength`) with a live-region counter and clear ARIA labeling for the input field.
+
+## 2024-06-04 - [Responsive and Accessible Input Interaction]
+**Learning:** Using `@keyup.enter` for form-like submissions is less responsive and fails to prevent default browser behaviors before they occur. Switching to `@keydown.enter.prevent` ensures the action triggers immediately on press and protects against unintended side effects (like page refreshes). Additionally, icon-only buttons and inputs using only placeholders are inaccessible to screen readers without explicit `aria-label` attributes.
+**Action:** Use `@keydown.enter.prevent` for custom form submission triggers and ensure all icon-only interactions and label-less inputs include descriptive `aria-label` attributes. For state-changing actions like "Copy", use dynamic `aria-label` values to communicate the result.

@@ -47,6 +47,7 @@ const emit = defineEmits(['close'])
               <button 
                 @click="casasMultitenant.copyInviteCode(casa.inviteCode)" 
                 class="p-1 hover:bg-stone rounded transition-colors"
+                :aria-label="casasMultitenant.copiedCode === casa.inviteCode ? 'Código copiado' : 'Copiar código de convite'"
               >
                 <Check v-if="casasMultitenant.copiedCode === casa.inviteCode" class="w-3.5 h-3.5 text-meadow" />
                 <Copy v-else class="w-3.5 h-3.5 text-ash" />
@@ -64,8 +65,9 @@ const emit = defineEmits(['close'])
           <input 
             v-model="casasMultitenant.form.nomeNovaCasa"
             placeholder="Ex: República Central"
-            @keyup.enter="casasMultitenant.criarNovaCasa"
+            @keydown.enter.prevent="casasMultitenant.criarNovaCasa"
             class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
+            aria-label="Nome da nova casa"
           />
           <Button size="sm" @click="casasMultitenant.criarNovaCasa" :loading="casasMultitenant.isCreating">Criar</Button>
         </div>
@@ -77,8 +79,9 @@ const emit = defineEmits(['close'])
           <input 
             v-model="casasMultitenant.form.codigoConvite"
             placeholder="Ex: CASA-7F2A1"
-            @keyup.enter="casasMultitenant.entrarPorCodigo"
+            @keydown.enter.prevent="casasMultitenant.entrarPorCodigo"
             class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-2 text-sm text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
+            aria-label="Código de convite"
           />
           <Button size="sm" @click="casasMultitenant.entrarPorCodigo" :loading="casasMultitenant.isEntering">Entrar</Button>
         </div>
