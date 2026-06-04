@@ -1,0 +1,7 @@
+# Sentinel Journal - Security Learnings
+
+## 2026-06-04 - [Global Authentication Guard Implementation]
+**Vulnerability:** Insecure defaults. Most financeiro endpoints were unprotected because developers had to remember to add `@UseGuards(JwtAuthGuard)` to each method or controller.
+**Learning:** Developers often forget to apply security guards as the codebase grows. Relying on opt-in security is a high risk.
+**Prevention:** Implement a global `APP_GUARD` in NestJS to ensure a "Fail-Secure" policy. Use a custom `@Public()` decorator for opt-out visibility. This ensures any new endpoint is private by default.
+**Technical Note:** Switched to `bcryptjs` from `bcrypt` to avoid native environment binding issues while running integration tests in the sandbox.

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
 import { randomUUID } from 'crypto';
 

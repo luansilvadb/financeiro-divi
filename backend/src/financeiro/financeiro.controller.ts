@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Delete, Body, Param, Headers, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Headers, Request } from '@nestjs/common';
 import { FinanceiroService } from './financeiro.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth, ApiHeader, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiUnauthorizedResponse, ApiBadRequestResponse, ApiBody } from '@nestjs/swagger';
 
 import { MembroDto } from './dto/membro.dto';
@@ -11,6 +10,7 @@ import { ContaFixaDto } from './dto/conta-fixa.dto';
 import { CriarTenantDto } from './dto/criar-tenant.dto';
 import { EntrarTenantDto } from './dto/entrar-tenant.dto';
 import { ExcluirMuitosGastosDto } from './dto/excluir-muitos-gastos.dto';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
@@ -22,6 +22,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Obter preview de uma casa pelo código de convite', description: 'Retorna nome da casa e membros disponíveis para vínculo (sem login).' })
   @ApiOkResponse({ description: 'Dados da casa retornados com sucesso' })
   @ApiBadRequestResponse({ description: 'Código de convite inválido ou casa inexistente' })
+  @Public()
   @Get('tenants/invite/:code')
   async obterPreviewConvite(@Param('code') code: string) {
     return this.financeiroService.obterPreviewConvite(code);
@@ -30,7 +31,6 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Criar um novo Tenant (casa)', description: 'Cria uma nova organização multitenant e vincula o usuário autenticado como administrador.' })
   @ApiCreatedResponse({ description: 'Tenant criado com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados de entrada inválidos' })
-  @UseGuards(JwtAuthGuard)
   @Post('tenants')
   async criarTenant(@Body() criarTenantDto: CriarTenantDto, @Request() req: any) {
     return this.financeiroService.criarTenant(criarTenantDto.name, req.user.userId);
@@ -39,7 +39,6 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Entrar em um Tenant existente usando código de convite', description: 'Associa o usuário autenticado a um tenant correspondente ao código de convite informado.' })
   @ApiOkResponse({ description: 'Acesso ao tenant concedido com sucesso' })
   @ApiBadRequestResponse({ description: 'Código de convite inválido ou tenant inexistente' })
-  @UseGuards(JwtAuthGuard)
   @Post('tenants/entrar')
   async entrarTenantPorCodigo(@Body() entrarTenantDto: EntrarTenantDto, @Request() req: any) {
     return this.financeiroService.entrarTenantPorCodigo(entrarTenantDto.inviteCode, req.user.userId);

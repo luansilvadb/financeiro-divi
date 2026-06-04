@@ -1,12 +1,12 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiConflictResponse, ApiUnauthorizedResponse, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { Public } from './public.decorator';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -20,6 +20,7 @@ export class AuthController {
   })
   @ApiConflictResponse({ description: 'Nome de usuário já está em uso' })
   @ApiBadRequestResponse({ description: 'Dados de entrada mal-formatados ou inválidos (ex: senha com menos de 6 caracteres)' })
+  @Public()
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(
@@ -37,6 +38,7 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
   @ApiBadRequestResponse({ description: 'Dados de entrada mal-formatados' })
+  @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.username, loginDto.password);
@@ -49,7 +51,6 @@ export class AuthController {
     type: UserProfileDto,
   })
   @ApiUnauthorizedResponse({ description: 'Token JWT ausente ou inválido' })
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMe(@Request() req: any) {
     return this.authService.getMe(req.user.userId);
