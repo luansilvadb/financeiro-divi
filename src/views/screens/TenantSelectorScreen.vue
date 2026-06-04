@@ -176,22 +176,32 @@ function voltar() {
 
               <div class="space-y-6">
                 <div class="space-y-2">
-                  <label class="block text-[10px] font-bold text-charcoal uppercase tracking-widest ml-1">
+                  <label for="nome-casa" class="block text-[10px] font-bold text-charcoal uppercase tracking-widest ml-1">
                     Nome da Casa
                   </label>
-                  <input
-                    v-model="nomeCasa"
-                    type="text"
-                    placeholder="Ex: Casa da Família Silva"
-                    maxlength="60"
-                    autofocus
-                    @keydown.enter="criarCasa"
-                    class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 text-body text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all duration-200"
-                  />
+                  <div class="relative">
+                    <input
+                      id="nome-casa"
+                      v-model="nomeCasa"
+                      type="text"
+                      placeholder="Ex: Casa da Família Silva"
+                      maxlength="60"
+                      autofocus
+                      @keydown.enter="criarCasa"
+                      class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 pr-14 text-body text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all duration-200"
+                    />
+                    <span
+                      v-if="nomeCasa.length > 0"
+                      aria-live="polite"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-ash/60 animate-in fade-in zoom-in-95 duration-300"
+                    >
+                      {{ nomeCasa.length }}/60
+                    </span>
+                  </div>
                 </div>
 
                 <Transition name="fade">
-                  <div v-if="estado.erro" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
+                  <div v-if="estado.erro" role="alert" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
                     <span>⚠️</span>
                     <span>{{ estado.erro }}</span>
                   </div>
@@ -223,10 +233,11 @@ function voltar() {
           </div>
 
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold text-charcoal uppercase tracking-widest ml-1">
+            <label for="codigo-convite" class="block text-[10px] font-bold text-charcoal uppercase tracking-widest ml-1">
               Código de Convite
             </label>
             <input
+              id="codigo-convite"
               v-model="codigoConvite"
               type="text"
               placeholder="Ex: CASA-AB12C"
@@ -237,7 +248,7 @@ function voltar() {
           </div>
 
           <Transition name="fade">
-            <div v-if="estado.erro" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
+            <div v-if="estado.erro" role="alert" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
               <span>⚠️</span>
               <span>{{ estado.erro }}</span>
             </div>
