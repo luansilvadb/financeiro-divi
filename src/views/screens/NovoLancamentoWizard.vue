@@ -304,16 +304,24 @@ const handleGravar = async () => {
           </div>
 
           <div v-else-if="currentState === 'DESCRIPTION'" class="space-y-5">
-            <div class="rounded-card bg-parchment p-4 shadow-subtle">
+            <div class="rounded-card bg-parchment p-4 shadow-subtle relative">
               <label for="wizard-description-input" class="block text-[10px] font-bold text-graphite uppercase tracking-widest mb-2">O que foi comprado?</label>
               <input
                 id="wizard-description-input"
                 v-model="descricao"
                 type="text"
-                class="w-full bg-transparent border-none outline-none text-[23px] font-bold text-charcoal tracking-tight placeholder:text-stone"
+                maxlength="100"
+                class="w-full bg-transparent border-none outline-none text-[23px] font-bold text-charcoal tracking-tight placeholder:text-stone pr-12"
                 placeholder="Ex: Supermercado do mês"
                 autofocus
               />
+              <span
+                v-if="descricao.length > 0"
+                aria-live="polite"
+                class="absolute right-4 bottom-4 text-[10px] font-bold text-ash/60 transition-opacity duration-300"
+              >
+                {{ descricao.length }}/100
+              </span>
             </div>
             <div class="flex gap-2 flex-wrap" role="group" aria-label="Sugestões rápidas">
               <button
