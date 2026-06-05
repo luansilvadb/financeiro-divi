@@ -40,4 +40,18 @@ describe('Security (e2e)', () => {
       // Should reach controller and return 404 since it's non-existent, but NOT 401 from guard
       expect(response.status).toBe(404);
   });
+
+  it('/financeiro/membros (GET) should return 403 if not in tenant', async () => {
+    const r = (u: any) => request(app.getHttpServer()).post('/auth/register').send(u);
+    const l = (u: any) => request(app.getHttpServer()).post('/auth/login').send(u);
+    await r({ username: 'u1', password: 'p1' });
+    await r({ username: 'u2', password: 'p1' });
+    const { body: { access_token: t1 } } = await l({ username: 'u1', password: 'p1' });
+    const { body: { access_token: t2 } } = await l({ username: 'u2', password: 'p1' });
+    const { body: { id: tid } } = await request(app.getHttpServer())
+      .post('/financeiro/tenants').set('Authorization', `Bearer ${t1}`).send({ name: 'C1' });
+    const res = await request(app.getHttpServer())
+      .get('/financeiro/membros').set('Authorization', `Bearer ${t2}`).set('x-tenant-id', tid);
+    expect(res.status).toBe(403);
+  });
 });

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Headers, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Headers, Request, UseGuards } from '@nestjs/common';
 import { FinanceiroService } from './financeiro.service';
 import { ApiTags, ApiBearerAuth, ApiHeader, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiUnauthorizedResponse, ApiBadRequestResponse, ApiBody } from '@nestjs/swagger';
 
@@ -11,11 +11,13 @@ import { CriarTenantDto } from './dto/criar-tenant.dto';
 import { EntrarTenantDto } from './dto/entrar-tenant.dto';
 import { ExcluirMuitosGastosDto } from './dto/excluir-muitos-gastos.dto';
 import { Public } from '../auth/public.decorator';
+import { TenantGuard } from '../auth/tenant.guard';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
 @ApiUnauthorizedResponse({ description: 'Token JWT ausente ou inválido' })
 @Controller('financeiro')
+@UseGuards(TenantGuard)
 export class FinanceiroController {
   constructor(private financeiroService: FinanceiroService) {}
 
