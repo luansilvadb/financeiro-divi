@@ -293,40 +293,61 @@ export class FinanceiroService {
       divisoes,
     } = g;
 
-    await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
+    // Converte divisões para o formato do Prisma, garantindo BigInt para os valores
+    const divisoesData = (divisoes || []).map((d: any) => ({
+      tenantId,
+      membroId: d.membroId,
+      valorCentavos: BigInt(d.valorCentavos || 0),
+    }));
 
-    await tx.gasto.upsert({
+    // Otimização Bolt: Realiza upsert e gerenciamento de relações em uma única chamada ao banco.
+    // Reduz de 4 operações (deleteMany divisoes, upsert gasto, createMany divisoes, findUnique) para 1.
+    return tx.gasto.upsert({
       where: { id_tenantId: { id, tenantId } },
       create: {
-        id, tenantId, faturaId, descricao,
+        id,
+        tenantId,
+        faturaId,
+        descricao,
         valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+        compradorId,
+        installments,
+        totalInstallments,
+        isLoan,
+        borrowerId,
+        recurringBillId,
+        isSettlement,
+        settlementDetails,
+        method,
+        cardOwnerId,
+        grupoParcelasId,
+        divisoes: {
+          create: divisoesData,
+        },
       },
       update: {
-        faturaId, descricao,
+        faturaId,
+        descricao,
         valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+        compradorId,
+        installments,
+        totalInstallments,
+        isLoan,
+        borrowerId,
+        recurringBillId,
+        isSettlement,
+        settlementDetails,
+        method,
+        cardOwnerId,
+        grupoParcelasId,
+        divisoes: {
+          deleteMany: {}, // Limpa divisões existentes antes de recriar
+          create: divisoesData,
+        },
       },
-    });
-
-    if (divisoes && divisoes.length > 0) {
-      await tx.divisaoGasto.createMany({
-        data: divisoes.map((d: any) => ({
-          tenantId,
-          gastoId: id,
-          membroId: d.membroId,
-          valorCentavos: BigInt(d.valorCentavos || 0),
-        })),
-      });
-    }
-
-    return tx.gasto.findUnique({
-      where: { id_tenantId: { id, tenantId } },
-      include: { divisoes: true },
+      include: {
+        divisoes: true,
+      },
     });
   }
 
