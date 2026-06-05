@@ -5,6 +5,8 @@ import { obterPeriodoSelecionado } from '../../shared/utils/periodoStorage'
 import { DivisaoDeGasto } from '../../models/entities/DivisaoDeGasto'
 import { Dinheiro } from '../../models/entities/Dinheiro'
 import { gastoService } from '../../shared/container'
+import Button from '../components/ui/Button.vue'
+import { useToast } from '../../composables/useToast'
 import {
   Wallet,
   CreditCard,
@@ -22,6 +24,9 @@ const props = defineProps<Props>()
 const emit = defineEmits(['salvar', 'cancelar'])
 
 const { cartoes, faturasFechadas, inicializar: inicializarCartoes } = useCartoesEFaturas()
+const toast = useToast()
+
+const isSubmitting = ref(false)
 
 onMounted(async () => {
   await inicializarCartoes()
@@ -99,24 +104,32 @@ const toggleSplitMember = (id: string) => {
 }
 
 const handleGravar = async () => {
-  const dValor = Dinheiro.deReais(Number(valor.value))
-  const divisoes = wizFlow.value === 'loan' 
-    ? [new DivisaoDeGasto(borrowerId.value!, dValor)]
-    : participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
+  isSubmitting.value = true
+  try {
+    const dValor = Dinheiro.deReais(Number(valor.value))
+    const divisoes = wizFlow.value === 'loan'
+      ? [new DivisaoDeGasto(borrowerId.value!, dValor)]
+      : participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
 
-  await gastoService.lancarGastoOuEmprestimo({
-    flow: wizFlow.value!,
-    paymentMethod: wizPayment.value!,
-    compradorId: compradorSelecionadoId.value,
-    valor: Number(valor.value),
-    descricao: descricao.value,
-    divisoes,
-    installments: installments.value,
-    cardOwnerId: wizCardOwner.value,
-    borrowerId: borrowerId.value,
-    periodo: obterPeriodoSelecionado()
-  })
-  emit('salvar')
+    await gastoService.lancarGastoOuEmprestimo({
+      flow: wizFlow.value!,
+      paymentMethod: wizPayment.value!,
+      compradorId: compradorSelecionadoId.value,
+      valor: Number(valor.value),
+      descricao: descricao.value,
+      divisoes,
+      installments: installments.value,
+      cardOwnerId: wizCardOwner.value,
+      borrowerId: borrowerId.value,
+      periodo: obterPeriodoSelecionado()
+    })
+    emit('salvar')
+  } catch (error: any) {
+    console.error('Erro ao salvar lançamento:', error)
+    toast.show(error.message || 'Não foi possível salvar o lançamento.', 'error')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -253,6 +266,7 @@ const handleGravar = async () => {
                   id="wizard-value-input"
                   v-model.number="valor"
                   type="number"
+                  inputmode="decimal"
                   step="0.01"
                   min="0"
                   class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-stone"
@@ -341,19 +355,22 @@ const handleGravar = async () => {
       </div>
 
     <footer class="p-5 sm:p-6 border-t border-stone bg-white flex gap-3">
-      <button
-        class="flex-1 h-12 rounded-full bg-stone hover:bg-ash/20 text-charcoal text-sm font-bold uppercase tracking-widest transition-colors border-none cursor-pointer"
+      <Button
+        variant="secondary"
+        class="flex-1"
+        :disabled="isSubmitting"
         @click="stepIndex === 0 ? emit('cancelar') : prev()"
       >
         {{ stepIndex === 0 ? 'Cancelar' : 'Voltar' }}
-      </button>
-      <button
-        class="flex-[2] h-12 rounded-full bg-midnight hover:bg-charcoal text-white text-sm font-bold uppercase tracking-widest transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
-        :disabled="!canAdvance"
+      </Button>
+      <Button
+        class="flex-[2]"
+        :disabled="!canAdvance || isSubmitting"
+        :loading="isSubmitting"
         @click="stepIndex === steps.length - 1 ? handleGravar() : next()"
       >
         {{ stepIndex === steps.length - 1 ? 'Confirmar' : 'Avançar' }}
-      </button>
+      </Button>
     </footer>
   </div>
 </template>
