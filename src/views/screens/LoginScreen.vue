@@ -4,6 +4,8 @@ import { useLoginViewModel } from '../../viewmodels/useLoginViewModel'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
+import Button from '../components/ui/Button.vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
 
 const emit = defineEmits(['auth-success'])
 
@@ -18,6 +20,7 @@ const {
 } = useLoginViewModel()
 
 const isRegisterMode = ref(false)
+const showPassword = ref(false)
 const loading = ref(false)
 const housePreview = ref<any>(null)
 const selectedMembroNome = ref('')
@@ -150,28 +153,37 @@ const onSubmit = async () => {
             <label for="password" class="block text-caption font-semibold text-charcoal uppercase tracking-widest ml-1">
               Senha
             </label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              required
-              placeholder="••••••••"
-              autocomplete="current-password"
-              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
-            />
+            <div class="relative group">
+              <input
+                id="password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                placeholder="••••••••"
+                autocomplete="current-password"
+                class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 pr-12 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+              />
+              <button
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ash hover:text-ember transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-inset rounded-lg bg-transparent border-none cursor-pointer"
+                :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                @click="showPassword = !showPassword"
+              >
+                <Eye v-if="!showPassword" class="w-5 h-5" />
+                <EyeOff v-else class="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <!-- Submit Button (Midnight Pill) -->
-          <button
+          <Button
             type="submit"
-            :disabled="loading"
-            :aria-busy="loading"
+            :loading="loading"
+            class="w-full py-6"
             :aria-label="loading ? (isRegisterMode ? 'Criando conta...' : 'Entrando...') : (isRegisterMode ? 'Criar Conta e Entrar' : 'Entrar')"
-            class="w-full bg-midnight hover:bg-charcoal text-white font-semibold py-4 px-6 rounded-pill text-sm tracking-widest uppercase transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 border-none cursor-pointer"
           >
-            <span v-if="loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full" aria-hidden="true"></span>
-            <span>{{ isRegisterMode ? 'Criar Conta e Entrar' : 'Entrar' }}</span>
-          </button>
+            {{ isRegisterMode ? 'Criar Conta e Entrar' : 'Entrar' }}
+          </Button>
         </form>
       </Transition>
 
@@ -181,8 +193,8 @@ const onSubmit = async () => {
           {{ isRegisterMode ? 'Já possui uma conta?' : 'Novo no DIVI?' }}
           <button
             type="button"
-            class="ml-1 text-ember hover:opacity-80 font-bold focus:outline-none uppercase tracking-widest text-[10px] bg-transparent border-none cursor-pointer"
-            @click="isRegisterMode = !isRegisterMode; errorMsg = ''; membroId = ''"
+            class="ml-1 text-ember hover:opacity-80 font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded px-1 uppercase tracking-widest text-[10px] bg-transparent border-none cursor-pointer"
+            @click="isRegisterMode = !isRegisterMode; errorMsg = ''; membroId = ''; showPassword = false"
           >
             {{ isRegisterMode ? 'Faça login' : 'Crie sua conta' }}
           </button>
