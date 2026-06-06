@@ -128,22 +128,14 @@ defineExpose({
                   </div>
                 </div>
 
-                <section class="space-y-6">
-                  <div class="flex items-center gap-3 px-1">
-                    <div class="h-1.5 w-1.5 rounded-full bg-meadow animate-pulse" />
-                    <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-graphite opacity-60">Status de Hoje</h4>
-                  </div>
+                <section class="space-y-4">
                   <UnifiedBalancePanel
                     :membros-visiveis="membrosVisiveis"
                     :saldos-unificados-ativos="saldosUnificadosAtivos"
                   />
                 </section>
 
-                <section v-if="nettingTransferencias.length > 0" class="space-y-6">
-                  <div class="flex items-center gap-3 px-1">
-                    <div class="h-1.5 w-1.5 rounded-full bg-ember animate-pulse" />
-                    <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-graphite opacity-60">Acertos Sugeridos</h4>
-                  </div>
+                <section v-if="nettingTransferencias.length > 0" class="space-y-4">
                   <NettingPanel
                     :netting-transferencias="nettingTransferencias"
                     :fatura-selecionada-fechada="faturaSelecionadaFechada"
@@ -152,11 +144,7 @@ defineExpose({
                   />
                 </section>
 
-                <section class="space-y-6">
-                  <div class="flex items-center gap-3 px-1">
-                    <div class="h-1.5 w-1.5 rounded-full bg-midnight" />
-                    <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-graphite opacity-60">Rotina da Casa</h4>
-                  </div>
+                <section class="space-y-4">
                   <ContasFixasPanel
                     :contasFixas="contasFixas"
                     :gastos="gastosFaturaSelecionada"
@@ -169,11 +157,7 @@ defineExpose({
                   />
                 </section>
 
-                <section class="space-y-6">
-                  <div class="flex items-center gap-3 px-1">
-                    <div class="h-1.5 w-1.5 rounded-full bg-stone" />
-                    <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-graphite opacity-60">Linha do Tempo</h4>
-                  </div>
+                <section class="space-y-4">
                   <ActivityFeed
                     :gastos="gastosFaturaSelecionada"
                     :membros="props.membros"
@@ -188,7 +172,7 @@ defineExpose({
                 <Card class="mt-6 p-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-canvas border-2 border-stone shadow-subtle rounded-2xl transition-all duration-500">
                   <div class="flex items-center gap-5">
                     <div v-if="faturaSelecionadaFechada" class="w-12 h-12 rounded-xl bg-meadow/10 flex items-center justify-center shrink-0 border border-meadow/20">
-                      <CheckCircle2 class="w-6 h-6 text-[#00a83d]" stroke-width="3" />
+                      <CheckCircle2 class="w-6 h-6 text-meadow" stroke-width="3" />
                     </div>
                     <div v-else class="w-12 h-12 rounded-xl bg-ember/10 flex items-center justify-center shrink-0 border border-ember/20">
                       <CheckCircle2 class="w-6 h-6 text-ember opacity-30" stroke-width="3" />
@@ -220,11 +204,7 @@ defineExpose({
                   </div>
                 </Card>
 
-                <div class="space-y-6">
-                  <div class="flex items-center gap-3 px-1">
-                    <div class="h-1.5 w-1.5 rounded-full bg-ember" />
-                    <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-graphite opacity-60">Análise de Fluxo</h4>
-                  </div>
+                <div class="space-y-4">
                   <DetalhamentoSaldosCard
                     :membros="membrosVisiveis"
                     :gastos="gastosFaturaSelecionada"

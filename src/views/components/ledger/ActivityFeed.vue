@@ -4,6 +4,7 @@ import { Gasto } from '../../../models/entities/Gasto'
 import { computed } from 'vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
+import MembroAvatar from '../ui/MembroAvatar.vue'
 import IllustrationMascot from '../ui/IllustrationMascot.vue'
 
 const props = defineProps<{
@@ -84,9 +85,12 @@ const sortedGastos = computed(() => {
                 <span v-if="g.id.startsWith('forecast-bill-')" class="text-[10px] text-graphite font-semibold italic">
                   (Aguardando lançamento)
                 </span>
-                <span v-else class="text-[10px] text-graphite font-medium">
-                  • Pago por <strong class="text-charcoal font-bold">{{ getMembroNome(g.compradorId) }}</strong>
-                </span>
+                <div v-else class="flex items-center gap-1.5">
+                  <MembroAvatar :nome="getMembroNome(g.compradorId)" size="sm" variant="sky" class="!w-5 !h-5 !text-[8px] animate-in zoom-in-50 duration-300" />
+                  <span class="text-[10px] text-graphite font-medium">
+                    Pago por <strong class="text-charcoal font-bold">{{ getMembroNome(g.compradorId) }}</strong>
+                  </span>
+                </div>
               </div>
             </div>
             <div class="text-right flex flex-col items-end">

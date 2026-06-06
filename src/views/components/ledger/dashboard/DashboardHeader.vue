@@ -37,7 +37,7 @@ const { currentMembro } = useMembros()
         </span>
         <div class="flex items-center gap-2">
           <span class="text-2xl font-bold text-charcoal tracking-tighter group-hover:text-ember transition-colors">{{ currentMonthName }}</span>
-          <CheckCircle2 v-if="faturaSelecionadaFechada" class="w-4 h-4 text-[#00a83d] animate-in zoom-in-50 duration-300" aria-label="Mês encerrado" />
+          <CheckCircle2 v-if="faturaSelecionadaFechada" class="w-4 h-4 text-meadow animate-in zoom-in-50 duration-300" aria-label="Mês encerrado" />
         </div>
       </button>
     </div>

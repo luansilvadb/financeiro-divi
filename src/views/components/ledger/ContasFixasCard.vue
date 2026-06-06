@@ -212,7 +212,7 @@ onUnmounted(() => {
       <div class="min-w-0 flex-1">
         <span class="font-bold text-sm block text-charcoal truncate tracking-tight">{{ bill.name }}</span>
         <div v-if="gasto" class="flex items-center mt-0.5">
-          <span class="text-[10px] text-[#00a83d] font-semibold uppercase tracking-wider">
+          <span class="text-[10px] text-meadow font-semibold uppercase tracking-wider">
             R$ {{ (gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(gasto.compradorId) }}
           </span>
         </div>
@@ -223,7 +223,7 @@ onUnmounted(() => {
     </div>
     
     <div v-if="gasto" class="shrink-0 pointer-events-none">
-      <div class="w-6 h-6 rounded-full bg-[#00a83d] flex items-center justify-center shadow-sm animate-in zoom-in-50 duration-500">
+      <div class="w-6 h-6 rounded-full bg-meadow flex items-center justify-center shadow-sm animate-in zoom-in-50 duration-500">
         <Check class="w-3.5 h-3.5 text-white" stroke-width="4" />
       </div>
     </div>

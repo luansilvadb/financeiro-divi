@@ -55,11 +55,7 @@ const tabs = [
               </span>
             </div>
             
-            <!-- Active Indicator (Ember Glow Dot) -->
-            <div 
-              class="absolute bottom-1.5 w-1 h-1 rounded-full bg-ember shadow-[0_0_8px_rgba(255,62,0,0.6)] transition-all duration-500 ease-spring origin-center"
-              :class="modelValue === tab.id ? 'scale-100 opacity-100' : 'scale-0 opacity-0'"
-            />
+
           </button>
         </template>
       </div>

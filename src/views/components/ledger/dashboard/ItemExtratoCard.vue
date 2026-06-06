@@ -18,7 +18,7 @@ const formatarBRL = (centavos: number) => {
     <div class="space-y-1.5 min-w-0 flex-1">
       <span class="text-xs font-bold text-charcoal block truncate tracking-tight">{{ item.descricao }}</span>
       <div class="flex flex-wrap items-center gap-2">
-        <span v-if="item.valorPago.centavos > 0" class="text-[9px] font-bold text-[#00a83d] bg-[#00a83d]/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
+        <span v-if="item.valorPago.centavos > 0" class="text-[9px] font-bold text-meadow bg-meadow/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
           Pagou +R$ {{ formatarBRL(item.valorPago.centavos) }}
         </span>
         <span v-if="item.valorConsumido.centavos > 0" class="text-[9px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded-md uppercase tracking-wider">

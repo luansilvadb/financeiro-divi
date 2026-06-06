@@ -15,7 +15,7 @@ const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['emb
   <Card class="!p-0 overflow-hidden shadow-subtle bg-white text-graphite">
     <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex items-center">
       <div class="flex items-center gap-5">
-        <div class="w-11 h-11 rounded-xl bg-midnight text-white flex items-center justify-center shadow-sm">
+        <div class="w-11 h-11 rounded-xl bg-meadow text-white flex items-center justify-center shadow-sm">
           <TrendingUp class="w-5 h-5" aria-hidden="true" />
         </div>
         <div>
@@ -43,7 +43,7 @@ const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['emb
           </div>
         </div>
         <div class="text-right">
-          <span :class="['font-display text-xl sm:text-2xl block tracking-tighter', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-[#00a83d]' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-graphite']">
+          <span :class="['font-display text-xl sm:text-2xl block tracking-tighter', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-graphite']">
             {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id].toFixed(2).replace('.', ',') }}
           </span>
         </div>

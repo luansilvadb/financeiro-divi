@@ -6,6 +6,7 @@ import { DivisaoDeGasto } from '../../models/entities/DivisaoDeGasto'
 import { Dinheiro } from '../../models/entities/Dinheiro'
 import { gastoService } from '../../shared/container'
 import Button from '../components/ui/Button.vue'
+import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import { useToast } from '../../composables/useToast'
 import {
   Wallet,
@@ -144,7 +145,7 @@ const handleGravar = async () => {
           <p class="inline-flex text-xs font-bold text-graphite bg-stone rounded-full px-2.5 py-1 uppercase tracking-wider">
             Passo {{ stepIndex + 1 }} de {{ steps.length }}
           </p>
-          <h2 class="mt-3 text-[23px] leading-[1.2] font-bold text-charcoal tracking-tighter">
+          <h2 class="mt-3 text-3xl font-display text-charcoal leading-tight tracking-tight">
             <template v-if="currentState === 'FLOW_SELECTION'">Como você pagou?</template>
             <template v-else-if="currentState === 'LENDER_SELECTION'">Quem está emprestando?</template>
             <template v-else-if="currentState === 'BUYER_SELECTION'">{{ wizPayment === 'card' ? 'Quem usou o cartão?' : 'Quem foi que pagou?' }}</template>
@@ -248,12 +249,14 @@ const handleGravar = async () => {
               @click="currentState === 'BORROWER_SELECTION' ? (borrowerId = m.id, next()) : (compradorSelecionadoId = m.id, next())"
               role="option"
               :aria-selected="borrowerId === m.id || compradorSelecionadoId === m.id"
-              class="flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors border-none cursor-pointer"
+              class="group flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-all duration-300 border-none cursor-pointer"
             >
-              <div class="w-12 h-12 rounded-full bg-white shadow-subtle flex items-center justify-center font-bold text-charcoal">
-                {{ m.nome[0] }}
-              </div>
-              <span class="font-semibold text-xs text-charcoal uppercase tracking-wider">{{ m.nome }}</span>
+              <MembroAvatar 
+                :nome="m.nome" 
+                size="md" 
+                :variant="(borrowerId === m.id || compradorSelecionadoId === m.id) ? 'ember' : 'sky'" 
+              />
+              <span class="font-bold text-[11px] text-charcoal uppercase tracking-wider">{{ m.nome }}</span>
             </button>
           </div>
 
@@ -340,14 +343,16 @@ const handleGravar = async () => {
                 @click="toggleSplitMember(m.id)"
                 role="option"
                 :aria-selected="participantesDivisao.includes(m.id)"
-                class="relative flex flex-col items-center gap-2 p-3 rounded-card transition-all duration-300 border-none cursor-pointer"
+                class="group relative flex flex-col items-center gap-2 p-3 rounded-card transition-all duration-300 border-none cursor-pointer"
                 :class="[participantesDivisao.includes(m.id) ? 'bg-white shadow-subtle scale-[1.02]' : 'bg-parchment opacity-80']"
               >
-                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold" :class="[participantesDivisao.includes(m.id) ? 'bg-midnight text-white' : 'bg-white text-charcoal shadow-subtle']">
-                  {{ m.nome[0] }}
-                </div>
-                <span class="text-[10px] font-bold text-charcoal uppercase tracking-tight truncate max-w-full">{{ m.nome }}</span>
-                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-[#00a83d] animate-in zoom-in-50 duration-300" aria-hidden="true" />
+                <MembroAvatar 
+                  :nome="m.nome" 
+                  size="md" 
+                  :variant="participantesDivisao.includes(m.id) ? 'meadow' : 'sky'" 
+                />
+                <span class="text-[10px] font-bold text-charcoal uppercase tracking-tight truncate max-w-full px-1">{{ m.nome }}</span>
+                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow animate-in zoom-in-50 duration-300" aria-hidden="true" />
               </button>
             </div>
           </div>

@@ -39,7 +39,7 @@ const obterExtrato = () => {
       </div>
       <span 
         class="text-[10px] sm:text-xs font-bold px-4 py-2 rounded-full shrink-0 uppercase tracking-widest shadow-sm"
-        :class="saldoUnificado > 0.005 ? 'bg-[#00a83d]/10 text-[#00a83d]' : saldoUnificado < -0.005 ? 'bg-coral/10 text-coral' : 'bg-stone text-graphite'"
+        :class="saldoUnificado > 0.005 ? 'bg-meadow/10 text-meadow' : saldoUnificado < -0.005 ? 'bg-coral/10 text-coral' : 'bg-stone text-graphite'"
       >
         Saldo: {{ saldoUnificado > 0.005 ? '+' : '' }}R$ {{ Math.abs(saldoUnificado || 0).toFixed(2).replace('.', ',') }}
       </span>
@@ -58,7 +58,7 @@ const obterExtrato = () => {
         <div class="space-y-3">
           <div class="flex justify-between items-baseline">
             <span class="text-xs font-semibold text-graphite">Pagou</span>
-            <span class="text-sm font-bold tracking-tight text-[#00a83d]">+R$ {{ formatarBRL(breakdown?.pixFez || 0) }}</span>
+            <span class="text-sm font-bold tracking-tight text-meadow">+R$ {{ formatarBRL(breakdown?.pixFez || 0) }}</span>
           </div>
           <div class="h-px w-full bg-stone" />
           <div class="flex justify-between items-baseline">
@@ -80,7 +80,7 @@ const obterExtrato = () => {
         <div class="space-y-3">
           <div class="flex justify-between items-baseline">
             <span class="text-xs font-semibold text-graphite">Usou</span>
-            <span class="text-sm font-bold tracking-tight text-[#00a83d]">+R$ {{ formatarBRL(breakdown?.cardFez || 0) }}</span>
+            <span class="text-sm font-bold tracking-tight text-meadow">+R$ {{ formatarBRL(breakdown?.cardFez || 0) }}</span>
           </div>
           <div class="h-px w-full bg-stone" />
           <div class="flex justify-between items-baseline">
@@ -102,7 +102,7 @@ const obterExtrato = () => {
         <div class="space-y-3">
           <div class="flex justify-between items-baseline">
             <span class="text-xs font-semibold text-graphite">Emprestou</span>
-            <span class="text-sm font-bold tracking-tight text-[#00a83d]">+R$ {{ formatarBRL(breakdown?.loanFez || 0) }}</span>
+            <span class="text-sm font-bold tracking-tight text-meadow">+R$ {{ formatarBRL(breakdown?.loanFez || 0) }}</span>
           </div>
           <div class="h-px w-full bg-stone" />
           <div class="flex justify-between items-baseline">

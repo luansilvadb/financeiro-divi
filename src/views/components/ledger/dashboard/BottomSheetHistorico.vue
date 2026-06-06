@@ -35,19 +35,16 @@ watch(isDropdownAbertosOpen, async (aberto) => {
   <BottomSheet 
     :model-value="visible" 
     @update:model-value="val => { if (!val) emit('close') }" 
-    width-class="md:w-[460px]"
-    max-height="85dvh"
+    subtitle="Selecione o mês que você deseja gerenciar. Todos os meses estão abertos para lançamentos até serem fechados."
+    :content-class="`px-6 pb-8 flex-grow ${isDropdownAbertosOpen ? 'overflow-visible' : 'overflow-y-auto'}`"
   >
-    <div class="p-6 sm:p-8 space-y-6 flex-grow custom-scrollbar" :class="isDropdownAbertosOpen ? 'overflow-y-visible' : 'overflow-y-auto'">
-      <div class="space-y-3">
-        <h3 class="text-3xl font-display text-charcoal leading-tight">Navegar<br>nos <span class="text-ember">Períodos</span></h3>
-        <p class="text-sm text-graphite font-medium leading-relaxed">
-          Selecione o mês que você deseja gerenciar. Todos os meses estão abertos para lançamentos até serem fechados.
-        </p>
-      </div>
+    <template #title>
+      <h3 class="text-3xl font-display text-charcoal leading-tight">Navegar nos <span class="text-ember">Períodos</span></h3>
+    </template>
 
+    <div class="space-y-6 pt-2">
       <div class="space-y-3">
-        <h4 class="text-[10px] font-bold uppercase tracking-widest text-graphite">Gerenciar Período Aberto</h4>
+        <h4 class="text-[10px] font-bold uppercase tracking-widest text-graphite ml-1">Gerenciar Período Aberto</h4>
         <div class="relative" @blur="isDropdownAbertosOpen = false">
           <div 
             @click="isDropdownAbertosOpen = !isDropdownAbertosOpen"
@@ -57,10 +54,10 @@ watch(isDropdownAbertosOpen, async (aberto) => {
             role="button"
             tabindex="0"
             :aria-expanded="isDropdownAbertosOpen ? 'true' : 'false'"
-            class="w-full px-4 py-4 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal cursor-pointer flex justify-between items-center transition-all hover:bg-stone/30"
+            class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal cursor-pointer flex justify-between items-center transition-all hover:bg-stone/30"
           >
             <span class="flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-[#00a83d] animate-pulse" />
+              <span class="w-2.5 h-2.5 rounded-full bg-meadow animate-pulse" />
               <span class="block truncate">
                 {{ (periodoSelecionado && faturasFechadas.every(f => f.periodo.mes !== periodoSelecionado.mes || f.periodo.ano !== periodoSelecionado.ano))
                   ? formatarMesAno(periodoSelecionado.mes, periodoSelecionado.ano)
@@ -83,7 +80,7 @@ watch(isDropdownAbertosOpen, async (aberto) => {
                 class="px-4 py-3.5 text-sm font-bold hover:bg-stone cursor-pointer transition-colors flex items-center gap-3"
                 :class="periodoSelecionado.mes === op.mes && periodoSelecionado.ano === op.ano ? 'text-ember bg-ember/5' : 'text-charcoal'"
               >
-                <span class="w-2 h-2 rounded-full bg-[#00a83d] animate-pulse shrink-0" />
+                <span class="w-2 h-2 rounded-full bg-meadow animate-pulse shrink-0" />
                 {{ op.nome }}
               </div>
             </div>
@@ -91,10 +88,10 @@ watch(isDropdownAbertosOpen, async (aberto) => {
         </div>
       </div>
 
-      <hr class="border-stone/60 my-6" />
+      <div class="h-px bg-stone/60 my-2" />
 
       <div class="space-y-3">
-        <h4 class="text-[10px] font-bold uppercase tracking-widest text-graphite">Histórico de Fechados (Arquivados)</h4>
+        <h4 class="text-[10px] font-bold uppercase tracking-widest text-graphite ml-1">Histórico de Fechados (Arquivados)</h4>
         <div class="grid gap-2">
           <div 
             v-for="item in mesesTrancadosOpcoes" 
@@ -103,7 +100,7 @@ watch(isDropdownAbertosOpen, async (aberto) => {
             :aria-label="'Selecionar período arquivado ' + item.nome"
             role="button"
             tabindex="0"
-            class="p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
+            class="p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between"
             :class="periodoSelecionado.mes === item.mes && periodoSelecionado.ano === item.ano ? 'border-ember bg-ember/5 text-ember font-bold' : 'border-stone bg-canvas text-charcoal hover:bg-stone/30'"
           >
             <div class="flex items-center gap-3">
@@ -116,15 +113,15 @@ watch(isDropdownAbertosOpen, async (aberto) => {
             </div>
           </div>
           
-          <div v-if="mesesTrancadosOpcoes.length === 0" class="text-center py-8 border border-dashed border-stone rounded-xl">
+          <div v-if="mesesTrancadosOpcoes.length === 0" class="text-center py-8 border border-dashed border-stone rounded-2xl">
             <p class="text-xs text-graphite font-semibold opacity-60 italic">Nenhum período arquivado ainda.</p>
           </div>
         </div>
       </div>
     </div>
     
-    <div class="p-6 sm:px-8 sm:pb-8 border-t border-stone bg-white shrink-0">
-      <Button variant="secondary" class="w-full" @click="emit('close')">Fechar</Button>
-    </div>
+    <template #footer>
+      <Button variant="secondary" class="w-full font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('close')">Fechar</Button>
+    </template>
   </BottomSheet>
 </template>

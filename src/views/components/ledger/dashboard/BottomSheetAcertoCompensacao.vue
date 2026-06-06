@@ -46,89 +46,78 @@ defineExpose({
 </script>
 
 <template>
-  <BottomSheet :model-value="visible" @update:model-value="val => { if (!val) emit('cancel') }" width-class="md:w-[440px]">
-    <div class="p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
-        <div class="space-y-2 text-center">
-          <h3 class="text-3xl font-display text-charcoal">Registrar <span class="text-ember">Acerto</span></h3>
-          <p class="text-sm text-graphite font-medium leading-relaxed">
-            Confirmar a transferência entre moradores para equilibrar os saldos da casa.
-          </p>
-        </div>
+  <BottomSheet 
+    :model-value="visible" 
+    @update:model-value="val => { if (!val) emit('cancel') }"
+    subtitle="Confirmar a transferência entre moradores para equilibrar os saldos da casa."
+  >
+    <template #title>
+      <h3 class="text-3xl font-display text-charcoal leading-tight">Registrar <span class="text-ember">Acerto</span></h3>
+    </template>
 
-        <div class="space-y-6">
-          <!-- Valor Input -->
-          <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Valor do Repasse</label>
-            <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
-              <input 
-                v-model.number="valorReal"
-                type="number"
-                step="0.01"
-                class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-lg text-charcoal focus:border-ember transition-all"
-                placeholder="0,00"
-              />
-            </div>
-          </div>
-
-          <!-- Descrição -->
-          <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Descrição</label>
+    <div class="space-y-6 pt-2">
+      <div class="space-y-6">
+        <!-- Valor Input -->
+        <div class="space-y-2">
+          <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Valor do Repasse</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
             <input 
-              v-model="descricao"
-              type="text"
-              readonly
-              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-stone/30 outline-none font-bold text-sm text-charcoal cursor-default transition-all"
+              v-model.number="valorReal"
+              type="number"
+              step="0.01"
+              class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
+              placeholder="0,00"
             />
           </div>
+        </div>
 
-          <!-- Método de Acerto -->
-          <div class="space-y-2">
-            <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método de Baixa</label>
-            <div class="grid grid-cols-3 gap-2">
-              <button 
-                v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}, {id:'mutual', n:'Ajuste', icon: RefreshCcw}]"
-                :key="m.id"
-                type="button"
-                @click="method = m.id as any"
-                class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
-                :class="[
-                  method === m.id 
-                    ? 'bg-midnight text-white font-bold border-stone shadow-sm' 
-                    : 'bg-stone text-charcoal hover:bg-ash/20'
-                ]"
-              >
-                <component :is="m.icon" class="w-4 h-4" />
-                <span class="text-[10px] font-bold uppercase tracking-wider">{{ m.n }}</span>
-              </button>
-            </div>
+        <!-- Descrição -->
+        <div class="space-y-2">
+          <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Descrição</label>
+          <input 
+            v-model="descricao"
+            type="text"
+            readonly
+            class="w-full px-4 py-3.5 rounded-xl border border-stone bg-stone/30 outline-none font-bold text-sm text-charcoal cursor-default transition-all"
+          />
+        </div>
+
+        <!-- Método de Acerto -->
+        <div class="space-y-2">
+          <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método de Baixa</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button 
+              v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}, {id:'mutual', n:'Ajuste', icon: RefreshCcw}]"
+              :key="m.id"
+              type="button"
+              @click="method = m.id as any"
+              class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
+              :class="[
+                method === m.id 
+                  ? 'bg-midnight text-white font-bold border-stone shadow-sm' 
+                  : 'bg-stone text-charcoal hover:bg-ash/20'
+              ]"
+            >
+              <component :is="m.icon" class="w-4 h-4" />
+              <span class="text-[11px] font-bold uppercase tracking-wider">{{ m.n }}</span>
+            </button>
           </div>
         </div>
-
-        <!-- Rodapé Ações -->
-        <div class="grid grid-cols-2 gap-3 pt-6 border-t border-stone">
-          <Button variant="secondary" class="font-bold uppercase tracking-widest text-xs h-12" @click="emit('cancel')" :disabled="loading">Cancelar</Button>
-          <Button variant="primary" class="font-bold uppercase tracking-widest text-xs h-12" @click="handleConfirmar" :disabled="valorReal <= 0 || loading">
-            <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-            {{ loading ? 'Salvando...' : 'Confirmar' }}
-          </Button>
-        </div>
+      </div>
     </div>
+
+    <template #footer>
+      <div class="grid grid-cols-2 gap-3">
+        <Button variant="secondary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('cancel')" :disabled="loading">Cancelar</Button>
+        <Button variant="primary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="handleConfirmar" :disabled="valorReal <= 0 || loading">
+          <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+          {{ loading ? 'Salvando...' : 'Confirmar' }}
+        </Button>
+      </div>
+    </template>
   </BottomSheet>
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone);
-  border-radius: 9999px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-ash);
-}
 </style>

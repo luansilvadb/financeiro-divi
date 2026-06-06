@@ -27,31 +27,45 @@
         >
           <!-- Drag handle -->
           <div class="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0">
-            <div class="h-1.5 w-12 rounded-full bg-stone/60" />
+            <div class="h-1.5 w-12 rounded-full bg-stone" />
           </div>
 
           <!-- Header -->
-          <div v-if="title || $slots.header" class="flex items-center justify-between px-6 pb-4 shrink-0">
-            <slot name="header">
-              <h2 class="text-heading font-bold text-charcoal tracking-tight">{{ title }}</h2>
-            </slot>
+          <div v-if="title || $slots.header || $slots.title || subtitle || $slots.subtitle" class="flex items-start justify-between px-6 pt-2 pb-6 shrink-0">
+            <div class="flex-1 min-w-0 pr-4">
+              <slot name="header">
+                <slot name="title">
+                  <h2 v-if="title" class="text-3xl font-display text-charcoal leading-[1.1] tracking-tight">{{ title }}</h2>
+                </slot>
+                <slot name="subtitle">
+                  <p v-if="subtitle" class="text-sm text-graphite font-medium mt-2 leading-relaxed opacity-80">{{ subtitle }}</p>
+                </slot>
+              </slot>
+            </div>
             <button
               v-if="showClose"
-              class="w-10 h-10 rounded-full flex items-center justify-center text-ash transition-all hover:bg-stone hover:text-charcoal cursor-pointer border-none bg-transparent focus-visible:ring-2 focus-visible:ring-ember focus-visible:outline-none"
+              class="w-12 h-12 rounded-full bg-stone/50 flex items-center justify-center text-ash transition-all hover:bg-stone hover:text-charcoal cursor-pointer border-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:outline-none shrink-0 -mt-1"
               @click="close"
               aria-label="Fechar"
             >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           <!-- Divider -->
-          <div v-if="title || $slots.header" class="h-px bg-stone shrink-0" />
+          <div v-if="(title || $slots.header || $slots.title) && showDivider" class="h-px bg-stone/60 mx-6 shrink-0" />
 
           <!-- Content -->
-          <slot />
+          <div :class="['overflow-y-auto flex-1 custom-scrollbar', contentClass]">
+            <slot />
+          </div>
+
+          <!-- Footer -->
+          <div v-if="$slots.footer" class="p-6 pt-4 border-t border-stone shrink-0 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+            <slot name="footer" />
+          </div>
         </div>
       </div>
     </Transition>
@@ -65,10 +79,13 @@ import { useBottomSheetState } from '../../../viewmodels/useBottomSheetState'
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
   showClose: { type: Boolean, default: true },
+  showDivider: { type: Boolean, default: true },
   maxHeight: { type: String, default: '90dvh' },
   minHeight: { type: String, default: undefined },
-  widthClass: { type: String, default: 'md:w-[480px]' }
+  widthClass: { type: String, default: 'md:w-[480px]' },
+  contentClass: { type: String, default: 'px-6 pb-8' }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -275,5 +292,20 @@ const onMouseDown = (e: MouseEvent) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Custom Scrollbar consistent with DESIGN.md */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #d8d4d0;
 }
 </style>

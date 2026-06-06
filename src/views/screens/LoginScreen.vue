@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useLoginViewModel } from '../../viewmodels/useLoginViewModel'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
+import MembroAvatar from '../components/ui/MembroAvatar.vue'
 
 const emit = defineEmits(['auth-success'])
 
@@ -84,12 +85,10 @@ const onSubmit = async () => {
               :key="m.id"
               @click="selectMembro(m)"
               :aria-label="'Entrar como ' + m.nome"
-              class="flex items-center gap-3 p-3 rounded-lg bg-card shadow-subtle hover:scale-[1.02] active:scale-95 transition-all duration-300 text-left group"
+              class="flex flex-col items-center gap-3 p-4 rounded-xl bg-card shadow-subtle hover:scale-[1.02] active:scale-95 transition-all duration-300 text-center group border-none cursor-pointer"
             >
-              <div class="w-10 h-10 rounded-full bg-stone flex items-center justify-center text-xs font-semibold text-charcoal group-hover:bg-ember/10 group-hover:text-ember transition-colors">
-                {{ m.nome.substring(0,2).toUpperCase() }}
-              </div>
-              <span class="text-body font-semibold text-charcoal truncate">{{ m.nome }}</span>
+              <MembroAvatar :nome="m.nome" size="md" variant="sky" class="group-hover:scale-110 transition-transform duration-300" />
+              <span class="text-[11px] font-bold text-charcoal truncate uppercase tracking-widest">{{ m.nome }}</span>
             </button>
           </div>
         </div>

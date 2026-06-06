@@ -63,7 +63,7 @@ const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['emb
       <span class="font-bold text-[10px] uppercase tracking-[0.1em] truncate w-full text-center text-charcoal leading-none">{{ m.nome }}</span>
       
       <div v-if="isSelected(m.id)" class="absolute top-2 right-2 animate-in zoom-in-50 duration-300">
-        <Check class="w-3.5 h-3.5 text-[#00a83d]" stroke-width="4" />
+        <Check class="w-3.5 h-3.5 text-meadow" stroke-width="4" />
       </div>
       
       <slot name="badge" :membro="m" :selected="isSelected(m.id)"></slot>

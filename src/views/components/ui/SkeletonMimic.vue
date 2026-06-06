@@ -49,11 +49,7 @@ const delay = (index: number, offset = 0) => `${(index + offset) * 70}ms`
       </header>
 
       <template v-if="props.variant === 'hoje'">
-        <section class="space-y-6">
-          <div class="flex items-center gap-3 px-1">
-            <SkeletonBlock shape="circle" tone="soft" width="0.375rem" height="0.375rem" />
-            <SkeletonBlock shape="text" tone="soft" width="6.5rem" height="0.625rem" />
-          </div>
+        <section class="space-y-4">
           <div class="skeleton-shell" data-testid="skeleton-balance-panel">
             <div class="skeleton-panel-header">
               <SkeletonBlock width="2.75rem" height="2.75rem" radius="0.75rem" />
@@ -82,11 +78,7 @@ const delay = (index: number, offset = 0) => `${(index + offset) * 70}ms`
           </div>
         </section>
 
-        <section v-if="props.nettingRows > 0" class="space-y-6">
-          <div class="flex items-center gap-3 px-1">
-            <SkeletonBlock shape="circle" tone="soft" width="0.375rem" height="0.375rem" />
-            <SkeletonBlock shape="text" tone="soft" width="7.5rem" height="0.625rem" />
-          </div>
+        <section class="space-y-4">
           <div class="skeleton-shell" data-testid="skeleton-netting-panel">
             <div class="skeleton-panel-header">
               <SkeletonBlock width="2.75rem" height="2.75rem" radius="0.75rem" />
@@ -115,11 +107,7 @@ const delay = (index: number, offset = 0) => `${(index + offset) * 70}ms`
           </div>
         </section>
 
-        <section class="space-y-6">
-          <div class="flex items-center gap-3 px-1">
-            <SkeletonBlock shape="circle" tone="soft" width="0.375rem" height="0.375rem" />
-            <SkeletonBlock shape="text" tone="soft" width="6rem" height="0.625rem" />
-          </div>
+        <section class="space-y-4">
           <div class="skeleton-shell" data-testid="skeleton-fixed-bills-panel">
             <div class="skeleton-panel-header">
               <SkeletonBlock width="2.75rem" height="2.75rem" radius="0.75rem" />
@@ -154,11 +142,7 @@ const delay = (index: number, offset = 0) => `${(index + offset) * 70}ms`
           </div>
         </section>
 
-        <section class="space-y-6">
-          <div class="flex items-center gap-3 px-1">
-            <SkeletonBlock shape="circle" tone="soft" width="0.375rem" height="0.375rem" />
-            <SkeletonBlock shape="text" tone="soft" width="6rem" height="0.625rem" />
-          </div>
+        <section class="space-y-4">
           <div class="skeleton-shell" data-testid="skeleton-activity-panel">
             <div class="skeleton-panel-header">
               <SkeletonBlock width="2.75rem" height="2.75rem" radius="0.75rem" />
@@ -206,11 +190,7 @@ const delay = (index: number, offset = 0) => `${(index + offset) * 70}ms`
           <SkeletonBlock width="100%" height="3rem" radius="0.75rem" class="md:max-w-40" />
         </div>
 
-        <section class="space-y-6">
-          <div class="flex items-center gap-3 px-1">
-            <SkeletonBlock shape="circle" tone="soft" width="0.375rem" height="0.375rem" />
-            <SkeletonBlock shape="text" tone="soft" width="7rem" height="0.625rem" />
-          </div>
+        <section class="space-y-4">
           <div class="skeleton-shell" data-testid="skeleton-breakdown-panel">
             <div class="skeleton-panel-header">
               <SkeletonBlock width="2.75rem" height="2.75rem" radius="0.75rem" />

@@ -233,6 +233,7 @@ const handleLogout = async () => {
             @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
             width-class="md:w-[560px]"
             max-height="95dvh"
+            content-class="p-0 h-full"
           >
             <NovoLancamentoWizard
               v-if="currentView === 'wizard'"
@@ -247,6 +248,7 @@ const handleLogout = async () => {
             @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
             width-class="md:w-[560px]"
             max-height="90dvh"
+            content-class="p-0 h-full"
           >
             <ConfiguracoesMembros 
               @voltar="currentView = 'dashboard'" 

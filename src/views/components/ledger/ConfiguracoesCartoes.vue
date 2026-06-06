@@ -18,14 +18,7 @@ const diaFechamento = ref<number>(10)
 
 const formularioAberto = ref(false)
 
-const toggleFormulario = () => {
-  formularioAberto.value = !formularioAberto.value
-  if (!formularioAberto.value) {
-    nome.value = ''
-    diaFechamento.value = 10
-    isDiaDropdownOpen.value = false
-  }
-}
+
 
 const isDiaDropdownOpen = ref(false)
 
@@ -73,7 +66,7 @@ const handleExcluir = async (id: string) => {
 <template>
   <div class="space-y-6 w-full">
     <!-- Card de Adicionar Novo Cartão -->
-    <div class="bg-white border border-stone/30 rounded-[32px] shadow-subtle overflow-hidden">
+    <div class="bg-white border border-stone/30 rounded-2xl shadow-subtle overflow-hidden">
       <div class="px-6 pt-6 pb-2">
         <h3 class="text-heading-sm text-charcoal flex items-center gap-2">
           <CreditCard class="w-5 h-5 text-ember" />
@@ -135,24 +128,18 @@ const handleExcluir = async (id: string) => {
     <!-- Bottom Sheet de Cadastro de Novo Cartão -->
     <BottomSheet 
       v-model="formularioAberto"
-      :show-close="true"
+      title="Novo Cartão"
+      subtitle="Adicione um novo cartão de crédito"
       max-height="90dvh"
-      min-height="60dvh"
-      width-class="md:w-[560px]"
+      :content-class="`flex-grow min-h-0 ${isDiaDropdownOpen ? 'overflow-visible' : 'overflow-y-auto'}`"
     >
       <template #header>
-        <div class="flex items-center gap-3 w-full pr-8">
-          <div class="w-10 h-10 rounded-xl bg-ember/15 text-ember flex items-center justify-center shrink-0">
-            <CreditCard class="w-5 h-5" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-bold text-charcoal leading-tight">Novo Cartão</h3>
-            <p class="text-[10px] text-ash font-medium mt-0.5">Adicione um novo cartão de crédito</p>
-          </div>
-        </div>
+        <h3 class="text-3xl font-display text-charcoal">
+          Novo <span class="text-ember">Cartão</span>
+        </h3>
       </template>
 
-      <div class="px-6 pt-5 pb-4 space-y-6 flex-grow overflow-y-auto custom-scrollbar min-h-0">
+      <div class="space-y-6 pt-2">
         <!-- Nome do Cartão -->
         <div class="space-y-2">
           <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Nome do Cartão</label>
@@ -211,23 +198,25 @@ const handleExcluir = async (id: string) => {
       </div>
 
       <!-- Rodapé -->
-      <div class="shrink-0 flex gap-2.5 px-6 py-4 border-t border-stone/60 bg-white">
-        <button 
-          type="button"
-          @click="formularioAberto = false"
-          class="flex-1 h-12 bg-white border border-stone rounded-xl text-ash font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:border-graphite active:scale-95 transition-all"
-        >
-          Cancelar
-        </button>
-        <Button
-          variant="primary"
-          @click="adicionarCard"
-          class="flex-1"
-          :disabled="!nome || !currentMembro || !activeTenantId"
-        >
-          Cadastrar
-        </Button>
-      </div>
+      <template #footer>
+        <div class="flex gap-2.5">
+          <Button 
+            variant="secondary"
+            @click="formularioAberto = false"
+            class="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest"
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            @click="adicionarCard"
+            class="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest"
+            :disabled="!nome || !currentMembro || !activeTenantId"
+          >
+            Cadastrar
+          </Button>
+        </div>
+      </template>
     </BottomSheet>
   </div>
 </template>

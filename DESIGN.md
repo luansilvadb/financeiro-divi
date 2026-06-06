@@ -27,7 +27,7 @@ Family lands like a children's book dropped into a fintech dashboard — warm of
 
 ## Tokens — Typography
 
-### Display — Used for brand wordmark and massive headlines.
+### Display — Used for brand wordmark, massive headlines, and section/bottomsheet titles.
 - **Font:** Fraunces (Weight 700)
 - **Scale:** 68px / Line Height 1.05 / Tracking -0.04em
 - **Feature:** text-wrap: balance
@@ -72,6 +72,20 @@ The navigation is decoupled from the screen edges, floating as an 'Island' with:
 ### Illustration System (Mascots)
 - **Blobs:** Animated SVG creatures with `animate-breathe`, `animate-blink`, and `arm-wave`.
 - **Vocabulary:** Stick limbs, dot eyes, primary brand colors. Used to humanize financial data.
+
+### BottomSheet (Overlay Sheet)
+- **Header:** Uses `font-display text-2xl text-charcoal` (Fraunces 24px 700) with a context keyword highlighted in `text-ember`.
+- **Subtitle:** Optional description below header using `text-xs text-graphite font-medium` (Inter 12px) with `mt-1`.
+- **Close Button:** A 40px circle (`w-10 h-10`) with an X icon in `text-ash` transitioning to `bg-stone text-charcoal` on hover.
+- **Dimensions:** Default height limit of `90dvh` (scroll internally) and desktop width fixed to `md:w-[480px]`.
+- **Padding:** Default content padding of `px-6 pb-8`.
+- **Internal Density & Scale (DPI consistency):**
+  - **Footer Buttons:** All action buttons inside the bottom sheet footer MUST use a uniform height of `48px` (`h-12`) and `text-xs` (or `text-[10px]`) font-bold uppercase tracking-widest.
+  - **Inputs:** Text/number/dropdown fields must use `px-4 py-3.5 rounded-xl border border-stone bg-canvas text-sm font-bold`. Do not use large styles like `text-lg` inside sheet forms.
+  - **Field Labels:** All field labels must use a consistent typography of `text-[10px] font-bold uppercase tracking-widest text-graphite ml-1 block`.
+  - **Recessed Cards:** Inner detail panels must use compact padding `p-4` with `rounded-2xl` corners to keep information dense.
+  - **Button Selection Grids:** Inner selection grid options (e.g., payment methods, buyers, splits) must use uniform padding `py-3` (or `py-3.5`) and `rounded-xl`. Icons inside selection grids must be restricted to `w-4 h-4` (e.g. `Wallet`, `CreditCard`, `Users`), and text must use a uniform size of `text-[11px] font-bold uppercase tracking-wider` (or `text-xs font-bold`).
+  - **Interactive Cards / Controls:** Clickable custom selector rows, settings switches, and item previews inside sheet forms must use a uniform padding of `p-3.5` and `rounded-2xl` to ensure consistent physical spacing (DPI).
 
 ## Motion & Transitions
 

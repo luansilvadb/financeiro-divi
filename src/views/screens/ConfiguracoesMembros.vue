@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { useCargos } from '../../viewmodels/useCargos'
-import { User, LogOut, Users, ChevronRight, ChevronDown, Plus, Trash2, Shield, Key } from 'lucide-vue-next'
+import { User, LogOut, Users, ChevronRight, Plus, Trash2, Shield, Key } from 'lucide-vue-next'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
 import Card from '../components/ui/Card.vue'
@@ -35,29 +35,10 @@ const toast = useToast()
 const novoNome = ref('')
 const novoUsername = ref('')
 const novoPassword = ref('')
-const formularioAberto = ref(false)
+
 const novoMembroFormAberto = ref(false)
 
-const toggleFormulario = () => {
-  formularioAberto.value = !formularioAberto.value
-  if (formularioAberto.value) {
-    cargoFormAberto.value = false
-  } else {
-    novoNome.value = ''
-    novoUsername.value = ''
-    novoPassword.value = ''
-    novoMembroFormAberto.value = false
-  }
-}
 
-const toggleNovoMembroForm = () => {
-  novoMembroFormAberto.value = !novoMembroFormAberto.value
-  if (!novoMembroFormAberto.value) {
-    novoNome.value = ''
-    novoUsername.value = ''
-    novoPassword.value = ''
-  }
-}
 
 const abrirNovoMembroForm = () => {
   novoNome.value = ''
@@ -74,7 +55,7 @@ const fecharBottomSheetNovoMembro = () => {
 }
 
 // Controle do formulário de Cargos
-const cargoFormAberto = ref(false)
+
 const novoCargoFormAberto = ref(false)
 const cargoSendoEditadoId = ref<string | null>(null)
 const novoCargoNome = ref('')
@@ -89,19 +70,7 @@ const coresPredefinidas = [
   { hex: '#8b5cf6', name: 'amethyst' }
 ]
 
-const toggleCargoForm = () => {
-  cargoFormAberto.value = !cargoFormAberto.value
-  if (cargoFormAberto.value) {
-    formularioAberto.value = false
-  } else {
-    novoCargoNome.value = ''
-    novoCargoCor.value = '#ef4444'
-    novasPermissoes.value = []
-    cargoSendoEditadoId.value = null
-    novoCargoFormAberto.value = false
-    mostrarBottomSheetPermissoesCargo.value = false
-  }
-}
+
 
 const abrirNovoCargoForm = () => {
   cargoSendoEditadoId.value = null
@@ -328,13 +297,13 @@ const handleAdicionar = async () => {
 
 <template>
   <div class="flex flex-col flex-grow h-full min-h-0 w-full overflow-hidden text-graphite bg-canvas">
-    <div class="shrink-0 space-y-6 px-4 pt-8 pb-6 sm:px-8 border-b border-stone/30 bg-canvas/80 backdrop-blur-md sticky top-0 z-20">
+    <div class="shrink-0 space-y-4 px-4 pt-5 pb-4 sm:px-8 border-b border-stone/30 bg-canvas/80 backdrop-blur-md sticky top-0 z-20">
       <div class="flex items-center justify-between">
         <div class="space-y-1">
-          <h2 class="text-display text-4xl sm:text-5xl text-charcoal">
+          <h2 class="font-display text-3xl text-charcoal leading-tight tracking-tight">
             Perfil do <span class="text-ember">Usuário</span>
           </h2>
-          <p class="text-caption text-ash tracking-[0.2em]">Configurações e Segurança</p>
+          <p class="text-[9px] font-bold text-ash uppercase tracking-widest">Configurações e Segurança</p>
         </div>
       </div>
 
@@ -407,7 +376,7 @@ const handleAdicionar = async () => {
 
         <div v-else-if="activeTab === 'casa'" class="space-y-6 w-full min-w-0 pb-12">
           <!-- Card de Moradores -->
-          <div class="bg-white border border-stone/30 rounded-[32px] shadow-subtle overflow-hidden">
+          <div class="bg-white border border-stone/30 rounded-2xl shadow-subtle overflow-hidden">
             <div class="px-6 pt-6 pb-2">
               <h3 class="text-heading-sm text-charcoal flex items-center gap-2">
                 <Users class="w-5 h-5 text-ember" />
@@ -478,7 +447,7 @@ const handleAdicionar = async () => {
           <!-- Card de Cargos -->
           <div 
             v-if="currentMembro?.role === 'ADMIN'"
-            class="bg-white border border-stone/30 rounded-[32px] shadow-subtle overflow-hidden"
+            class="bg-white border border-stone/30 rounded-2xl shadow-subtle overflow-hidden"
           >
             <div class="px-6 pt-6 pb-2">
               <h3 class="text-heading-sm text-charcoal flex items-center gap-2">
@@ -552,50 +521,15 @@ const handleAdicionar = async () => {
     <!-- Bottom Sheet de Edição de Membros (Mobile-first) -->
     <BottomSheet 
       v-model="mostrarBottomSheet"
-      :show-close="true"
+      :subtitle="`Gerencie as permissões e o acesso de ${membroSelecionado?.nome}`"
       max-height="90dvh"
-      min-height="75dvh"
-      width-class="md:w-[560px]"
     >
-      <template #header>
-        <div class="flex items-center gap-3 w-full pr-8">
-          <MembroAvatar 
-            v-if="membroSelecionado"
-            :nome="membroSelecionado.nome"
-            :variant="variants[membros.findIndex(m => m.id === membroSelecionado?.id) % variants.length]"
-            size="md"
-          />
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-bold text-charcoal leading-tight truncate">{{ membroSelecionado?.nome }}</h3>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span 
-                v-if="membroSelecionado?.role === 'ADMIN'"
-                class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-ember/10 text-ember uppercase tracking-widest"
-              >
-                Admin
-              </span>
-              <span 
-                v-else-if="membroSelecionado?.cargo"
-                class="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest"
-                :style="{ backgroundColor: (membroSelecionado.cargo.cor || '#292524') + '15', color: membroSelecionado.cargo.cor || '#292524' }"
-              >
-                {{ membroSelecionado.cargo.nome }}
-              </span>
-              <span 
-                v-else
-                class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-stone text-ash uppercase tracking-widest"
-              >
-                Sem Cargo
-              </span>
-              <span class="text-[9px] text-ash font-medium" v-if="membroSelecionado?.userId">· Conectado</span>
-              <span class="text-[9px] text-ash font-medium italic" v-else>· Sem conta</span>
-            </div>
-          </div>
-        </div>
+      <template #title>
+        <h3 class="text-3xl font-display text-charcoal leading-tight">Editar <span class="text-ember">Membro</span></h3>
       </template>
 
       <!-- Conteúdo Rolável -->
-      <div class="px-6 pt-5 pb-4 space-y-5 overflow-y-auto flex-grow custom-scrollbar min-h-0">
+      <div class="space-y-5 pt-2">
         <!-- Seleção de Cargo -->
         <div class="space-y-2">
           <label class="text-[10px] font-bold uppercase tracking-widest text-graphite block ml-1">Cargo e Nível de Acesso</label>
@@ -672,10 +606,8 @@ const handleAdicionar = async () => {
           </p>
         </div>
 
-        <!-- As permissões agora são gerenciadas e editadas exclusivamente a partir da aba Gerenciar Cargos -->
-
         <!-- Alterar Ativação do Membro (Switch Clicável se Autorizado) -->
-        <div class="flex items-center justify-between p-4 bg-parchment border border-stone rounded-2xl gap-4">
+        <div class="flex items-center justify-between p-3.5 bg-parchment border border-stone rounded-2xl gap-4">
           <div class="space-y-1">
             <span class="text-xs font-bold text-charcoal leading-none block">Morador Ativo na Casa</span>
             <p class="text-[9px] text-ash font-medium leading-snug" v-if="ehUsuarioLogado">
@@ -694,7 +626,7 @@ const handleAdicionar = async () => {
             @click="ativoSelecionado = !ativoSelecionado"
             :disabled="!podeEditarStatus"
             class="w-11 h-6 flex items-center rounded-full p-0.5 transition-colors duration-300 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-            :class="ativoSelecionado ? 'bg-[#00a83d]' : 'bg-stone'"
+            :class="ativoSelecionado ? 'bg-meadow' : 'bg-stone'"
           >
             <div 
               class="bg-white w-5 h-5 rounded-full shadow-subtle transform transition-transform duration-300"
@@ -705,54 +637,39 @@ const handleAdicionar = async () => {
       </div>
 
       <!-- Botões de Ação Fixos no Rodapé -->
-      <div class="shrink-0 flex gap-2.5 px-6 py-4 border-t border-stone/60 bg-card">
-        <button 
-          type="button"
-          @click="fecharBottomSheet"
-          class="flex-1 h-12 bg-white border border-stone rounded-xl text-ash font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:border-graphite active:scale-95 transition-all"
-        >
-          Cancelar
-        </button>
-        <button 
-          type="button"
-          @click="handleSalvarEdicao"
-          :disabled="salvando || (!podeEditarRole && !podeEditarStatus) || (cargoSelecionadoId === (membroSelecionado?.role === 'ADMIN' ? 'ADMIN' : membroSelecionado?.cargoId) && ativoSelecionado === membroSelecionado?.ativo)"
-          class="flex-1 h-12 bg-ember text-white border-none rounded-xl font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:bg-coral active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {{ salvando ? 'Salvando...' : 'Salvar Alterações' }}
-        </button>
-      </div>
+      <template #footer>
+        <div class="flex gap-2.5">
+          <Button 
+            variant="secondary"
+            @click="fecharBottomSheet"
+            class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="primary"
+            @click="handleSalvarEdicao"
+            :disabled="salvando || (!podeEditarRole && !podeEditarStatus) || (cargoSelecionadoId === (membroSelecionado?.role === 'ADMIN' ? 'ADMIN' : membroSelecionado?.cargoId) && ativoSelecionado === membroSelecionado?.ativo)"
+            class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+          >
+            {{ salvando ? 'Salvando...' : 'Salvar Alterações' }}
+          </Button>
+        </div>
+      </template>
     </BottomSheet>
 
     <!-- Bottom Sheet de Cadastro/Edição de Cargo -->
     <BottomSheet 
       v-model="novoCargoFormAberto"
-      :show-close="true"
+      subtitle="Configure as permissões e a cor do cargo"
       max-height="90dvh"
-      min-height="75dvh"
-      width-class="md:w-[560px]"
     >
-      <template #header>
-        <div class="flex items-center gap-3 w-full pr-8">
-          <div 
-            class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
-            :style="{ backgroundColor: novoCargoCor + '20' }"
-          >
-            <Shield class="w-5 h-5" :style="{ color: novoCargoCor }" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-bold text-charcoal leading-tight">
-              {{ cargoSendoEditadoId ? 'Editar Cargo' : 'Novo Cargo Personalizado' }}
-            </h3>
-            <p class="text-[10px] text-ash font-medium mt-0.5 truncate">
-              Configure as permissões e a cor do cargo
-            </p>
-          </div>
-        </div>
+      <template #title>
+        <h3 class="text-3xl font-display text-charcoal leading-tight">{{ cargoSendoEditadoId ? 'Editar' : 'Novo' }} <span class="text-ember">Cargo</span></h3>
       </template>
 
       <!-- Conteúdo do Formulário de Cargo -->
-      <div class="px-6 pt-5 pb-4 space-y-6 overflow-y-auto flex-grow custom-scrollbar min-h-0">
+      <div class="space-y-6 pt-2">
         <!-- Nome do Cargo -->
         <div class="space-y-2">
           <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Nome do Cargo</label>
@@ -793,7 +710,7 @@ const handleAdicionar = async () => {
             type="button"
             data-testid="configurar-permissoes-cargo"
             @click="abrirBottomSheetPermissoesCargo"
-            class="w-full flex items-center justify-between p-4 bg-parchment/30 border border-stone rounded-2xl hover:border-ember transition-colors cursor-pointer text-left group"
+            class="w-full flex items-center justify-between p-3.5 bg-parchment/30 border border-stone rounded-2xl hover:border-ember transition-colors cursor-pointer text-left group"
           >
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-full bg-ember/10 text-ember flex items-center justify-center shrink-0 group-hover:bg-ember group-hover:text-white transition-colors duration-200">
@@ -802,7 +719,7 @@ const handleAdicionar = async () => {
               <div>
                 <p class="text-xs font-bold text-charcoal leading-none">Configurar Permissões</p>
                 <p class="text-[10px] mt-1">
-                  <span v-if="novasPermissoes.length > 0" class="text-[#00a83d] font-bold">
+                  <span v-if="novasPermissoes.length > 0" class="text-meadow font-bold">
                     {{ novasPermissoes.length }} selecionada{{ novasPermissoes.length !== 1 ? 's' : '' }}
                   </span>
                   <span v-else class="text-ash">Nenhuma selecionada ainda</span>
@@ -815,49 +732,43 @@ const handleAdicionar = async () => {
       </div>
 
       <!-- Rodapé com Botões -->
-      <div class="shrink-0 flex gap-2.5 px-6 py-4 border-t border-stone/60 bg-card">
-        <button 
-          type="button"
-          @click="fecharBottomSheetCargo"
-          class="flex-1 h-12 bg-white border border-stone rounded-xl text-ash font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:border-graphite active:scale-95 transition-all"
-        >
-          Cancelar
-        </button>
-        <button 
-          type="button"
-          @click="handleCriarCargo"
-          :disabled="!novoCargoNome.trim() || novasPermissoes.length === 0"
-          class="flex-1 h-12 bg-ember text-white border-none rounded-xl font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:bg-coral active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {{ cargoSendoEditadoId ? 'Salvar Alterações' : 'Criar Cargo' }}
-        </button>
-      </div>
+      <template #footer>
+        <div class="flex gap-2.5">
+          <Button 
+            variant="secondary"
+            @click="fecharBottomSheetCargo"
+            class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="primary"
+            @click="handleCriarCargo"
+            :disabled="!novoCargoNome.trim() || novasPermissoes.length === 0"
+            class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+          >
+            {{ cargoSendoEditadoId ? 'Salvar Alterações' : 'Criar Cargo' }}
+          </Button>
+        </div>
+      </template>
     </BottomSheet>
 
     <!-- Bottom Sheet de Permissões do Cargo -->
     <BottomSheet 
       v-model="mostrarBottomSheetPermissoesCargo"
-      :show-close="true"
+      title="Permissões do Cargo"
       max-height="90dvh"
-      min-height="65dvh"
-      width-class="md:w-[560px]"
     >
       <template #header>
-        <div class="flex items-center gap-3 w-full pr-8">
-          <div 
-            class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
-            :style="{ backgroundColor: novoCargoCor + '20' }"
-          >
-            <Key class="w-5 h-5" :style="{ color: novoCargoCor }" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-bold text-charcoal leading-tight">
-              Permissões do Cargo
+        <div class="flex items-center gap-3">
+          <div>
+            <h3 class="text-3xl font-display text-charcoal leading-tight">
+              Permissões do <span class="text-ember">Cargo</span>
             </h3>
-            <p class="text-[10px] font-medium mt-0.5 truncate" :style="{ color: novoCargoCor }" v-if="novoCargoNome.trim()">
+            <p class="text-xs text-graphite font-medium mt-1 truncate" :style="{ color: novoCargoCor }" v-if="novoCargoNome.trim()">
               {{ novoCargoNome }}
             </p>
-            <p class="text-[10px] text-ash font-medium mt-0.5 truncate" v-else>
+            <p class="text-xs text-graphite font-medium mt-1" v-else>
               Novo cargo
             </p>
           </div>
@@ -872,7 +783,7 @@ const handleAdicionar = async () => {
       </template>
 
       <!-- Conteúdo Rolável -->
-      <div class="px-5 pt-4 pb-3 space-y-3 overflow-y-auto flex-grow custom-scrollbar min-h-0">
+      <div class="space-y-3 pt-2">
         <!-- Cards de permissão clicáveis -->
         <button
           v-for="p in permissoesDisponiveis"
@@ -880,13 +791,7 @@ const handleAdicionar = async () => {
           type="button"
           data-testid="toggle-permissao-cargo"
           @click="toggleNovaPermissao(p.chave)"
-          class="w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left cursor-pointer transition-all duration-200 active:scale-[0.99]"
-          :class="novasPermissoes.includes(p.chave) 
-            ? 'bg-white shadow-subtle' 
-            : 'bg-canvas border-stone hover:border-stone/80'"
-          :style="novasPermissoes.includes(p.chave) 
-            ? { borderColor: novoCargoCor, boxShadow: `0 0 0 1px ${novoCargoCor}20` } 
-            : {}"
+          class="w-full flex items-center gap-4 p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-200 active:scale-[0.99] border-none bg-transparent"
         >
           <!-- Ícone de estado -->
           <div 
@@ -921,90 +826,82 @@ const handleAdicionar = async () => {
       </div>
 
       <!-- Botões de Ação Normais ou de Confirmação de Exclusão no Rodapé -->
-      <div class="shrink-0 px-5 py-4 border-t border-stone/60 bg-card flex flex-col gap-2.5">
-        <Transition name="tab-fade" mode="out-in">
-          <!-- Painel de Confirmação de Exclusão -->
-          <div v-if="confirmarExclusaoCargo" class="space-y-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <div class="p-3 bg-coral/5 border border-coral/20 rounded-xl">
-              <p class="text-[11px] font-bold text-coral leading-snug">
-                {{ (cargoSendoEditado?.totalMembros || 0) > 0 
-                  ? `Atenção: Este cargo possui ${(cargoSendoEditado?.totalMembros)} morador(es) vinculado(s). Ao excluí-lo, eles ficarão sem cargo.`
-                  : `Tem certeza que deseja excluir o cargo "${cargoSendoEditado?.nome}"?` 
-                }}
-              </p>
+      <template #footer>
+        <div class="flex flex-col gap-2.5">
+          <Transition name="tab-fade" mode="out-in">
+            <!-- Painel de Confirmação de Exclusão -->
+            <div v-if="confirmarExclusaoCargo" class="space-y-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div class="p-3 bg-coral/5 border border-coral/20 rounded-xl">
+                <p class="text-[11px] font-bold text-coral leading-snug">
+                  {{ (cargoSendoEditado?.totalMembros || 0) > 0 
+                    ? `Atenção: Este cargo possui ${(cargoSendoEditado?.totalMembros)} morador(es) vinculado(s). Ao excluí-lo, eles ficarão sem cargo.`
+                    : `Tem certeza que deseja excluir o cargo "${cargoSendoEditado?.nome}"?` 
+                  }}
+                </p>
+              </div>
+              <div class="flex gap-2.5 w-full">
+                <Button 
+                  variant="secondary"
+                  @click="confirmarExclusaoCargo = false"
+                  class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+                >
+                  Cancelar
+                </Button>
+                <button 
+                  type="button"
+                  data-testid="confirmar-excluir-cargo-bottomsheet"
+                  @click="handleExcluirCargoConfirmado"
+                  class="flex-1 h-12 bg-coral text-white border-none rounded-pill font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:bg-red-600 active:scale-95 transition-all shadow-subtle"
+                >
+                  Sim, Excluir
+                </button>
+              </div>
             </div>
-            <div class="flex gap-2.5 w-full">
-              <button 
-                type="button"
-                @click="confirmarExclusaoCargo = false"
-                class="flex-1 h-11 bg-white border border-stone rounded-xl text-ash font-bold uppercase tracking-widest text-[9px] cursor-pointer hover:border-graphite active:scale-95 transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button"
-                data-testid="confirmar-excluir-cargo-bottomsheet"
-                @click="handleExcluirCargoConfirmado"
-                class="flex-1 h-11 bg-coral text-white border-none rounded-xl font-bold uppercase tracking-widest text-[9px] cursor-pointer hover:bg-red-600 active:scale-95 transition-all shadow-subtle"
-              >
-                Sim, Excluir
-              </button>
-            </div>
-          </div>
 
-          <!-- Botões Normais (Excluir e Confirmar) -->
-          <div v-else class="flex gap-2.5 w-full">
-            <button 
-              v-if="cargoSendoEditadoId"
-              type="button"
-              data-testid="excluir-cargo-bottomsheet"
-              @click="handleExcluirCargoDoBottomSheet"
-              class="w-12 h-12 rounded-xl border border-stone bg-white text-ash hover:text-coral hover:border-coral/40 hover:bg-coral/5 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
-              title="Excluir cargo"
-            >
-              <Trash2 class="w-4.5 h-4.5" />
-            </button>
-            <button 
-              type="button"
-              @click="fecharBottomSheetPermissoesCargo"
-              class="flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px] cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2 text-white border-none shadow-subtle"
-              :style="{ backgroundColor: novoCargoCor }"
-            >
-              <span>Confirmar</span>
-              <span 
-                class="px-2 py-0.5 rounded-full text-[9px] font-bold"
-                style="background: rgba(255,255,255,0.25)"
-              >{{ novasPermissoes.length }} selecionada{{ novasPermissoes.length !== 1 ? 's' : '' }}</span>
-            </button>
-          </div>
-        </Transition>
-      </div>
+            <!-- Botões Normais (Excluir e Confirmar) -->
+            <div v-else class="flex gap-2.5 w-full">
+              <button 
+                v-if="cargoSendoEditadoId"
+                type="button"
+                data-testid="excluir-cargo-bottomsheet"
+                @click="handleExcluirCargoDoBottomSheet"
+                class="w-12 h-12 rounded-xl border border-stone bg-white text-ash hover:text-coral hover:border-coral/40 hover:bg-coral/5 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                title="Excluir cargo"
+              >
+                <Trash2 class="w-4.5 h-4.5" />
+              </button>
+              <button 
+                type="button"
+                @click="fecharBottomSheetPermissoesCargo"
+                class="flex-1 h-12 rounded-pill font-bold uppercase tracking-widest text-[10px] cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2 text-white border-none shadow-subtle"
+                :style="{ backgroundColor: novoCargoCor }"
+              >
+                <span>Confirmar</span>
+                <span 
+                  class="px-2 py-0.5 rounded-full text-[9px] font-bold"
+                  style="background: rgba(255,255,255,0.25)"
+                >{{ novasPermissoes.length }} selecionada{{ novasPermissoes.length !== 1 ? 's' : '' }}</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
+      </template>
     </BottomSheet>
 
     <!-- Bottom Sheet de Cadastro de Novo Morador -->
     <BottomSheet 
       v-model="novoMembroFormAberto"
-      :show-close="true"
+      subtitle="Adicione um novo membro à casa"
       max-height="90dvh"
-      min-height="75dvh"
-      width-class="md:w-[560px]"
     >
-      <template #header>
-        <div class="flex items-center gap-3 w-full pr-8">
-          <div class="w-10 h-10 rounded-xl bg-ember/15 text-ember flex items-center justify-center shrink-0">
-            <User class="w-5 h-5" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-bold text-charcoal leading-tight">Novo Morador</h3>
-            <p class="text-[10px] text-ash font-medium mt-0.5">Adicione um novo membro à casa</p>
-          </div>
-        </div>
+      <template #title>
+        <h3 class="text-3xl font-display text-charcoal leading-tight">Novo <span class="text-ember">Morador</span></h3>
       </template>
 
       <!-- Conteúdo do Formulário -->
-      <div class="px-6 pt-5 pb-4 space-y-6 flex-grow overflow-y-auto custom-scrollbar min-h-0">
+      <div class="space-y-6 pt-2">
         <!-- Preview do Membro em tempo real -->
-        <div class="flex items-center gap-3 p-4 rounded-2xl border border-stone bg-parchment/30">
+        <div class="flex items-center gap-3 p-3.5 rounded-2xl border border-stone bg-parchment/30">
           <MembroAvatar 
             :nome="novoNome.trim() || '?'" 
             variant="ember" 
@@ -1068,22 +965,25 @@ const handleAdicionar = async () => {
       </div>
 
       <!-- Rodapé com Botões -->
-      <div class="shrink-0 flex gap-2.5 px-6 py-4 border-t border-stone/60 bg-card">
-        <button 
-          type="button"
-          @click="fecharBottomSheetNovoMembro"
-          class="flex-1 h-12 bg-white border border-stone rounded-xl text-ash font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:border-graphite active:scale-95 transition-all"
-        >
-          Cancelar
-        </button>
-        <Button 
-          @click="handleAdicionar"
-          :disabled="!novoNome.trim() || !novoUsername.trim() || !novoPassword.trim() || !activeTenantId"
-          class="flex-1 h-12 bg-ember text-white border-none rounded-xl font-bold uppercase tracking-widest text-[10px] cursor-pointer hover:bg-coral active:scale-95 transition-all"
-        >
-          Cadastrar
-        </Button>
-      </div>
+      <template #footer>
+        <div class="flex gap-2.5">
+          <Button 
+            variant="secondary"
+            @click="fecharBottomSheetNovoMembro"
+            class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="primary"
+            @click="handleAdicionar"
+            :disabled="!novoNome.trim() || !novoUsername.trim() || !novoPassword.trim() || !activeTenantId"
+            class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
+          >
+            Cadastrar
+          </Button>
+        </div>
+      </template>
     </BottomSheet>
   </div>
 </template>

@@ -28,4 +28,37 @@ describe('BottomSheet', () => {
     })
     expect(wrapper.find('div').exists()).toBe(false)
   })
+
+  it('deve renderizar o rodape quando o slot footer for fornecido', () => {
+    const wrapper = mount(BottomSheet, {
+      props: { modelValue: true },
+      slots: {
+        footer: '<div id="test-footer">Botao de Acao</div>'
+      },
+      global: {
+        stubs: {
+          Teleport: true
+        }
+      }
+    })
+    expect(wrapper.find('#test-footer').exists()).toBe(true)
+  })
+
+  it('deve aplicar a classe contentClass ao container de conteudo', () => {
+    const wrapper = mount(BottomSheet, {
+      props: { 
+        modelValue: true,
+        contentClass: 'custom-padding'
+      },
+      global: {
+        stubs: {
+          Teleport: true
+        }
+      }
+    })
+    // O container de conteúdo é o div que contém o slot default
+    // No BottomSheet.vue atual é o div após o divider
+    const contentContainer = wrapper.find('.overflow-y-auto.flex-1')
+    expect(contentContainer.classes()).toContain('custom-padding')
+  })
 })
