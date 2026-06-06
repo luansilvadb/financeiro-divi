@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { CheckCircle2, ChevronDown, Home, Settings } from 'lucide-vue-next'
+import { CheckCircle2, ChevronDown, Home, User } from 'lucide-vue-next'
 import IllustrationMascot from '../../ui/IllustrationMascot.vue'
+import MembroAvatar from '../../ui/MembroAvatar.vue'
+import { useMembros } from '../../../../viewmodels/useMembros'
 
 defineProps<{
   currentYear: string | number
@@ -15,6 +17,8 @@ defineEmits<{
   (e: 'openCasas'): void
   (e: 'openSettings'): void
 }>()
+
+const { currentMembro } = useMembros()
 </script>
 
 <template>
@@ -74,10 +78,17 @@ defineEmits<{
       <button 
         @click="$emit('openSettings')" 
         class="w-11 h-11 bg-transparent hover:bg-stone/50 border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 rounded-xl flex items-center justify-center transition-all group cursor-pointer"
-        aria-label="Configurações da conta"
-        title="Configurações"
+        aria-label="Perfil do usuário"
+        title="Perfil do Usuário"
       >
-        <Settings class="w-6 h-6 text-ash group-hover:text-ember transition-colors duration-200" aria-hidden="true" />
+        <MembroAvatar 
+          v-if="currentMembro" 
+          :nome="currentMembro.nome" 
+          variant="ember" 
+          size="sm" 
+          class="group-hover:scale-110 transition-transform duration-300 ease-spring"
+        />
+        <User v-else class="w-6 h-6 text-ash group-hover:text-ember transition-colors duration-200" aria-hidden="true" />
       </button>
     </div>
   </header>

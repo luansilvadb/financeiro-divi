@@ -248,7 +248,10 @@ const handleLogout = async () => {
             width-class="md:w-[560px]"
             max-height="90dvh"
           >
-            <ConfiguracoesMembros @voltar="currentView = 'dashboard'" />
+            <ConfiguracoesMembros 
+              @voltar="currentView = 'dashboard'" 
+              @logout="handleLogout"
+            />
           </BottomSheet>
 
           <BottomTabBar v-model="activeTab" />

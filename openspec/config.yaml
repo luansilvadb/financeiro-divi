@@ -1,0 +1,77 @@
+schema: spec-driven
+
+context: |
+  Language: Portuguese (pt-BR)
+  All artifacts must be written in Brazilian Portuguese.
+  Spec names must use kebab-case in Portuguese (e.g., perfil-usuario-cartoes).
+
+  # ─── Produto ───
+  App: Divi — orquestrador financeiro para despesas compartilhadas
+  Público: moradores de casas compartilhadas, casais, grupos de amigos
+  Propósito: eliminar atrito social na divisão de contas com transparência total
+
+  # ─── Tech Stack ───
+  Frontend: Vue 3 (Composition API) + TypeScript + Vite
+  Styling: Tailwind CSS v4 (@theme tokens em main.css)
+  Icons: Lucide Vue Next
+  Testes frontend: Vitest + jsdom + @vue/test-utils
+  Backend: NestJS 10 + TypeScript
+  ORM: Prisma 5 + PostgreSQL
+  Auth: JWT (passport-jwt) + bcryptjs
+  Real-time: Socket.IO (NestJS WebSockets Gateway)
+  API docs: Swagger (@nestjs/swagger)
+  Testes backend: Jest + Supertest
+
+  # ─── Arquitetura ───
+  Multi-tenant: todo dado pertence a um Tenant (casa/moradia)
+  Tenant isolation: todas as queries devem filtrar por tenantId
+  Composite keys: a maioria dos modelos usa @@id([id, tenantId])
+  Valores monetários: sempre em centavos (BigInt), nunca float
+  Modelos de domínio: Tenant, Usuario, MembroCasa, Cartao, Fatura,
+                       Gasto, DivisaoGasto, ContaFixa
+  Relação Usuario ↔ Membro: um Usuario pode ter vários MembroCasa
+                              (um por tenant/casa)
+
+  # ─── Convenções de código ───
+  Frontend segue MVVM: views/ (telas), viewmodels/, composables/, models/
+  Backend segue módulos NestJS: module → controller → service → prisma
+  DTOs com class-validator + class-transformer
+  API RESTful com validação via Pipes do NestJS
+  WebSocket Gateway para atualizações em tempo real
+
+  # ─── Design System (Family) ───
+  Design System: ./DESIGN.md
+
+  # ─── Anti-referências ───
+  NÃO usar estilo fintech frio (Nubank, Itaú)
+  NÃO usar dark glassmorphism / neon
+  NÃO usar pure white (#fff) como background de página
+
+rules:
+  proposal:
+    - Sempre identificar quais módulos do backend e do frontend são afetados
+    - Incluir impacto no esquema Prisma se houver alteração de dados
+    - Considerar isolamento multi-tenant em toda proposta
+    - Verificar se mudanças precisam de atualização em tempo real (WebSocket)
+
+  specs:
+    - Usar formato WHEN/THEN para cenários
+    - Especificar validações de segurança (quem pode fazer o quê)
+    - Valores monetários sempre em centavos
+    - Considerar edge cases de divisão (centavos restantes, arredondamento)
+
+  design:
+    - Incluir qual módulo NestJS será criado/modificado
+    - Especificar mudanças no schema.prisma quando necessário
+    - Descrever endpoints REST e eventos WebSocket se aplicável
+    - Referenciar tokens de design do DESIGN.md para mudanças de UI
+    - Respeitar a arquitetura MVVM no frontend
+
+  tasks:
+    - Agrupar por camada (backend → frontend → testes)
+    - Tasks de backend antes de frontend (dependência de API)
+    - Incluir task de migração Prisma quando schema mudar
+    - Incluir tasks de teste (unitário e/ou integração)
+  
+  skills:
+    - "Mandatory Skill: ../agents/skills"

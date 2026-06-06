@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const classes = computed(() => {
   return [
-    'inline-flex items-center justify-center whitespace-nowrap transition-all duration-300 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-95 cursor-pointer border-none select-none',
+    'inline-flex items-center justify-center whitespace-nowrap transition-all duration-300 ease-spring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-90 cursor-pointer border-none select-none',
     props.loading && 'relative !text-transparent transition-none',
     // Sizes
     props.size === 'default' && 'h-12 px-6 text-sm font-bold uppercase tracking-widest',

@@ -17,6 +17,7 @@ model Tenant {
   faturas    Fatura[]
   gastos     Gasto[]
   contasFixas ContaFixa[]
+  cargos     CargoCasa[]
 
   @@map("tenants")
 }
@@ -31,22 +32,46 @@ model Usuario {
   @@map("usuarios")
 }
 
+enum Role {
+  ADMIN
+  MORADOR
+  VISUALIZADOR
+}
+
 model MembroCasa {
   id        String
   tenantId  String   @map("tenant_id") @db.Uuid
   nome      String
   avatar    String
   ativo     Boolean  @default(true)
+  role      Role     @default(MORADOR)
   userId    String?  @map("user_id") @db.Uuid
+  cargoId   String?  @map("cargo_id")
   createdAt DateTime @default(now()) @map("created_at")
   
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usuario   Usuario? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cargo     CargoCasa? @relation(fields: [cargoId, tenantId], references: [id, tenantId])
 
   @@id([id, tenantId])
   @@index([tenantId])
   @@index([userId])
   @@map("membros_casa")
+}
+
+model CargoCasa {
+  id         String   @default(uuid())
+  tenantId   String   @map("tenant_id") @db.Uuid
+  nome       String
+  cor        String?
+  permissoes String[]
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  membros    MembroCasa[]
+
+  @@id([id, tenantId])
+  @@map("cargos_casa")
 }
 
 model Cartao {

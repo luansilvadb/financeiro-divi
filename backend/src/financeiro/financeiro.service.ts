@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { serializeBigInt } from '../shared/utils/serialization';
 import { randomUUID } from 'crypto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class FinanceiroService {
@@ -53,6 +54,7 @@ export class FinanceiroService {
         nome: user ? user.username : 'Membro Fundador',
         avatar: (user ? user.username : 'MF').substring(0, 2).toUpperCase(),
         userId,
+        role: Role.ADMIN,
       },
     });
 
@@ -118,14 +120,47 @@ export class FinanceiroService {
   async listarMembros(tenantId: string) {
     const membros = await this.prisma.membroCasa.findMany({
       where: { tenantId },
+      include: {
+        cargo: true,
+      },
     });
     return serializeBigInt(membros);
   }
 
   async salvarMembro(tenantId: string, membroData: any) {
-    let { id, nome, avatar, userId, username, password, ativo } = membroData;
+    let { id, nome, avatar, userId, username, password, ativo, role, cargoId } = membroData;
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
     const isActive = ativo !== undefined ? ativo : true;
+    const memberRole = role || Role.MORADOR;
+    const finalCargoId = memberRole === Role.ADMIN ? null : (cargoId || null);
+
+    // Lógica para evitar que a moradia fique sem administrador ativo
+    const membroAtual = await this.prisma.membroCasa.findUnique({
+      where: {
+        id_tenantId: { id, tenantId },
+      },
+    });
+
+    if (!membroAtual) {
+      if (!username || !username.trim() || !password || !password.trim()) {
+        throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
+      }
+    } else {
+      if (membroAtual.role === Role.ADMIN && membroAtual.ativo) {
+        if (!isActive || memberRole !== Role.ADMIN) {
+          const adminsAtivos = await this.prisma.membroCasa.count({
+            where: {
+              tenantId,
+              role: Role.ADMIN,
+              ativo: true,
+            },
+          });
+          if (adminsAtivos <= 1) {
+            throw new BadRequestException('A moradia precisa ter pelo menos um administrador ativo.');
+          }
+        }
+      }
+    }
 
     if (!userId && username && password) {
       try {
@@ -146,18 +181,82 @@ export class FinanceiroService {
         nome,
         avatar: defaultAvatar,
         ativo: isActive,
+        role: memberRole,
+        cargoId: finalCargoId,
         userId,
       },
       update: {
         nome,
         avatar: defaultAvatar,
         ativo: isActive,
+        role: memberRole,
+        cargoId: finalCargoId,
         userId,
+      },
+      include: {
+        cargo: true,
       },
     });
     const result = serializeBigInt(upserted);
     this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
     return result;
+  }
+
+  async listarCargos(tenantId: string) {
+    const cargos = await this.prisma.cargoCasa.findMany({
+      where: { tenantId },
+      include: {
+        _count: {
+          select: { membros: true },
+        },
+      },
+    });
+    return serializeBigInt(cargos);
+  }
+
+  async salvarCargo(tenantId: string, cargoData: any) {
+    const { id, nome, cor, permissoes } = cargoData;
+    const cargoId = id || `cargo-${randomUUID()}`;
+    const upserted = await this.prisma.cargoCasa.upsert({
+      where: {
+        id_tenantId: { id: cargoId, tenantId },
+      },
+      create: {
+        id: cargoId,
+        tenantId,
+        nome,
+        cor,
+        permissoes,
+      },
+      update: {
+        nome,
+        cor,
+        permissoes,
+      },
+    });
+    this.gateway.notificarAlteracao(tenantId, 'cargos_alterados');
+    return serializeBigInt(upserted);
+  }
+
+  async excluirCargo(tenantId: string, id: string) {
+    // Desvincula os membros associados a este cargo setando cargoId como null
+    await this.prisma.membroCasa.updateMany({
+      where: {
+        tenantId,
+        cargoId: id,
+      },
+      data: {
+        cargoId: null,
+      },
+    });
+
+    await this.prisma.cargoCasa.delete({
+      where: {
+        id_tenantId: { id, tenantId },
+      },
+    });
+    this.gateway.notificarAlteracao(tenantId, 'cargos_alterados');
+    return { success: true };
   }
 
   async listarCartoes(tenantId: string) {

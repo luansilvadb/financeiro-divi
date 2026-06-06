@@ -16,10 +16,10 @@
         class="fixed inset-0 z-[999] flex justify-center items-end p-0 pointer-events-none"
       >
         <div
-          class="pointer-events-auto relative flex flex-col bg-card border-t border-x border-stone shadow-lg transition-all duration-300 text-graphite
-                 rounded-t-card-lg md:rounded-t-card rounded-b-none max-h-[90dvh] w-full max-w-full min-w-0 overflow-hidden"
+          class="pointer-events-auto relative flex flex-col bg-canvas border-t border-x border-stone/30 shadow-lg transition-all duration-300 text-graphite
+                 rounded-t-[32px] max-h-[90dvh] w-full max-w-full min-w-0 overflow-hidden"
           :class="widthClass"
-          :style="{ maxHeight }"
+          :style="{ maxHeight, minHeight }"
           @touchstart="onTouchStart"
           @touchmove="onTouchMove"
           @touchend="onTouchEnd"
@@ -67,6 +67,7 @@ const props = defineProps({
   title: { type: String, default: '' },
   showClose: { type: Boolean, default: true },
   maxHeight: { type: String, default: '90dvh' },
+  minHeight: { type: String, default: undefined },
   widthClass: { type: String, default: 'md:w-[480px]' }
 })
 

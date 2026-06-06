@@ -10,7 +10,10 @@ import { ContaFixaDto } from './dto/conta-fixa.dto';
 import { CriarTenantDto } from './dto/criar-tenant.dto';
 import { EntrarTenantDto } from './dto/entrar-tenant.dto';
 import { ExcluirMuitosGastosDto } from './dto/excluir-muitos-gastos.dto';
+import { CargoCasaDto } from './dto/cargo-casa.dto';
 import { Public } from '../auth/public.decorator';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
@@ -55,6 +58,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Salvar/atualizar um membro no tenant', description: 'Cria ou atualiza as informações de um membro associado ao tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Membro salvo com sucesso', type: MembroDto })
+  @Roles(Role.ADMIN)
   @Post('membros')
   async salvarMembro(@Headers('x-tenant-id') tenantId: string, @Body() membroDto: MembroDto) {
     return this.financeiroService.salvarMembro(tenantId, membroDto);
@@ -71,6 +75,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Salvar/atualizar um cartão de crédito no tenant', description: 'Cria ou updates um cartão de crédito no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Cartão salvo com sucesso', type: CartaoDto })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('cartoes')
   async salvarCartao(@Headers('x-tenant-id') tenantId: string, @Body() cartaoDto: CartaoDto) {
     return this.financeiroService.salvarCartao(tenantId, cartaoDto);
@@ -79,6 +84,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Excluir um cartão de crédito', description: 'Exclui um cartão de crédito específico a partir do seu ID.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Cartão excluído com sucesso' })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('cartoes/:id')
   async excluirCartao(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return this.financeiroService.excluirCartao(tenantId, id);
@@ -95,6 +101,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Salvar/atualizar uma fatura no tenant', description: 'Cria ou updates uma fatura de cartão de crédito no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Fatura salva com sucesso', type: FaturaDto })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('faturas')
   async salvarFatura(@Headers('x-tenant-id') tenantId: string, @Body() faturaDto: FaturaDto) {
     return this.financeiroService.salvarFatura(tenantId, faturaDto);
@@ -104,6 +111,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiBody({ type: [FaturaDto] })
   @ApiOkResponse({ description: 'Faturas em lote sincronizadas com sucesso' })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('faturas/batch')
   async salvarMuitasFaturas(@Headers('x-tenant-id') tenantId: string, @Body() faturasDto: FaturaDto[]) {
     return this.financeiroService.salvarMuitasFaturas(tenantId, faturasDto);
@@ -120,6 +128,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Salvar/atualizar um gasto no tenant', description: 'Cria ou updates as informações de um gasto (incluindo seu rateio de divisão) no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gasto salvo com sucesso', type: GastoDto })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('gastos')
   async salvarGasto(@Headers('x-tenant-id') tenantId: string, @Body() gastoDto: GastoDto) {
     return this.financeiroService.salvarGasto(tenantId, gastoDto);
@@ -129,6 +138,7 @@ export class FinanceiroController {
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiBody({ type: [GastoDto] })
   @ApiOkResponse({ description: 'Gastos em lote sincronizados com sucesso' })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('gastos/batch')
   async salvarMuitosGastos(@Headers('x-tenant-id') tenantId: string, @Body() gastosDto: GastoDto[]) {
     return this.financeiroService.salvarMuitosGastos(tenantId, gastosDto);
@@ -137,6 +147,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Excluir um gasto', description: 'Remove um gasto específico do tenant ativo através do seu ID.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gasto excluído com sucesso' })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('gastos/:id')
   async excluirGasto(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return this.financeiroService.excluirGasto(tenantId, id);
@@ -145,6 +156,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Excluir gastos em lote (batch)', description: 'Exclui múltiplos gastos especificados no corpo da requisição.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gastos em lote excluídos com sucesso' })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('gastos/delete-batch')
   async excluirMuitosGastos(@Headers('x-tenant-id') tenantId: string, @Body() excluirDto: ExcluirMuitosGastosDto) {
     return this.financeiroService.excluirMuitosGastos(tenantId, excluirDto.ids);
@@ -161,6 +173,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Salvar/atualizar conta fixa no tenant', description: 'Cria ou updates uma conta fixa no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Conta fixa salva com sucesso', type: ContaFixaDto })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('contas-fixas')
   async salvarContaFixa(@Headers('x-tenant-id') tenantId: string, @Body() contaFixaDto: ContaFixaDto) {
     return this.financeiroService.salvarContaFixa(tenantId, contaFixaDto);
@@ -169,8 +182,35 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Excluir uma conta fixa', description: 'Exclui uma conta fixa cadastrada no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Conta fixa excluída com sucesso' })
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('contas-fixas/:id')
   async excluirContaFixa(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
     return this.financeiroService.excluirContaFixa(tenantId, id);
+  }
+
+  @ApiOperation({ summary: 'Listar cargos do tenant', description: 'Retorna a lista de todos os cargos personalizados cadastrados no tenant ativo.' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiOkResponse({ description: 'Cargos listados com sucesso', type: [CargoCasaDto] })
+  @Get('cargos')
+  async listarCargos(@Headers('x-tenant-id') tenantId: string) {
+    return this.financeiroService.listarCargos(tenantId);
+  }
+
+  @ApiOperation({ summary: 'Salvar/atualizar cargo no tenant', description: 'Cria ou atualiza um cargo personalizado no tenant ativo.' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiOkResponse({ description: 'Cargo salvo com sucesso', type: CargoCasaDto })
+  @Roles(Role.ADMIN)
+  @Post('cargos')
+  async salvarCargo(@Headers('x-tenant-id') tenantId: string, @Body() cargoCasaDto: CargoCasaDto) {
+    return this.financeiroService.salvarCargo(tenantId, cargoCasaDto);
+  }
+
+  @ApiOperation({ summary: 'Excluir um cargo', description: 'Exclui um cargo personalizado cadastrado no tenant ativo.' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiOkResponse({ description: 'Cargo excluído com sucesso' })
+  @Roles(Role.ADMIN)
+  @Delete('cargos/:id')
+  async excluirCargo(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
+    return this.financeiroService.excluirCargo(tenantId, id);
   }
 }

@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { FinanceiroModule } from '../financeiro/financeiro.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { FinanceiroModule } from '../financeiro/financeiro.module';
       signOptions: { expiresIn: '60d' },
     }),
     forwardRef(() => FinanceiroModule),
+    PrismaModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

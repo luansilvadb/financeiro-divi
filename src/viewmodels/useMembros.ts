@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { Membro } from '../models/entities/Membro'
+import { Membro, type MembroRole } from '../models/entities/Membro'
 
 import { membroRepository, membroService, tenantSessionService } from '../shared/container'
 const membros = ref<Membro[]>([])
@@ -9,6 +9,11 @@ let promiseInicializacao: Promise<void> | null = null
 export function useMembros() {
 
   const ativos = computed(() => membros.value.filter(m => m.ativo))
+
+  const currentMembro = computed(() => {
+    const currentUserId = tenantSessionService.getCurrentUserId()
+    return membros.value.find(m => m.userId === currentUserId)
+  })
 
   const carregar = async () => {
     // Não faz fetch se não há tenant ativo
@@ -50,13 +55,19 @@ export function useMembros() {
     await carregar()
   }
 
+  const atualizarCargoMembro = async (id: string, role: MembroRole, cargoId?: string) => {
+    await membroService.atualizarCargoMembro(id, role, cargoId)
+    await carregar()
+  }
 
   return {
     membros,
     ativos,
+    currentMembro,
     adicionarMembro,
     desativarMembro,
     ativarMembro,
+    atualizarCargoMembro,
     inicializar,
     carregar
   }

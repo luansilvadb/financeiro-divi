@@ -1,5 +1,6 @@
 import { HttpBaseRepository } from './HttpBaseRepository'
 import { Membro } from '../../entities/Membro'
+import { Cargo } from '../../entities/Cargo'
 import type { IMembroRepository } from '../IMembroRepository'
 
 export class HttpMembroRepository extends HttpBaseRepository implements IMembroRepository {
@@ -9,7 +10,16 @@ export class HttpMembroRepository extends HttpBaseRepository implements IMembroR
       id: item.id,
       nome: item.nome,
       ativo: item.ativo ?? true,
-      dataCriacao: item.createdAt ? new Date(item.createdAt) : undefined
+      role: item.role,
+      cargoId: item.cargoId,
+      cargo: item.cargo ? new Cargo({
+        id: item.cargo.id,
+        nome: item.cargo.nome,
+        cor: item.cargo.cor,
+        permissoes: item.cargo.permissoes || []
+      }) : undefined,
+      dataCriacao: item.createdAt ? new Date(item.createdAt) : undefined,
+      userId: item.userId
     }))
   }
 
@@ -25,6 +35,8 @@ export class HttpMembroRepository extends HttpBaseRepository implements IMembroR
         id: membro.id,
         nome: membro.nome,
         ativo: membro.ativo,
+        role: membro.role,
+        cargoId: membro.cargoId,
         createdAt: membro.dataCriacao,
         ...(credentials || {})
       })

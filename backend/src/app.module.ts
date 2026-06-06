@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { TenantRoleGuard } from './auth/tenant-role.guard';
 
 @Module({
   imports: [PrismaModule, AuthModule, FinanceiroModule],
@@ -11,6 +12,10 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TenantRoleGuard,
     },
   ],
 })

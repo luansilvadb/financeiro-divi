@@ -23,6 +23,7 @@ vi.mock('./viewmodels/useMembros', () => ({
   useMembros: () => ({
     ativos: ref([]),
     membros: ref([]),
+    currentMembro: ref(null),
     inicializar: vi.fn().mockResolvedValue(undefined),
     carregar: vi.fn().mockResolvedValue(undefined)
   })
