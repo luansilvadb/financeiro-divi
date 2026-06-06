@@ -7,38 +7,19 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const mockTx = {
-  divisaoGasto: {
-    deleteMany: async () => {
-      await sleep(SLEEP_MS);
-      return { count: 0 };
-    },
-    createMany: async () => {
-      await sleep(SLEEP_MS);
-      return { count: 0 };
-    }
-  },
-  gasto: {
-    upsert: async () => {
-      await sleep(SLEEP_MS);
-      return { id: '1' };
-    },
-    findUnique: async () => {
-      await sleep(SLEEP_MS);
-      return { id: '1', divisoes: [] };
-    }
-  }
-};
-
 const mockPrisma = {
   $transaction: async (fn: any) => {
     if (typeof fn === 'function') {
-      return await fn(mockTx);
+      return await fn(mockPrisma);
     }
     // For transactions that take an array of promises
     return await Promise.all(fn);
   },
   gasto: {
+    upsert: async () => {
+      await sleep(SLEEP_MS);
+      return { id: '1', divisoes: [] };
+    },
     findUnique: async () => {
       await sleep(SLEEP_MS);
       return { id: '1', divisoes: [] };

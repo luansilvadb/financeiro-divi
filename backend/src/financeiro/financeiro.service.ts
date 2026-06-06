@@ -372,7 +372,7 @@ export class FinanceiroService {
     return serializeBigInt(gastos);
   }
 
-  private async upsertGastoTx(tx: any, tenantId: string, g: any) {
+  private upsertGastoTx(tx: any, tenantId: string, g: any) {
     const {
       id,
       faturaId,
@@ -392,39 +392,59 @@ export class FinanceiroService {
       divisoes,
     } = g;
 
-    await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
-
-    await tx.gasto.upsert({
+    // Use nested writes to handle divisoes within the gasto upsert.
+    // This reduces the number of database operations from 4 to 1 per gasto.
+    return tx.gasto.upsert({
       where: { id_tenantId: { id, tenantId } },
       create: {
-        id, tenantId, faturaId, descricao,
+        id,
+        tenantId,
+        faturaId,
+        descricao,
         valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+        compradorId,
+        installments,
+        totalInstallments,
+        isLoan,
+        borrowerId,
+        recurringBillId,
+        isSettlement,
+        settlementDetails,
+        method,
+        cardOwnerId,
+        grupoParcelasId,
+        divisoes: {
+          create: (divisoes || []).map((d: any) => ({
+            tenantId,
+            membroId: d.membroId,
+            valorCentavos: BigInt(d.valorCentavos || 0),
+          })),
+        },
       },
       update: {
-        faturaId, descricao,
+        faturaId,
+        descricao,
         valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+        compradorId,
+        installments,
+        totalInstallments,
+        isLoan,
+        borrowerId,
+        recurringBillId,
+        isSettlement,
+        settlementDetails,
+        method,
+        cardOwnerId,
+        grupoParcelasId,
+        divisoes: {
+          deleteMany: {}, // Clear existing divisoes before creating new ones
+          create: (divisoes || []).map((d: any) => ({
+            tenantId,
+            membroId: d.membroId,
+            valorCentavos: BigInt(d.valorCentavos || 0),
+          })),
+        },
       },
-    });
-
-    if (divisoes && divisoes.length > 0) {
-      await tx.divisaoGasto.createMany({
-        data: divisoes.map((d: any) => ({
-          tenantId,
-          gastoId: id,
-          membroId: d.membroId,
-          valorCentavos: BigInt(d.valorCentavos || 0),
-        })),
-      });
-    }
-
-    return tx.gasto.findUnique({
-      where: { id_tenantId: { id, tenantId } },
       include: { divisoes: true },
     });
   }
@@ -439,9 +459,8 @@ export class FinanceiroService {
   }
 
   async salvarMuitosGastos(tenantId: string, gastosList: any[]) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return Promise.all(gastosList.map(g => this.upsertGastoTx(tx, tenantId, g)));
-    });
+    const operations = gastosList.map(g => this.upsertGastoTx(this.prisma, tenantId, g));
+    const result = await this.prisma.$transaction(operations);
     const serialized = serializeBigInt(result);
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serialized;

@@ -10,7 +10,10 @@ describe('FinanceiroService', () => {
   let prisma: PrismaService;
 
   const mockPrisma = {
-    $transaction: jest.fn((fn) => fn(mockPrisma)),
+    $transaction: jest.fn((input) => {
+      if (typeof input === 'function') return input(mockPrisma);
+      return Promise.all(input);
+    }),
     gasto: {
       upsert: jest.fn().mockResolvedValue({ id: 'g1' }),
       findUnique: jest.fn().mockResolvedValue({ id: 'g1', divisoes: [] }),
