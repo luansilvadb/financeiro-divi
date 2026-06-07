@@ -10,9 +10,17 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'super-secret-key-12345',
-      signOptions: { expiresIn: '60d' },
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET environment variable is not defined');
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: '60d' },
+        };
+      },
     }),
     forwardRef(() => FinanceiroModule),
     PrismaModule,
