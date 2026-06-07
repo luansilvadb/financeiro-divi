@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Gasto } from '../../../../models/entities/Gasto'
 import { ExtratoService, type BreakdownGranular } from '../../../../models/services/ExtratoService'
 import { Wallet, CreditCard, Handshake, ChevronDown, ChevronUp, History } from 'lucide-vue-next'
@@ -25,9 +25,10 @@ const toggleExtrato = () => {
   expanded.value = !expanded.value
 }
 
-const obterExtrato = () => {
+// Bolt optimization: Memoized extract avoids redundant O(N log N) sorting and double-execution in template.
+const extratoMembro = computed(() => {
   return ExtratoService.obterExtratoMembro(props.membro.id, props.gastos)
-}
+})
 </script>
 
 <template>
@@ -137,12 +138,12 @@ const obterExtrato = () => {
       </div>
       
       <ItemExtratoCard 
-        v-for="item in obterExtrato()" 
+        v-for="item in extratoMembro"
         :key="item.id" 
         :item="item" 
       />
 
-      <div v-if="obterExtrato().length === 0" class="text-center py-10 text-graphite text-[11px] font-bold uppercase tracking-widest opacity-30 italic">
+      <div v-if="extratoMembro.length === 0" class="text-center py-10 text-graphite text-[11px] font-bold uppercase tracking-widest opacity-30 italic">
         Nenhum lançamento encontrado.
       </div>
     </div>

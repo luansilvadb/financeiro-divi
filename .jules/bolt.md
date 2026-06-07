@@ -5,3 +5,7 @@
 ## 2026-06-04 - [Optimized BigInt Serialization & Date Bug Fix]
 **Learning:** Generic recursive serialization utilities (like `serializeBigInt`) can be performance bottlenecks and sources of subtle bugs (like `Date` objects being corrupted into empty objects). Using `for...in` instead of `Object.keys().map()` reduces intermediate allocations and garbage collection pressure in deep traversals.
 **Action:** Use manual loops and pre-allocated arrays for critical path serialization. Always include explicit guards for `Date` and other built-in types to prevent data loss during cloning.
+
+## 2025-06-05 - [Prisma Nested Writes & Template Memoization]
+**Learning:** Collapsing multiple database operations (deleteMany, upsert, findUnique) into a single nested write using Prisma's `include` and `create`/`deleteMany` operators within a single `upsert` reduces round-trips from 4 to 1 per entity. On the frontend, replacing method calls in templates that involve sorting ($O(N \log N)$) with `computed` properties prevents redundant calculations on every render cycle.
+**Action:** Always use nested Prisma writes for one-to-many relationship synchronization. Never call sorting or heavy transformation methods directly from Vue templates; use computed properties for memoization.

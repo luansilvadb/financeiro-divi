@@ -372,29 +372,26 @@ export class FinanceiroService {
     return serializeBigInt(gastos);
   }
 
-  private async upsertGastoTx(tx: any, tenantId: string, g: any) {
+  /**
+   * Generates a Prisma operation for upserting a Gasto with its divisions.
+   * Optimized to use a single database round-trip via nested writes and include.
+   */
+  private getUpsertGastoOp(prisma: any, tenantId: string, g: any) {
     const {
-      id,
-      faturaId,
-      descricao,
-      valorTotalCentavos,
-      compradorId,
-      installments,
-      totalInstallments,
-      isLoan,
-      borrowerId,
-      recurringBillId,
-      isSettlement,
-      settlementDetails,
-      method,
-      cardOwnerId,
-      grupoParcelasId,
-      divisoes,
+      id, faturaId, descricao, valorTotalCentavos, compradorId,
+      installments, totalInstallments, isLoan, borrowerId,
+      recurringBillId, isSettlement, settlementDetails,
+      method, cardOwnerId, grupoParcelasId, divisoes,
     } = g;
 
-    await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
+    const divisoesData = (divisoes || []).map((d: any) => ({
+      tenantId,
+      membroId: d.membroId,
+      valorCentavos: BigInt(d.valorCentavos || 0),
+    }));
 
-    await tx.gasto.upsert({
+    // Bolt optimization: Single upsert with nested writes reduces round-trips from 4 to 1.
+    return prisma.gasto.upsert({
       where: { id_tenantId: { id, tenantId } },
       create: {
         id, tenantId, faturaId, descricao,
@@ -402,6 +399,9 @@ export class FinanceiroService {
         compradorId, installments, totalInstallments,
         isLoan, borrowerId, recurringBillId,
         isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+        divisoes: {
+          create: divisoesData,
+        },
       },
       update: {
         faturaId, descricao,
@@ -409,39 +409,27 @@ export class FinanceiroService {
         compradorId, installments, totalInstallments,
         isLoan, borrowerId, recurringBillId,
         isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+        divisoes: {
+          deleteMany: {},
+          create: divisoesData,
+        },
       },
-    });
-
-    if (divisoes && divisoes.length > 0) {
-      await tx.divisaoGasto.createMany({
-        data: divisoes.map((d: any) => ({
-          tenantId,
-          gastoId: id,
-          membroId: d.membroId,
-          valorCentavos: BigInt(d.valorCentavos || 0),
-        })),
-      });
-    }
-
-    return tx.gasto.findUnique({
-      where: { id_tenantId: { id, tenantId } },
       include: { divisoes: true },
     });
   }
 
   async salvarGasto(tenantId: string, gastoData: any) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return this.upsertGastoTx(tx, tenantId, gastoData);
-    });
+    // Bolt optimization: Removed interactive transaction and findUnique call.
+    const result = await this.getUpsertGastoOp(this.prisma, tenantId, gastoData);
     const serialized = serializeBigInt(result);
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serialized;
   }
 
   async salvarMuitosGastos(tenantId: string, gastosList: any[]) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return Promise.all(gastosList.map(g => this.upsertGastoTx(tx, tenantId, g)));
-    });
+    // Bolt optimization: Using a non-interactive transaction for batch efficiency.
+    const operations = gastosList.map(g => this.getUpsertGastoOp(this.prisma, tenantId, g));
+    const result = await this.prisma.$transaction(operations);
     const serialized = serializeBigInt(result);
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serialized;
