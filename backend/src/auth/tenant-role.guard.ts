@@ -17,14 +17,15 @@ export class TenantRoleGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    // Se nenhuma role for especificada, permite o acesso padrão
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
-
     const request = context.switchToHttp().getRequest();
     const user = request.user;
     const tenantId = request.headers['x-tenant-id'];
+
+    // Se nenhuma role for especificada E não houver tenantId, permite o acesso padrão
+    // (ex: rotas de criação de moradia onde ainda não há tenantId)
+    if ((!requiredRoles || requiredRoles.length === 0) && !tenantId) {
+      return true;
+    }
 
     if (!user || !tenantId) {
       throw new ForbiddenException('Identificação do usuário ou casa ausente.');
@@ -43,10 +44,12 @@ export class TenantRoleGuard implements CanActivate {
       throw new ForbiddenException('Você não é um membro ativo desta moradia.');
     }
 
-    // Verifica se a role do membro está na lista de roles exigidas
-    const hasRole = requiredRoles.includes(membro.role);
-    if (!hasRole) {
-      throw new ForbiddenException('Você não possui permissão para executar esta ação.');
+    // Se houver roles exigidas, verifica se a role do membro está na lista
+    if (requiredRoles && requiredRoles.length > 0) {
+      const hasRole = requiredRoles.includes(membro.role);
+      if (!hasRole) {
+        throw new ForbiddenException('Você não possui permissão para executar esta ação.');
+      }
     }
 
     return true;
