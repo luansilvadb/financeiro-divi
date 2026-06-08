@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { useCargos } from '../../viewmodels/useCargos'
-import { User, LogOut, Users, ChevronRight, Plus, Trash2, Shield, Key } from 'lucide-vue-next'
+import { User, LogOut, Users, ChevronRight, Plus, Trash2, Shield, Key, Eye, EyeOff } from 'lucide-vue-next'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
 import Card from '../components/ui/Card.vue'
@@ -35,6 +35,7 @@ const toast = useToast()
 const novoNome = ref('')
 const novoUsername = ref('')
 const novoPassword = ref('')
+const showNovoMembroPassword = ref(false)
 
 const novoMembroFormAberto = ref(false)
 
@@ -954,12 +955,23 @@ const handleAdicionar = async () => {
           </div>
           <div class="space-y-2">
             <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
-            <input 
-              v-model="novoPassword"
-              type="password" 
-              placeholder="••••••"
-              class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all"
-            />
+            <div class="relative group">
+              <input
+                v-model="novoPassword"
+                :type="showNovoMembroPassword ? 'text' : 'password'"
+                placeholder="••••••"
+                class="w-full px-4 py-3.5 pr-12 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all"
+                @keyup.enter="handleAdicionar"
+              />
+              <button
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-ash hover:text-ember transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-ember/20 cursor-pointer bg-transparent border-none"
+                @click="showNovoMembroPassword = !showNovoMembroPassword"
+                :aria-label="showNovoMembroPassword ? 'Esconder senha' : 'Mostrar senha'"
+              >
+                <component :is="showNovoMembroPassword ? EyeOff : Eye" class="w-4.5 h-4.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -12,3 +12,7 @@
 ## 2024-06-04 - [Accessible Input Limits]
 **Learning:** Adding a `maxlength` constraint without a visual and accessible counter creates a confusing experience for users when their typing suddenly stops. Combining `maxlength` with an `aria-live="polite"` counter and a descriptive `aria-label` ensures both visual and screen-reader users understand input limitations without disruption.
 **Action:** Always pair character limits (`maxlength`) with a live-region counter and clear ARIA labeling for the input field.
+
+## 2024-06-05 - [Password Visibility Toggle]
+**Learning:** Password input fields should include a visibility toggle to assist users in verifying their input, especially on mobile devices where typing errors are more common. This pattern improves both usability and accessibility by providing immediate visual confirmation.
+**Action:** Implement a toggle button with Eye/EyeOff icons and appropriate ARIA labels for all password input fields. Ensure the button is styled to not overlap with text (e.g., using right padding).
