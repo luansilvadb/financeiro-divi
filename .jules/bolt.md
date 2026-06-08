@@ -5,3 +5,7 @@
 ## 2026-06-04 - [Optimized BigInt Serialization & Date Bug Fix]
 **Learning:** Generic recursive serialization utilities (like `serializeBigInt`) can be performance bottlenecks and sources of subtle bugs (like `Date` objects being corrupted into empty objects). Using `for...in` instead of `Object.keys().map()` reduces intermediate allocations and garbage collection pressure in deep traversals.
 **Action:** Use manual loops and pre-allocated arrays for critical path serialization. Always include explicit guards for `Date` and other built-in types to prevent data loss during cloning.
+
+## 2026-06-08 - [Vue Memoization: Methods vs Computed]
+**Learning:** Calling methods that perform expensive logic (like sorting or complex filtering in `ExtratoService.obterExtratoMembro`) directly within Vue templates is a performance anti-pattern. Templates often evaluate these calls multiple times during a single render cycle (e.g., once for a `v-if` check and again for a `v-for` loop), leading to redundant $O(N \log N)$ or $O(N)$ operations.
+**Action:** Always wrap expensive data transformations in `computed` properties to leverage Vue's built-in memoization and dependency tracking.

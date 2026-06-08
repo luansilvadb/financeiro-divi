@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Gasto } from '../../../../models/entities/Gasto'
 import { ExtratoService, type BreakdownGranular } from '../../../../models/services/ExtratoService'
 import { Wallet, CreditCard, Handshake, ChevronDown, ChevronUp, History } from 'lucide-vue-next'
@@ -25,9 +25,11 @@ const toggleExtrato = () => {
   expanded.value = !expanded.value
 }
 
-const obterExtrato = () => {
+// Otimização: Memoiza o extrato do membro para evitar recalcular
+// (incluindo ordenação O(n log n)) a cada renderização do template.
+const extrato = computed(() => {
   return ExtratoService.obterExtratoMembro(props.membro.id, props.gastos)
-}
+})
 </script>
 
 <template>
@@ -137,12 +139,12 @@ const obterExtrato = () => {
       </div>
       
       <ItemExtratoCard 
-        v-for="item in obterExtrato()" 
+        v-for="item in extrato"
         :key="item.id" 
         :item="item" 
       />
 
-      <div v-if="obterExtrato().length === 0" class="text-center py-10 text-graphite text-[11px] font-bold uppercase tracking-widest opacity-30 italic">
+      <div v-if="extrato.length === 0" class="text-center py-10 text-graphite text-[11px] font-bold uppercase tracking-widest opacity-30 italic">
         Nenhum lançamento encontrado.
       </div>
     </div>
