@@ -165,7 +165,7 @@ const handleLogout = async () => {
   <div class="divi-app-root">
     <!-- Splash / Initializing -->
     <Transition name="fade" mode="out-in">
-      <div v-if="isInitializing" class="min-h-screen bg-canvas flex flex-col items-center justify-center p-8 space-y-12 animate-in fade-in duration-700">
+      <div v-if="isInitializing" class="min-h-screen bg-canvas flex flex-col items-center justify-center p-8 space-y-12 animate-in fade-in duration-200">
         <div class="flex flex-col items-center space-y-4">
           <IllustrationMascot variant="ember" :size="80" mood="happy" class="animate-wobble" />
           <h1 class="text-display text-5xl md:text-6xl text-charcoal">
@@ -277,14 +277,14 @@ const handleLogout = async () => {
 
 .fab-zoom-enter-active,
 .fab-zoom-leave-active {
-  transition: transform 0.3s var(--ease-spring), opacity 0.2s ease-out;
+  transition: transform 0.18s ease-out, opacity 0.15s ease-out;
   transform-origin: center center;
 }
 
 .fab-zoom-enter-from,
 .fab-zoom-leave-to {
   opacity: 0;
-  transform: scale(0.8) translateY(10px);
+  transform: scale(0.95) translateY(4px);
 }
 
 @keyframes loading-bar {

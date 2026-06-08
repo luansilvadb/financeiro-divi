@@ -74,7 +74,7 @@ const onSubmit = async () => {
         </h1>
         
         <!-- Invite Context -->
-        <div v-if="housePreview && !membroId" class="mt-8 p-6 bg-parchment rounded-card shadow-subtle border-none animate-in fade-in slide-in-from-top-4 duration-500 ease-spring">
+        <div v-if="housePreview && !membroId" class="mt-8 p-6 bg-parchment rounded-card shadow-subtle border-none animate-in fade-in slide-in-from-top-2 duration-200">
           <p class="text-caption font-semibold text-ember uppercase tracking-widest mb-1">Você foi convidado para</p>
           <h2 class="text-heading text-charcoal mb-6">{{ housePreview.name }}</h2>
           
@@ -93,7 +93,7 @@ const onSubmit = async () => {
           </div>
         </div>
 
-        <div v-else-if="membroId && membroId !== 'novo'" class="mt-8 p-6 bg-parchment rounded-card shadow-subtle border-none animate-in zoom-in-95 duration-300">
+        <div v-else-if="membroId && membroId !== 'novo'" class="mt-8 p-6 bg-parchment rounded-card shadow-subtle border-none animate-in zoom-in-95 duration-200">
           <p class="text-body text-graphite">
             Criando acesso para <br/>
             <span class="text-heading text-charcoal">{{ selectedMembroNome }}</span><br/>
@@ -204,10 +204,10 @@ const onSubmit = async () => {
 }
 
 .fade-slide-enter-active {
-  transition: all 0.4s var(--ease-spring);
+  transition: all 0.18s ease-out;
 }
 .fade-slide-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(4px);
 }
 </style>

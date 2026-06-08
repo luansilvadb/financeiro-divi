@@ -61,7 +61,6 @@ const emit = defineEmits<{
               @click="$emit('abrirNetting', t)"
               variant="primary"
               class="w-full h-12 font-bold uppercase tracking-widest text-[10px] shadow-sm"
-              :disabled="faturaSelecionadaFechada"
             >
               Registrar Pagamento
             </Button>

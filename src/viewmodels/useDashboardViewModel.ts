@@ -11,22 +11,50 @@ import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
 import { useToast } from '../composables/useToast'
 import { gastoPertenceAoPeriodo } from '../shared/utils/gastoPeriodo'
 import { gastoService, faturaService } from '../shared/container'
+import type { Dinheiro } from '../models/entities/Dinheiro'
+import type { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
+import type { Gasto } from '../models/entities/Gasto'
+import type { ContaFixa } from '../models/entities/ContaFixa'
+
+export interface ConfirmarAjusteGastoInput {
+  descricao: string
+  valorTotal: Dinheiro
+  compradorId: string
+  method: 'pix' | 'card'
+  cardOwner: string | null
+  divisoes: DivisaoDeGasto[]
+  installments: number
+}
+
+export interface ConfirmarBaixaNettingInput {
+  from: string
+  to: string
+  valor: number
+  descricao: string
+  method: 'pix' | 'cash'
+}
+
+export interface ConfirmarLancarBillInput {
+  valorCentavos: number
+  compradorId: string
+  splitIds: string[]
+}
 
 export interface DashboardProps { membros: { id: string; nome: string }[]; faturasAbertas: Fatura[]; faturasFechadas: Fatura[]; cartoes: Cartao[] }
 
 export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
   const ui = useDashboardUIState()
-  const ts = useToast()
-  const cx = useCartoesEFaturas()
-  const cf = useContasFixas()
-  const pd = useDashboardPeriodos(() => props.faturasAbertas, () => props.faturasFechadas, () => props.cartoes, () => props.membros, emit)
+  const toast = useToast()
+  const cartoesEFaturas = useCartoesEFaturas()
+  const contasFixas = useContasFixas()
+  const periodosState = useDashboardPeriodos(() => props.faturasAbertas, () => props.faturasFechadas, () => props.cartoes, () => props.membros, emit)
   
-  const p = pd.periodoSelecionado
-  const g = cx.gastos
+  const periodoSelecionado = periodosState.periodoSelecionado
+  const todosGastos = cartoesEFaturas.gastos
 
-  const sel = computed(() => g.value.filter(x => gastoPertenceAoPeriodo(x, p.value.mes, p.value.ano, cx.faturas.value)))
+  const gastosFiltrados = computed(() => todosGastos.value.filter(x => gastoPertenceAoPeriodo(x, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
   
-  const parc = computed(() => sel.value
+  const parcelasFuturas = computed(() => gastosFiltrados.value
     .filter(x => x.installments > 1)
     .map(x => ({ 
       id: x.id, descricao: x.descricao, responsavel: x.cardOwner ? 'Cartão' : 'Pix', 
@@ -35,7 +63,7 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
       totalFuturo: ((x.valorTotal.centavos / x.totalInstallments) * (x.installments - 1)) / 100 
     })))
     
-  const cab = computed(() => g.value
+  const previaCartaoAbertoPorMembro = computed(() => todosGastos.value
     .filter(x => x.method === 'card' && !x.isSettlement && !x.isLoan)
     .reduce((acc, x) => { 
       x.divisoes.forEach(d => { 
@@ -46,62 +74,62 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
     }, {} as Record<string, number>))
 
   return {
-    ...pd, 
-    ...useDashboardNetting(computed(() => props.membros), sel), 
+    ...periodosState, 
+    ...useDashboardNetting(computed(() => props.membros), gastosFiltrados), 
     ...ui, 
-    contasFixas: cf.contasFixas, 
-    gastosFaturaSelecionada: sel, 
-    parcelasFuturasDetalhadas: parc, 
-    previaCartaoAbertoPorMembroCentavos: cab,
+    contasFixas: contasFixas.contasFixas, 
+    gastosFaturaSelecionada: gastosFiltrados, 
+    parcelasFuturasDetalhadas: parcelasFuturas, 
+    previaCartaoAbertoPorMembroCentavos: previaCartaoAbertoPorMembro,
     
-    totalFuturasVencer: computed(() => parc.value.reduce((a, x) => a + x.totalFuturo, 0)),
-    totalPreviaCartaoAbertoCentavos: computed(() => Object.values(cab.value).reduce((a, v) => a + v, 0)),
-    totalPeriodoSelecionado: computed(() => sel.value.filter(x => !x.isSettlement).reduce((s, x) => s + valorParcelaAtual(x.valorTotal, x.installments, x.totalInstallments).centavos, 0)),
-    totalLancamentosPeriodoSelecionado: computed(() => sel.value.filter(x => !x.id.startsWith('audit-settlement-') && (!x.isSettlement || x.descricao.includes('Saldo Inicial'))).length),
+    totalFuturasVencer: computed(() => parcelasFuturas.value.reduce((a, x) => a + x.totalFuturo, 0)),
+    totalPreviaCartaoAbertoCentavos: computed(() => Object.values(previaCartaoAbertoPorMembro.value).reduce((a, v) => a + v, 0)),
+    totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(x => !x.isSettlement).reduce((s, x) => s + valorParcelaAtual(x.valorTotal, x.installments, x.totalInstallments).centavos, 0)),
+    totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(x => !x.id.startsWith('audit-settlement-') && (!x.isSettlement || x.descricao.includes('Saldo Inicial'))).length),
     
     getMembroNome: (id: string) => props.membros.find(m => m.id === id)?.nome || 'Desconhecido', 
     formatarDinheiro: (c: number) => c / 100, 
     formatarMesAno, 
-    showToast: ts.show,
+    showToast: toast.show,
     
-    abrirNovoPeriodoBottomSheet: () => ui.abrirNovoPeriodoBottomSheet(pd.faturaAtivaVisualizada.value),
+    abrirNovoPeriodoBottomSheet: () => ui.abrirNovoPeriodoBottomSheet(periodosState.faturaAtivaVisualizada.value),
     
-    confirmarAjusteGasto: async (d: any) => { 
-      await cx.atualizarGasto(ui.gastoParaAjustar.value!.id, d)
+    confirmarAjusteGasto: async (d: ConfirmarAjusteGastoInput) => { 
+      await cartoesEFaturas.atualizarGasto(ui.gastoParaAjustar.value!.id, d)
       ui.fecharModal('ajustar-gasto')
       ui.gastoParaAjustar.value = null 
     },
     
-    confirmarBaixaNetting: async (d: any) => { 
+    confirmarBaixaNetting: async (d: ConfirmarBaixaNettingInput) => { 
       ui.isSubmittingPix.value = true
       try {
-        await gastoService.registrarAcertoNetting({ faturaId: pd.faturaPixPeriodoSelecionado.value!.id, fromMemberId: d.from, toMemberId: d.to, valor: d.valor, descricao: d.descricao, method: d.method })
+        await gastoService.registrarAcertoNetting({ faturaId: periodosState.faturaPixPeriodoSelecionado.value!.id, fromMemberId: d.from, toMemberId: d.to, valor: d.valor, descricao: d.descricao, method: d.method })
         ui.fecharModal('netting')
         ui.nettingTarget.value = null
-        await cx.inicializar()
+        await cartoesEFaturas.inicializar()
       } finally {
         ui.isSubmittingPix.value = false
       }
     },
     
-    confirmarLancarBill: async (d: any) => { 
-      await cf.lancarGastoContaFixa(pd.faturaPixPeriodoSelecionado.value!.id, ui.billSelecionada.value, d.valorCentavos, d.compradorId, d.splitIds)
+    confirmarLancarBill: async (d: ConfirmarLancarBillInput) => { 
+      await contasFixas.lancarGastoContaFixa(periodosState.faturaPixPeriodoSelecionado.value!.id, ui.billSelecionada.value!, d.valorCentavos, d.compradorId, d.splitIds)
       ui.fecharModal('lancar-conta-fixa')
-      await cx.inicializar() 
+      await cartoesEFaturas.inicializar() 
     },
     
-    confirmarSalvarTemplate: (t: any) => { 
-      cf.salvarContaFixa(t)
+    confirmarSalvarTemplate: (t: ContaFixa) => { 
+      contasFixas.salvarContaFixa(t)
       ui.fecharModal('configurar-conta-fixa')
     },
     
     confirmarNovoPeriodo: async () => { 
-      const { mes, ano } = p.value
-      await Promise.all(pd.faturasPeriodoSelecionado.value.filter(f => f.status === 'ABERTA').map(f => faturaService.fecharFatura(f.id, f.responsavelId, new Date())))
-      await faturaService.assegurarFaturasAbertas(cx.cartoes.value, mes === 12 ? 1 : mes + 1, mes === 12 ? ano + 1 : ano)
-      await cx.inicializar()
+      const { mes, ano } = periodoSelecionado.value
+      await Promise.all(periodosState.faturasPeriodoSelecionado.value.filter(f => f.status === 'ABERTA').map(f => faturaService.fecharFatura(f.id, f.responsavelId, new Date())))
+      await faturaService.assegurarFaturasAbertas(cartoesEFaturas.cartoes.value, mes === 12 ? 1 : mes + 1, mes === 12 ? ano + 1 : ano)
+      await cartoesEFaturas.inicializar()
       ui.fecharModal('novo-periodo')
-      ts.show(`Mês de ${NOMES_MESES[mes - 1]} encerrado!`, 'success') 
+      toast.show(`Mês de ${NOMES_MESES[mes - 1]} encerrado!`, 'success') 
     },
     
     confirmarEstorno: async () => { 
@@ -111,26 +139,25 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
       ui.itemParaEstornar.value = null
       
       if (t === 'Lançamento') {
-        if (i.id.startsWith('audit-settlement-')) return cx.reabrirFatura(i.faturaId)
+        if (i.id.startsWith('audit-settlement-')) return cartoesEFaturas.reabrirFatura((i as Gasto).faturaId)
         await gastoService.excluirGasto(i.id)
-        await cx.inicializar()
-        ts.show('Estornado', 'success')
+        await cartoesEFaturas.inicializar()
+        toast.show('Estornado', 'success')
       } else { 
-        await cf.excluirContaFixa(i.id)
+        await contasFixas.excluirContaFixa(i.id)
         ui.fecharModal('configurar-conta-fixa')
-        ts.show('Conta removida', 'success') 
+        toast.show('Conta removida', 'success') 
       } 
     },
     
-    estornarContaFixa: (b: any) => ui.abrirConfirmacaoEstornoGasto(sel.value.find(z => z.recurringBillId === b.id)!),
+    estornarContaFixa: (b: ContaFixa) => ui.abrirConfirmacaoEstornoGasto(gastosFiltrados.value.find(z => z.recurringBillId === b.id)!),
     
-    reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === p.value.mes && f.periodo.ano === p.value.ano).map(f => cx.reabrirFatura(f.id))),
+    reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === periodoSelecionado.value.mes && f.periodo.ano === periodoSelecionado.value.ano).map(f => cartoesEFaturas.reabrirFatura(f.id))),
     
     excluirGasto: async (id: string) => { 
       await gastoService.excluirGasto(id)
-      await cx.inicializar()
-      ts.show('Lançamento estornado', 'success') 
+      await cartoesEFaturas.inicializar()
+      toast.show('Lançamento estornado', 'success') 
     }
   }
 }
-

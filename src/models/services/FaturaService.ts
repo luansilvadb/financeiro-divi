@@ -1,8 +1,6 @@
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import { Fatura } from '../entities/Fatura'
-import type { IFaturaService } from './IFaturaService'
-
-export class FaturaService implements IFaturaService {
+export class FaturaService {
   constructor(
     private faturaRepo: IFaturaRepository
   ) {}

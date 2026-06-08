@@ -31,7 +31,6 @@ export class CargoCasaDto {
     example: ['lancamentos', 'cartoes_proprios'],
     type: [String],
   })
-  @IsNotEmpty()
   @IsArray()
   @IsString({ each: true })
   permissoes!: string[];

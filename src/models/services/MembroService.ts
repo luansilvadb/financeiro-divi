@@ -1,9 +1,7 @@
 import { Membro } from '../entities/Membro'
 import type { MembroRole } from '../entities/Membro'
 import type { IMembroRepository } from '../repositories/IMembroRepository'
-import type { IMembroService } from './IMembroService'
-
-export class MembroService implements IMembroService {
+export class MembroService {
   constructor(
     private repository: IMembroRepository
   ) {}

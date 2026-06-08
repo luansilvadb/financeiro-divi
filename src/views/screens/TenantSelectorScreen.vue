@@ -88,7 +88,7 @@ function voltar() {
       </div>
 
       <Transition name="slide-up" mode="out-in">
-        <div v-if="modo === 'inicio'" key="inicio" class="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div v-if="modo === 'inicio'" key="inicio" class="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
 
           <button
             @click="modo = 'criar'"
@@ -135,7 +135,7 @@ function voltar() {
 
         <div v-else-if="modo === 'criar'" key="criar">
           <Transition name="fade" mode="out-in">
-            <div v-if="estado.casaCriada" key="sucesso" class="text-center animate-in zoom-in-95 duration-500">
+            <div v-if="estado.casaCriada" key="sucesso" class="text-center animate-in zoom-in-95 duration-200">
               <div class="mb-8">
                 <div class="w-20 h-20 bg-meadow/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-meadow/20">
                   <Check class="w-10 h-10 text-meadow" />
@@ -163,7 +163,7 @@ function voltar() {
               </button>
             </div>
 
-            <div v-else key="form-criar" class="animate-in fade-in slide-in-from-right-4 duration-500">
+            <div v-else key="form-criar" class="animate-in fade-in slide-in-from-right-2 duration-200">
               <header class="flex items-center gap-4 mb-8">
                 <button @click="voltar" class="w-10 h-10 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
                   <ChevronLeft class="w-5 h-5" />
@@ -221,7 +221,7 @@ function voltar() {
           </Transition>
         </div>
 
-        <div v-else-if="modo === 'entrar'" key="entrar" class="animate-in fade-in slide-in-from-right-4 duration-500 space-y-5">
+        <div v-else-if="modo === 'entrar'" key="entrar" class="animate-in fade-in slide-in-from-right-2 duration-200 space-y-5">
           <div class="flex items-center gap-4 mb-8">
             <button @click="voltar" class="w-10 h-10 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
               <ChevronLeft class="w-5 h-5" />
@@ -273,15 +273,15 @@ function voltar() {
 <style scoped>
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.4s var(--ease-spring);
+  transition: all 0.18s ease-out;
 }
 .slide-up-enter-from {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(4px);
 }
 .slide-up-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 
 .fade-enter-active,

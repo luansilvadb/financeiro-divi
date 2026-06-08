@@ -6,7 +6,7 @@ import { DivisaoDeGasto } from '../../../models/entities/DivisaoDeGasto'
 import Button from '../ui/Button.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
-import { Check, CreditCard, Wallet, Users, Info, Minus, Plus } from 'lucide-vue-next'
+import { Check, CreditCard, Wallet, Info, Minus, Plus } from 'lucide-vue-next'
 
 interface Props {
   visible: boolean
@@ -198,8 +198,8 @@ const handleConfirm = () => {
         <div class="grid grid-cols-3 gap-2">
           <button 
             @click="selectMethod('pix', null)"
-            class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
-            :class="activeMethod === 'pix' ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-ash/20 text-charcoal'"
+            class="flex flex-col items-center gap-2 py-3 rounded-xl transition-all duration-200 cursor-pointer"
+            :class="activeMethod === 'pix' ? 'border-2 border-charcoal bg-white text-charcoal font-bold shadow-sm' : 'border-2 border-transparent bg-stone hover:bg-ash/20 text-charcoal'"
           >
             <Wallet class="w-4 h-4" aria-hidden="true" />
             <span class="text-[9px] font-bold uppercase tracking-wider">Pix</span>
@@ -208,8 +208,8 @@ const handleConfirm = () => {
             v-for="c in props.cartoes"
             :key="c.id"
             @click="selectMethod('card', c.id)"
-            class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
-            :class="activeMethod === 'card' && activeCardOwner === c.id ? 'bg-midnight text-white font-bold border-stone shadow-sm' : 'bg-stone hover:bg-ash/20 text-charcoal'"
+            class="flex flex-col items-center gap-2 py-3 rounded-xl transition-all duration-200 cursor-pointer"
+            :class="activeMethod === 'card' && activeCardOwner === c.id ? 'border-2 border-charcoal bg-white text-charcoal font-bold shadow-sm' : 'border-2 border-transparent bg-stone hover:bg-ash/20 text-charcoal'"
           >
             <CreditCard class="w-4 h-4" aria-hidden="true" />
             <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.nome }}</span>
@@ -242,8 +242,8 @@ const handleConfirm = () => {
             v-for="m in props.membros"
             :key="m.id"
             @click="quemPaga = m.id"
-            class="group py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all duration-300 border-none cursor-pointer flex flex-col items-center gap-2"
-            :class="quemPaga === m.id ? 'bg-midnight text-white shadow-sm scale-[1.02]' : 'bg-stone hover:bg-stone/80 text-charcoal'"
+            class="group py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all duration-300 cursor-pointer flex flex-col items-center gap-2"
+            :class="quemPaga === m.id ? 'border-2 border-charcoal bg-white shadow-sm scale-[1.02] text-charcoal' : 'border-2 border-transparent bg-stone hover:bg-stone/80 text-charcoal'"
           >
             <MembroAvatar :nome="m.nome" size="sm" :variant="quemPaga === m.id ? 'ember' : 'sky'" />
             <span class="truncate max-w-full px-1">{{ m.nome }}</span>

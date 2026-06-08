@@ -7,12 +7,14 @@ interface Props {
   size?: 'default' | 'sm' | 'lg' | 'icon'
   class?: string
   loading?: boolean
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'primary',
   size: 'default',
-  loading: false
+  loading: false,
+  disabled: false
 })
 
 const classes = computed(() => {
@@ -36,7 +38,7 @@ const classes = computed(() => {
 </script>
 
 <template>
-  <button :class="classes" :disabled="loading" :aria-busy="loading">
+  <button :class="classes" :disabled="disabled || loading" :aria-busy="loading">
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-current">
       <Loader2 class="w-5 h-5 animate-spin" />
     </div>

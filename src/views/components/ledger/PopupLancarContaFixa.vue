@@ -46,8 +46,8 @@
             v-for="m in membros"
             :key="m.id"
             @click="compradorId = m.id"
-            class="group py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 border-none cursor-pointer flex flex-col items-center gap-2"
-            :class="compradorId === m.id ? 'bg-midnight text-white shadow-sm scale-[1.02]' : 'bg-stone hover:bg-stone/80 text-charcoal'"
+            class="group py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer flex flex-col items-center gap-2"
+            :class="compradorId === m.id ? 'border-2 border-charcoal bg-white shadow-sm scale-[1.02] text-charcoal' : 'border-2 border-transparent bg-stone hover:bg-stone/80 text-charcoal'"
             :data-testid="`pagador-${m.id}`"
           >
             <MembroAvatar :nome="m.nome" size="sm" :variant="compradorId === m.id ? 'ember' : 'sky'" />

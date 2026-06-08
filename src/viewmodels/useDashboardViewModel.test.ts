@@ -114,11 +114,11 @@ describe('useDashboardViewModel', () => {
   it('should confirm expense adjustment and refresh data', async () => {
     const vm = createViewModel(dummyProps, vi.fn())
     const gastoMock = { id: 'g1', descricao: 'Almoço' }
-    vm.gastoParaAjustar.value = gastoMock
+    vm.gastoParaAjustar.value = gastoMock as any
     vm.abrirModal('ajustar-gasto')
 
     const dadosAjuste = { descricao: 'Almoço Executivo', valorTotal: Dinheiro.deReais(45) }
-    await vm.confirmarAjusteGasto(dadosAjuste)
+    await vm.confirmarAjusteGasto(dadosAjuste as any)
 
     expect(mockCartoesEFaturas.atualizarGasto).toHaveBeenCalledWith('g1', dadosAjuste)
     expect(vm.isModalNoTopo('ajustar-gasto')).toBe(false)

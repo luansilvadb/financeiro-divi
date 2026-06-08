@@ -5,8 +5,30 @@ import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import type { Fatura } from '../entities/Fatura'
-import type { IGastoService, LancarGastoInput } from './IGastoService'
-import { LancamentoService, type ILancamentoService } from './LancamentoService'
+import { LancamentoService } from './LancamentoService'
+import { resolverCartao } from './CartaoResolver'
+
+export interface LancarGastoInput {
+  flow: 'expense' | 'loan'
+  paymentMethod: 'pix' | 'card'
+  compradorId: string
+  valor: number
+  descricao: string
+  divisoes: DivisaoDeGasto[]
+  installments: number
+  cardOwnerId: string | null
+  borrowerId: string | null
+  periodo: { mes: number; ano: number }
+}
+
+export interface NettingInput {
+  faturaId: string
+  descricao: string
+  valor: number
+  fromMemberId: string
+  toMemberId: string
+  method: 'pix' | 'cash'
+}
 
 type AtualizarGastoDados = {
   descricao: string
@@ -18,12 +40,12 @@ type AtualizarGastoDados = {
   installments: number
 }
 
-export class GastoService implements IGastoService {
+export class GastoService {
   constructor(
     private gastoRepo: IGastoRepository,
     private faturaRepo: IFaturaRepository,
     private cartaoRepo: ICartaoRepository,
-    private lancamentoService: ILancamentoService = new LancamentoService(gastoRepo, faturaRepo, cartaoRepo)
+    private lancamentoService: LancamentoService = new LancamentoService(gastoRepo, faturaRepo, cartaoRepo)
   ) {}
 
   async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
@@ -34,14 +56,7 @@ export class GastoService implements IGastoService {
     await this.gastoRepo.excluir(id)
   }
 
-  async registrarAcertoNetting(dados: {
-    faturaId: string
-    descricao: string
-    valor: number
-    fromMemberId: string
-    toMemberId: string
-    method: string
-  }): Promise<void> {
+  async registrarAcertoNetting(dados: NettingInput): Promise<void> {
     const total = Dinheiro.deReais(dados.valor)
     await this.gastoRepo.salvar(new Gasto({
       id: `netting-${dados.faturaId}-${dados.fromMemberId}-${dados.toMemberId}-${dados.valor}-${Date.now()}`,
@@ -76,8 +91,12 @@ export class GastoService implements IGastoService {
     if (!original) throw new Error('Gasto não encontrado')
 
     const todosCartoes = (await this.cartaoRepo.listarTodos()) || []
-    const cartaoReal = (dados.method === 'card' && dados.cardOwner) ? todosCartoes.find(c => c.id === dados.cardOwner || c.responsavelPadraoId === dados.cardOwner) : undefined
-    const resolvedCardOwner = cartaoReal ? cartaoReal.responsavelPadraoId : null
+    const { cardOwner: resolvedCardOwner } = resolverCartao(
+      dados.method,
+      dados.cardOwner,
+      dados.compradorId,
+      todosCartoes
+    )
 
     if (original.grupoParcelasId) {
       const todosGastos = await this.gastoRepo.listarTodos()
@@ -111,8 +130,12 @@ export class GastoService implements IGastoService {
           let novaFaturaId = g.faturaId
           const fat = await this.faturaRepo.buscarPorId(novaFaturaId)
           if (fat) {
-            const cartaoId = (dados.method === 'card') ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID')) : 'PIX_DEFAULT_ID'
-            const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
+            const { cartaoId, responsavelFaturaId } = resolverCartao(
+              dados.method,
+              dados.cardOwner,
+              dados.compradorId,
+              todosCartoes
+            )
             const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(cartaoId, fat.periodo.mes, fat.periodo.ano, responsavelFaturaId, faturasParaSalvar, todasFaturasPersistidas)
             novaFaturaId = novaFatura.id
           }
@@ -137,8 +160,12 @@ export class GastoService implements IGastoService {
       let novaFaturaId = original.faturaId
       
       if (faturaOriginal) {
-        const cartaoId = (dados.method === 'card') ? (cartaoReal ? cartaoReal.id : (todosCartoes.length > 0 ? todosCartoes[0].id : 'PIX_DEFAULT_ID')) : 'PIX_DEFAULT_ID'
-        const responsavelFaturaId = cartaoReal ? cartaoReal.responsavelPadraoId : dados.compradorId
+        const { cartaoId, responsavelFaturaId } = resolverCartao(
+          dados.method,
+          dados.cardOwner,
+          dados.compradorId,
+          todosCartoes
+        )
         const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, faturaOriginal.periodo.mes, faturaOriginal.periodo.ano, responsavelFaturaId)
         novaFaturaId = novaFatura.id
       }

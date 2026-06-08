@@ -46,11 +46,11 @@ const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['emb
       :key="m.id"
       type="button"
       @click="toggle(m.id)"
-      class="p-4 border rounded-2xl flex flex-col items-center gap-3 transition-all duration-300 relative overflow-hidden group cursor-pointer border-none"
+      class="p-4 rounded-2xl flex flex-col items-center gap-3 transition-all duration-300 relative overflow-hidden group cursor-pointer"
       :class="[
         isSelected(m.id) 
-          ? 'bg-white shadow-subtle scale-[1.02] z-10' 
-          : 'bg-parchment opacity-70 hover:opacity-100 hover:bg-stone/50'
+          ? 'border-2 border-charcoal bg-white shadow-subtle scale-[1.02] z-10' 
+          : 'border-2 border-transparent bg-parchment opacity-70 hover:opacity-100 hover:bg-stone/50'
       ]"
     >
       <MembroAvatar 
@@ -58,7 +58,6 @@ const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['emb
         :variant="isSelected(m.id) ? 'ember' : variants[idx % variants.length]" 
         size="lg"
         class="transition-all duration-500"
-        :class="isSelected(m.id) ? '!bg-midnight !text-white' : ''"
       />
       <span class="font-bold text-[10px] uppercase tracking-[0.1em] truncate w-full text-center text-charcoal leading-none">{{ m.nome }}</span>
       

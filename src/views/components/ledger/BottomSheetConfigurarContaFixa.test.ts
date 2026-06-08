@@ -63,4 +63,76 @@ describe('BottomSheetConfigurarContaFixa', () => {
       defaultSplit: ['luan'] // 'joao' foi removido porque não está na prop membros
     })
   })
+
+  it('abre a tela de seleção de ícone ao clicar no card de emoji representativo e permite selecionar um novo emoji', async () => {
+    const wrapper = mount(BottomSheetConfigurarContaFixa, {
+      props: {
+        visible: true,
+        bill,
+        membros: membrosAtivos,
+      },
+      global: { stubs: { Teleport: true } }
+    })
+
+    // No estado inicial, a tela de seleção de ícone não deve estar ativa
+    expect(wrapper.text()).not.toContain('Selecione o Ícone')
+
+    // Encontra o botão/card clicável para alterar o emoji
+    const cardAlterarEmoji = wrapper.find('button[class*="text-left group cursor-pointer"]')
+    expect(cardAlterarEmoji.exists()).toBe(true)
+    await cardAlterarEmoji.trigger('click')
+
+    // Deve estar na tela de seleção de ícone agora
+    expect(wrapper.text()).toContain('Selecione o Ícone')
+    expect(wrapper.text()).toContain('Coleção de Ícones')
+
+    // Encontra o botão do emoji "💰" na grade e clica nele
+    const emojiButtons = wrapper.findAll('button').filter(btn => btn.text() === '💰')
+    expect(emojiButtons.length).toBeGreaterThan(0)
+    await emojiButtons[0].trigger('click')
+
+    // Clicar em um emoji da grade deve setá-lo e voltar para a tela principal
+    expect(wrapper.text()).not.toContain('Selecione o Ícone')
+    
+    // O card de emoji deve refletir o emoji novo selecionado
+    expect(wrapper.text()).toContain('💰')
+  })
+
+  it('permite inserir um emoji personalizado e confirmá-lo', async () => {
+    const wrapper = mount(BottomSheetConfigurarContaFixa, {
+      props: {
+        visible: true,
+        bill,
+        membros: membrosAtivos,
+      },
+      global: { stubs: { Teleport: true } }
+    })
+
+    // Entra na tela de seleção de ícone
+    const cardAlterarEmoji = wrapper.find('button[class*="text-left group cursor-pointer"]')
+    await cardAlterarEmoji.trigger('click')
+
+    // Clica para expandir a opção de emoji personalizado
+    const customOptionButton = wrapper.findAll('button').find(btn => btn.text().includes('Emoji Personalizado'))
+    expect(customOptionButton?.exists()).toBe(true)
+    await customOptionButton?.trigger('click')
+
+    // Deve renderizar o campo de texto
+    const customInput = wrapper.find('input[placeholder="Cole ou digite um emoji..."]')
+    expect(customInput.exists()).toBe(true)
+
+    // Insere o emoji personalizado "🚀"
+    await customInput.setValue('🚀')
+
+    // Clica em confirmar
+    const confirmButton = wrapper.findAll('button').find(btn => btn.text().includes('Confirmar'))
+    expect(confirmButton?.exists()).toBe(true)
+    await confirmButton?.trigger('click')
+
+    // Deve retornar para a tela do formulário e ter atualizado o emoji para "🚀"
+    expect(wrapper.text()).not.toContain('Selecione o Ícone')
+    expect(wrapper.text()).toContain('🚀')
+  })
 })
+
+

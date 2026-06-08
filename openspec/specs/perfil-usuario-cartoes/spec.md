@@ -1,10 +1,11 @@
 # perfil-usuario-cartoes Specification
 
 ## Purpose
-TBD - created by archiving change perfil-usuario-cartoes. Update Purpose after archive.
+Implementar a visualização e edição das configurações pessoais dos moradores, incluindo o perfil e seus cartões de crédito associados, com foco na identidade Family e segurança de dados.
+
 ## Requirements
 ### Requirement: Exibição e Edição do Perfil do Usuário
-O sistema DEVE permitir que o usuário logado visualize suas informações de perfil (utilizando o **MembroAvatar orgânico**), nome de exibição (com **tipografia Inter Bold**) e nome de usuário, e gerencie sua sessão em uma aba dedicada chamada "Meu Perfil", além de navegar para a aba "Controle de Acesso" utilizando a **navegação Floating Island** para gerenciar as permissões dos moradores da casa.
+O sistema SHALL permitir que o usuário logado visualize suas informações de perfil (utilizando o **MembroAvatar orgânico**), nome de exibição (com **tipografia Inter Bold**) e nome de usuário, e gerencie sua sessão em uma aba dedicada chamada "Meu Perfil", além de navegar para a aba "Controle de Acesso" utilizando a **navegação Floating Island** para gerenciar os moradores da casa.
 
 #### Scenario: Visualizar perfil pessoal
 - **WHEN** o usuário clica no avatar do cabeçalho
@@ -15,7 +16,7 @@ O sistema DEVE permitir que o usuário logado visualize suas informações de pe
 - **THEN** o sistema limpa os dados de sessão e redireciona o usuário para a tela de Login
 
 ### Requirement: Gerenciamento Seguro de Cartões pelo Dono
-O sistema DEVE permitir que os cartões de crédito sejam cadastrados e excluídos apenas pelo morador correspondente ao usuário logado, utilizando **cards com profundidade Inset (shadow-subtle)**, preenchendo automaticamente o responsável pelo cartão e impedindo a alteração ou exclusão por terceiros.
+O sistema SHALL permitir que os cartões de crédito sejam cadastrados e excluídos apenas pelo morador correspondente ao usuário logado, utilizando **cards com profundidade Inset (shadow-subtle)**, preenchendo automaticamente o responsável pelo cartão e impedindo a alteração ou exclusão por terceiros.
 
 #### Scenario: Cadastrar cartão de crédito pessoal
 - **WHEN** o usuário insere o nome do cartão e o dia de fechamento na aba "Meu Perfil" e clica em "Cadastrar Cartão"
@@ -31,4 +32,3 @@ O sistema DEVE continuar permitindo que qualquer morador selecione e use qualque
 #### Scenario: Selecionar cartão no lançamento
 - **WHEN** o usuário inicia o wizard de novo lançamento e escolhe pagar com cartão de crédito
 - **THEN** o sistema lista todos os cartões cadastrados e ativos na casa, independentemente de quem seja o dono do cartão
-

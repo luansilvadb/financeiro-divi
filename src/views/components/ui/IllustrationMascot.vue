@@ -90,7 +90,7 @@ const blobPath = "M20,50 Q20,15 50,20 Q80,25 85,55 Q90,85 50,80 Q10,75 15,50 Z";
 <style scoped>
 @keyframes breathe {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03, 0.97); }
+  50% { transform: scale(1.01, 0.99); }
 }
 
 @keyframes blink {
@@ -98,36 +98,25 @@ const blobPath = "M20,50 Q20,15 50,20 Q80,25 85,55 Q90,85 50,80 Q10,75 15,50 Z";
   95% { transform: scaleY(0.1); }
 }
 
-@keyframes wave {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(-15deg); }
-}
-
-@keyframes leg-wiggle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(1px); }
-}
-
 .animate-breathe {
-  animation: breathe 4s ease-in-out infinite;
+  animation: breathe 8s ease-in-out infinite;
   transform-origin: center bottom;
 }
 
 .animate-blink {
-  animation: blink 5s infinite;
+  animation: blink 8s infinite;
   transform-origin: center 42px;
 }
 
 .animate-arm-wave {
-  animation: wave 2s ease-in-out infinite;
+  /* Animação desativada para estilo minimalista */
   transform-origin: 22px 55px;
 }
 
 .animate-leg-left, .animate-leg-right {
-  animation: leg-wiggle 3s ease-in-out infinite;
+  /* Animação desativada para estilo minimalista */
 }
 
 .animate-leg-right {
-  animation-delay: 1.5s;
 }
 </style>

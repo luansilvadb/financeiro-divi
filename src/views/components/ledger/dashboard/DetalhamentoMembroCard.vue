@@ -128,7 +128,7 @@ const obterExtrato = () => {
     <!-- Lista de Extrato (Condicional) -->
     <div 
       v-if="expanded" 
-      class="space-y-3 animate-in fade-in slide-in-from-top-3 duration-500 ease-spring"
+      class="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200"
     >
       <div class="flex items-center gap-3 mb-4">
         <div class="h-px flex-1 bg-stone" />

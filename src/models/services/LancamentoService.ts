@@ -5,15 +5,10 @@ import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import { Fatura } from '../entities/Fatura'
-import type { LancarGastoInput } from './IGastoService'
+import type { LancarGastoInput } from './GastoService'
+import { resolverCartao } from './CartaoResolver'
 
-export interface ILancamentoService {
-  lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void>
-  lancarGastoContaFixa(dados: { faturaId: string; conta: { id: string; name: string }; valorCentavos: number; compradorId: string; participantes: string[] }): Promise<void>
-  obterOuCriarFaturaMemoria(cartaoId: string, mes: number, ano: number, responsavelId: string, acumuladorMemoria: Fatura[], todasFaturasPersistidas: Fatura[]): Promise<Fatura>
-}
-
-export class LancamentoService implements ILancamentoService {
+export class LancamentoService {
   constructor(
     private gastoRepo: IGastoRepository,
     private faturaRepo: IFaturaRepository,
@@ -23,11 +18,12 @@ export class LancamentoService implements ILancamentoService {
   async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
     const total = Dinheiro.deReais(dados.valor)
     const todosCartoes = await this.cartaoRepo.listarTodos()
-    const cartaoReal = (dados.paymentMethod === 'card' && dados.cardOwnerId) ? todosCartoes.find(c => c.id === dados.cardOwnerId || c.responsavelPadraoId === dados.cardOwnerId) : undefined
-    
-    const cartaoId = (dados.paymentMethod === 'card') ? (cartaoReal?.id || (todosCartoes[0]?.id ?? 'PIX_DEFAULT_ID')) : 'PIX_DEFAULT_ID'
-    const resolvedCardOwner = cartaoReal?.responsavelPadraoId || null
-    const responsavelFaturaId = cartaoReal?.responsavelPadraoId || dados.compradorId
+    const { cartaoId, cardOwner: resolvedCardOwner, responsavelFaturaId } = resolverCartao(
+      dados.paymentMethod,
+      dados.cardOwnerId,
+      dados.compradorId,
+      todosCartoes
+    )
     
     const faturaAtiva = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, dados.periodo.mes, dados.periodo.ano, responsavelFaturaId)
 

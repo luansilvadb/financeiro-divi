@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import Button from '../../ui/Button.vue'
-import { Wallet, Banknote, RefreshCcw } from 'lucide-vue-next'
+import { Wallet, Banknote } from 'lucide-vue-next'
 import BottomSheet from '../../ui/BottomSheet.vue'
 
 interface Props {
@@ -18,7 +18,7 @@ const props = defineProps<Props>()
 const emit = defineEmits(['confirm', 'cancel'])
 
 const valorReal = ref(0)
-const method = ref<'pix' | 'cash' | 'mutual'>('pix')
+const method = ref<'pix' | 'cash'>('pix')
 const descricao = ref('')
 
 watch(() => props.visible, (isVisible) => {
@@ -86,17 +86,17 @@ defineExpose({
         <!-- Método de Acerto -->
         <div class="space-y-2">
           <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método de Baixa</label>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-2 gap-2">
             <button 
-              v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}, {id:'mutual', n:'Ajuste', icon: RefreshCcw}]"
+              v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}]"
               :key="m.id"
               type="button"
               @click="method = m.id as any"
-              class="flex flex-col items-center gap-2 py-3 rounded-xl border transition-all duration-200 border-none cursor-pointer"
+              class="flex flex-col items-center gap-2 py-3 rounded-xl transition-all duration-200 cursor-pointer"
               :class="[
                 method === m.id 
-                  ? 'bg-midnight text-white font-bold border-stone shadow-sm' 
-                  : 'bg-stone text-charcoal hover:bg-ash/20'
+                  ? 'border-2 border-charcoal bg-white text-charcoal font-bold shadow-sm' 
+                  : 'border-2 border-transparent bg-stone text-charcoal hover:bg-ash/20'
               ]"
             >
               <component :is="m.icon" class="w-4 h-4" />
