@@ -12,7 +12,8 @@ vi.mock('../shared/container', () => ({
     adicionarMembro: vi.fn(),
     desativarMembro: vi.fn(),
     ativarMembro: vi.fn(),
-    atualizarCargoMembro: vi.fn()
+    atualizarCargoMembro: vi.fn(),
+    atualizarNomeMembro: vi.fn()
   },
   tenantSessionService: {
     isAuthenticated: () => true,
@@ -95,5 +96,25 @@ describe('useMembros', () => {
 
     expect(membroService.atualizarCargoMembro).toHaveBeenCalledWith('m1', 'ADMIN', undefined)
     expect(membros.value[0].role).toBe('ADMIN')
+  })
+
+  it('deve atualizar o nome de um membro delegando ao MembroService', async () => {
+    const membro = new Membro({ id: 'm1', nome: 'Membro Antigo' })
+    let listCounter = 0
+    vi.mocked(membroRepository.listarTodos).mockImplementation(async () => {
+      listCounter++
+      if (listCounter > 1) {
+        return [new Membro({ id: 'm1', nome: 'Membro Novo' })]
+      }
+      return [membro]
+    })
+
+    const { membros, atualizarNomeMembro, carregar } = useMembros()
+    await carregar()
+
+    await atualizarNomeMembro('m1', 'Membro Novo')
+
+    expect(membroService.atualizarNomeMembro).toHaveBeenCalledWith('m1', 'Membro Novo')
+    expect(membros.value[0].nome).toBe('Membro Novo')
   })
 })

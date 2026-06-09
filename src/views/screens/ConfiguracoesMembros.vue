@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { useCargos } from '../../viewmodels/useCargos'
-import { User, Shield, Plus, ChevronRight } from 'lucide-vue-next'
+import { User, Shield, Plus, ChevronRight, Edit2, Check, X } from 'lucide-vue-next'
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../composables/useToast'
 import { Membro, type MembroRole } from '../../models/entities/Membro'
@@ -22,6 +22,7 @@ const {
   desativarMembro, 
   ativarMembro, 
   atualizarCargoMembro,
+  atualizarNomeMembro,
   carregar, 
   currentMembro 
 } = useMembros()
@@ -174,6 +175,46 @@ const handleExcluirCargo = async (id: string) => {
   }
 }
 
+// Edição de Perfil Pessoal
+const editandoNome = ref(false)
+const nomeEditado = ref('')
+const salvandoNome = ref(false)
+const inputNomeRef = ref<HTMLInputElement | null>(null)
+
+const iniciarEdicaoNome = () => {
+  nomeEditado.value = currentMembro.value?.nome || ''
+  editandoNome.value = true
+  nextTick(() => {
+    inputNomeRef.value?.focus()
+  })
+}
+
+const cancelarEdicaoNome = () => {
+  editandoNome.value = false
+  nomeEditado.value = ''
+}
+
+const handleSalvarNome = async () => {
+  if (!currentMembro.value) return
+  
+  const nomeLimpo = nomeEditado.value.trim()
+  if (!nomeLimpo || nomeLimpo.length < 2) {
+    toast.show('O nome deve ter pelo menos 2 caracteres', 'error')
+    return
+  }
+  
+  salvandoNome.value = true
+  try {
+    await atualizarNomeMembro(currentMembro.value.id, nomeLimpo)
+    toast.show('Nome atualizado com sucesso', 'success')
+    editandoNome.value = false
+  } catch (error: any) {
+    toast.show(error.message || 'Erro ao salvar nome', 'error')
+  } finally {
+    salvandoNome.value = false
+  }
+}
+
 onMounted(async () => {
   await Promise.all([carregar(), inicializarCargos()])
 })
@@ -215,16 +256,56 @@ onMounted(async () => {
         <div v-if="activeTab === 'perfil'" class="space-y-8 animate-in fade-in duration-300">
           <!-- Card de Perfil Pessoal -->
           <div class="bg-white border border-stone/30 rounded-2xl shadow-subtle p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 flex-1">
               <MembroAvatar 
                 v-if="currentMembro" 
                 :nome="currentMembro.nome" 
                 variant="ember" 
                 size="lg" 
               />
-              <div>
-                <h3 class="text-xl font-bold text-charcoal font-sans tracking-tight">{{ currentMembro?.nome }}</h3>
+              <div v-if="!editandoNome" class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-xl font-bold text-charcoal font-sans tracking-tight truncate">{{ currentMembro?.nome }}</h3>
+                  <button 
+                    @click="iniciarEdicaoNome" 
+                    class="p-1 text-ash hover:text-charcoal transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center"
+                    aria-label="Editar nome"
+                  >
+                    <Edit2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <p class="text-xs text-ash font-medium mt-0.5">@{{ currentMembro?.username || currentMembro?.nome?.toLowerCase() }}</p>
+              </div>
+              <div v-else class="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <input 
+                    v-model="nomeEditado" 
+                    type="text" 
+                    :disabled="salvandoNome"
+                    @keyup.enter="handleSalvarNome"
+                    @keyup.esc="cancelarEdicaoNome"
+                    class="flex-1 max-w-[200px] sm:max-w-[260px] px-3 py-1.5 rounded-xl border border-stone bg-white text-sm font-bold text-charcoal outline-none focus:border-ember focus:ring-1 focus:ring-ember transition-all"
+                    placeholder="Seu nome"
+                    ref="inputNomeRef"
+                  />
+                  <button 
+                    @click="handleSalvarNome" 
+                    :disabled="salvandoNome"
+                    class="p-2 bg-meadow/10 hover:bg-meadow/20 text-meadow rounded-xl border-none cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50"
+                    aria-label="Salvar nome"
+                  >
+                    <Check class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="cancelarEdicaoNome" 
+                    :disabled="salvandoNome"
+                    class="p-2 bg-stone/10 hover:bg-stone/20 text-ash rounded-xl border-none cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50"
+                    aria-label="Cancelar edição"
+                  >
+                    <X class="w-4 h-4" />
+                  </button>
+                </div>
+                <p class="text-[9px] text-ash font-medium ml-1">Pressione Enter para salvar, Esc para cancelar</p>
               </div>
             </div>
             <Button 

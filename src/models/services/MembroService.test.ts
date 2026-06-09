@@ -48,4 +48,22 @@ describe('MembroService', () => {
     const service = new MembroService(mockMembroRepo as any)
     await expect(service.desativarMembro('membro-invalido')).rejects.toThrow('Membro não encontrado')
   })
+
+  it('deve atualizar o nome de um membro com sucesso', async () => {
+    const membroExistente = new Membro({ id: 'membro-3', nome: 'Nome Antigo', ativo: true })
+    const mockMembroRepo = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+      buscarPorId: vi.fn().mockResolvedValue(membroExistente)
+    }
+    const service = new MembroService(mockMembroRepo as any)
+    await service.atualizarNomeMembro('membro-3', 'Nome Novo')
+
+    expect(mockMembroRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({ id: 'membro-3', nome: 'Nome Novo' }))
+  })
+
+  it('deve lancar erro ao tentar atualizar nome de membro inexistente', async () => {
+    const mockMembroRepo = { buscarPorId: vi.fn().mockResolvedValue(null) }
+    const service = new MembroService(mockMembroRepo as any)
+    await expect(service.atualizarNomeMembro('membro-invalido', 'Nome Novo')).rejects.toThrow('Membro não encontrado')
+  })
 })

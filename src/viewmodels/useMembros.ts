@@ -60,6 +60,11 @@ export function useMembros() {
     await carregar()
   }
 
+  const atualizarNomeMembro = async (id: string, nome: string) => {
+    await membroService.atualizarNomeMembro(id, nome)
+    await carregar()
+  }
+
   return {
     membros,
     ativos,
@@ -68,6 +73,7 @@ export function useMembros() {
     desativarMembro,
     ativarMembro,
     atualizarCargoMembro,
+    atualizarNomeMembro,
     inicializar,
     carregar
   }

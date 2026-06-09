@@ -53,4 +53,20 @@ export class MembroService {
     })
     await this.repository.salvar(atualizado)
   }
+
+  async atualizarNomeMembro(id: string, nome: string): Promise<void> {
+    const membro = await this.repository.buscarPorId(id)
+    if (!membro) throw new Error('Membro não encontrado')
+    const atualizado = new Membro({
+      id: membro.id,
+      nome: nome,
+      ativo: membro.ativo,
+      role: membro.role,
+      cargoId: membro.cargoId,
+      dataCriacao: membro.dataCriacao,
+      userId: membro.userId
+    })
+    await this.repository.salvar(atualizado)
+  }
 }
+
