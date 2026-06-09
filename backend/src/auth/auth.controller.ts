@@ -7,6 +7,7 @@ import { RegisterResponseDto } from './dto/register-response.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { Public } from './public.decorator';
+import type { AuthenticatedRequest } from './auth.types';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -52,7 +53,7 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Token JWT ausente ou inválido' })
   @Get('me')
-  async getMe(@Request() req: any) {
+  async getMe(@Request() req: AuthenticatedRequest) {
     return this.authService.getMe(req.user.userId);
   }
 }

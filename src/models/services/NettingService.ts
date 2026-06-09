@@ -32,14 +32,12 @@ export function calcularSaldosUnificados(
         }
       }
     } else if (g.isSettlement && g.settlementDetails) {
-      // Gastos de liquidação (Pix de acerto) transferem saldo diretamente entre membros
       const valor = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
       if (valor.centavos > 0) {
         const fromId = g.settlementDetails.fromMemberId
         const toId = g.settlementDetails.toMemberId
         
         saldosCentavos[fromId] = (saldosCentavos[fromId] || 0) + valor.centavos
-        // Quem recebe (to) diminui seu saldo (recebeu o que era devido)
         saldosCentavos[toId] = (saldosCentavos[toId] || 0) - valor.centavos
       }
     } else {

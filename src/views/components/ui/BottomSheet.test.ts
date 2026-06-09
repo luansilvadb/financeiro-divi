@@ -56,8 +56,6 @@ describe('BottomSheet', () => {
         }
       }
     })
-    // O container de conteúdo é o div que contém o slot default
-    // No BottomSheet.vue atual é o div após o divider
     const contentContainer = wrapper.find('.overflow-y-auto.flex-1')
     expect(contentContainer.classes()).toContain('custom-padding')
   })

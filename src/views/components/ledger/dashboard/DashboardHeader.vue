@@ -3,13 +3,14 @@ import { CheckCircle2, ChevronDown, Home, User } from 'lucide-vue-next'
 import IllustrationMascot from '../../ui/IllustrationMascot.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
 import { useMembros } from '../../../../viewmodels/useMembros'
+import type { TenantSummary } from '../../../../models/services/TenantSessionService'
 
 defineProps<{
   currentYear: string | number
   currentMonthName: string
   faturaSelecionadaFechada: boolean
   isAuthed: boolean
-  activeTenantObj: any
+  activeTenantObj: TenantSummary | null
 }>()
 
 defineEmits<{

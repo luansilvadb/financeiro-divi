@@ -1,7 +1,17 @@
 import { HttpBaseRepository } from './HttpBaseRepository'
 import { Fatura } from '../../entities/Fatura'
-import type { FaturaPeriodo } from '../../entities/Fatura'
+import type { FaturaPeriodo, FaturaStatus } from '../../entities/Fatura'
 import type { IFaturaRepository } from '../IFaturaRepository'
+
+interface FaturaDto {
+  id: string
+  cartaoId: string
+  mes: number
+  ano: number
+  responsavelId: string
+  status: FaturaStatus
+  dataPagamentoBanco?: string | null
+}
 
 export class HttpFaturaRepository extends HttpBaseRepository implements IFaturaRepository {
   async buscarPorId(id: string): Promise<Fatura | null> {
@@ -46,7 +56,7 @@ export class HttpFaturaRepository extends HttpBaseRepository implements IFaturaR
   }
 
   async listarTodas(): Promise<Fatura[]> {
-    const list = await this.request<any[]>('/financeiro/faturas')
+    const list = await this.request<FaturaDto[]>('/financeiro/faturas')
     return list.map(item => new Fatura({
       id: item.id,
       cartaoId: item.cartaoId,

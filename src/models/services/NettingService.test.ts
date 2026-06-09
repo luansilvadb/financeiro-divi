@@ -82,7 +82,6 @@ describe('NettingService', () => {
 
     const saldos = calcularSaldosUnificados(membros, [gastoParcelado])
 
-    // Deve cobrar/creditar apenas o valor da parcela (R$ 50) e suas divisões (R$ 25 cada) em centavos
     expect(saldos['luan']).toBe(2500)
     expect(saldos['joao']).toBe(-2500)
   })
@@ -96,8 +95,6 @@ describe('NettingService', () => {
   it('deve garantir que a soma dos saldos unificados seja exatamente zero mesmo com divisões que geram dízimas e restos de centavos', () => {
     const membros = [{ id: 'A' }, { id: 'B' }, { id: 'C' }]
     
-    // Gasto de R$ 1,00 pago por A, dividido em partes de 34, 33 e 33 centavos, parcelado em 2x.
-    // Primeira parcela (installments = 2, totalInstallments = 2)
     const gasto1 = new Gasto({
       id: 'g1',
       faturaId: 'f1',
@@ -123,7 +120,6 @@ describe('NettingService', () => {
     expect(saldos1['B']).toBe(-17)
     expect(saldos1['C']).toBe(-17)
 
-    // Segunda parcela (installments = 1, totalInstallments = 2)
     const gasto2 = new Gasto({
       id: 'g2',
       faturaId: 'f1',
@@ -163,7 +159,6 @@ describe('NettingService', () => {
       divisoes: [new DivisaoDeGasto('B', Dinheiro.deReais(10))]
     })
 
-    // Não deve lançar erro
     const saldos = calcularSaldosUnificados(membros, [gastoInvalido])
     expect(saldos['A']).toBe(500)
     expect(saldos['B']).toBe(-500)

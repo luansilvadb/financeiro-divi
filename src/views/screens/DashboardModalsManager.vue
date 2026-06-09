@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { unref } from 'vue'
+import { computed, unref } from 'vue'
 import PopupLancarContaFixa from '../components/ledger/PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from '../components/ledger/BottomSheetConfigurarContaFixa.vue'
 import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
@@ -8,17 +8,40 @@ import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfi
 import BottomSheetNovoPeriodo from '../components/ledger/dashboard/BottomSheetNovoPeriodo.vue'
 import BottomSheetHistorico from '../components/ledger/dashboard/BottomSheetHistorico.vue'
 import BottomSheetCasas from '../components/ledger/dashboard/BottomSheetCasas.vue'
+import type { Cartao } from '../../models/entities/Cartao'
+import type { Fatura } from '../../models/entities/Fatura'
+import type { DashboardViewModel } from '../../viewmodels/useDashboardViewModel'
+import type { CasasModalView } from '../../viewmodels/useCasasMultitenant'
+
+interface MembroResumo {
+  id: string
+  nome: string
+  ativo?: boolean
+}
 
 const props = defineProps<{
-  vm: any
-  membrosAtivos: any[]
-  cartoes: any[]
-  faturasAbertas: any[]
-  faturasFechadas: any[]
-  casasMultitenant: any
+  vm: DashboardViewModel
+  membrosAtivos: MembroResumo[]
+  cartoes: Cartao[]
+  faturasAbertas: Fatura[]
+  faturasFechadas: Fatura[]
+  casasMultitenant: CasasModalView
 }>()
 
 const isModalNoTopo = (nome: string) => props.vm.isModalNoTopo(nome)
+const nomeMembro = (id?: string) => id ? props.vm.getMembroNome(id) : ''
+const itemParaEstornar = computed(() => unref(props.vm.itemParaEstornar))
+const itemEstornoNome = computed(() => {
+  const item = itemParaEstornar.value
+  if (!item) return undefined
+  return 'descricao' in item ? item.descricao : item.name
+})
+const itemEstornoValor = computed(() => {
+  const item = itemParaEstornar.value
+  if (!item) return undefined
+  if ('valorTotal' in item) return item.valorTotal.centavos / 100
+  return item.fixedValueCentavos === null ? undefined : item.fixedValueCentavos / 100
+})
 </script>
 
 <template>
@@ -43,7 +66,6 @@ const isModalNoTopo = (nome: string) => props.vm.isModalNoTopo(nome)
     <BottomSheetNovoPeriodo
       :visible="isModalNoTopo('novo-periodo')"
       :vm="vm"
-      :cartoes="cartoes"
       @close="vm.fecharModal('novo-periodo')"
       @confirm="vm.confirmarNovoPeriodo"
     />
@@ -52,8 +74,8 @@ const isModalNoTopo = (nome: string) => props.vm.isModalNoTopo(nome)
       :visible="isModalNoTopo('netting')"
       :from-id="unref(vm.nettingTarget)?.from"
       :to-id="unref(vm.nettingTarget)?.to"
-      :from-name="vm.getMembroNome(unref(vm.nettingTarget)?.from)"
-      :to-name="vm.getMembroNome(unref(vm.nettingTarget)?.to)"
+      :from-name="nomeMembro(unref(vm.nettingTarget)?.from)"
+      :to-name="nomeMembro(unref(vm.nettingTarget)?.to)"
       :suggested-value="unref(vm.nettingTarget)?.val || 0"
       :loading="Boolean(unref(vm.isSubmittingPix))"
       @cancel="vm.fecharModal('netting')"
@@ -80,8 +102,8 @@ const isModalNoTopo = (nome: string) => props.vm.isModalNoTopo(nome)
     <BottomSheetConfirmacaoEstorno 
       :visible="isModalNoTopo('confirmacao-estorno')"
       :item-type="unref(vm.itemTypeParaEstornar) || ''"
-      :item-name="unref(vm.itemParaEstornar)?.descricao || unref(vm.itemParaEstornar)?.name"
-      :item-value="unref(vm.itemParaEstornar)?.valorTotal ? (unref(vm.itemParaEstornar).valorTotal.centavos / 100) : unref(vm.itemParaEstornar)?.defaultAmount"
+      :item-name="itemEstornoNome"
+      :item-value="itemEstornoValor"
       @cancel="vm.fecharModal('confirmacao-estorno')"
       @confirm="vm.confirmarEstorno"
     />

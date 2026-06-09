@@ -3,11 +3,12 @@ import { ref, watch } from 'vue'
 import { Key, ChevronRight, Trash2, ArrowLeft } from 'lucide-vue-next'
 import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
+import type { Cargo } from '../../../../models/entities/Cargo'
 
 interface Props {
   modelValue: boolean
   cargoSendoEditadoId: string | null
-  cargoSendoEditado: any
+  cargoSendoEditado: Cargo | null
   permissoesDisponiveis: { chave: string; label: string; desc: string }[]
 }
 

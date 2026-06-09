@@ -20,6 +20,10 @@ const emit = defineEmits(['confirm', 'cancel'])
 const valorReal = ref(0)
 const method = ref<'pix' | 'cash'>('pix')
 const descricao = ref('')
+const metodos = [
+  { id: 'pix', nome: 'Pix', icon: Wallet },
+  { id: 'cash', nome: 'Dinheiro', icon: Banknote }
+] as const
 
 watch(() => props.visible, (isVisible) => {
   if (isVisible) {
@@ -88,10 +92,10 @@ defineExpose({
           <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método de Baixa</label>
           <div class="grid grid-cols-2 gap-2">
             <button 
-              v-for="m in [{id:'pix', n:'Pix', icon: Wallet}, {id:'cash', n:'Dinheiro', icon: Banknote}]"
+              v-for="m in metodos"
               :key="m.id"
               type="button"
-              @click="method = m.id as any"
+              @click="method = m.id"
               class="flex flex-col items-center gap-2 py-3 rounded-xl transition-all duration-200 cursor-pointer"
               :class="[
                 method === m.id 
@@ -100,7 +104,7 @@ defineExpose({
               ]"
             >
               <component :is="m.icon" class="w-4 h-4" />
-              <span class="text-[11px] font-bold uppercase tracking-wider">{{ m.n }}</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider">{{ m.nome }}</span>
             </button>
           </div>
         </div>

@@ -16,6 +16,7 @@ import { tenantSessionService, socketService } from './shared/container'
 import ToastNotification from './views/components/ui/ToastNotification.vue'
 import { useToast } from './composables/useToast'
 import IllustrationMascot from './views/components/ui/IllustrationMascot.vue'
+import { mensagemErro } from './shared/utils/mensagemErro'
 
 const isInitializing = ref(true)
 const isLoading = ref(tenantSessionService.isAuthenticated())
@@ -72,9 +73,10 @@ onMounted(async () => {
   
   if (isAuthed.value) {
     try {
-      // Começamos com isLoading true para o skeleton estar pronto quando o splash sair
       isLoading.value = true
       await tenantSessionService.inicializarSessao()
+      isAuthed.value = tenantSessionService.isAuthenticated()
+      if (!isAuthed.value) return
       hasTenant.value = !!tenantSessionService.getActiveTenantId()
       if (hasTenant.value) {
         await Promise.all([
@@ -84,7 +86,7 @@ onMounted(async () => {
         ])
         inicializarSocket(tenantSessionService.getActiveTenantId()!)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro na inicialização da sessão:', error)
     } finally {
       isInitializing.value = false
@@ -103,9 +105,9 @@ const handleSalvarTransacao = async () => {
   try {
     await inicializarCartoes()
     currentView.value = 'dashboard'
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro ao recarregar cartões após salvar transação:', error)
-    toast.show(error.message || 'Erro ao sincronizar dados com o servidor', 'error')
+    toast.show(mensagemErro(error, 'Erro ao sincronizar dados com o servidor'), 'error')
     currentView.value = 'dashboard'
   }
 }
@@ -121,7 +123,7 @@ const handleAuthSuccess = async () => {
         inicializarContasFixas()
       ])
       inicializarSocket(tenantSessionService.getActiveTenantId()!)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro na inicialização pós-auth:', error)
     } finally {
       isLoading.value = false
@@ -132,7 +134,6 @@ const handleAuthSuccess = async () => {
 const handleCasaSelecionada = async () => {
   hasTenant.value = true
   
-  // Evita o "flashbang" do skeleton se a API responder rápido demais (< 150ms)
   const skeletonTimer = setTimeout(() => {
     isLoading.value = true
   }, 150)
@@ -145,7 +146,7 @@ const handleCasaSelecionada = async () => {
       inicializarContasFixas()
     ])
     inicializarSocket(tenantSessionService.getActiveTenantId()!)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro ao inicializar dados da nova casa:', error)
   } finally {
     clearTimeout(skeletonTimer)

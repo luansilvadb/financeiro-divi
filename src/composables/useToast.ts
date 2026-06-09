@@ -3,7 +3,7 @@ import { ref } from 'vue'
 const visible = ref(false)
 const message = ref('')
 const type = ref<'error' | 'success' | 'info'>('info')
-let timeoutId: any = null
+let timeoutId: ReturnType<typeof setTimeout> | null = null
 
 export function useToast() {
   const show = (msg: string, t: 'error' | 'success' | 'info' = 'info', duration = 4500) => {

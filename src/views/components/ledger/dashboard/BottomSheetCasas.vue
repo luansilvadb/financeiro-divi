@@ -2,10 +2,11 @@
 import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
 import { Home, Check, Copy, LogOut } from 'lucide-vue-next'
+import type { CasasModalView } from '../../../../viewmodels/useCasasMultitenant'
 
 const props = defineProps<{
   visible: boolean
-  casasMultitenant: any
+  casasMultitenant: CasasModalView
 }>()
 
 const emit = defineEmits(['close'])

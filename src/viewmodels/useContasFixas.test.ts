@@ -96,10 +96,8 @@ describe('useContasFixas', () => {
       defaultSplit: ['luciana', 'luan', 'joao']
     }
 
-    // Sem gastos associados
     expect(verificarStatusPaga(contaAluguel, [])).toBeNull()
 
-    // Com gasto associado
     const gastoAluguel = new Gasto({
       id: 'g1',
       faturaId: 'f1',

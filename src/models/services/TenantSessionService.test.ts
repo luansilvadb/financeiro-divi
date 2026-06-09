@@ -24,7 +24,6 @@ describe('TenantSessionService', () => {
       })
     })
     
-    // Segunda chamada para /auth/me na inicialização do login
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -47,5 +46,16 @@ describe('TenantSessionService', () => {
     service.setActiveTenant('tenant-456')
     expect(service.getActiveTenantId()).toBe('tenant-456')
     expect(localStorage.getItem('divi_active_tenant_id')).toBe('tenant-456')
+  })
+
+  it('deve limpar a sessão quando /auth/me retornar 401', async () => {
+    localStorage.setItem('divi_jwt_token', 'token-expirado')
+    service = new TenantSessionService()
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 401 })
+
+    await service.inicializarSessao()
+
+    expect(service.isAuthenticated()).toBe(false)
+    expect(localStorage.getItem('divi_jwt_token')).toBeNull()
   })
 })

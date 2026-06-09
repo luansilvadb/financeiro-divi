@@ -62,7 +62,8 @@ const {
   isAuthed,
   activeTenantId,
   casas,
-  showBottomSheetCasas,
+  isCreating,
+  isEntering,
   form,
   copiedCode,
   activeTenantObj,
@@ -221,7 +222,7 @@ defineExpose({
             :cartoes="props.cartoes"
             :faturasAbertas="props.faturasAbertas"
             :faturasFechadas="props.faturasFechadas"
-            :casasMultitenant="{ isAuthed, activeTenantId, casas, showBottomSheetCasas, form, copiedCode, activeTenantObj, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
+            :casasMultitenant="{ activeTenantId, casas, form, copiedCode, isCreating, isEntering, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
           />
         </div>
   </div>

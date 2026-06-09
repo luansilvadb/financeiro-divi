@@ -6,6 +6,7 @@ import Button from '../ui/Button.vue'
 import { Trash2, CreditCard, Calendar, ChevronDown, Plus, ArrowLeft } from 'lucide-vue-next'
 import { useCasasMultitenant } from '../../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../../composables/useToast'
+import { mensagemErro } from '../../../shared/utils/mensagemErro'
 import IllustrationMascot from '../ui/IllustrationMascot.vue'
 
 const { activeTenantId } = useCasasMultitenant()
@@ -31,16 +32,16 @@ const adicionarCard = async () => {
     nome.value = ''
     diaFechamento.value = 10
     formularioAberto.value = false
-  } catch (error: any) {
-    toast.show(error.message || 'Erro ao cadastrar cartão', 'error')
+  } catch (error: unknown) {
+    toast.show(mensagemErro(error, 'Erro ao cadastrar cartão'), 'error')
   }
 }
 
 const handleExcluir = async (id: string) => {
   try {
     await excluirCartao(id)
-  } catch (error: any) {
-    toast.show(error.message || 'Erro ao excluir cartão', 'error')
+  } catch (error: unknown) {
+    toast.show(mensagemErro(error, 'Erro ao excluir cartão'), 'error')
   }
 }
 </script>
@@ -187,4 +188,3 @@ const handleExcluir = async (id: string) => {
     </div>
   </div>
 </template>
-

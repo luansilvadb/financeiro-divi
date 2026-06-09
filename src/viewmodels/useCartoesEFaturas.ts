@@ -14,7 +14,10 @@ export const useCartoesEFaturas = () => {
     const hoje = new Date()
     faturas.value = await faturaService.assegurarFaturasAbertas(c, hoje.getMonth() + 1, hoje.getFullYear())
   }
-  const mutar = async (acao: () => Promise<any>) => { await acao(); return sync(); }
+  const mutar = async (acao: () => Promise<unknown>) => {
+    await acao()
+    await sync()
+  }
 
   return {
     cartoes, faturas, gastos,
@@ -28,6 +31,10 @@ export const useCartoesEFaturas = () => {
     reabrirFatura: (faturaId: string) => mutar(() => faturaService.reabrirFatura(faturaId)),
     atualizarGasto: (gastoId: string, dados: Parameters<typeof gastoService.atualizarGastoCompleto>[1]) => mutar(() => gastoService.atualizarGastoCompleto(gastoId, dados)),
     
-    resetar: () => { cartoes.value = faturas.value = gastos.value = []; }
+    resetar: () => {
+      cartoes.value = []
+      faturas.value = []
+      gastos.value = []
+    }
   }
 }

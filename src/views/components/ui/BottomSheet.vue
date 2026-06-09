@@ -94,16 +94,12 @@ const close = () => emit('update:modelValue', false)
 
 let mountTime = 0
 const onBackdropClick = () => {
-  // Ignora cliques que acontecem nos primeiros 300ms de montagem do BottomSheet.
-  // Isso evita que eventos sintéticos de 'click' gerados pelo navegador após
-  // gestos de touch/tap sejam capturados pelo backdrop recém-renderizado.
   if (Date.now() - mountTime < 300) return
   close()
 }
 
 const { registerOpen, registerClose, isAnyBottomSheetOpen } = useBottomSheetState()
 
-// Lock body scroll and compensate scrollbar width to prevent layout shifts
 const getScrollbarWidth = () => {
   return window.innerWidth - document.documentElement.clientWidth
 }
@@ -118,7 +114,6 @@ const lockScroll = () => {
 }
 
 const unlockScroll = () => {
-  // Só remove a trava se não houver outros bottomsheets ativos
   if (!isAnyBottomSheetOpen.value) {
     document.body.style.overflow = ''
     document.documentElement.style.setProperty('--scrollbar-compensate', '0px')
@@ -130,7 +125,6 @@ watch(() => props.modelValue, (isOpen) => {
     mountTime = Date.now()
     lockScroll()
   } else {
-    // Registra o fechamento lógico no início da transição para liberar o FAB sem delay
     registerClose()
   }
 }, { immediate: true })
@@ -147,7 +141,6 @@ onUnmounted(() => {
   }
 })
 
-// Helper: check if all scrollable ancestors inside the bottomsheet are at scrollTop === 0
 const isScrollAtTop = (target: HTMLElement, currentTarget: HTMLElement): boolean => {
   let el: HTMLElement | null = target
   while (el && el !== currentTarget) {
@@ -159,7 +152,6 @@ const isScrollAtTop = (target: HTMLElement, currentTarget: HTMLElement): boolean
   return true
 }
 
-// Helper: decide whether to start a drag gesture based on interactive elements and scroll state
 const shouldStartDrag = (target: HTMLElement, currentTarget: HTMLElement): boolean => {
   if (
     target.closest('button') ||
@@ -175,7 +167,6 @@ const shouldStartDrag = (target: HTMLElement, currentTarget: HTMLElement): boole
   return isScrollAtTop(target, currentTarget)
 }
 
-// ── Touch drag-to-close ──────────────────────────────────────
 const touchStartY = ref(0)
 const isDraggingTouch = ref(false)
 
@@ -212,12 +203,10 @@ const onTouchEnd = (e: TouchEvent) => {
   const currentTarget = e.currentTarget as HTMLElement
   
   if (delta > 100) {
-    // Desliza suavemente a partir do ponto atual até o final
     currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     currentTarget.style.transform = 'translateY(100%)'
     close()
   } else {
-    // Volta suavemente para o topo
     currentTarget.style.transition = 'transform 0.4s var(--ease-spring)'
     currentTarget.style.transform = 'translateY(0px)'
     setTimeout(() => {
@@ -229,7 +218,6 @@ const onTouchEnd = (e: TouchEvent) => {
   }
 }
 
-// ── Mouse drag-to-close (desktop) ───────────────────────────
 const onMouseDown = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   const currentTarget = e.currentTarget as HTMLElement

@@ -4,9 +4,28 @@ import { DivisaoDeGasto } from '../../entities/DivisaoDeGasto'
 import { Dinheiro } from '../../entities/Dinheiro'
 import type { IGastoRepository } from '../IGastoRepository'
 
+interface GastoDto {
+  id: string
+  faturaId: string
+  descricao: string
+  valorTotalCentavos: number
+  compradorId: string
+  divisoes?: { membroId: string; valorCentavos: number }[]
+  installments?: number
+  totalInstallments?: number
+  isLoan?: boolean
+  borrowerId?: string | null
+  recurringBillId?: string | null
+  isSettlement?: boolean
+  settlementDetails?: Gasto['settlementDetails']
+  method?: 'pix' | 'card'
+  cardOwnerId?: string | null
+  grupoParcelasId?: string | null
+}
+
 export class HttpGastoRepository extends HttpBaseRepository implements IGastoRepository {
-  private mapToEntity(item: any): Gasto {
-    const divisoes = (item.divisoes || []).map((d: any) => new DivisaoDeGasto(
+  private mapToEntity(item: GastoDto): Gasto {
+    const divisoes = (item.divisoes || []).map(d => new DivisaoDeGasto(
       d.membroId,
       Dinheiro.deCentavos(d.valorCentavos)
     ))
@@ -25,7 +44,7 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       recurringBillId: item.recurringBillId,
       isSettlement: item.isSettlement,
       settlementDetails: item.settlementDetails,
-      method: item.method as 'pix' | 'card',
+      method: item.method,
       cardOwner: item.cardOwnerId,
       grupoParcelasId: item.grupoParcelasId
     })
@@ -93,7 +112,7 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
   }
 
   async listarTodos(): Promise<Gasto[]> {
-    const list = await this.request<any[]>('/financeiro/gastos')
+    const list = await this.request<GastoDto[]>('/financeiro/gastos')
     return list.map(item => this.mapToEntity(item))
   }
 }

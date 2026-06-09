@@ -16,7 +16,6 @@ export function useMembros() {
   })
 
   const carregar = async () => {
-    // Não faz fetch se não há tenant ativo
     if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
       membros.value = []
       inicializado.value = true
@@ -28,12 +27,9 @@ export function useMembros() {
   }
 
   const inicializar = async () => {
-    // Se já foi inicializado com sucesso, não refaz
     if (inicializado.value) return
-    // Se há uma promise em andamento, aguarda ela
     if (promiseInicializacao) return promiseInicializacao
     promiseInicializacao = carregar().catch((err) => {
-      // Em caso de erro, reseta para permitir retry
       promiseInicializacao = null
       throw err
     })

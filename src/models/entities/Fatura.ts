@@ -33,7 +33,6 @@ export class Fatura {
   }
 
   fechar(opts: { responsavelId?: string; dataPagamentoBanco: Date }): Fatura {
-    // Permite "fechar" (marcar como paga) a qualquer momento
     return new Fatura({
       id: this.id,
       cartaoId: this.cartaoId,

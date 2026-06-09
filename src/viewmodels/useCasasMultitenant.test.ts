@@ -3,17 +3,22 @@ import { createApp, defineComponent, nextTick } from 'vue'
 import { useCasasMultitenant } from './useCasasMultitenant'
 import { tenantSessionService } from '../shared/container'
 
-vi.mock('../shared/container', () => ({
-  tenantSessionService: {
-    isAuthenticated: () => true,
-    getActiveTenantId: () => 'tenant-123',
-    getCurrentUserId: () => 'user-abc',
-    setActiveTenant: vi.fn(),
-    logout: vi.fn()
-  }
+const tenantServiceMock = vi.hoisted(() => ({
+  isAuthenticated: vi.fn(() => true),
+  getActiveTenantId: vi.fn(() => 'tenant-123'),
+  getCurrentUserId: vi.fn(() => 'user-abc'),
+  getTenants: vi.fn((): { id: string; name: string; inviteCode: string }[] => []),
+  inicializarSessao: vi.fn().mockResolvedValue(undefined),
+  criarCasa: vi.fn(),
+  entrarCasa: vi.fn(),
+  setActiveTenant: vi.fn(),
+  logout: vi.fn()
 }))
 
-// Mock do window.location.reload
+vi.mock('../shared/container', () => ({
+  tenantSessionService: tenantServiceMock
+}))
+
 const reloadMock = vi.fn()
 Object.defineProperty(window, 'location', {
   value: {
@@ -22,7 +27,6 @@ Object.defineProperty(window, 'location', {
   configurable: true
 })
 
-// Mock do navigator.clipboard.writeText
 const writeTextMock = vi.fn().mockResolvedValue(undefined)
 Object.defineProperty(navigator, 'clipboard', {
   value: {
@@ -30,10 +34,6 @@ Object.defineProperty(navigator, 'clipboard', {
   },
   configurable: true
 })
-
-// Mock global do fetch
-const fetchMock = vi.fn()
-vi.stubGlobal('fetch', fetchMock)
 
 function withSetup<T>(composable: () => T) {
   let result: T
@@ -52,15 +52,14 @@ describe('useCasasMultitenant', () => {
     vi.clearAllMocks()
     reloadMock.mockClear()
     writeTextMock.mockClear()
-    fetchMock.mockReset()
+    tenantServiceMock.getTenants.mockReturnValue([])
+    tenantServiceMock.getActiveTenantId.mockReturnValue('tenant-123')
+    tenantServiceMock.inicializarSessao.mockResolvedValue(undefined)
+    tenantServiceMock.criarCasa.mockReset()
+    tenantServiceMock.entrarCasa.mockReset()
   })
 
   it('deve inicializar com o estado padrão', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ tenants: [] })
-    })
-
     const [{ isAuthed, casas, showBottomSheetCasas }, app] = withSetup(() => useCasasMultitenant())
     expect(isAuthed.value).toBe(true)
     expect(casas.value).toEqual([])
@@ -71,12 +70,9 @@ describe('useCasasMultitenant', () => {
   })
 
   it('deve carregar as casas e obter o objeto do tenant ativo', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        tenants: [{ id: 'tenant-123', name: 'Casa Feliz', invite_code: 'CODE123' }]
-      })
-    })
+    tenantServiceMock.getTenants.mockReturnValue([
+      { id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'CODE123' }
+    ])
 
     const [vm, app] = withSetup(() => useCasasMultitenant())
     
@@ -84,28 +80,15 @@ describe('useCasasMultitenant', () => {
 
     expect(vm.casas.value.length).toBe(1)
     expect(vm.casas.value[0].name).toBe('Casa Feliz')
-    expect(vm.activeTenantObj.value).toEqual({ id: 'tenant-123', name: 'Casa Feliz', invite_code: 'CODE123' })
+    expect(vm.activeTenantObj.value).toEqual({ id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'CODE123' })
     app.unmount()
   })
 
   it('deve criar uma nova casa com sucesso', async () => {
-    fetchMock.mockImplementation((url: string) => {
-      if (url.includes('/financeiro/tenants/entrar') || (url.includes('/financeiro/tenants') && !url.endsWith('/me'))) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' })
-        })
-      }
-      return Promise.resolve({
-        ok: true,
-        json: async () => ({
-          tenants: [
-            { id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'CODE123' },
-            { id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' }
-          ]
-        })
-      })
-    })
+    const novaCasa = { id: 'new-tenant-id', name: 'República Central', inviteCode: 'CODE456' }
+    tenantServiceMock.criarCasa.mockResolvedValue(novaCasa)
+    tenantServiceMock.getTenants.mockReturnValue([novaCasa])
+    tenantServiceMock.getActiveTenantId.mockReturnValue(novaCasa.id)
 
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
@@ -113,30 +96,17 @@ describe('useCasasMultitenant', () => {
     vm.form.nomeNovaCasa = 'República Central'
     await vm.criarNovaCasa()
 
-    expect(fetchMock).toHaveBeenCalled()
-    expect(tenantSessionService.setActiveTenant).not.toHaveBeenCalled()
+    expect(tenantSessionService.criarCasa).toHaveBeenCalledWith('República Central')
+    expect(vm.activeTenantId.value).toBe('new-tenant-id')
     expect(reloadMock).not.toHaveBeenCalled()
     app.unmount()
   })
 
   it('deve entrar em uma casa por código de convite com sucesso', async () => {
-    fetchMock.mockImplementation((url: string) => {
-      if (url.includes('/financeiro/tenants/entrar')) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' })
-        })
-      }
-      return Promise.resolve({
-        ok: true,
-        json: async () => ({
-          tenants: [
-            { id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'CODE123' },
-            { id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' }
-          ]
-        })
-      })
-    })
+    const casaConvidada = { id: 'tenant-convidado', name: 'Casa Convidada', inviteCode: 'CONVITE12' }
+    tenantServiceMock.entrarCasa.mockResolvedValue(casaConvidada)
+    tenantServiceMock.getTenants.mockReturnValue([casaConvidada])
+    tenantServiceMock.getActiveTenantId.mockReturnValue(casaConvidada.id)
 
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
@@ -144,8 +114,8 @@ describe('useCasasMultitenant', () => {
     vm.form.codigoConvite = 'CONVITE12'
     await vm.entrarPorCodigo()
 
-    expect(fetchMock).toHaveBeenCalled()
-    expect(tenantSessionService.setActiveTenant).not.toHaveBeenCalled()
+    expect(tenantSessionService.entrarCasa).toHaveBeenCalledWith('CONVITE12')
+    expect(vm.activeTenantId.value).toBe('tenant-convidado')
     expect(reloadMock).not.toHaveBeenCalled()
     app.unmount()
   })
@@ -153,11 +123,6 @@ describe('useCasasMultitenant', () => {
   it('deve copiar o código de convite e dar feedback visual', async () => {
     vi.useFakeTimers()
     try {
-      fetchMock.mockResolvedValue({
-        ok: true,
-        json: async () => ({ tenants: [] })
-      })
-
       const [vm, app] = withSetup(() => useCasasMultitenant())
       await nextTick()
 
@@ -175,11 +140,6 @@ describe('useCasasMultitenant', () => {
   })
 
   it('deve deslogar e recarregar a tela', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ tenants: [] })
-    })
-
     const [vm, app] = withSetup(() => useCasasMultitenant())
     await nextTick()
 

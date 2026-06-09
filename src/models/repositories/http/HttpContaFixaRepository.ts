@@ -2,9 +2,17 @@ import { HttpBaseRepository } from './HttpBaseRepository'
 import type { ContaFixa } from '../../entities/ContaFixa'
 import type { IContaFixaRepository } from '../IContaFixaRepository'
 
+interface ContaFixaDto {
+  id: string
+  name: string
+  icon: string
+  fixedValueCentavos: number | string | null
+  defaultSplit: string[] | string | null
+}
+
 export class HttpContaFixaRepository extends HttpBaseRepository implements IContaFixaRepository {
   async listarTodas(): Promise<ContaFixa[]> {
-    const list = await this.request<any[]>('/financeiro/contas-fixas')
+    const list = await this.request<ContaFixaDto[]>('/financeiro/contas-fixas')
     return list.map(item => ({
       id: item.id,
       name: item.name,

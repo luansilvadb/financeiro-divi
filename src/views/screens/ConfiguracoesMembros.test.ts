@@ -5,7 +5,6 @@ import ConfiguracoesMembros from './ConfiguracoesMembros.vue'
 import { useMembros } from '../../viewmodels/useMembros'
 import { useCargos } from '../../viewmodels/useCargos'
 
-// Mock dos composables
 vi.mock('../../viewmodels/useMembros', () => ({
   useMembros: vi.fn()
 }))
@@ -111,7 +110,6 @@ describe('ConfiguracoesMembros', () => {
       }
     })
     
-    // Clica na aba Controle de Acesso para exibir a lista
     const botoes = wrapper.findAll('button')
     const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
     expect(botaoAcesso).toBeDefined()
@@ -140,7 +138,6 @@ describe('ConfiguracoesMembros', () => {
       }
     })
     
-    // Alterna para Controle de Acesso
     const botoes = wrapper.findAll('button')
     const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
     await botaoAcesso?.trigger('click')
@@ -195,15 +192,12 @@ describe('ConfiguracoesMembros', () => {
       }
     })
 
-    // Deve mostrar o nome estático inicialmente
     expect(wrapper.find('h3.truncate').text()).toBe('Luan')
 
-    // Deve encontrar o botão de editar e clicar nele
     const botaoEditar = wrapper.find('button[aria-label="Editar nome"]')
     expect(botaoEditar.exists()).toBe(true)
     await botaoEditar.trigger('click')
 
-    // O input do nome deve estar visível
     const inputNome = wrapper.find('input[type="text"]')
     expect(inputNome.exists()).toBe(true)
     expect((inputNome.element as HTMLInputElement).value).toBe('Luan')
@@ -229,18 +223,14 @@ describe('ConfiguracoesMembros', () => {
       }
     })
 
-    // Entra no modo de edição
     await wrapper.find('button[aria-label="Editar nome"]').trigger('click')
 
-    // Digita um novo nome no input
     const inputNome = wrapper.find('input[type="text"]')
     await inputNome.setValue('Luan Editado')
 
-    // Clicar em salvar
     const botaoSalvar = wrapper.find('button[aria-label="Salvar nome"]')
     await botaoSalvar.trigger('click')
 
-    // Deve chamar o mock com os argumentos corretos
     expect(mockAtualizarNomeMembro).toHaveBeenCalledWith('1', 'Luan Editado')
   })
 
@@ -264,16 +254,12 @@ describe('ConfiguracoesMembros', () => {
       }
     })
 
-    // Entra no modo de edição
     await wrapper.find('button[aria-label="Editar nome"]').trigger('click')
 
-    // O input deve estar visível
     expect(wrapper.find('input[type="text"]').exists()).toBe(true)
 
-    // Clica em cancelar
     await wrapper.find('button[aria-label="Cancelar edição"]').trigger('click')
 
-    // O input deve sumir e voltar o nome original estático
     expect(wrapper.find('input[type="text"]').exists()).toBe(false)
     expect(wrapper.find('h3.truncate').text()).toBe('Luan')
   })

@@ -1,9 +1,10 @@
 import { computed, type Ref } from 'vue'
 import { calcularSaldosUnificados, calcularTransacoesNetting } from '../models/services/NettingService'
+import type { Gasto } from '../models/entities/Gasto'
 
 export function useDashboardNetting(
   membros: Ref<{ id: string; nome: string; ativo?: boolean }[]>,
-  gastosSaldoReal: Ref<any[]>
+  gastosSaldoReal: Ref<Gasto[]>
 ) {
   const saldosUnificadosAtivosCentavos = computed(() =>
     calcularSaldosUnificados(membros.value, gastosSaldoReal.value)

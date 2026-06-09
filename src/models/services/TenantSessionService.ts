@@ -1,10 +1,36 @@
+export interface TenantSummary {
+  id: string
+  name: string
+  inviteCode: string
+}
+
+export interface InvitePreview {
+  id: string
+  name: string
+  membrosDisponiveis: { id: string; nome: string; avatar: string }[]
+}
+
+interface LoginResponse {
+  access_token: string
+  userId: string
+  username: string
+}
+
+interface SessionResponse {
+  tenants?: TenantSummary[]
+}
+
+const lerMensagemErro = async (response: Response, fallback: string): Promise<string> => {
+  const body = await response.json().catch(() => null) as { message?: string } | null
+  return body?.message || fallback
+}
+
 export class TenantSessionService {
   private activeTenantId: string | null = null
   private jwtToken: string | null = null
   private currentUserId: string | null = null
 
-  // Lista de casas do usuário (carregada após login/inicializarSessao)
-  tenants: { id: string; name: string; inviteCode: string }[] = []
+  private tenants: TenantSummary[] = []
 
   constructor() {
     this.activeTenantId = localStorage.getItem('divi_active_tenant_id')
@@ -25,12 +51,11 @@ export class TenantSessionService {
       })
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        console.error('Erro de login:', err.message || response.statusText)
+        console.error('Erro de login:', await lerMensagemErro(response, response.statusText))
         return false
       }
 
-      const data = await response.json()
+      const data = await response.json() as LoginResponse
       this.jwtToken = data.access_token
       this.currentUserId = data.userId
 
@@ -38,7 +63,6 @@ export class TenantSessionService {
       localStorage.setItem('divi_current_user_id', data.userId)
       localStorage.setItem('divi_username', data.username)
 
-      // Ao logar, vamos carregar os tenants associados a este usuário
       await this.carregarSessaoUsuario()
 
       return true
@@ -62,12 +86,10 @@ export class TenantSessionService {
       })
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        console.error('Erro de cadastro:', err.message || response.statusText)
+        console.error('Erro de cadastro:', await lerMensagemErro(response, response.statusText))
         return false
       }
 
-      // Após registrar, executa o login automático
       return this.login(username, passwordSecret)
     } catch (err) {
       console.error('Falha de conexão ao registrar:', err)
@@ -75,13 +97,12 @@ export class TenantSessionService {
     }
   }
 
-  async getInvitePreview(code: string): Promise<any> {
+  async getInvitePreview(code: string): Promise<InvitePreview> {
     const response = await fetch(`${this.baseUrl}/financeiro/tenants/invite/${code}`)
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || 'Convite inválido')
+      throw new Error(await lerMensagemErro(response, 'Convite inválido'))
     }
-    return response.json()
+    return response.json() as Promise<InvitePreview>
   }
 
   async logout(): Promise<void> {
@@ -123,8 +144,12 @@ export class TenantSessionService {
     return this.currentUserId
   }
 
+  getTenants(): TenantSummary[] {
+    return [...this.tenants]
+  }
+
   /** Cria uma nova casa e seleciona ela automaticamente */
-  async criarCasa(nome: string): Promise<{ id: string; name: string; inviteCode: string }> {
+  async criarCasa(nome: string): Promise<TenantSummary> {
     const response = await fetch(`${this.baseUrl}/financeiro/tenants`, {
       method: 'POST',
       headers: {
@@ -135,18 +160,17 @@ export class TenantSessionService {
     })
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || 'Erro ao criar a casa')
+      throw new Error(await lerMensagemErro(response, 'Erro ao criar a casa'))
     }
 
-    const tenant = await response.json()
+    const tenant = await response.json() as TenantSummary
     this.setActiveTenant(tenant.id)
-    this.tenants = [...this.tenants, { id: tenant.id, name: tenant.name, inviteCode: tenant.inviteCode }]
+    this.tenants = [...this.tenants, tenant]
     return tenant
   }
 
   /** Entra em uma casa existente pelo código de convite */
-  async entrarCasa(inviteCode: string): Promise<{ id: string; name: string; inviteCode: string }> {
+  async entrarCasa(inviteCode: string): Promise<TenantSummary> {
     const response = await fetch(`${this.baseUrl}/financeiro/tenants/entrar`, {
       method: 'POST',
       headers: {
@@ -157,14 +181,13 @@ export class TenantSessionService {
     })
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.message || 'Código de convite inválido ou casa não encontrada.')
+      throw new Error(await lerMensagemErro(response, 'Código de convite inválido ou casa não encontrada.'))
     }
 
-    const tenant = await response.json()
+    const tenant = await response.json() as TenantSummary
     this.setActiveTenant(tenant.id)
     if (!this.tenants.find(t => t.id === tenant.id)) {
-      this.tenants = [...this.tenants, { id: tenant.id, name: tenant.name, inviteCode: tenant.inviteCode }]
+      this.tenants = [...this.tenants, tenant]
     }
     return tenant
   }
@@ -178,17 +201,20 @@ export class TenantSessionService {
         }
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        this.tenants = data.tenants || []
-        if (data.tenants && data.tenants.length > 0) {
-          // Se o usuário já participa de tenants mas não tem activeTenantId ativo, seleciona o primeiro
-          if (!this.activeTenantId || !data.tenants.some((t: any) => t.id === this.activeTenantId)) {
-            this.setActiveTenant(data.tenants[0].id)
-          }
-        } else {
-          this.setActiveTenant('')
-        }
+      if (response.status === 401) {
+        await this.logout()
+        return
+      }
+      if (!response.ok) return
+
+      const data = await response.json() as SessionResponse
+      this.tenants = data.tenants || []
+      if (this.tenants.length === 0) {
+        this.setActiveTenant('')
+        return
+      }
+      if (!this.activeTenantId || !this.tenants.some(t => t.id === this.activeTenantId)) {
+        this.setActiveTenant(this.tenants[0].id)
       }
     } catch (err) {
       console.error('Falha ao carregar sessão do usuário:', err)

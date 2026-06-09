@@ -1,11 +1,24 @@
 import { HttpBaseRepository } from './HttpBaseRepository'
 import { Membro } from '../../entities/Membro'
 import { Cargo } from '../../entities/Cargo'
+import type { MembroRole } from '../../entities/Membro'
 import type { IMembroRepository } from '../IMembroRepository'
+
+interface MembroDto {
+  id: string
+  nome: string
+  ativo?: boolean
+  role?: MembroRole
+  cargoId?: string
+  cargo?: { id: string; nome: string; cor?: string; permissoes?: string[] }
+  createdAt?: string
+  userId?: string
+  username?: string
+}
 
 export class HttpMembroRepository extends HttpBaseRepository implements IMembroRepository {
   async listarTodos(): Promise<Membro[]> {
-    const list = await this.request<any[]>('/financeiro/membros')
+    const list = await this.request<MembroDto[]>('/financeiro/membros')
     return list.map(item => new Membro({
       id: item.id,
       nome: item.nome,

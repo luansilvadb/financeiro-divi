@@ -9,7 +9,6 @@ const emit = defineEmits<{ (e: 'update:modelValue', tab: Tab): void }>()
 
 const tabs = [
   { id: 'hoje', label: 'Hoje', icon: Home },
-  // Espaço central será ocupado pelo FAB no App.vue
   { id: 'faturas', label: 'Faturas', icon: CreditCard },
 ] as const
 </script>

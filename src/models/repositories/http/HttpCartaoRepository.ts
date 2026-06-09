@@ -2,6 +2,8 @@ import { HttpBaseRepository } from './HttpBaseRepository'
 import { Cartao } from '../../entities/Cartao'
 import type { ICartaoRepository } from '../ICartaoRepository'
 
+type CartaoDto = ConstructorParameters<typeof Cartao>[0]
+
 export class HttpCartaoRepository extends HttpBaseRepository implements ICartaoRepository {
   async buscarPorId(id: string): Promise<Cartao | null> {
     const list = await this.listarTodos()
@@ -21,7 +23,7 @@ export class HttpCartaoRepository extends HttpBaseRepository implements ICartaoR
   }
 
   async listarTodos(): Promise<Cartao[]> {
-    const list = await this.request<any[]>('/financeiro/cartoes')
+    const list = await this.request<CartaoDto[]>('/financeiro/cartoes')
     return list.map(item => new Cartao({
       id: item.id,
       nome: item.nome,

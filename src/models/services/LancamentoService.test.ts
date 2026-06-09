@@ -94,17 +94,14 @@ describe('LancamentoService', () => {
       periodo: { mes: 5, ano: 2026 }
     })
 
-    // Deve salvar os 3 gastos parcelados (o primeiro e as outras duas projeções)
     expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
     const gastosSalvos = mockGastoRepo.salvarMuitos.mock.calls[0][0] as Gasto[]
     expect(gastosSalvos.length).toBe(3)
     
-    // As parcelas devem estar nos períodos 5/2026, 6/2026 e 7/2026
     expect(gastosSalvos[0].faturaId).toBe('f-c1-5-2026')
     expect(gastosSalvos[1].faturaId).toBe('c1-6-2026')
     expect(gastosSalvos[2].faturaId).toBe('c1-7-2026')
 
-    // Deve criar e salvar as faturas futuras na memória
     expect(mockFaturaRepo.salvarMuitas).toHaveBeenCalledTimes(1)
     const faturasSalvas = mockFaturaRepo.salvarMuitas.mock.calls[0][0] as Fatura[]
     expect(faturasSalvas.length).toBe(2)

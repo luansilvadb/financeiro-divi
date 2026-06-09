@@ -6,6 +6,7 @@ import { User, Shield, Plus, ChevronRight, Edit2, Check, X } from 'lucide-vue-ne
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../composables/useToast'
 import { Membro, type MembroRole } from '../../models/entities/Membro'
+import { Cargo } from '../../models/entities/Cargo'
 import Button from '../components/ui/Button.vue'
 import BottomSheet from '../components/ui/BottomSheet.vue'
 import MembroListItem from '../components/ledger/membros/MembroListItem.vue'
@@ -13,6 +14,7 @@ import MembroFormBottomSheet from '../components/ledger/membros/MembroFormBottom
 import CargoFormBottomSheet from '../components/ledger/membros/CargoFormBottomSheet.vue'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import ConfiguracoesCartoes from '../components/ledger/ConfiguracoesCartoes.vue'
+import { mensagemErro } from '../../shared/utils/mensagemErro'
 
 const emit = defineEmits(['voltar', 'logout'])
 
@@ -39,18 +41,19 @@ const toast = useToast()
 
 const variants: ('ember' | 'sky' | 'sunburst' | 'flamingo' | 'meadow')[] = ['ember', 'sky', 'sunburst', 'flamingo', 'meadow']
 
-// Subcomponent Refs
-const membroFormRef = ref<any>(null)
-const cargoFormRef = ref<any>(null)
+type FormExpose = { resetForm: () => void }
+interface NovoMembroDados { nome: string; username: string; password: string }
+interface SalvarCargoDados { id?: string; nome: string; permissoes: string[]; cor?: string }
 
-// Membro selecionado para edição
+const membroFormRef = ref<FormExpose | null>(null)
+const cargoFormRef = ref<FormExpose | null>(null)
+
 const mostrarBottomSheet = ref(false)
 const membroSelecionado = ref<Membro | null>(null)
 const cargoSelecionadoId = ref<string | null>(null)
 const ativoSelecionado = ref(true)
 const salvando = ref(false)
 
-// Estado da aba ativa
 const activeTab = ref<'perfil' | 'acesso'>('perfil')
 
 const podeGerenciarMoradores = computed(() => {
@@ -99,8 +102,8 @@ const handleSalvarEdicao = async () => {
     
     toast.show('Alterações salvas com sucesso', 'success')
     mostrarBottomSheet.value = false
-  } catch (error: any) {
-    toast.show(error.message || 'Erro ao salvar alterações', 'error')
+  } catch (error: unknown) {
+    toast.show(mensagemErro(error, 'Erro ao salvar alterações'), 'error')
   } finally {
     salvando.value = false
   }
@@ -110,27 +113,25 @@ const handleLogout = () => {
   emit('logout')
 }
 
-// Novo Membro
 const novoMembroFormAberto = ref(false)
 const abrirNovoMembroForm = () => {
   membroFormRef.value?.resetForm()
   novoMembroFormAberto.value = true
 }
 
-const handleAdicionarMembro = async (dados: any) => {
+const handleAdicionarMembro = async (dados: NovoMembroDados) => {
   try {
     await adicionarMembro(dados.nome, dados.username, dados.password)
     toast.show('Membro adicionado com sucesso', 'success')
     novoMembroFormAberto.value = false
-  } catch (error: any) {
-    toast.show(error.message || 'Erro ao adicionar membro', 'error')
+  } catch (error: unknown) {
+    toast.show(mensagemErro(error, 'Erro ao adicionar membro'), 'error')
   }
 }
 
-// Cargos
 const novoCargoFormAberto = ref(false)
 const cargoSendoEditadoId = ref<string | null>(null)
-const cargoSendoEditado = ref<any>(null)
+const cargoSendoEditado = ref<Cargo | null>(null)
 
 const permissoesDisponiveis = [
   { chave: 'GERENCIAR_MORADORES', label: 'Gerenciar Moradores', desc: 'Permite adicionar, editar e desativar outros moradores da casa.' },
@@ -148,19 +149,19 @@ const abrirNovoCargoForm = () => {
   novoCargoFormAberto.value = true
 }
 
-const iniciarEdicaoCargo = (cargo: any) => {
+const iniciarEdicaoCargo = (cargo: Cargo) => {
   cargoSendoEditadoId.value = cargo.id
   cargoSendoEditado.value = cargo
   cargoFormRef.value?.resetForm()
   novoCargoFormAberto.value = true
 }
 
-const handleSalvarCargo = async (dados: any) => {
+const handleSalvarCargo = async (dados: SalvarCargoDados) => {
   try {
     await salvarCargo(dados.nome, dados.permissoes, dados.cor, dados.id)
     toast.show(dados.id ? 'Cargo atualizado' : 'Cargo criado', 'success')
     novoCargoFormAberto.value = false
-  } catch (error: any) {
+  } catch {
     toast.show('Erro ao salvar cargo', 'error')
   }
 }
@@ -170,12 +171,11 @@ const handleExcluirCargo = async (id: string) => {
     await excluirCargo(id)
     toast.show('Cargo excluído', 'success')
     novoCargoFormAberto.value = false
-  } catch (error: any) {
+  } catch {
     toast.show('Erro ao excluir cargo', 'error')
   }
 }
 
-// Edição de Perfil Pessoal
 const editandoNome = ref(false)
 const nomeEditado = ref('')
 const salvandoNome = ref(false)
@@ -208,8 +208,8 @@ const handleSalvarNome = async () => {
     await atualizarNomeMembro(currentMembro.value.id, nomeLimpo)
     toast.show('Nome atualizado com sucesso', 'success')
     editandoNome.value = false
-  } catch (error: any) {
-    toast.show(error.message || 'Erro ao salvar nome', 'error')
+  } catch (error: unknown) {
+    toast.show(mensagemErro(error, 'Erro ao salvar nome'), 'error')
   } finally {
     salvandoNome.value = false
   }

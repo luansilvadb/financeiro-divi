@@ -19,7 +19,6 @@ vi.mock('../composables/useToast', () => {
   }
 })
 
-// Mocks para os composables de suporte
 const mockCartoesEFaturas = {
   registrarReembolsoParcialManual: vi.fn(),
   fecharFatura: vi.fn(),

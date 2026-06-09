@@ -1,36 +1,31 @@
-/**
- * Recursively converts BigInt values to Numbers within an object or array.
- * This version maintains purity (no mutation) while optimizing traversal performance.
- *
- * @param obj The object or array to serialize
- * @returns A new object/array with BigInts converted to Numbers
- */
-export function serializeBigInt(obj: any): any {
-  // Fast path for null, undefined, and non-object primitives
+export type Serialized<T> =
+  T extends bigint ? number :
+  T extends Date ? T :
+  T extends ReadonlyArray<infer Item> ? Serialized<Item>[] :
+  T extends object ? { [Key in keyof T]: Serialized<T[Key]> } :
+  T;
+
+export function serializeBigInt<T>(obj: T): Serialized<T> {
   if (obj === null || typeof obj !== 'object') {
-    return typeof obj === 'bigint' ? Number(obj) : obj;
+    return (typeof obj === 'bigint' ? Number(obj) : obj) as Serialized<T>;
   }
 
-  // Preserve Date objects (fixes bug where they became empty objects)
-  if (obj instanceof Date) return obj;
+  if (obj instanceof Date) return obj as Serialized<T>;
 
-  // Clone and process arrays
   if (Array.isArray(obj)) {
-    const len = obj.length;
-    const newArr = new Array(len);
-    for (let i = 0; i < len; i++) {
-      newArr[i] = serializeBigInt(obj[i]);
+    const serialized: unknown[] = new Array(obj.length);
+    for (let index = 0; index < obj.length; index++) {
+      serialized[index] = serializeBigInt(obj[index]);
     }
-    return newArr;
+    return serialized as Serialized<T>;
   }
 
-  // Clone and process objects using a more efficient loop than Object.keys().map()
-  const newObj: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      newObj[key] = serializeBigInt(obj[key]);
+  const record = obj as Record<string, unknown>;
+  const serialized: Record<string, unknown> = {};
+  for (const key in record) {
+    if (Object.prototype.hasOwnProperty.call(record, key)) {
+      serialized[key] = serializeBigInt(record[key]);
     }
   }
-
-  return newObj;
+  return serialized as Serialized<T>;
 }

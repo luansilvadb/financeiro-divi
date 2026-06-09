@@ -8,6 +8,7 @@ import { gastoService } from '../../shared/container'
 import Button from '../components/ui/Button.vue'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import { useToast } from '../../composables/useToast'
+import { mensagemErro } from '../../shared/utils/mensagemErro'
 import {
   Wallet,
   CreditCard,
@@ -125,9 +126,9 @@ const handleGravar = async () => {
       periodo: obterPeriodoSelecionado()
     })
     emit('salvar')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro ao salvar lançamento:', error)
-    toast.show(error.message || 'Não foi possível salvar o lançamento.', 'error')
+    toast.show(mensagemErro(error, 'Não foi possível salvar o lançamento.'), 'error')
   } finally {
     isSubmitting.value = false
   }

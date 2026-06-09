@@ -42,7 +42,7 @@ export class SocketService {
     this.currentTenantId = null
   }
 
-  on(event: string, callback: (payload?: any) => void): void {
+  on(event: string, callback: (payload?: unknown) => void): void {
     if (this.socket) {
       this.socket.off(event)
       this.socket.on(event, callback)

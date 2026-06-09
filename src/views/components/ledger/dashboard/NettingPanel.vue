@@ -3,15 +3,16 @@ import { Sparkles, ArrowRight } from 'lucide-vue-next'
 import Card from '../../ui/Card.vue'
 import Button from '../../ui/Button.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
+import type { TransferenciaNetting } from '../../../../models/services/NettingService'
 
 defineProps<{
-  nettingTransferencias: any[]
+  nettingTransferencias: TransferenciaNetting[]
   faturaSelecionadaFechada: boolean
   getMembroNome: (id: string) => string
 }>()
 
 const emit = defineEmits<{
-  (e: 'abrirNetting', transferencia: any): void
+  (e: 'abrirNetting', transferencia: TransferenciaNetting): void
 }>()
 </script>
 

@@ -14,6 +14,7 @@ import { CargoCasaDto } from './dto/cargo-casa.dto';
 import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
@@ -35,7 +36,7 @@ export class FinanceiroController {
   @ApiCreatedResponse({ description: 'Tenant criado com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados de entrada inválidos' })
   @Post('tenants')
-  async criarTenant(@Body() criarTenantDto: CriarTenantDto, @Request() req: any) {
+  async criarTenant(@Body() criarTenantDto: CriarTenantDto, @Request() req: AuthenticatedRequest) {
     return this.financeiroService.criarTenant(criarTenantDto.name, req.user.userId);
   }
 
@@ -43,7 +44,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Acesso ao tenant concedido com sucesso' })
   @ApiBadRequestResponse({ description: 'Código de convite inválido ou tenant inexistente' })
   @Post('tenants/entrar')
-  async entrarTenantPorCodigo(@Body() entrarTenantDto: EntrarTenantDto, @Request() req: any) {
+  async entrarTenantPorCodigo(@Body() entrarTenantDto: EntrarTenantDto, @Request() req: AuthenticatedRequest) {
     return this.financeiroService.entrarTenantPorCodigo(entrarTenantDto.inviteCode, req.user.userId);
   }
 

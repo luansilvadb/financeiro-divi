@@ -3,11 +3,18 @@ import { ref, watch, nextTick } from 'vue'
 import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
 import { ChevronDown, Lock } from 'lucide-vue-next'
+import type { Fatura } from '../../../../models/entities/Fatura'
+import type { DashboardViewModel } from '../../../../viewmodels/useDashboardViewModel'
+
+type HistoricoViewModel = Pick<
+  DashboardViewModel,
+  'periodoSelecionado' | 'setPeriodoSelecionado' | 'mesesAbertosOpcoes' | 'mesesTrancadosOpcoes' | 'formatarMesAno'
+>
 
 const props = defineProps<{
   visible: boolean
-  vm: any
-  faturasFechadas: any[]
+  vm: HistoricoViewModel
+  faturasFechadas: Fatura[]
 }>()
 
 const emit = defineEmits(['close'])

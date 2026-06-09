@@ -1,10 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { serializeBigInt } from '../shared/utils/serialization';
 import { randomUUID } from 'crypto';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
+import { MembroDto } from './dto/membro.dto';
+import { CargoCasaDto } from './dto/cargo-casa.dto';
+import { CartaoDto } from './dto/cartao.dto';
+import { FaturaDto } from './dto/fatura.dto';
+import { GastoDto } from './dto/gasto.dto';
+import { ContaFixaDto } from './dto/conta-fixa.dto';
 
 @Injectable()
 export class FinanceiroService {
@@ -67,27 +73,27 @@ export class FinanceiroService {
       where: { inviteCode: cleanedCode },
     });
 
-    if (!tenant) {
-      throw new NotFoundException('Código de convite inválido ou casa não encontrada.');
-    }
+    if (!tenant) throw new NotFoundException('Código de convite inválido ou casa não encontrada.');
 
-    const existing = await this.prisma.membroCasa.findFirst({
-      where: {
-        tenantId: tenant.id,
-        userId,
-      },
+    const isMemberAlready = await this.prisma.membroCasa.findFirst({
+      where: { tenantId: tenant.id, userId },
     });
 
-    if (existing) {
-      return serializeBigInt(tenant);
-    }
+    if (isMemberAlready) return serializeBigInt(tenant);
 
+    await this.vincularOuCriarMembroAoSistema(tenant.id, userId);
+
+    this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
+    return serializeBigInt(tenant);
+  }
+
+  private async vincularOuCriarMembroAoSistema(tenantId: string, userId: string) {
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
     const username = user ? user.username : 'Convidado';
 
     const perfilExistente = await this.prisma.membroCasa.findFirst({
       where: {
-        tenantId: tenant.id,
+        tenantId,
         nome: { equals: username, mode: 'insensitive' },
         userId: null,
       },
@@ -95,26 +101,21 @@ export class FinanceiroService {
 
     if (perfilExistente) {
       await this.prisma.membroCasa.update({
-        where: {
-          id_tenantId: { id: perfilExistente.id, tenantId: tenant.id },
-        },
+        where: { id_tenantId: { id: perfilExistente.id, tenantId } },
         data: { userId },
       });
-    } else {
-      await this.prisma.membroCasa.create({
-        data: {
-          id: `membro-${randomUUID()}`,
-          tenantId: tenant.id,
-          nome: username,
-          avatar: username.substring(0, 2).toUpperCase(),
-          userId,
-        },
-      });
+      return;
     }
 
-    this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
-
-    return serializeBigInt(tenant);
+    await this.prisma.membroCasa.create({
+      data: {
+        id: `membro-${randomUUID()}`,
+        tenantId,
+        nome: username,
+        avatar: username.substring(0, 2).toUpperCase(),
+        userId,
+      },
+    });
   }
 
   async listarMembros(tenantId: string) {
@@ -127,79 +128,66 @@ export class FinanceiroService {
     return serializeBigInt(membros);
   }
 
-  async salvarMembro(tenantId: string, membroData: any) {
-    let { id, nome, avatar, userId, username, password, ativo, role, cargoId } = membroData;
+  async salvarMembro(tenantId: string, membroData: MembroDto) {
+    const { id, nome, avatar, username, password, ativo, role, cargoId } = membroData;
+    let { userId } = membroData;
+
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
     const isActive = ativo !== undefined ? ativo : true;
     const memberRole = role || Role.MORADOR;
     const finalCargoId = memberRole === Role.ADMIN ? null : (cargoId || null);
 
-    // Lógica para evitar que a moradia fique sem administrador ativo
-    const membroAtual = await this.prisma.membroCasa.findUnique({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
-    });
-
-    if (!membroAtual) {
-      if (!username || !username.trim() || !password || !password.trim()) {
-        throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
-      }
-    } else {
-      if (membroAtual.role === Role.ADMIN && membroAtual.ativo) {
-        if (!isActive || memberRole !== Role.ADMIN) {
-          const adminsAtivos = await this.prisma.membroCasa.count({
-            where: {
-              tenantId,
-              role: Role.ADMIN,
-              ativo: true,
-            },
-          });
-          if (adminsAtivos <= 1) {
-            throw new BadRequestException('A moradia precisa ter pelo menos um administrador ativo.');
-          }
-        }
-      }
-    }
+    await this.validarRegrasSalvarMembro(tenantId, id, username, password, memberRole, isActive);
 
     if (!userId && username && password) {
-      try {
-        const newUser = await this.authService.register(username, password);
-        userId = newUser.userId;
-      } catch (err) {
-        throw err;
-      }
+      const newUser = await this.authService.register(username, password);
+      userId = newUser.userId;
     }
 
     const upserted = await this.prisma.membroCasa.upsert({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
+      where: { id_tenantId: { id, tenantId } },
       create: {
-        id,
-        tenantId,
-        nome,
-        avatar: defaultAvatar,
-        ativo: isActive,
-        role: memberRole,
-        cargoId: finalCargoId,
-        userId,
+        id, tenantId, nome, avatar: defaultAvatar,
+        ativo: isActive, role: memberRole, cargoId: finalCargoId, userId,
       },
       update: {
-        nome,
-        avatar: defaultAvatar,
-        ativo: isActive,
-        role: memberRole,
-        cargoId: finalCargoId,
-        userId,
+        nome, avatar: defaultAvatar,
+        ativo: isActive, role: memberRole, cargoId: finalCargoId, userId,
       },
-      include: {
-        cargo: true,
-      },
+      include: { cargo: true },
     });
+
     const result = serializeBigInt(upserted);
     this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
     return result;
+  }
+
+  private async validarRegrasSalvarMembro(
+    tenantId: string, id: string, username?: string, password?: string,
+    newRole?: Role, isActive?: boolean
+  ) {
+    const membroAtual = await this.prisma.membroCasa.findUnique({
+      where: { id_tenantId: { id, tenantId } },
+    });
+
+    if (!membroAtual) {
+      if (!username?.trim() || !password?.trim()) {
+        throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
+      }
+      return;
+    }
+
+    const isAdminAtivo = membroAtual.role === Role.ADMIN && membroAtual.ativo;
+    const isLosingAdmin = !isActive || newRole !== Role.ADMIN;
+
+    if (isAdminAtivo && isLosingAdmin) {
+      const adminsAtivos = await this.prisma.membroCasa.count({
+        where: { tenantId, role: Role.ADMIN, ativo: true },
+      });
+      if (adminsAtivos <= 1) {
+        throw new BadRequestException('A moradia precisa ter pelo menos um administrador ativo.');
+      }
+    }
   }
 
   async listarCargos(tenantId: string) {
@@ -214,7 +202,7 @@ export class FinanceiroService {
     return serializeBigInt(cargos);
   }
 
-  async salvarCargo(tenantId: string, cargoData: any) {
+  async salvarCargo(tenantId: string, cargoData: CargoCasaDto) {
     const { id, nome, cor, permissoes } = cargoData;
     const cargoId = id || `cargo-${randomUUID()}`;
     const upserted = await this.prisma.cargoCasa.upsert({
@@ -239,7 +227,6 @@ export class FinanceiroService {
   }
 
   async excluirCargo(tenantId: string, id: string) {
-    // Desvincula os membros associados a este cargo setando cargoId como null
     await this.prisma.membroCasa.updateMany({
       where: {
         tenantId,
@@ -266,7 +253,7 @@ export class FinanceiroService {
     return serializeBigInt(cartoes);
   }
 
-  async salvarCartao(tenantId: string, cartaoData: any) {
+  async salvarCartao(tenantId: string, cartaoData: CartaoDto) {
     const { id, nome, diaFechamento, responsavelPadraoId } = cartaoData;
     const upserted = await this.prisma.cartao.upsert({
       where: {
@@ -307,7 +294,7 @@ export class FinanceiroService {
     return serializeBigInt(faturas);
   }
 
-  async salvarFatura(tenantId: string, faturaData: any) {
+  async salvarFatura(tenantId: string, faturaData: FaturaDto) {
     const { id, cartaoId, mes, ano, responsavelId, status, dataPagamentoBanco } = faturaData;
     const upserted = await this.prisma.fatura.upsert({
       where: {
@@ -334,7 +321,7 @@ export class FinanceiroService {
     return result;
   }
 
-  async salvarMuitasFaturas(tenantId: string, faturasList: any[]) {
+  async salvarMuitasFaturas(tenantId: string, faturasList: FaturaDto[]) {
     const operations = faturasList.map(f => {
       const { id, cartaoId, mes, ano, responsavelId, status, dataPagamentoBanco } = f;
       return this.prisma.fatura.upsert({
@@ -372,7 +359,7 @@ export class FinanceiroService {
     return serializeBigInt(gastos);
   }
 
-  private async upsertGastoTx(tx: any, tenantId: string, g: any) {
+  private async upsertGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
     const {
       id,
       faturaId,
@@ -414,7 +401,7 @@ export class FinanceiroService {
 
     if (divisoes && divisoes.length > 0) {
       await tx.divisaoGasto.createMany({
-        data: divisoes.map((d: any) => ({
+        data: divisoes.map(d => ({
           tenantId,
           gastoId: id,
           membroId: d.membroId,
@@ -429,7 +416,7 @@ export class FinanceiroService {
     });
   }
 
-  async salvarGasto(tenantId: string, gastoData: any) {
+  async salvarGasto(tenantId: string, gastoData: GastoDto) {
     const result = await this.prisma.$transaction(async (tx) => {
       return this.upsertGastoTx(tx, tenantId, gastoData);
     });
@@ -438,7 +425,7 @@ export class FinanceiroService {
     return serialized;
   }
 
-  async salvarMuitosGastos(tenantId: string, gastosList: any[]) {
+  async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[]) {
     const result = await this.prisma.$transaction(async (tx) => {
       return Promise.all(gastosList.map(g => this.upsertGastoTx(tx, tenantId, g)));
     });
@@ -475,7 +462,7 @@ export class FinanceiroService {
     return serializeBigInt(contas);
   }
 
-  async salvarContaFixa(tenantId: string, contaData: any) {
+  async salvarContaFixa(tenantId: string, contaData: ContaFixaDto) {
     const { id, name, icon, fixedValueCentavos, defaultSplit } = contaData;
     const upserted = await this.prisma.contaFixa.upsert({
       where: {

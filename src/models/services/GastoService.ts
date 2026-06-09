@@ -6,7 +6,7 @@ import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import type { Fatura } from '../entities/Fatura'
 import { LancamentoService } from './LancamentoService'
-import { resolverCartao } from './CartaoResolver'
+import { resolverCartao, type CartaoResolvido } from './CartaoResolver'
 
 export interface LancarGastoInput {
   flow: 'expense' | 'loan'
@@ -91,7 +91,7 @@ export class GastoService {
     if (!original) throw new Error('Gasto não encontrado')
 
     const todosCartoes = (await this.cartaoRepo.listarTodos()) || []
-    const { cardOwner: resolvedCardOwner } = resolverCartao(
+    const cartaoResolvido = resolverCartao(
       dados.method,
       dados.cardOwner,
       dados.compradorId,
@@ -99,81 +99,150 @@ export class GastoService {
     )
 
     if (original.grupoParcelasId) {
-      const todosGastos = await this.gastoRepo.listarTodos()
-      const gastosDoGrupo = todosGastos.filter(g => g.grupoParcelasId === original.grupoParcelasId)
-      
-      if (original.totalInstallments !== dados.installments || original.method !== dados.method) {
-        const primeiraParcela = gastosDoGrupo.reduce((prev, curr) => curr.installments > prev.installments ? curr : prev, gastosDoGrupo[0] || original)
-        const faturaOriginal = await this.faturaRepo.buscarPorId(primeiraParcela.faturaId)
-        if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${gastoId}`)
-        
-        await this.gastoRepo.excluirMuitos(gastosDoGrupo.map(g => g.id))
-        
-        await this.lancarGastoOuEmprestimo({
-          flow: original.isLoan ? 'loan' : 'expense',
-          paymentMethod: dados.method,
-          compradorId: dados.compradorId,
-          valor: dados.valorTotal.centavos / 100,
-          descricao: dados.descricao,
-          divisoes: dados.divisoes,
-          installments: dados.installments,
-          cardOwnerId: dados.cardOwner,
-          borrowerId: original.borrowerId,
-          periodo: faturaOriginal.periodo
-        })
-      } else {
-        const faturasParaSalvar: Fatura[] = []
-        const gastosParaSalvar: Gasto[] = []
-        const todasFaturasPersistidas = await this.faturaRepo.listarTodas()
-
-        for (const g of gastosDoGrupo) {
-          let novaFaturaId = g.faturaId
-          const fat = await this.faturaRepo.buscarPorId(novaFaturaId)
-          if (fat) {
-            const { cartaoId, responsavelFaturaId } = resolverCartao(
-              dados.method,
-              dados.cardOwner,
-              dados.compradorId,
-              todosCartoes
-            )
-            const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(cartaoId, fat.periodo.mes, fat.periodo.ano, responsavelFaturaId, faturasParaSalvar, todasFaturasPersistidas)
-            novaFaturaId = novaFatura.id
-          }
-
-          gastosParaSalvar.push(new Gasto({
-            id: g.id, faturaId: novaFaturaId, descricao: dados.descricao, valorTotal: dados.valorTotal, compradorId: dados.compradorId, divisoes: dados.divisoes, method: dados.method, cardOwner: resolvedCardOwner, installments: g.installments, totalInstallments: g.totalInstallments, grupoParcelasId: g.grupoParcelasId, isLoan: g.isLoan, borrowerId: g.borrowerId, recurringBillId: g.recurringBillId, isSettlement: g.isSettlement, settlementDetails: g.settlementDetails
-          }))
-        }
-        if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
-        if (gastosParaSalvar.length > 0) await this.gastoRepo.salvarMuitos(gastosParaSalvar)
-      }
-    } else if (dados.method === 'card' && dados.installments > 1) {
-      const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
-      if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${gastoId}`)
-      
-      await this.gastoRepo.excluir(original.id)
-      await this.lancarGastoOuEmprestimo({
-        flow: original.isLoan ? 'loan' : 'expense', paymentMethod: dados.method, compradorId: dados.compradorId, valor: dados.valorTotal.centavos / 100, descricao: dados.descricao, divisoes: dados.divisoes, installments: dados.installments, cardOwnerId: dados.cardOwner, borrowerId: original.borrowerId, periodo: faturaOriginal.periodo
-      })
-    } else {
-      const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
-      let novaFaturaId = original.faturaId
-      
-      if (faturaOriginal) {
-        const { cartaoId, responsavelFaturaId } = resolverCartao(
-          dados.method,
-          dados.cardOwner,
-          dados.compradorId,
-          todosCartoes
-        )
-        const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, faturaOriginal.periodo.mes, faturaOriginal.periodo.ano, responsavelFaturaId)
-        novaFaturaId = novaFatura.id
-      }
-
-      await this.gastoRepo.salvar(new Gasto({
-        id: original.id, faturaId: novaFaturaId, descricao: dados.descricao, valorTotal: dados.valorTotal, compradorId: dados.compradorId, divisoes: dados.divisoes, method: dados.method, cardOwner: resolvedCardOwner, installments: dados.installments, totalInstallments: dados.installments, isLoan: original.isLoan, borrowerId: original.borrowerId, recurringBillId: original.recurringBillId, isSettlement: original.isSettlement, settlementDetails: original.settlementDetails
-      }))
+      await this.atualizarGrupoParcelas(original, dados, cartaoResolvido)
+      return
     }
+
+    if (dados.method === 'card' && dados.installments > 1) {
+      await this.relancarGasto(original, [original.id], dados)
+      return
+    }
+
+    await this.atualizarGastoIndividual(original, dados, cartaoResolvido)
+  }
+
+  private async atualizarGrupoParcelas(
+    original: Gasto,
+    dados: AtualizarGastoDados,
+    cartaoResolvido: CartaoResolvido
+  ): Promise<void> {
+    const gastosDoGrupo = (await this.gastoRepo.listarTodos())
+      .filter(g => g.grupoParcelasId === original.grupoParcelasId)
+
+    const estruturaMudou = original.totalInstallments !== dados.installments || original.method !== dados.method
+    if (estruturaMudou) {
+      const primeiraParcela = gastosDoGrupo.reduce(
+        (anterior, atual) => atual.installments > anterior.installments ? atual : anterior,
+        gastosDoGrupo[0] || original
+      )
+      await this.relancarGasto(primeiraParcela, gastosDoGrupo.map(g => g.id), dados)
+      return
+    }
+
+    await this.salvarParcelasAtualizadas(gastosDoGrupo, dados, cartaoResolvido)
+  }
+
+  private async relancarGasto(original: Gasto, idsParaExcluir: string[], dados: AtualizarGastoDados): Promise<void> {
+    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+    if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${original.id}`)
+
+    if (idsParaExcluir.length === 1) await this.gastoRepo.excluir(idsParaExcluir[0])
+    else await this.gastoRepo.excluirMuitos(idsParaExcluir)
+
+    await this.lancarGastoOuEmprestimo({
+      flow: original.isLoan ? 'loan' : 'expense',
+      paymentMethod: dados.method,
+      compradorId: dados.compradorId,
+      valor: dados.valorTotal.centavos / 100,
+      descricao: dados.descricao,
+      divisoes: dados.divisoes,
+      installments: dados.installments,
+      cardOwnerId: dados.cardOwner,
+      borrowerId: original.borrowerId,
+      periodo: faturaOriginal.periodo
+    })
+  }
+
+  private async salvarParcelasAtualizadas(
+    gastos: Gasto[],
+    dados: AtualizarGastoDados,
+    cartaoResolvido: CartaoResolvido
+  ): Promise<void> {
+    const faturasParaSalvar: Fatura[] = []
+    const gastosParaSalvar: Gasto[] = []
+    const faturasPersistidas = await this.faturaRepo.listarTodas()
+
+    for (const gasto of gastos) {
+      const faturaAtual = await this.faturaRepo.buscarPorId(gasto.faturaId)
+      let faturaId = gasto.faturaId
+      if (faturaAtual) {
+        const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(
+          cartaoResolvido.cartaoId,
+          faturaAtual.periodo.mes,
+          faturaAtual.periodo.ano,
+          cartaoResolvido.responsavelFaturaId,
+          faturasParaSalvar,
+          faturasPersistidas
+        )
+        faturaId = novaFatura.id
+      }
+      gastosParaSalvar.push(this.criarGastoAtualizado(
+        gasto,
+        dados,
+        faturaId,
+        cartaoResolvido.cardOwner,
+        gasto.installments,
+        gasto.totalInstallments
+      ))
+    }
+
+    if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
+    if (gastosParaSalvar.length > 0) await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+  }
+
+  private async atualizarGastoIndividual(
+    original: Gasto,
+    dados: AtualizarGastoDados,
+    cartaoResolvido: CartaoResolvido
+  ): Promise<void> {
+    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+    let faturaId = original.faturaId
+    if (faturaOriginal) {
+      const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(
+        cartaoResolvido.cartaoId,
+        faturaOriginal.periodo.mes,
+        faturaOriginal.periodo.ano,
+        cartaoResolvido.responsavelFaturaId
+      )
+      faturaId = novaFatura.id
+    }
+
+    await this.gastoRepo.salvar(this.criarGastoAtualizado(
+      original,
+      dados,
+      faturaId,
+      cartaoResolvido.cardOwner,
+      dados.installments,
+      dados.installments
+    ))
+  }
+
+  private criarGastoAtualizado(
+    original: Gasto,
+    dados: AtualizarGastoDados,
+    faturaId: string,
+    cardOwner: string | null,
+    installments: number,
+    totalInstallments: number
+  ): Gasto {
+    return new Gasto({
+      id: original.id,
+      faturaId,
+      descricao: dados.descricao,
+      valorTotal: dados.valorTotal,
+      compradorId: dados.compradorId,
+      divisoes: dados.divisoes,
+      method: dados.method,
+      cardOwner,
+      installments,
+      totalInstallments,
+      grupoParcelasId: original.grupoParcelasId,
+      isLoan: original.isLoan,
+      borrowerId: original.borrowerId,
+      recurringBillId: original.recurringBillId,
+      isSettlement: original.isSettlement,
+      settlementDetails: original.settlementDetails
+    })
   }
 
   async removerAssociacaoContaFixa(contaFixaId: string): Promise<void> {

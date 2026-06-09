@@ -18,7 +18,7 @@ export const tenantSessionService = new TenantSessionService()
 
 export const membroRepository = new HttpMembroRepository()
 export const cartaoRepository = new HttpCartaoRepository()
-export const faturaRepository = new HttpFaturaRepository()
+const faturaRepository = new HttpFaturaRepository()
 export const gastoRepository = new HttpGastoRepository()
 export const contaFixaRepository = new HttpContaFixaRepository()
 export const cargoRepository = new HttpCargoRepository()

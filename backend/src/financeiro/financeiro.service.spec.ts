@@ -71,8 +71,16 @@ describe('FinanceiroService', () => {
     it('should save multiple gastos in parallel', async () => {
       const tenantId = 'tenant-1';
       const gastosList = [
-        { id: 'g1', descricao: 'Gasto 1', valorTotalCentavos: 1000 },
-        { id: 'g2', descricao: 'Gasto 2', valorTotalCentavos: 2000 },
+        {
+          id: 'g1', faturaId: 'f1', descricao: 'Gasto 1', valorTotalCentavos: 1000,
+          compradorId: 'm1', installments: 1, totalInstallments: 1, isLoan: false,
+          isSettlement: false, method: 'pix', divisoes: [],
+        },
+        {
+          id: 'g2', faturaId: 'f1', descricao: 'Gasto 2', valorTotalCentavos: 2000,
+          compradorId: 'm1', installments: 1, totalInstallments: 1, isLoan: false,
+          isSettlement: false, method: 'pix', divisoes: [],
+        },
       ];
 
       const result = await service.salvarMuitosGastos(tenantId, gastosList);

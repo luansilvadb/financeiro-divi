@@ -64,7 +64,7 @@ export class FinanceiroGateway {
     }
   }
 
-  notificarAlteracao(tenantId: string, event: string, payload?: any) {
+  notificarAlteracao(tenantId: string, event: string, payload?: unknown) {
     this.server.to(tenantId).emit(event, payload);
   }
 }

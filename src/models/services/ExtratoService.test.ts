@@ -34,14 +34,12 @@ describe('ExtratoService', () => {
 
     expect(extratoA).toHaveLength(2)
 
-    // G1: Alice pagou 100, consumiu 50. Liquido +50. Acumulado +50.
     expect(extratoA[0].id).toBe('2026-05-01-001')
     expect(extratoA[0].valorPago.centavos).toBe(10000)
     expect(extratoA[0].valorConsumido.centavos).toBe(5000)
     expect(extratoA[0].valorLiquido.centavos).toBe(5000)
     expect(extratoA[0].saldoAcumulado.centavos).toBe(5000)
 
-    // G2: Alice pagou 0, consumiu 30. Liquido -30. Acumulado +20.
     expect(extratoA[1].id).toBe('2026-05-02-002')
     expect(extratoA[1].valorPago.centavos).toBe(0)
     expect(extratoA[1].valorConsumido.centavos).toBe(3000)
@@ -66,8 +64,6 @@ describe('ExtratoService', () => {
 
     const extratoA = ExtratoService.obterExtratoMembro('A', [g1])
 
-    // Parcela 1 de 2 de um gasto de 100. Valor da parcela = 50.
-    // Alice pagou a parcela (50) e consumiu metade (25). Liquido +25.
     expect(extratoA[0].valorPago.centavos).toBe(5000)
     expect(extratoA[0].valorConsumido.centavos).toBe(2500)
     expect(extratoA[0].valorLiquido.centavos).toBe(2500)
@@ -86,13 +82,11 @@ describe('ExtratoService', () => {
     })
 
     const extratoA = ExtratoService.obterExtratoMembro('A', [g1])
-    // Alice emprestou 50. Ela "pagou" 50 e "consumiu" 0. Liquido +50.
     expect(extratoA[0].valorPago.centavos).toBe(5000)
     expect(extratoA[0].valorConsumido.centavos).toBe(0)
     expect(extratoA[0].valorLiquido.centavos).toBe(5000)
 
     const extratoB = ExtratoService.obterExtratoMembro('B', [g1])
-    // Bob recebeu 50. Ele "pagou" 0 e "consumiu" 50. Liquido -50.
     expect(extratoB[0].valorPago.centavos).toBe(0)
     expect(extratoB[0].valorConsumido.centavos).toBe(5000)
     expect(extratoB[0].valorLiquido.centavos).toBe(-5000)

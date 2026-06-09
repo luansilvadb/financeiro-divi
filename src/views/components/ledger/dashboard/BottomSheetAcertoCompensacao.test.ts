@@ -21,8 +21,6 @@ describe('BottomSheetAcertoCompensacao', () => {
       }
     })
 
-    // Como o BottomSheet foi stubado ou renderizado no body, 
-    // verificamos se o componente está reagindo corretamente aos dados internos
     expect((wrapper.vm as any).valorReal).toBe(150.50)
   })
 })

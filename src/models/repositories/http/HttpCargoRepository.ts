@@ -2,9 +2,17 @@ import { HttpBaseRepository } from './HttpBaseRepository'
 import { Cargo } from '../../entities/Cargo'
 import type { ICargoRepository } from '../ICargoRepository'
 
+interface CargoDto {
+  id: string
+  nome: string
+  cor?: string
+  permissoes?: string[]
+  _count?: { membros: number }
+}
+
 export class HttpCargoRepository extends HttpBaseRepository implements ICargoRepository {
   async listarTodos(): Promise<Cargo[]> {
-    const list = await this.request<any[]>('/financeiro/cargos')
+    const list = await this.request<CargoDto[]>('/financeiro/cargos')
     return list.map(item => new Cargo({
       id: item.id,
       nome: item.nome,
@@ -15,7 +23,7 @@ export class HttpCargoRepository extends HttpBaseRepository implements ICargoRep
   }
 
   async salvar(cargo: Cargo): Promise<Cargo> {
-    const saved = await this.request<any>('/financeiro/cargos', {
+    const saved = await this.request<CargoDto>('/financeiro/cargos', {
       method: 'POST',
       body: JSON.stringify({
         id: cargo.id,

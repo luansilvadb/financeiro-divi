@@ -1,12 +1,14 @@
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, type UnwrapRef } from 'vue'
 import { tenantSessionService } from '../shared/container'
 import { useToast } from '../composables/useToast'
+import type { TenantSummary } from '../models/services/TenantSessionService'
+import { mensagemErro } from '../shared/utils/mensagemErro'
 
 export function useCasasMultitenant() {
   const toast = useToast()
   const isAuthed = ref(tenantSessionService.isAuthenticated())
   const activeTenantId = ref(tenantSessionService.getActiveTenantId())
-  const casas = ref<any[]>([])
+  const casas = ref<TenantSummary[]>(tenantSessionService.getTenants())
   const showBottomSheetCasas = ref(false)
   const isCreating = ref(false)
   const isEntering = ref(false)
@@ -22,44 +24,21 @@ export function useCasasMultitenant() {
     return casas.value.find(c => c.id === activeTenantId.value) || null
   })
 
-  const getApiUrl = () => {
-    return (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
-  }
-
-  const getHeaders = () => {
-    const token = localStorage.getItem('divi_jwt_token')
-    return {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    }
+  const sincronizarCasas = () => {
+    casas.value = tenantSessionService.getTenants()
+    activeTenantId.value = tenantSessionService.getActiveTenantId()
   }
 
   const carregarCasas = async () => {
     if (!isAuthed.value) return
     try {
-      const response = await fetch(`${getApiUrl()}/auth/me`, {
-        headers: getHeaders()
-      })
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          handleLogoutClick()
-        }
+      await tenantSessionService.inicializarSessao()
+      isAuthed.value = tenantSessionService.isAuthenticated()
+      if (!isAuthed.value) {
+        window.location.reload()
         return
       }
-
-      const data = await response.json()
-      casas.value = data.tenants || []
-
-      const isValido = casas.value.some(c => c.id === activeTenantId.value)
-      if (!isValido || !activeTenantId.value) {
-        if (casas.value.length > 0) {
-          selecionarCasa(casas.value[0].id)
-        } else {
-          tenantSessionService.setActiveTenant('')
-          activeTenantId.value = ''
-        }
-      }
+      sincronizarCasas()
     } catch (err) {
       console.error('Erro ao carregar casas:', err)
     }
@@ -81,27 +60,13 @@ export function useCasasMultitenant() {
 
     isCreating.value = true
     try {
-      const response = await fetch(`${getApiUrl()}/financeiro/tenants`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ name: form.nomeNovaCasa.trim() })
-      })
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        form.errorCasa = err.message || 'Erro ao criar casa'
-        toast.show(form.errorCasa, 'error')
-        return
-      }
-
-      await response.json()
+      await tenantSessionService.criarCasa(form.nomeNovaCasa.trim())
+      sincronizarCasas()
       form.nomeNovaCasa = ''
-      await carregarCasas()
       toast.show('Casa criada com sucesso!', 'success')
-    } catch (err) {
-      form.errorCasa = 'Falha de conexão com o servidor'
+    } catch (err: unknown) {
+      form.errorCasa = mensagemErro(err, 'Falha de conexão com o servidor')
       toast.show(form.errorCasa, 'error')
-      console.error(err)
     } finally {
       isCreating.value = false
     }
@@ -117,27 +82,13 @@ export function useCasasMultitenant() {
 
     isEntering.value = true
     try {
-      const response = await fetch(`${getApiUrl()}/financeiro/tenants/entrar`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ inviteCode: cleanedCode })
-      })
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        form.errorCasa = err.message || 'Código de convite inválido ou casa não encontrada.'
-        toast.show(form.errorCasa, 'error')
-        return
-      }
-
-      await response.json()
+      await tenantSessionService.entrarCasa(cleanedCode)
+      sincronizarCasas()
       form.codigoConvite = ''
-      await carregarCasas()
       toast.show('Você entrou na casa!', 'success')
-    } catch (err) {
-      form.errorCasa = 'Falha de conexão com o servidor'
+    } catch (err: unknown) {
+      form.errorCasa = mensagemErro(err, 'Falha de conexão com o servidor')
       toast.show(form.errorCasa, 'error')
-      console.error(err)
     } finally {
       isEntering.value = false
     }
@@ -184,3 +135,13 @@ export function useCasasMultitenant() {
     handleLogoutClick
   }
 }
+
+export type CasasMultitenantViewModel = ReturnType<typeof useCasasMultitenant>
+export type CasasMultitenantView = {
+  [K in keyof CasasMultitenantViewModel]: UnwrapRef<CasasMultitenantViewModel[K]>
+}
+export type CasasModalView = Pick<
+  CasasMultitenantView,
+  'casas' | 'activeTenantId' | 'copiedCode' | 'form' | 'isCreating' | 'isEntering' |
+  'selecionarCasa' | 'criarNovaCasa' | 'entrarPorCodigo' | 'copyInviteCode' | 'handleLogoutClick'
+>

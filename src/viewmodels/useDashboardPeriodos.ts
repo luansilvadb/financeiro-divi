@@ -9,7 +9,7 @@ export function useDashboardPeriodos(
   getFaturasFechadas: () => Fatura[],
   getCartoes: () => Cartao[],
   getMembros: () => { id: string }[],
-  emit: (event: any, ...args: any[]) => void
+  emit: (event: 'periodoStatusChanged', isLocked: boolean) => void
 ) {
   const obterPeriodoInicial = () => {
     const faturaReferencia = getFaturasAbertas()?.[0] || getFaturasFechadas()?.[0]
@@ -42,6 +42,35 @@ export function useDashboardPeriodos(
     })
   }
 
+  const resolverFaturaPix = (p: { mes: number; ano: number }, faturasExistentes: Fatura[], membros: { id: string }[], forceOwner?: string): Fatura[] => {
+    const pixExistente = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
+    if (pixExistente) return [pixExistente]
+    const fallbackOwner = forceOwner || (membros.length > 0 ? membros[0].id : 'virtual-member')
+    return [criarFaturaVirtual(p, 'PIX_DEFAULT_ID', fallbackOwner)]
+  }
+
+  const resolverFaturasDeCartoes = (p: { mes: number; ano: number }, faturasExistentes: Fatura[], todosCartoes: Cartao[], membros: { id: string }[]): Fatura[] => {
+    return todosCartoes.map(cartao => {
+      const existente = faturasExistentes.find(f => f.cartaoId === cartao.id)
+      if (existente) return existente
+      const defaultOwner = cartao.responsavelPadraoId || (membros.length > 0 ? membros[0].id : 'virtual-member')
+      return criarFaturaVirtual(p, cartao.id, defaultOwner)
+    })
+  }
+
+  const resolverFaturasOrfas = (faturasExistentes: Fatura[], listaAtual: Fatura[], todosCartoes: Cartao[]): Fatura[] => {
+    const orfas: Fatura[] = []
+    for (const fatura of faturasExistentes) {
+      if (fatura.cartaoId === 'PIX_DEFAULT_ID') continue
+      const jaIncluida = listaAtual.some(f => f.id === fatura.id)
+      const cartaoAindaExiste = todosCartoes.some(cartao => cartao.id === fatura.cartaoId)
+      if (!jaIncluida && !cartaoAindaExiste) {
+        orfas.push(fatura)
+      }
+    }
+    return orfas
+  }
+
   const faturasPeriodoSelecionado = computed(() => {
     const p = periodoSelecionado.value
     const faturasExistentes = buscarFaturasNoPeriodo(p)
@@ -49,38 +78,20 @@ export function useDashboardPeriodos(
     const membros = getMembros()
     
     if (todosCartoes.length === 0) {
-      const existePix = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
-      if (existePix) return faturasExistentes
-      return [...faturasExistentes, criarFaturaVirtual(p, 'PIX_DEFAULT_ID', membros[0]?.id || 'virtual-member')]
+      const pix = resolverFaturaPix(p, faturasExistentes, membros)
+      return [...faturasExistentes.filter(f => f.cartaoId !== 'PIX_DEFAULT_ID'), ...pix]
     }
 
-    const listaFinal: Fatura[] = todosCartoes.map(cartao => {
-      const existente = faturasExistentes.find(f => f.cartaoId === cartao.id)
-      if (existente) return existente
-      return criarFaturaVirtual(p, cartao.id, cartao.responsavelPadraoId || membros[0]?.id || 'virtual-member')
-    })
+    const faturasCartoes = resolverFaturasDeCartoes(p, faturasExistentes, todosCartoes, membros)
+    const pix = resolverFaturaPix(p, faturasExistentes, membros, 'PIX_SYSTEM_OWNER')
+    const orfas = resolverFaturasOrfas(faturasExistentes, faturasCartoes, todosCartoes)
 
-    const pixExistente = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
-    if (pixExistente) {
-      listaFinal.push(pixExistente)
-    } else {
-      listaFinal.push(criarFaturaVirtual(p, 'PIX_DEFAULT_ID', 'PIX_SYSTEM_OWNER'))
-    }
-
-    for (const fatura of faturasExistentes) {
-      const jaIncluida = listaFinal.some(f => f.id === fatura.id)
-      const cartaoAindaExiste = todosCartoes.some(cartao => cartao.id === fatura.cartaoId)
-      if (!jaIncluida && !cartaoAindaExiste && fatura.cartaoId !== 'PIX_DEFAULT_ID') {
-        listaFinal.push(fatura)
-      }
-    }
+    const listaFinal = [...faturasCartoes, ...pix, ...orfas]
 
     return listaFinal.sort((a, b) => {
       if (a.cartaoId === 'PIX_DEFAULT_ID') return 1
       if (b.cartaoId === 'PIX_DEFAULT_ID') return -1
-      if (a.cartaoId < b.cartaoId) return -1
-      if (a.cartaoId > b.cartaoId) return 1
-      return 0
+      return a.cartaoId.localeCompare(b.cartaoId)
     })
   })
 
@@ -92,26 +103,20 @@ export function useDashboardPeriodos(
     return criarFaturaVirtual(p, 'PIX_DEFAULT_ID', 'PIX_SYSTEM_OWNER')
   })
 
+  const isPixAbertoNoPeriodo = (p: { mes: number; ano: number }) => {
+    return getFaturasAbertas().some(f => f.cartaoId === 'PIX_DEFAULT_ID' && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+  }
+
+  const isCartaoFechadoNoPeriodo = (cartaoId: string, p: { mes: number; ano: number }) => {
+    return getFaturasFechadas().some(f => f.cartaoId === cartaoId && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+  }
+
   const verificarPeriodoTrancado = (p: { mes: number; ano: number }): boolean => {
-    const temFaturaPixAberta = getFaturasAbertas().some(f =>
-      f.cartaoId === 'PIX_DEFAULT_ID' &&
-      f.periodo.mes === p.mes &&
-      f.periodo.ano === p.ano
-    )
+    if (isPixAbertoNoPeriodo(p)) return false
 
-    if (getCartoes().length > 0) {
-      const todosCartoesFechados = getCartoes().every(cartao => {
-        const fechada = getFaturasFechadas().find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-        if (fechada) return true
-
-        const aberta = getFaturasAbertas().find(f => f.cartaoId === cartao.id && f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-        if (aberta) return false
-
-        return false
-      })
-
-      if (temFaturaPixAberta) return false
-      return todosCartoesFechados
+    const cartoes = getCartoes()
+    if (cartoes.length > 0) {
+      return cartoes.every(cartao => isCartaoFechadoNoPeriodo(cartao.id, p))
     }
 
     return getFaturasFechadas().some(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)

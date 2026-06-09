@@ -22,7 +22,6 @@ describe('ToastNotification', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Mensagem de Teste Toast')
     
-    // Ao clicar no botão de fechar, o toast deve sumir
     await wrapper.find('button').trigger('click')
     const { visible } = useToast()
     expect(visible.value).toBe(false)

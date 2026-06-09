@@ -3,7 +3,9 @@ import { ref, onMounted } from 'vue'
 import { useLoginViewModel } from '../../viewmodels/useLoginViewModel'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
+import { mensagemErro } from '../../shared/utils/mensagemErro'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
+import type { InvitePreview } from '../../models/services/TenantSessionService'
 
 const emit = defineEmits(['auth-success'])
 
@@ -19,7 +21,7 @@ const {
 
 const isRegisterMode = ref(false)
 const loading = ref(false)
-const housePreview = ref<any>(null)
+const housePreview = ref<InvitePreview | null>(null)
 const selectedMembroNome = ref('')
 
 onMounted(async () => {
@@ -36,7 +38,7 @@ onMounted(async () => {
   }
 })
 
-const selectMembro = (membro: any) => {
+const selectMembro = (membro: InvitePreview['membrosDisponiveis'][number]) => {
   membroId.value = membro.id
   selectedMembroNome.value = membro.nome
   username.value = membro.nome.toLowerCase().replace(/\s+/g, '.')
@@ -51,8 +53,8 @@ const onSubmit = async () => {
     if (success) {
       emit('auth-success')
     }
-  } catch (e: any) {
-    errorMsg.value = e.message || 'Ocorreu um erro inesperado'
+  } catch (e: unknown) {
+    errorMsg.value = mensagemErro(e, 'Ocorreu um erro inesperado')
   } finally {
     loading.value = false
   }
@@ -93,7 +95,7 @@ const onSubmit = async () => {
           </div>
         </div>
 
-        <div v-else-if="membroId && membroId !== 'novo'" class="mt-8 p-6 bg-parchment rounded-card shadow-subtle border-none animate-in zoom-in-95 duration-200">
+        <div v-else-if="housePreview && membroId && membroId !== 'novo'" class="mt-8 p-6 bg-parchment rounded-card shadow-subtle border-none animate-in zoom-in-95 duration-200">
           <p class="text-body text-graphite">
             Criando acesso para <br/>
             <span class="text-heading text-charcoal">{{ selectedMembroNome }}</span><br/>

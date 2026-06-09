@@ -66,7 +66,6 @@ const cancelInteraction = () => {
     animationFrameId = null
   }
   
-  // Se for cancelado o long-press antes de completar ou virar tap, faz um fade out visual do raio atual
   if (ripple.value.active && ripple.value.type === 'long') {
     const fadeTick = () => {
       if (ripple.value.opacity > 0) {
@@ -92,12 +91,10 @@ const onPointerDown = (e: PointerEvent) => {
   hasTriggered = false
   startTime = performance.now()
 
-  // Calcula raio máximo a partir do ponto de toque
   const dx = Math.max(x, rect.width - x)
   const dy = Math.max(y, rect.height - y)
   maxRadiusGlobal = Math.sqrt(dx * dx + dy * dy)
 
-  // Inicia ripple no modo 'long' (crescimento inicial lento de espera)
   ripple.value.active = true
   ripple.value.type = 'long'
   ripple.value.x = x
@@ -139,20 +136,15 @@ const onPointerUp = () => {
     return
   }
 
-  // Se soltou antes de disparar o long-press, é considerado um Tap.
-  // Eliminamos o "dead zone" entre 220ms e 800ms que ignorava a interação.
   ripple.value.type = 'tap'
   
-  // Dispara a ação lógica imediatamente
   triggerTapAction()
 
-  // Feedback visual do ripple (expande e some)
   requestAnimationFrame(() => {
     ripple.value.scale = 1
     ripple.value.opacity = 0
   })
 
-  // Limpeza do estado visual
   setTimeout(() => {
     if (ripple.value.type === 'tap') {
       ripple.value.active = false

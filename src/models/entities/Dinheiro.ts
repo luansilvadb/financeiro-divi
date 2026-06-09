@@ -37,9 +37,6 @@ export class Dinheiro {
     const quociente = Math.trunc(this.centavos / n)
     const resto = this.centavos % n
 
-    // Lógica de distribuição do distribuir(n):
-    // Se resto > 0, as primeiras 'resto' partes recebem quociente + 1
-    // Se resto < 0, as primeiras 'abs(resto)' partes recebem quociente - 1
     if (resto > 0) {
       return new Dinheiro(index < resto ? quociente + 1 : quociente)
     } else if (resto < 0) {

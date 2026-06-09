@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
+import type { JwtPayload } from './auth.types';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -71,7 +72,6 @@ export class AuthService {
           });
         }
         
-        // Dispara o evento de Websocket para os usuários da casa que já estão no Dashboard
         this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
       }
     }
@@ -106,10 +106,10 @@ export class AuthService {
     };
   }
 
-  validarToken(token: string): any {
+  validarToken(token: string): JwtPayload | null {
     try {
-      return this.jwtService.verify(token);
-    } catch (err) {
+      return this.jwtService.verify<JwtPayload>(token);
+    } catch {
       return null;
     }
   }

@@ -1,4 +1,5 @@
 import type { Fatura } from '../../models/entities/Fatura'
+import type { Gasto } from '../../models/entities/Gasto'
 
 const extrairPeriodoDeFaturaId = (faturaId: string): { mes: number; ano: number } | null => {
   const match = faturaId.match(/(?:.*-)?(\d+)-(\d+)$/)
@@ -11,7 +12,7 @@ const extrairPeriodoDeFaturaId = (faturaId: string): { mes: number; ano: number 
   return null
 }
 
-export const gastoPertenceAoPeriodo = (g: any, mes: number, ano: number, faturas: Fatura[]) => {
+export const gastoPertenceAoPeriodo = (g: Gasto, mes: number, ano: number, faturas: Fatura[]) => {
   const fat = faturas.find(f => f.id === g.faturaId)
   if (fat) {
     return fat.periodo.mes === mes && fat.periodo.ano === ano

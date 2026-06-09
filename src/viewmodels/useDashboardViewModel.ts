@@ -42,7 +42,35 @@ export interface ConfirmarLancarBillInput {
 
 export interface DashboardProps { membros: { id: string; nome: string }[]; faturasAbertas: Fatura[]; faturasFechadas: Fatura[]; cartoes: Cartao[] }
 
-export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
+const isGastoCartaoAtivo = (x: Gasto) => x.method === 'card' && !x.isSettlement && !x.isLoan;
+const isGastoValidoPeriodo = (x: Gasto) => !x.id.startsWith('audit-settlement-') && (!x.isSettlement || x.descricao.includes('Saldo Inicial'));
+const isGastoNaoSettlement = (x: Gasto) => !x.isSettlement;
+
+const formatarParcelaFutura = (x: Gasto) => {
+  const valorParcela = (x.valorTotal.centavos / x.totalInstallments) / 100;
+  const restantes = x.installments - 1;
+  return {
+    id: x.id,
+    descricao: x.descricao,
+    responsavel: x.cardOwner ? 'Cartão' : 'Pix',
+    restantes,
+    valorParcela,
+    totalFuturo: valorParcela * restantes
+  };
+};
+
+const acumularPreviaMembros = (acc: Record<string, number>, x: Gasto) => {
+  x.divisoes.forEach(d => {
+    const v = valorParcelaAtual(d.valor, x.installments, x.totalInstallments).centavos;
+    if (v > 0) acc[d.membroId] = (acc[d.membroId] || 0) + v;
+  });
+  return acc;
+};
+
+export const useDashboardViewModel = (
+  props: DashboardProps,
+  emit: (event: 'periodoStatusChanged', isLocked: boolean) => void
+) => {
   const ui = useDashboardUIState()
   const toast = useToast()
   const cartoesEFaturas = useCartoesEFaturas()
@@ -56,22 +84,11 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
   
   const parcelasFuturas = computed(() => gastosFiltrados.value
     .filter(x => x.installments > 1)
-    .map(x => ({ 
-      id: x.id, descricao: x.descricao, responsavel: x.cardOwner ? 'Cartão' : 'Pix', 
-      restantes: x.installments - 1, 
-      valorParcela: (x.valorTotal.centavos / x.totalInstallments) / 100, 
-      totalFuturo: ((x.valorTotal.centavos / x.totalInstallments) * (x.installments - 1)) / 100 
-    })))
+    .map(formatarParcelaFutura))
     
   const previaCartaoAbertoPorMembro = computed(() => todosGastos.value
-    .filter(x => x.method === 'card' && !x.isSettlement && !x.isLoan)
-    .reduce((acc, x) => { 
-      x.divisoes.forEach(d => { 
-        const v = valorParcelaAtual(d.valor, x.installments, x.totalInstallments).centavos
-        if (v > 0) acc[d.membroId] = (acc[d.membroId] || 0) + v 
-      })
-      return acc 
-    }, {} as Record<string, number>))
+    .filter(isGastoCartaoAtivo)
+    .reduce(acumularPreviaMembros, {} as Record<string, number>))
 
   return {
     ...periodosState, 
@@ -84,8 +101,8 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
     
     totalFuturasVencer: computed(() => parcelasFuturas.value.reduce((a, x) => a + x.totalFuturo, 0)),
     totalPreviaCartaoAbertoCentavos: computed(() => Object.values(previaCartaoAbertoPorMembro.value).reduce((a, v) => a + v, 0)),
-    totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(x => !x.isSettlement).reduce((s, x) => s + valorParcelaAtual(x.valorTotal, x.installments, x.totalInstallments).centavos, 0)),
-    totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(x => !x.id.startsWith('audit-settlement-') && (!x.isSettlement || x.descricao.includes('Saldo Inicial'))).length),
+    totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoNaoSettlement).reduce((s, x) => s + valorParcelaAtual(x.valorTotal, x.installments, x.totalInstallments).centavos, 0)),
+    totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoValidoPeriodo).length),
     
     getMembroNome: (id: string) => props.membros.find(m => m.id === id)?.nome || 'Desconhecido', 
     formatarDinheiro: (c: number) => c / 100, 
@@ -161,3 +178,5 @@ export const useDashboardViewModel = (props: DashboardProps, emit: any) => {
     }
   }
 }
+
+export type DashboardViewModel = ReturnType<typeof useDashboardViewModel>

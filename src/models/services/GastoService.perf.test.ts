@@ -48,7 +48,6 @@ describe('GastoService Performance', () => {
 
     expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
     expect(mockGastoRepo.salvar).not.toHaveBeenCalled()
-    // Optimized execution should take about LATENCY (plus some overhead), definitely less than NUM_GASTOS * LATENCY
     expect(duration).toBeLessThan(NUM_GASTOS * LATENCY / 2)
   })
 })

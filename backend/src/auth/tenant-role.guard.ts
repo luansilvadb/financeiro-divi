@@ -17,7 +17,6 @@ export class TenantRoleGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    // Se nenhuma role for especificada, permite o acesso padrão
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -30,7 +29,6 @@ export class TenantRoleGuard implements CanActivate {
       throw new ForbiddenException('Identificação do usuário ou casa ausente.');
     }
 
-    // Busca o membro associado àquele usuário e moradia
     const membro = await this.prisma.membroCasa.findFirst({
       where: {
         tenantId,
@@ -43,7 +41,6 @@ export class TenantRoleGuard implements CanActivate {
       throw new ForbiddenException('Você não é um membro ativo desta moradia.');
     }
 
-    // Verifica se a role do membro está na lista de roles exigidas
     const hasRole = requiredRoles.includes(membro.role);
     if (!hasRole) {
       throw new ForbiddenException('Você não possui permissão para executar esta ação.');

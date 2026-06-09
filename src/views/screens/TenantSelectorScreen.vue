@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import { tenantSessionService } from '../../shared/container'
 import { Home, Plus, Key, ArrowRight, LogOut, Check, ChevronLeft } from 'lucide-vue-next'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
+import { mensagemErro } from '../../shared/utils/mensagemErro'
 
 const emit = defineEmits<{
   'casa-selecionada': []
@@ -33,8 +34,8 @@ async function criarCasa() {
   try {
     const tenant = await tenantSessionService.criarCasa(nomeCasa.value.trim())
     estado.casaCriada = tenant
-  } catch (err: any) {
-    estado.erro = err.message || 'Não foi possível criar a casa'
+  } catch (err: unknown) {
+    estado.erro = mensagemErro(err, 'Não foi possível criar a casa')
   } finally {
     estado.loading = false
   }
@@ -50,8 +51,8 @@ async function entrarCasa() {
   try {
     await tenantSessionService.entrarCasa(codigoConvite.value.trim())
     emit('casa-selecionada')
-  } catch (err: any) {
-    estado.erro = err.message || 'Código inválido ou casa não encontrada'
+  } catch (err: unknown) {
+    estado.erro = mensagemErro(err, 'Código inválido ou casa não encontrada')
   } finally {
     estado.loading = false
   }

@@ -29,14 +29,12 @@ describe('ParcelaCalculator', () => {
     })
 
     it('deve calcular corretamente a primeira parcela', () => {
-      // totalInstallments=3, installments=3 → index 0 (primeira parcela)
       const resultado = calcularContextoParcela(3, 3)
       expect(resultado.divisor).toBe(3)
       expect(resultado.index).toBe(0)
     })
 
     it('deve calcular corretamente a última parcela', () => {
-      // totalInstallments=3, installments=1 → index 2 (última parcela)
       const resultado = calcularContextoParcela(1, 3)
       expect(resultado.divisor).toBe(3)
       expect(resultado.index).toBe(2)
@@ -47,14 +45,12 @@ describe('ParcelaCalculator', () => {
     it('deve distribuir R$100 em 3 parcelas e retornar a primeira', () => {
       const valor = Dinheiro.deReais(100) // 10000 centavos
       const resultado = valorParcelaAtual(valor, 3, 3)
-      // 10000 / 3 = 3333 + resto 1 → primeira parcela = 3334
       expect(resultado.centavos).toBe(3334)
     })
 
     it('deve distribuir R$100 em 3 parcelas e retornar a última', () => {
       const valor = Dinheiro.deReais(100)
       const resultado = valorParcelaAtual(valor, 1, 3)
-      // última parcela = 3333
       expect(resultado.centavos).toBe(3333)
     })
 
@@ -66,7 +62,6 @@ describe('ParcelaCalculator', () => {
 
     it('deve retornar 0 quando index está fora do range', () => {
       const valor = Dinheiro.deReais(100)
-      // installments=0, totalInstallments=3 → index = 3 (fora do range [0,1,2])
       const resultado = valorParcelaAtual(valor, 0, 3)
       expect(resultado.centavos).toBe(0)
     })
@@ -74,7 +69,6 @@ describe('ParcelaCalculator', () => {
     it('deve funcionar com fallback quando totalInstallments é 0', () => {
       const valor = Dinheiro.deReais(200)
       const resultado = valorParcelaAtual(valor, 1, 0)
-      // divisor = 1, index = 0
       expect(resultado.centavos).toBe(20000)
     })
   })

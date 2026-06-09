@@ -19,25 +19,17 @@ const icon = ref('💡')
 const fixedValue = ref<number | null>(null)
 const defaultSplit = ref<string[]>([])
 
-// Controle de navegação e estados do seletor de emojis
 const modoSelecaoIcone = ref(false)
 const customIconInput = ref('')
 const showingCustomInput = ref(false)
 
 const allEmojis = [
-  // Finanças
   '💰', '💳', '💸', '🪙', '💵', '🧾', '🏦', '📈',
-  // Casa
   '🏠', '🔑', '🔌', '💧', '🌐', '🧼', '🧹', '🛋️', '📦', '🪴', '🛠️', '🪵',
-  // Alimentação
   '🛒', '🍔', '🍕', '☕', '🍎', '🍣', '🍻', '🥤', '🍿', '🍳', '🥚', '🥐', '🎂',
-  // Transporte
   '🚗', '⛽', '✈️', '🚇', '🚲', '🛵', '🎫', '🗺️', '⛵', '🚢', '🚁', '🧭',
-  // Lazer
   '🎮', '⚽', '🎵', '🏋️', '🐾', '🐶', '🐱', '🌻', '📚', '🎬', '🏆', '🎙️', '🧸',
-  // Saúde
   '💊', '🏥', '🦷', '🧴', '🧼', '👓', '🩺', '🧘', '🎁', '🎈',
-  // Outros
   '⚡', '⚙️', '💿', '♻️', '🎯', '✉️', '📢', '🔒'
 ]
 
