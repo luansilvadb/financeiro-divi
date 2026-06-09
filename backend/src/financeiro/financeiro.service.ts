@@ -4,7 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { serializeBigInt } from '../shared/utils/serialization';
 import { randomUUID } from 'crypto';
-import { Prisma, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { MembroDto } from './dto/membro.dto';
 import { CargoCasaDto } from './dto/cargo-casa.dto';
 import { CartaoDto } from './dto/cartao.dto';
@@ -359,76 +359,58 @@ export class FinanceiroService {
     return serializeBigInt(gastos);
   }
 
-  private async upsertGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+  private upsertGastoPromise(tenantId: string, g: GastoDto) {
     const {
-      id,
-      faturaId,
-      descricao,
-      valorTotalCentavos,
-      compradorId,
-      installments,
-      totalInstallments,
-      isLoan,
-      borrowerId,
-      recurringBillId,
-      isSettlement,
-      settlementDetails,
-      method,
-      cardOwnerId,
-      grupoParcelasId,
-      divisoes,
+      id, faturaId, descricao, valorTotalCentavos, compradorId,
+      installments, totalInstallments, isLoan, borrowerId,
+      recurringBillId, isSettlement, settlementDetails,
+      method, cardOwnerId, grupoParcelasId, divisoes,
     } = g;
 
-    await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
+    const data = {
+      faturaId, descricao,
+      valorTotalCentavos: BigInt(valorTotalCentavos || 0),
+      compradorId, installments, totalInstallments,
+      isLoan, borrowerId, recurringBillId,
+      isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
+    };
 
-    await tx.gasto.upsert({
+    const divisoesUpsert = {
+      deleteMany: {},
+      create: divisoes?.map(d => ({
+        tenantId,
+        membroId: d.membroId,
+        valorCentavos: BigInt(d.valorCentavos || 0),
+      })) || [],
+    };
+
+    /**
+     * Bolt Optimization: Using nested writes (deleteMany + create) inside a single upsert
+     * reduces 3 database calls to 1. Using include eliminates a 4th findUnique call.
+     */
+    return this.prisma.gasto.upsert({
       where: { id_tenantId: { id, tenantId } },
-      create: {
-        id, tenantId, faturaId, descricao,
-        valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
-      },
-      update: {
-        faturaId, descricao,
-        valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
-      },
-    });
-
-    if (divisoes && divisoes.length > 0) {
-      await tx.divisaoGasto.createMany({
-        data: divisoes.map(d => ({
-          tenantId,
-          gastoId: id,
-          membroId: d.membroId,
-          valorCentavos: BigInt(d.valorCentavos || 0),
-        })),
-      });
-    }
-
-    return tx.gasto.findUnique({
-      where: { id_tenantId: { id, tenantId } },
+      create: { ...data, id, tenantId, divisoes: { create: divisoesUpsert.create } },
+      update: { ...data, divisoes: divisoesUpsert },
       include: { divisoes: true },
     });
   }
 
   async salvarGasto(tenantId: string, gastoData: GastoDto) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return this.upsertGastoTx(tx, tenantId, gastoData);
-    });
+    const result = await this.upsertGastoPromise(tenantId, gastoData);
     const serialized = serializeBigInt(result);
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serialized;
   }
 
   async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[]) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return Promise.all(gastosList.map(g => this.upsertGastoTx(tx, tenantId, g)));
-    });
+    /**
+     * Bolt Optimization: Using batch transaction (passing array of promises) instead
+     * of interactive transaction allows Prisma to optimize the execution.
+     */
+    const result = await this.prisma.$transaction(
+      gastosList.map(g => this.upsertGastoPromise(tenantId, g))
+    );
     const serialized = serializeBigInt(result);
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serialized;
