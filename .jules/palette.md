@@ -12,3 +12,7 @@
 ## 2024-06-04 - [Accessible Input Limits]
 **Learning:** Adding a `maxlength` constraint without a visual and accessible counter creates a confusing experience for users when their typing suddenly stops. Combining `maxlength` with an `aria-live="polite"` counter and a descriptive `aria-label` ensures both visual and screen-reader users understand input limitations without disruption.
 **Action:** Always pair character limits (`maxlength`) with a live-region counter and clear ARIA labeling for the input field.
+
+## 2024-06-05 - [Accessible Password Visibility Toggles]
+**Learning:** For password visibility toggles, using a `<button type="button">` is essential to prevent accidental form submissions triggered by the 'Enter' key or accidental clicks. Furthermore, dynamic `aria-label` updates (e.g., "Mostrar senha" vs "Esconder senha") are crucial for accessibility to inform screen reader users of the current toggle state.
+**Action:** Always use `type="button"` for inline form action toggles and provide localized, state-aware `aria-label` values.

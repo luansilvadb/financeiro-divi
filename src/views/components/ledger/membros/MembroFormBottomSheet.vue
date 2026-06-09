@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
 import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
@@ -15,6 +16,7 @@ const emit = defineEmits(['update:modelValue', 'salvar', 'cancelar'])
 const novoNome = ref('')
 const novoUsername = ref('')
 const novoPassword = ref('')
+const showPassword = ref(false)
 
 const resetForm = () => {
   novoNome.value = ''
@@ -81,7 +83,22 @@ export default {
         </div>
         <div class="space-y-2">
           <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
-          <input v-model="novoPassword" type="password" placeholder="••••••" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all" />
+          <div class="relative">
+            <input
+              v-model="novoPassword"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••"
+              class="w-full px-4 py-3.5 pr-12 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all"
+            />
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ash hover:text-ember transition-colors cursor-pointer border-none bg-transparent"
+              :aria-label="showPassword ? 'Esconder senha' : 'Mostrar senha'"
+            >
+              <component :is="showPassword ? EyeOff : Eye" class="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

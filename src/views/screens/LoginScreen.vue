@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
 import { useLoginViewModel } from '../../viewmodels/useLoginViewModel'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
@@ -21,6 +22,7 @@ const {
 
 const isRegisterMode = ref(false)
 const loading = ref(false)
+const showPassword = ref(false)
 const housePreview = ref<InvitePreview | null>(null)
 const selectedMembroNome = ref('')
 
@@ -152,15 +154,25 @@ const onSubmit = async () => {
             <label for="password" class="block text-caption font-semibold text-charcoal uppercase tracking-widest ml-1">
               Senha
             </label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              required
-              placeholder="••••••••"
-              autocomplete="current-password"
-              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
-            />
+            <div class="relative group/pass">
+              <input
+                id="password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                placeholder="••••••••"
+                autocomplete="current-password"
+                class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 pr-12 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ash hover:text-ember transition-colors cursor-pointer border-none bg-transparent"
+                :aria-label="showPassword ? 'Esconder senha' : 'Mostrar senha'"
+              >
+                <component :is="showPassword ? EyeOff : Eye" class="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <!-- Submit Button (Midnight Pill) -->
