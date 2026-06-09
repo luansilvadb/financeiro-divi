@@ -19,7 +19,8 @@ export class HttpMembroRepository extends HttpBaseRepository implements IMembroR
         permissoes: item.cargo.permissoes || []
       }) : undefined,
       dataCriacao: item.createdAt ? new Date(item.createdAt) : undefined,
-      userId: item.userId
+      userId: item.userId,
+      username: item.username
     }))
   }
 
