@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
 import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
@@ -15,11 +16,13 @@ const emit = defineEmits(['update:modelValue', 'salvar', 'cancelar'])
 const novoNome = ref('')
 const novoUsername = ref('')
 const novoPassword = ref('')
+const showPassword = ref(false)
 
 const resetForm = () => {
   novoNome.value = ''
   novoUsername.value = ''
   novoPassword.value = ''
+  showPassword.value = false
 }
 
 const handleAdicionar = () => {
@@ -61,9 +64,10 @@ export default {
       </div>
 
       <div class="space-y-2">
-        <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Nome Completo</label>
+        <label for="nome" class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Nome Completo</label>
         <div class="relative w-full">
           <input
+            id="nome"
             v-model="novoNome"
             maxlength="50"
             type="text"
@@ -76,12 +80,29 @@ export default {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Usuário</label>
-          <input v-model="novoUsername" type="text" placeholder="luana.ol" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all" />
+          <label for="usuario" class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Usuário</label>
+          <input id="usuario" v-model="novoUsername" type="text" placeholder="luana.ol" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all" />
         </div>
         <div class="space-y-2">
-          <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
-          <input v-model="novoPassword" type="password" placeholder="••••••" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all" />
+          <label for="senha" class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
+          <div class="relative">
+            <input
+              id="senha"
+              v-model="novoPassword"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••"
+              class="w-full px-4 py-3.5 pr-12 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all"
+            />
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute inset-y-0 right-0 pr-4 flex items-center text-graphite hover:text-charcoal focus-visible:ring-2 focus-visible:ring-ember/20 focus-visible:outline-none transition-all border-none bg-transparent cursor-pointer rounded-lg m-1"
+              :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+            >
+              <EyeOff v-if="showPassword" class="w-5 h-5" />
+              <Eye v-else class="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
