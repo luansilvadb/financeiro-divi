@@ -5,3 +5,7 @@
 ## 2026-06-04 - [Optimized BigInt Serialization & Date Bug Fix]
 **Learning:** Generic recursive serialization utilities (like `serializeBigInt`) can be performance bottlenecks and sources of subtle bugs (like `Date` objects being corrupted into empty objects). Using `for...in` instead of `Object.keys().map()` reduces intermediate allocations and garbage collection pressure in deep traversals.
 **Action:** Use manual loops and pre-allocated arrays for critical path serialization. Always include explicit guards for `Date` and other built-in types to prevent data loss during cloning.
+
+## 2026-06-05 - [Sequential execution in Prisma Interactive Transactions]
+**Learning:** Prisma interactive transactions (`prisma.$transaction(async tx => ...)`) use a single database connection. Running multiple operations concurrently using `Promise.all(map(...))` within the transaction can lead to connection starvation and decreased stability.
+**Action:** Replace `Promise.all(map(...))` with a `for...of` loop when performing multiple database operations inside a Prisma interactive transaction to ensure sequential execution and preserve connection limits.
