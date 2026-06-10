@@ -42,30 +42,8 @@ export interface ConfirmarLancarBillInput {
 
 export interface DashboardProps { membros: { id: string; nome: string }[]; faturasAbertas: Fatura[]; faturasFechadas: Fatura[]; cartoes: Cartao[] }
 
-const isGastoCartaoAtivo = (x: Gasto) => x.method === 'card' && !x.isSettlement && !x.isLoan;
 const isGastoValidoPeriodo = (x: Gasto) => !x.id.startsWith('audit-settlement-') && (!x.isSettlement || x.descricao.includes('Saldo Inicial'));
 const isGastoNaoSettlement = (x: Gasto) => !x.isSettlement;
-
-const formatarParcelaFutura = (x: Gasto) => {
-  const valorParcela = (x.valorTotal.centavos / x.totalInstallments) / 100;
-  const restantes = x.installments - 1;
-  return {
-    id: x.id,
-    descricao: x.descricao,
-    responsavel: x.cardOwner ? 'Cartão' : 'Pix',
-    restantes,
-    valorParcela,
-    totalFuturo: valorParcela * restantes
-  };
-};
-
-const acumularPreviaMembros = (acc: Record<string, number>, x: Gasto) => {
-  x.divisoes.forEach(d => {
-    const v = valorParcelaAtual(d.valor, x.installments, x.totalInstallments).centavos;
-    if (v > 0) acc[d.membroId] = (acc[d.membroId] || 0) + v;
-  });
-  return acc;
-};
 
 export const useDashboardViewModel = (
   props: DashboardProps,
@@ -82,25 +60,13 @@ export const useDashboardViewModel = (
 
   const gastosFiltrados = computed(() => todosGastos.value.filter(x => gastoPertenceAoPeriodo(x, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
   
-  const parcelasFuturas = computed(() => gastosFiltrados.value
-    .filter(x => x.installments > 1)
-    .map(formatarParcelaFutura))
-    
-  const previaCartaoAbertoPorMembro = computed(() => todosGastos.value
-    .filter(isGastoCartaoAtivo)
-    .reduce(acumularPreviaMembros, {} as Record<string, number>))
-
   return {
     ...periodosState, 
     ...useDashboardNetting(computed(() => props.membros), gastosFiltrados), 
     ...ui, 
     contasFixas: contasFixas.contasFixas, 
     gastosFaturaSelecionada: gastosFiltrados, 
-    parcelasFuturasDetalhadas: parcelasFuturas, 
-    previaCartaoAbertoPorMembroCentavos: previaCartaoAbertoPorMembro,
     
-    totalFuturasVencer: computed(() => parcelasFuturas.value.reduce((a, x) => a + x.totalFuturo, 0)),
-    totalPreviaCartaoAbertoCentavos: computed(() => Object.values(previaCartaoAbertoPorMembro.value).reduce((a, v) => a + v, 0)),
     totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoNaoSettlement).reduce((s, x) => s + valorParcelaAtual(x.valorTotal, x.installments, x.totalInstallments).centavos, 0)),
     totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoValidoPeriodo).length),
     

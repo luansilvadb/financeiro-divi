@@ -121,7 +121,7 @@ describe('FinanceiroService', () => {
       };
       const result = await service.salvarMembro('t1', data);
       expect(prisma.membroCasa.upsert).toHaveBeenCalled();
-      expect(mockAuth.register).toHaveBeenCalledWith('luan.novo', 'senha_secreta');
+      expect(mockAuth.register).toHaveBeenCalledWith('luan.novo', 'Luan', 'senha_secreta');
       expect(result).toBeDefined();
     });
 

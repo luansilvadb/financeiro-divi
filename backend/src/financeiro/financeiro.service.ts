@@ -52,15 +52,16 @@ export class FinanceiroService {
       },
     });
 
-
-
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
+    const nome = user?.nome || 'Membro Fundador';
+    const avatar = (nome || 'MF').substring(0, 2).toUpperCase();
+
     await this.prisma.membroCasa.create({
       data: {
         id: `membro-${randomUUID()}`,
         tenantId: tenant.id,
-        nome: user ? user.nome : 'Membro Fundador',
-        avatar: (user ? user.nome : 'MF').substring(0, 2).toUpperCase(),
+        nome,
+        avatar,
         userId,
         role: Role.ADMIN,
       },
@@ -131,41 +132,53 @@ export class FinanceiroService {
   }
 
   async salvarMembro(tenantId: string, membroData: MembroDto) {
-    const { id, nome, avatar, email, password, ativo, role, cargoId } = membroData;
+    const { id, nome, email, password, ativo, role } = membroData;
     let { userId } = membroData;
 
-    const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
+    const finalEmail = email || (membroData as any).username;
+
     const isActive = ativo !== undefined ? ativo : true;
     const memberRole = role || Role.MORADOR;
-    const finalCargoId = memberRole === Role.ADMIN ? null : (cargoId || null);
 
-    await this.validarRegrasSalvarMembro(tenantId, id, email, password, memberRole, isActive);
+    await this.validarRegrasSalvarMembro(tenantId, id, finalEmail, password, memberRole, isActive);
 
-    if (!userId && email && password) {
-      const newUser = await this.authService.register(email, nome, password);
+    if (!userId && finalEmail && password) {
+      const newUser = await this.authService.register(finalEmail, nome, password);
       userId = newUser.userId;
     }
 
-    const upserted = await this.prisma.membroCasa.upsert({
+    const upserted = await this.persistirMembro(tenantId, {
+      ...membroData,
+      ativo: isActive,
+      role: memberRole,
+      userId,
+    });
+
+    this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
+    return serializeBigInt(upserted);
+  }
+
+  private async persistirMembro(tenantId: string, data: MembroDto) {
+    const { id, nome, avatar, ativo, role, cargoId, userId } = data;
+    const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
+    const finalCargoId = role === Role.ADMIN ? null : (cargoId || null);
+
+    return this.prisma.membroCasa.upsert({
       where: { id_tenantId: { id, tenantId } },
       create: {
         id, tenantId, nome, avatar: defaultAvatar,
-        ativo: isActive, role: memberRole, cargoId: finalCargoId, userId,
+        ativo: ativo!, role: role!, cargoId: finalCargoId, userId,
       },
       update: {
         nome, avatar: defaultAvatar,
-        ativo: isActive, role: memberRole, cargoId: finalCargoId, userId,
+        ativo: ativo!, role: role!, cargoId: finalCargoId, userId,
       },
       include: { cargo: true },
     });
-
-    const result = serializeBigInt(upserted);
-    this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
-    return result;
   }
 
   private async validarRegrasSalvarMembro(
-    tenantId: string, id: string, email?: string, password?: string,
+    tenantId: string, id: string, emailOrUsername?: string, password?: string,
     newRole?: Role, isActive?: boolean
   ) {
     const membroAtual = await this.prisma.membroCasa.findUnique({
@@ -173,8 +186,8 @@ export class FinanceiroService {
     });
 
     if (!membroAtual) {
-      if (!email?.trim() || !password?.trim()) {
-        throw new BadRequestException('E-mail e senha são obrigatórios para a criação de um novo morador com acesso.');
+      if (!emailOrUsername?.trim() || !password?.trim()) {
+        throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
       }
       return;
     }
@@ -362,59 +375,58 @@ export class FinanceiroService {
   }
 
   private async upsertGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
-    const {
-      id,
-      faturaId,
-      descricao,
-      valorTotalCentavos,
-      compradorId,
-      installments,
-      totalInstallments,
-      isLoan,
-      borrowerId,
-      recurringBillId,
-      isSettlement,
-      settlementDetails,
-      method,
-      cardOwnerId,
-      grupoParcelasId,
-      divisoes,
-    } = g;
+    await tx.divisaoGasto.deleteMany({ where: { gastoId: g.id, tenantId } });
 
-    await tx.divisaoGasto.deleteMany({ where: { gastoId: id, tenantId } });
+    await this.persistirGastoBase(tx, tenantId, g);
 
-    await tx.gasto.upsert({
-      where: { id_tenantId: { id, tenantId } },
-      create: {
-        id, tenantId, faturaId, descricao,
-        valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
-      },
-      update: {
-        faturaId, descricao,
-        valorTotalCentavos: BigInt(valorTotalCentavos || 0),
-        compradorId, installments, totalInstallments,
-        isLoan, borrowerId, recurringBillId,
-        isSettlement, settlementDetails, method, cardOwnerId, grupoParcelasId,
-      },
-    });
-
-    if (divisoes && divisoes.length > 0) {
-      await tx.divisaoGasto.createMany({
-        data: divisoes.map(d => ({
-          tenantId,
-          gastoId: id,
-          membroId: d.membroId,
-          valorCentavos: BigInt(d.valorCentavos || 0),
-        })),
-      });
+    if (g.divisoes?.length) {
+      await this.persistirDivisoesGasto(tx, tenantId, g.id, g.divisoes);
     }
 
     return tx.gasto.findUnique({
-      where: { id_tenantId: { id, tenantId } },
+      where: { id_tenantId: { id: g.id, tenantId } },
       include: { divisoes: true },
+    });
+  }
+
+  private async persistirGastoBase(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    const data = {
+      faturaId: g.faturaId,
+      descricao: g.descricao,
+      valorTotalCentavos: BigInt(g.valorTotalCentavos || 0),
+      compradorId: g.compradorId,
+      installments: g.installments,
+      totalInstallments: g.totalInstallments,
+      isLoan: g.isLoan,
+      borrowerId: g.borrowerId,
+      recurringBillId: g.recurringBillId,
+      isSettlement: g.isSettlement,
+      settlementDetails: g.settlementDetails as Prisma.InputJsonValue,
+      method: g.method,
+      cardOwnerId: g.cardOwnerId,
+      grupoParcelasId: g.grupoParcelasId,
+    };
+
+    return tx.gasto.upsert({
+      where: { id_tenantId: { id: g.id, tenantId } },
+      create: { id: g.id, tenantId, ...data },
+      update: data,
+    });
+  }
+
+  private async persistirDivisoesGasto(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    gastoId: string,
+    divisoes: { membroId: string; valorCentavos: number }[]
+  ) {
+    return tx.divisaoGasto.createMany({
+      data: divisoes.map(d => ({
+        tenantId,
+        gastoId,
+        membroId: d.membroId,
+        valorCentavos: BigInt(d.valorCentavos || 0),
+      })),
     });
   }
 

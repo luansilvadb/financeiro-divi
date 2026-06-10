@@ -43,7 +43,6 @@ const mockCalculations = {
   gastosDaFatura: vi.fn(() => []),
   currentMonthName: ref('Maio'),
   currentYear: ref(2026),
-  parcelasFuturasDetalhadas: ref([]),
 }
 
 const mockUseCartoesEFaturasSpy = vi.fn<(deps?: any) => any>(() => mockCartoesEFaturas)
