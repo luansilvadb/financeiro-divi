@@ -156,4 +156,102 @@ describe('LancamentoService', () => {
       periodo: { mes: 5, ano: 2026 }
     })).resolves.not.toThrow()
   })
+
+  it('deve lancar um emprestimo simples com sucesso', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo([
+      new Fatura({ id: 'f1', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
+    ])
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([]), excluir: vi.fn() }
+
+    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.lancarGastoOuEmprestimo({
+      flow: 'loan',
+      paymentMethod: 'pix',
+      compradorId: 'm1',
+      valor: 50,
+      descricao: 'Café',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))],
+      installments: 1,
+      cardOwnerId: null,
+      borrowerId: 'm2',
+      periodo: { mes: 5, ano: 2026 }
+    })
+
+    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      descricao: 'Café',
+      isLoan: true,
+      borrowerId: 'm2'
+    }))
+  })
+
+  it('deve usar descricao padrao para emprestimo se estiver vazia', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([]), excluir: vi.fn() }
+
+    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.lancarGastoOuEmprestimo({
+      flow: 'loan',
+      paymentMethod: 'pix',
+      compradorId: 'm1',
+      valor: 50,
+      descricao: '   ',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(50))],
+      installments: 1,
+      cardOwnerId: null,
+      borrowerId: 'm2',
+      periodo: { mes: 5, ano: 2026 }
+    })
+
+    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      descricao: 'Empréstimo Pessoal'
+    }))
+  })
+
+  it('deve lancar gasto no cartao com 1 parcela como gasto individual', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
+
+    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.lancarGastoOuEmprestimo({
+      flow: 'expense',
+      paymentMethod: 'card',
+      compradorId: 'm1',
+      valor: 100,
+      descricao: 'Compra Unica',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(100))],
+      installments: 1,
+      cardOwnerId: 'c1',
+      borrowerId: null,
+      periodo: { mes: 5, ano: 2026 }
+    })
+
+    expect(mockGastoRepo.salvar).toHaveBeenCalledTimes(1)
+    expect(mockGastoRepo.salvarMuitos).not.toHaveBeenCalled()
+  })
+
+  it('deve lancar emprestimo parcelado no cartao (verificando que isLoan fica false atualmente)', async () => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockFaturaRepo = criarMockFaturaRepo()
+    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
+
+    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    await service.lancarGastoOuEmprestimo({
+      flow: 'loan',
+      paymentMethod: 'card',
+      compradorId: 'm1',
+      valor: 200,
+      descricao: 'Emprestimo Parcelado',
+      divisoes: [new DivisaoDeGasto('m1', Dinheiro.deReais(200))],
+      installments: 2,
+      cardOwnerId: 'c1',
+      borrowerId: 'm2',
+      periodo: { mes: 5, ano: 2026 }
+    })
+
+    const gastosSalvos = mockGastoRepo.salvarMuitos.mock.calls[0][0] as Gasto[]
+    expect(gastosSalvos.every(g => g.isLoan === false)).toBe(true)
+  })
 })
