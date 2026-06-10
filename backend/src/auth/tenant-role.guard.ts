@@ -17,16 +17,18 @@ export class TenantRoleGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
-
     const request = context.switchToHttp().getRequest();
     const user = request.user;
     const tenantId = request.headers['x-tenant-id'];
 
-    if (!user || !tenantId) {
-      throw new ForbiddenException('Identificação do usuário ou casa ausente.');
+    // Se não há header de tenant, e não há roles exigidas, permite passar (ex: rotas globais)
+    if (!tenantId) {
+      return !requiredRoles || requiredRoles.length === 0;
+    }
+
+    // Se há tenantId, o usuário DEVE estar autenticado
+    if (!user) {
+      throw new ForbiddenException('Identificação do usuário ausente.');
     }
 
     const membro = await this.prisma.membroCasa.findFirst({
@@ -41,9 +43,12 @@ export class TenantRoleGuard implements CanActivate {
       throw new ForbiddenException('Você não é um membro ativo desta moradia.');
     }
 
-    const hasRole = requiredRoles.includes(membro.role);
-    if (!hasRole) {
-      throw new ForbiddenException('Você não possui permissão para executar esta ação.');
+    // Se houver roles exigidas, verifica se o membro as possui
+    if (requiredRoles && requiredRoles.length > 0) {
+      const hasRole = requiredRoles.includes(membro.role);
+      if (!hasRole) {
+        throw new ForbiddenException('Você não possui permissão para executar esta ação.');
+      }
     }
 
     return true;
