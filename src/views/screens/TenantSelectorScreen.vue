@@ -3,7 +3,7 @@ import { ref, reactive } from 'vue'
 import { tenantSessionService } from '../../shared/container'
 import { Home, Plus, Key, ArrowRight, LogOut, Check, ChevronLeft } from 'lucide-vue-next'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
-import { mensagemErro } from '../../shared/utils/mensagemErro'
+import { useAsync } from '../../composables/useAsync'
 
 const emit = defineEmits<{
   'casa-selecionada': []
@@ -13,9 +13,9 @@ const emit = defineEmits<{
 type Modo = 'inicio' | 'criar' | 'entrar'
 const modo = ref<Modo>('inicio')
 
+const { loading, errorMsg, run } = useAsync()
+
 const estado = reactive({
-  loading: false,
-  erro: '',
   casaCriada: null as null | { name: string; inviteCode: string }
 })
 
@@ -26,35 +26,33 @@ const username = localStorage.getItem('divi_username') || 'você'
 
 async function criarCasa() {
   if (!nomeCasa.value.trim()) {
-    estado.erro = 'Dê um nome para a sua casa'
+    errorMsg.value = 'Dê um nome para a sua casa'
     return
   }
-  estado.loading = true
-  estado.erro = ''
-  try {
-    const tenant = await tenantSessionService.criarCasa(nomeCasa.value.trim())
+
+  const tenant = await run(
+    () => tenantSessionService.criarCasa(nomeCasa.value.trim()),
+    'Não foi possível criar a casa'
+  )
+
+  if (tenant) {
     estado.casaCriada = tenant
-  } catch (err: unknown) {
-    estado.erro = mensagemErro(err, 'Não foi possível criar a casa')
-  } finally {
-    estado.loading = false
   }
 }
 
 async function entrarCasa() {
   if (!codigoConvite.value.trim()) {
-    estado.erro = 'Digite o código de convite'
+    errorMsg.value = 'Digite o código de convite'
     return
   }
-  estado.loading = true
-  estado.erro = ''
-  try {
-    await tenantSessionService.entrarCasa(codigoConvite.value.trim())
+
+  const success = await run(
+    () => tenantSessionService.entrarCasa(codigoConvite.value.trim()),
+    'Código inválido ou casa não encontrada'
+  )
+
+  if (success) {
     emit('casa-selecionada')
-  } catch (err: unknown) {
-    estado.erro = mensagemErro(err, 'Código inválido ou casa não encontrada')
-  } finally {
-    estado.loading = false
   }
 }
 
@@ -64,7 +62,7 @@ function irParaDashboard() {
 
 function voltar() {
   modo.value = 'inicio'
-  estado.erro = ''
+  errorMsg.value = ''
   estado.casaCriada = null
   nomeCasa.value = ''
   codigoConvite.value = ''
@@ -202,18 +200,18 @@ function voltar() {
                 </div>
 
                 <Transition name="fade">
-                  <div v-if="estado.erro" role="alert" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
+                  <div v-if="errorMsg" role="alert" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
                     <span>⚠️</span>
-                    <span>{{ estado.erro }}</span>
+                    <span>{{ errorMsg }}</span>
                   </div>
                 </Transition>
 
                 <button
                   @click="criarCasa"
-                  :disabled="estado.loading || !nomeCasa.trim()"
+                  :disabled="loading || !nomeCasa.trim()"
                   class="w-full bg-ember hover:opacity-90 disabled:opacity-50 text-white font-bold py-4 px-6 rounded-pill text-xs tracking-widest uppercase transition-all duration-300 shadow-md flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95"
                 >
-                  <span v-if="estado.loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                  <span v-if="loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
                   <Home class="w-4 h-4" v-else />
                   Criar Casa
                 </button>
@@ -249,18 +247,18 @@ function voltar() {
           </div>
 
           <Transition name="fade">
-            <div v-if="estado.erro" role="alert" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
+            <div v-if="errorMsg" role="alert" class="bg-coral/10 text-coral text-caption px-4 py-3 rounded-card flex items-center gap-2 font-semibold">
               <span>⚠️</span>
-              <span>{{ estado.erro }}</span>
+              <span>{{ errorMsg }}</span>
             </div>
           </Transition>
 
           <button
             @click="entrarCasa"
-            :disabled="estado.loading || !codigoConvite.trim()"
+            :disabled="loading || !codigoConvite.trim()"
             class="w-full bg-midnight hover:bg-charcoal disabled:opacity-50 text-white font-bold py-4 px-6 rounded-pill text-xs tracking-widest uppercase transition-all duration-300 shadow-md flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95"
           >
-            <span v-if="estado.loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
+            <span v-if="loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
             <Key class="w-4 h-4" v-else />
             Entrar na Casa
           </button>

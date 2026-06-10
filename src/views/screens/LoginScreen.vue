@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useLoginViewModel } from '../../viewmodels/useLoginViewModel'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
-import { mensagemErro } from '../../shared/utils/mensagemErro'
+import { useAsync } from '../../composables/useAsync'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import type { InvitePreview } from '../../models/services/TenantSessionService'
 
@@ -24,7 +24,7 @@ const {
 } = useLoginViewModel()
 
 const isRegisterMode = ref(false)
-const loading = ref(false)
+const { loading, errorMsg: errorMsgAsync, run } = useAsync()
 const housePreview = ref<InvitePreview | null>(null)
 const selectedMembroNome = ref('')
 const showPassword = ref(false)
@@ -51,17 +51,15 @@ const selectMembro = (membro: InvitePreview['membrosDisponiveis'][number]) => {
 }
 
 const onSubmit = async () => {
-  loading.value = true
-  errorMsg.value = ''
-  try {
-    const success = isRegisterMode.value ? await handleRegister() : await handleLogin()
-    if (success) {
-      emit('auth-success')
-    }
-  } catch (e: unknown) {
-    errorMsg.value = mensagemErro(e, 'Ocorreu um erro inesperado')
-  } finally {
-    loading.value = false
+  const success = await run(
+    () => isRegisterMode.value ? handleRegister() : handleLogin(),
+    'Ocorreu um erro inesperado'
+  )
+
+  if (success) {
+    emit('auth-success')
+  } else if (errorMsgAsync.value) {
+    errorMsg.value = errorMsgAsync.value
   }
 }
 </script>
