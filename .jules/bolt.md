@@ -5,3 +5,7 @@
 ## 2026-06-04 - [Optimized BigInt Serialization & Date Bug Fix]
 **Learning:** Generic recursive serialization utilities (like `serializeBigInt`) can be performance bottlenecks and sources of subtle bugs (like `Date` objects being corrupted into empty objects). Using `for...in` instead of `Object.keys().map()` reduces intermediate allocations and garbage collection pressure in deep traversals.
 **Action:** Use manual loops and pre-allocated arrays for critical path serialization. Always include explicit guards for `Date` and other built-in types to prevent data loss during cloning.
+
+## 2026-06-05 - [Async Email Sending in Auth Service]
+**Learning:** Awaiting third-party I/O (like SMTP email sending) during a synchronous API request drastically increases response latency and exposes the server to upstream bottlenecks. Fire-and-forget patterns (with proper background error handling) ensure consistent performance and prevent timing attacks.
+**Action:** Remove `await` from email service calls in controllers/services where immediate confirmation of delivery is not required for the user's next step.

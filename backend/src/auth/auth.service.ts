@@ -178,7 +178,7 @@ export class AuthService {
     });
 
     // Enviar e-mail sem travar a thread principal (ou aguardar)
-    await this.mailService.sendPasswordResetEmail(user.email, token).catch(e => {
+    this.mailService.sendPasswordResetEmail(user.email, token).catch(e => {
       console.error('Falha ao enviar email:', e);
     });
 
