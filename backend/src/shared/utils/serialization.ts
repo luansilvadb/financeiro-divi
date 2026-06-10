@@ -13,11 +13,7 @@ export function serializeBigInt<T>(obj: T): Serialized<T> {
   if (obj instanceof Date) return obj as Serialized<T>;
 
   if (Array.isArray(obj)) {
-    const serialized: unknown[] = new Array(obj.length);
-    for (let index = 0; index < obj.length; index++) {
-      serialized[index] = serializeBigInt(obj[index]);
-    }
-    return serialized as Serialized<T>;
+    return obj.map(serializeBigInt) as Serialized<T>;
   }
 
   const record = obj as Record<string, unknown>;
