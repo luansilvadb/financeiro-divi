@@ -12,7 +12,7 @@ import { MailModule } from '../shared/mail/mail.module';
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'super-secret-key-12345',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '60d' },
     }),
     forwardRef(() => FinanceiroModule),
