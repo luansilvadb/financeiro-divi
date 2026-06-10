@@ -1,24 +1,16 @@
-import { ref, computed, onMounted, reactive, type UnwrapRef } from 'vue'
+import { ref, computed, onMounted, reactive, type UnwrapRef, type Ref } from 'vue'
 import { tenantSessionService } from '../shared/container'
 import { useToast } from '../composables/useToast'
 import type { TenantSummary } from '../models/services/TenantSessionService'
 import { mensagemErro } from '../shared/utils/mensagemErro'
 
-export function useCasasMultitenant() {
-  const toast = useToast()
+/**
+ * Handles the core tenant session state and synchronization.
+ */
+function useTenantSessionState() {
   const isAuthed = ref(tenantSessionService.isAuthenticated())
   const activeTenantId = ref(tenantSessionService.getActiveTenantId())
   const casas = ref<TenantSummary[]>(tenantSessionService.getTenants())
-  const showBottomSheetCasas = ref(false)
-  const isCreating = ref(false)
-  const isEntering = ref(false)
-
-  const form = reactive({
-    nomeNovaCasa: '',
-    codigoConvite: '',
-    errorCasa: ''
-  })
-  const copiedCode = ref<string | null>(null)
 
   const activeTenantObj = computed(() => {
     return casas.value.find(c => c.id === activeTenantId.value) || null
@@ -29,27 +21,26 @@ export function useCasasMultitenant() {
     activeTenantId.value = tenantSessionService.getActiveTenantId()
   }
 
-  const carregarCasas = async () => {
-    if (!isAuthed.value) return
-    try {
-      await tenantSessionService.inicializarSessao()
-      isAuthed.value = tenantSessionService.isAuthenticated()
-      if (!isAuthed.value) {
-        window.location.reload()
-        return
-      }
-      sincronizarCasas()
-    } catch (err) {
-      console.error('Erro ao carregar casas:', err)
-    }
+  return {
+    isAuthed,
+    activeTenantId,
+    casas,
+    activeTenantObj,
+    sincronizarCasas
   }
+}
 
-  const selecionarCasa = (id: string) => {
-    tenantSessionService.setActiveTenant(id)
-    activeTenantId.value = id
-    showBottomSheetCasas.value = false
-    window.dispatchEvent(new CustomEvent('divi:tenant-changed'))
-  }
+/**
+ * Handles creating and joining houses (tenants).
+ */
+function useTenantManagement(sincronizarCasas: () => void, toast: ReturnType<typeof useToast>) {
+  const isCreating = ref(false)
+  const isEntering = ref(false)
+  const form = reactive({
+    nomeNovaCasa: '',
+    codigoConvite: '',
+    errorCasa: ''
+  })
 
   const criarNovaCasa = async () => {
     form.errorCasa = ''
@@ -94,6 +85,29 @@ export function useCasasMultitenant() {
     }
   }
 
+  return {
+    form,
+    isCreating,
+    isEntering,
+    criarNovaCasa,
+    entrarPorCodigo
+  }
+}
+
+/**
+ * Handles UI interactions related to tenants (bottom sheet, clipboard).
+ */
+function useTenantUI(activeTenantId: Ref<string | null>, toast: ReturnType<typeof useToast>) {
+  const showBottomSheetCasas = ref(false)
+  const copiedCode = ref<string | null>(null)
+
+  const selecionarCasa = (id: string) => {
+    tenantSessionService.setActiveTenant(id)
+    activeTenantId.value = id
+    showBottomSheetCasas.value = false
+    window.dispatchEvent(new CustomEvent('divi:tenant-changed'))
+  }
+
   const copyInviteCode = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code)
@@ -103,6 +117,55 @@ export function useCasasMultitenant() {
     } catch (err) {
       toast.show('Não foi possível copiar o link', 'error')
       console.error('Falha ao copiar:', err)
+    }
+  }
+
+  return {
+    showBottomSheetCasas,
+    copiedCode,
+    selecionarCasa,
+    copyInviteCode
+  }
+}
+
+export function useCasasMultitenant() {
+  const toast = useToast()
+
+  const {
+    isAuthed,
+    activeTenantId,
+    casas,
+    activeTenantObj,
+    sincronizarCasas
+  } = useTenantSessionState()
+
+  const {
+    form,
+    isCreating,
+    isEntering,
+    criarNovaCasa,
+    entrarPorCodigo
+  } = useTenantManagement(sincronizarCasas, toast)
+
+  const {
+    showBottomSheetCasas,
+    copiedCode,
+    selecionarCasa,
+    copyInviteCode
+  } = useTenantUI(activeTenantId, toast)
+
+  const carregarCasas = async () => {
+    if (!isAuthed.value) return
+    try {
+      await tenantSessionService.inicializarSessao()
+      isAuthed.value = tenantSessionService.isAuthenticated()
+      if (!isAuthed.value) {
+        window.location.reload()
+        return
+      }
+      sincronizarCasas()
+    } catch (err) {
+      console.error('Erro ao carregar casas:', err)
     }
   }
 
