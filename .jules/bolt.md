@@ -6,6 +6,12 @@
 **Learning:** Generic recursive serialization utilities (like `serializeBigInt`) can be performance bottlenecks and sources of subtle bugs (like `Date` objects being corrupted into empty objects). Using `for...in` instead of `Object.keys().map()` reduces intermediate allocations and garbage collection pressure in deep traversals.
 **Action:** Use manual loops and pre-allocated arrays for critical path serialization. Always include explicit guards for `Date` and other built-in types to prevent data loss during cloning.
 
+<<<<<<< perf-async-email-auth-4111698635161902795
+## 2026-06-05 - [Async Email Sending in Auth Service]
+**Learning:** Awaiting third-party I/O (like SMTP email sending) during a synchronous API request drastically increases response latency and exposes the server to upstream bottlenecks. Fire-and-forget patterns (with proper background error handling) ensure consistent performance and prevent timing attacks.
+**Action:** Remove `await` from email service calls in controllers/services where immediate confirmation of delivery is not required for the user's next step.
+=======
 ## 2026-06-05 - [Sequential execution in Prisma Interactive Transactions]
 **Learning:** Prisma interactive transactions (`prisma.$transaction(async tx => ...)`) use a single database connection. Running multiple operations concurrently using `Promise.all(map(...))` within the transaction can lead to connection starvation and decreased stability.
 **Action:** Replace `Promise.all(map(...))` with a `for...of` loop when performing multiple database operations inside a Prisma interactive transaction to ensure sequential execution and preserve connection limits.
+>>>>>>> master
