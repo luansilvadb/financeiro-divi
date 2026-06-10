@@ -87,9 +87,9 @@ defineExpose({
           />
         </div>
 
-        <!-- Método de Acerto -->
+        <!-- Meio de Acerto -->
         <div class="space-y-2">
-          <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Método de Baixa</label>
+          <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Meio de Baixa</label>
           <div class="grid grid-cols-2 gap-2">
             <button 
               v-for="m in metodos"
