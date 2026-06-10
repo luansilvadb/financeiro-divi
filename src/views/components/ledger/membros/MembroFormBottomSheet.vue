@@ -77,11 +77,11 @@ export default {
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Usuário</label>
-          <input v-model="novoUsername" type="text" placeholder="luana.ol" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all" />
+          <input v-model="novoUsername" type="text" placeholder="luana.ol" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember placeholder:text-ash text-sm transition-all" />
         </div>
         <div class="space-y-2">
           <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
-          <input v-model="novoPassword" type="password" placeholder="••••••" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember text-sm transition-all" />
+          <input v-model="novoPassword" type="password" placeholder="••••••" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember placeholder:text-ash text-sm transition-all" />
         </div>
       </div>
     </div>

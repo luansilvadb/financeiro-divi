@@ -63,7 +63,7 @@ const emit = defineEmits(['close'])
             v-model="casasMultitenant.form.nomeNovaCasa"
             placeholder="Ex: República Central"
             @keyup.enter="casasMultitenant.criarNovaCasa"
-            class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-3.5 text-sm font-bold text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
+            class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-3.5 text-sm font-bold text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all"
           />
           <Button @click="casasMultitenant.criarNovaCasa" :loading="casasMultitenant.isCreating" class="font-bold uppercase tracking-widest text-[10px] h-12">Criar</Button>
         </div>
@@ -76,7 +76,7 @@ const emit = defineEmits(['close'])
             v-model="casasMultitenant.form.codigoConvite"
             placeholder="Ex: CASA-7F2A1"
             @keyup.enter="casasMultitenant.entrarPorCodigo"
-            class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-3.5 text-sm font-bold text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all"
+            class="flex-1 bg-canvas border border-stone rounded-xl px-4 py-3.5 text-sm font-bold text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all"
           />
           <Button @click="casasMultitenant.entrarPorCodigo" :loading="casasMultitenant.isEntering" class="font-bold uppercase tracking-widest text-[10px] h-12">Entrar</Button>
         </div>

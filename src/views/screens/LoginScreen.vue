@@ -149,7 +149,7 @@ const onSubmit = async () => {
               tabindex="1"
               placeholder="Como quer ser chamado"
               autocomplete="name"
-              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all duration-200"
             />
           </div>
 
@@ -166,7 +166,7 @@ const onSubmit = async () => {
               tabindex="2"
               placeholder="seu@email.com"
               autocomplete="email"
-              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all duration-200"
             />
           </div>
 
@@ -195,7 +195,7 @@ const onSubmit = async () => {
                 tabindex="3"
                 placeholder="••••••••"
                 autocomplete="current-password"
-                class="w-full bg-canvas border border-stone rounded-card pl-4 pr-12 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+                class="w-full bg-canvas border border-stone rounded-card pl-4 pr-12 py-3.5 text-body text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all duration-200"
               />
               <button
                 type="button"

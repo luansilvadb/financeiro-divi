@@ -73,7 +73,7 @@ const onSubmit = async () => {
               :type="showPassword ? 'text' : 'password'"
               required
               placeholder="••••••••"
-              class="w-full bg-canvas border border-stone rounded-card pl-4 pr-12 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+              class="w-full bg-canvas border border-stone rounded-card pl-4 pr-12 py-3.5 text-body text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all duration-200"
             />
             <button
               type="button"
