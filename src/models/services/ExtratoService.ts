@@ -44,24 +44,9 @@ export class ExtratoService {
           centavosConsumidos = valorParcelaCentavos
         }
       } else {
-        const pagadorId = (g.method === 'card' && g.cardOwner) ? g.cardOwner : g.compradorId
-        
-        let totalDebitosParcela = 0
-        g.divisoes.forEach(div => {
-          const valorDebito = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
-          if (valorDebito.centavos > 0) {
-            const centavosDiv = valorDebito.centavos
-            totalDebitosParcela += centavosDiv
-            
-            if (div.membroId === membroId) {
-              centavosConsumidos = centavosDiv
-            }
-          }
-        })
-
-        if (pagadorId === membroId) {
-          centavosPagos = totalDebitosParcela
-        }
+        const { pagos, consumidos } = this.processarGastoComum(membroId, g)
+        centavosPagos = pagos
+        centavosConsumidos = consumidos
       }
 
       const valorPago = Dinheiro.deCentavos(centavosPagos)
@@ -106,25 +91,53 @@ export class ExtratoService {
           if (g.compradorId && breakdown[g.compradorId]) {
             breakdown[g.compradorId].pixFez += valorParcela
           }
-          g.divisoes.forEach(d => {
-            if (breakdown[d.membroId]) {
-              breakdown[d.membroId].pixConsumo += valorParcelaAtual(d.valor, g.installments, g.totalInstallments).centavos
-            }
-          })
+          this.acumularConsumo(g, breakdown, 'pixConsumo')
         } else {
           const pagadorId = g.cardOwner || g.compradorId
           if (pagadorId && breakdown[pagadorId]) {
             breakdown[pagadorId].cardFez += valorParcela
           }
-          g.divisoes.forEach(d => {
-            if (breakdown[d.membroId]) {
-              breakdown[d.membroId].cardConsumo += valorParcelaAtual(d.valor, g.installments, g.totalInstallments).centavos
-            }
-          })
+          this.acumularConsumo(g, breakdown, 'cardConsumo')
         }
       }
     })
 
     return breakdown
+  }
+
+  private static processarGastoComum(membroId: string, g: Gasto): { pagos: number, consumidos: number } {
+    const pagadorId = (g.method === 'card' && g.cardOwner) ? g.cardOwner : g.compradorId
+
+    let centavosConsumidos = 0
+    let totalDebitosParcela = 0
+
+    g.divisoes.forEach(div => {
+      const valorDebito = valorParcelaAtual(div.valor, g.installments, g.totalInstallments)
+      if (valorDebito.centavos > 0) {
+        const centavosDiv = valorDebito.centavos
+        totalDebitosParcela += centavosDiv
+
+        if (div.membroId === membroId) {
+          centavosConsumidos = centavosDiv
+        }
+      }
+    })
+
+    return {
+      pagos: (pagadorId === membroId) ? totalDebitosParcela : 0,
+      consumidos: centavosConsumidos
+    }
+  }
+
+  private static acumularConsumo(
+    gasto: Gasto,
+    breakdown: Record<string, BreakdownGranular>,
+    tipo: 'pixConsumo' | 'cardConsumo'
+  ): void {
+    gasto.divisoes.forEach(d => {
+      if (breakdown[d.membroId]) {
+        breakdown[d.membroId][tipo] += valorParcelaAtual(d.valor, gasto.installments, gasto.totalInstallments).centavos
+      }
+    })
   }
 }
