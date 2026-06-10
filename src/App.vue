@@ -5,6 +5,8 @@ import DashboardSaldos from './views/screens/DashboardSaldos.vue'
 import ConfiguracoesMembros from './views/screens/ConfiguracoesMembros.vue'
 import BottomSheet from './views/components/ui/BottomSheet.vue'
 import LoginScreen from './views/screens/LoginScreen.vue'
+import ForgotPasswordScreen from './views/screens/ForgotPasswordScreen.vue'
+import ResetPasswordScreen from './views/screens/ResetPasswordScreen.vue'
 import TenantSelectorScreen from './views/screens/TenantSelectorScreen.vue'
 import { Plus } from 'lucide-vue-next'
 import { useMembros } from './viewmodels/useMembros'
@@ -21,6 +23,8 @@ import { mensagemErro } from './shared/utils/mensagemErro'
 const isInitializing = ref(true)
 const isLoading = ref(tenantSessionService.isAuthenticated())
 const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
+const showForgot = ref(false)
+const resetToken = ref<string | null>(null)
 const activeTab = ref<Tab>('hoje')
 const { isAnyBottomSheetOpen } = useBottomSheetState()
 const { ativos, membros: todosMembros, inicializar: inicializarMembros, carregar: recarregarMembros } = useMembros()
@@ -71,6 +75,17 @@ const inicializarSocket = (tenantId: string) => {
 onMounted(async () => {
   window.addEventListener('divi:tenant-changed', handleCasaSelecionada)
   
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get('token')
+  if (token && window.location.pathname.includes('/reset-password')) {
+    resetToken.value = token
+    // Prevenir auto-login se estiver no fluxo de reset
+    isAuthed.value = false
+    isInitializing.value = false
+    isLoading.value = false
+    return
+  }
+
   if (isAuthed.value) {
     try {
       isLoading.value = true
@@ -108,9 +123,14 @@ const handleSalvarTransacao = async () => {
   } catch (error: unknown) {
     console.error('Erro ao recarregar cartões após salvar transação:', error)
     toast.show(mensagemErro(error, 'Erro ao sincronizar dados com o servidor'), 'error')
-    currentView.value = 'dashboard'
   }
 }
+
+const handleResetSuccess = () => {
+  resetToken.value = null
+  toast.show('Senha redefinida com sucesso. Faça login com a nova senha.', 'success')
+}
+
 const handleAuthSuccess = async () => {
   isAuthed.value = true
   hasTenant.value = !!tenantSessionService.getActiveTenantId()
@@ -185,7 +205,20 @@ const handleLogout = async () => {
       <div v-else class="min-h-screen bg-canvas">
         <!-- Não autenticado -->
         <div v-if="!isAuthed">
-          <LoginScreen @auth-success="handleAuthSuccess" />
+          <ResetPasswordScreen 
+            v-if="resetToken" 
+            :token="resetToken" 
+            @reset-success="handleResetSuccess" 
+          />
+          <ForgotPasswordScreen 
+            v-else-if="showForgot" 
+            @back="showForgot = false" 
+          />
+          <LoginScreen 
+            v-else 
+            @auth-success="handleAuthSuccess" 
+            @forgot-password="showForgot = true" 
+          />
         </div>
         <!-- Autenticado mas sem casa -->
         <div v-else-if="!hasTenant">

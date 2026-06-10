@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { FinanceiroModule } from '../financeiro/financeiro.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { MailModule } from '../shared/mail/mail.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     }),
     forwardRef(() => FinanceiroModule),
     PrismaModule,
+    MailModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

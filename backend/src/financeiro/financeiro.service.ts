@@ -52,13 +52,15 @@ export class FinanceiroService {
       },
     });
 
+
+
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
     await this.prisma.membroCasa.create({
       data: {
         id: `membro-${randomUUID()}`,
         tenantId: tenant.id,
-        nome: user ? user.username : 'Membro Fundador',
-        avatar: (user ? user.username : 'MF').substring(0, 2).toUpperCase(),
+        nome: user ? user.nome : 'Membro Fundador',
+        avatar: (user ? user.nome : 'MF').substring(0, 2).toUpperCase(),
         userId,
         role: Role.ADMIN,
       },
@@ -89,12 +91,12 @@ export class FinanceiroService {
 
   private async vincularOuCriarMembroAoSistema(tenantId: string, userId: string) {
     const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
-    const username = user ? user.username : 'Convidado';
+    const nome = user ? user.nome : 'Convidado';
 
     const perfilExistente = await this.prisma.membroCasa.findFirst({
       where: {
         tenantId,
-        nome: { equals: username, mode: 'insensitive' },
+        nome: { equals: nome, mode: 'insensitive' },
         userId: null,
       },
     });
@@ -111,8 +113,8 @@ export class FinanceiroService {
       data: {
         id: `membro-${randomUUID()}`,
         tenantId,
-        nome: username,
-        avatar: username.substring(0, 2).toUpperCase(),
+        nome: nome,
+        avatar: nome.substring(0, 2).toUpperCase(),
         userId,
       },
     });
@@ -129,7 +131,7 @@ export class FinanceiroService {
   }
 
   async salvarMembro(tenantId: string, membroData: MembroDto) {
-    const { id, nome, avatar, username, password, ativo, role, cargoId } = membroData;
+    const { id, nome, avatar, email, password, ativo, role, cargoId } = membroData;
     let { userId } = membroData;
 
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
@@ -137,10 +139,10 @@ export class FinanceiroService {
     const memberRole = role || Role.MORADOR;
     const finalCargoId = memberRole === Role.ADMIN ? null : (cargoId || null);
 
-    await this.validarRegrasSalvarMembro(tenantId, id, username, password, memberRole, isActive);
+    await this.validarRegrasSalvarMembro(tenantId, id, email, password, memberRole, isActive);
 
-    if (!userId && username && password) {
-      const newUser = await this.authService.register(username, password);
+    if (!userId && email && password) {
+      const newUser = await this.authService.register(email, nome, password);
       userId = newUser.userId;
     }
 
@@ -163,7 +165,7 @@ export class FinanceiroService {
   }
 
   private async validarRegrasSalvarMembro(
-    tenantId: string, id: string, username?: string, password?: string,
+    tenantId: string, id: string, email?: string, password?: string,
     newRole?: Role, isActive?: boolean
   ) {
     const membroAtual = await this.prisma.membroCasa.findUnique({
@@ -171,8 +173,8 @@ export class FinanceiroService {
     });
 
     if (!membroAtual) {
-      if (!username?.trim() || !password?.trim()) {
-        throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
+      if (!email?.trim() || !password?.trim()) {
+        throw new BadRequestException('E-mail e senha são obrigatórios para a criação de um novo morador com acesso.');
       }
       return;
     }

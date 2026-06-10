@@ -7,10 +7,14 @@ import { mensagemErro } from '../../shared/utils/mensagemErro'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import type { InvitePreview } from '../../models/services/TenantSessionService'
 
-const emit = defineEmits(['auth-success'])
+const emit = defineEmits<{
+  (e: 'auth-success'): void
+  (e: 'forgot-password'): void
+}>()
 
 const {
-  username,
+  email,
+  nome,
   password,
   inviteCode,
   membroId,
@@ -41,7 +45,7 @@ onMounted(async () => {
 const selectMembro = (membro: InvitePreview['membrosDisponiveis'][number]) => {
   membroId.value = membro.id
   selectedMembroNome.value = membro.nome
-  username.value = membro.nome.toLowerCase().replace(/\s+/g, '.')
+  nome.value = membro.nome // Pré-preenche o nome
   isRegisterMode.value = true
 }
 
@@ -128,30 +132,56 @@ const onSubmit = async () => {
           <!-- Context Heading for Register -->
           <div v-if="isRegisterMode && housePreview" class="space-y-1">
             <h3 class="text-caption font-semibold text-graphite uppercase tracking-widest">Configurar Acesso</h3>
-            <p class="text-xs text-graphite/70">Escolha um nome de usuário e senha para entrar.</p>
+            <p class="text-xs text-graphite/70">Escolha um e-mail, nome e senha para entrar.</p>
           </div>
 
-          <!-- Username Input -->
-          <div class="space-y-2">
-            <label for="username" class="block text-caption font-semibold text-charcoal uppercase tracking-widest ml-1">
-              Nome de Usuário
+          <!-- Nome Input (Apenas Cadastro) -->
+          <div v-if="isRegisterMode" class="space-y-2 fade-in slide-in-from-top-2">
+            <label for="nome" class="block text-caption font-semibold text-charcoal uppercase tracking-widest ml-1">
+              Nome de Exibição
             </label>
             <input
-              id="username"
-              v-model="username"
+              id="nome"
+              v-model="nome"
               type="text"
               required
-              placeholder="Ex: luansilva"
-              autocomplete="username"
+              placeholder="Como quer ser chamado"
+              autocomplete="name"
+              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+            />
+          </div>
+
+          <!-- Email Input -->
+          <div class="space-y-2">
+            <label for="email" class="block text-caption font-semibold text-charcoal uppercase tracking-widest ml-1">
+              E-mail
+            </label>
+            <input
+              id="email"
+              v-model="email"
+              type="email"
+              required
+              placeholder="seu@email.com"
+              autocomplete="email"
               class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
             />
           </div>
 
           <!-- Password Input -->
           <div class="space-y-2">
-            <label for="password" class="block text-caption font-semibold text-charcoal uppercase tracking-widest ml-1">
-              Senha
-            </label>
+            <div class="flex items-center justify-between ml-1">
+              <label for="password" class="block text-caption font-semibold text-charcoal uppercase tracking-widest">
+                Senha
+              </label>
+              <button 
+                v-if="!isRegisterMode"
+                type="button" 
+                @click="emit('forgot-password')"
+                class="text-[10px] font-semibold text-ember hover:opacity-80 transition-opacity uppercase tracking-widest bg-transparent border-none cursor-pointer focus:outline-none"
+              >
+                Esqueci a senha
+              </button>
+            </div>
             <input
               id="password"
               v-model="password"

@@ -2,7 +2,8 @@ import { ref } from 'vue'
 import { tenantSessionService } from '../shared/container'
 
 export function useLoginViewModel() {
-  const username = ref('')
+  const email = ref('')
+  const nome = ref('')
   const password = ref('')
   const errorMsg = ref('')
   const inviteCode = ref('')
@@ -11,47 +12,47 @@ export function useLoginViewModel() {
 
   const handleLogin = async () => {
     errorMsg.value = ''
-    if (!username.value || !password.value) {
-      errorMsg.value = 'Preencha o nome e a senha'
+    if (!email.value || !password.value) {
+      errorMsg.value = 'Preencha o e-mail e a senha'
       return false
     }
-    const success = await tenantSessionService.login(username.value, password.value)
+    const success = await tenantSessionService.login(email.value, password.value)
     if (success) {
       isAuthed.value = true
-      localStorage.setItem('divi_username', username.value)
     } else {
-      errorMsg.value = 'Falha no login. Nome ou senha incorretos.'
+      errorMsg.value = 'Falha no login. E-mail ou senha incorretos.'
     }
     return success
   }
 
   const handleRegister = async () => {
     errorMsg.value = ''
-    if (!username.value || !password.value) {
-      errorMsg.value = 'Preencha o nome e a senha'
+    if (!email.value || !nome.value || !password.value) {
+      errorMsg.value = 'Preencha o e-mail, nome e senha'
       return false
     }
-    if (username.value.length < 3) {
-      errorMsg.value = 'O nome de usuário deve ter no mínimo 3 caracteres'
+    if (password.value.length < 6) {
+      errorMsg.value = 'A senha deve ter no mínimo 6 caracteres'
       return false
     }
     const success = await tenantSessionService.register(
-      username.value, 
+      email.value, 
+      nome.value,
       password.value, 
       inviteCode.value, 
       membroId.value
     )
     if (success) {
       isAuthed.value = true
-      localStorage.setItem('divi_username', username.value)
     } else {
-      errorMsg.value = 'Erro ao cadastrar. Esse nome de usuário já está em uso.'
+      errorMsg.value = 'Erro ao cadastrar. Verifique os dados ou se o e-mail já existe.'
     }
     return success
   }
 
   return {
-    username,
+    email,
+    nome,
     password,
     errorMsg,
     inviteCode,

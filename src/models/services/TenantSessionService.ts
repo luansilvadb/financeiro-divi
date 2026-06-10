@@ -13,7 +13,8 @@ export interface InvitePreview {
 interface LoginResponse {
   access_token: string
   userId: string
-  username: string
+  email: string
+  nome: string
 }
 
 interface SessionResponse {
@@ -42,12 +43,12 @@ export class TenantSessionService {
     return (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
   }
 
-  async login(username: string, passwordSecret: string): Promise<boolean> {
+  async login(email: string, passwordSecret: string): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password: passwordSecret })
+        body: JSON.stringify({ email, password: passwordSecret })
       })
 
       if (!response.ok) {
@@ -61,7 +62,8 @@ export class TenantSessionService {
 
       localStorage.setItem('divi_jwt_token', data.access_token)
       localStorage.setItem('divi_current_user_id', data.userId)
-      localStorage.setItem('divi_username', data.username)
+      localStorage.setItem('divi_user_email', data.email)
+      localStorage.setItem('divi_username', data.nome)
 
       await this.carregarSessaoUsuario()
 
@@ -72,13 +74,14 @@ export class TenantSessionService {
     }
   }
 
-  async register(username: string, passwordSecret: string, inviteCode?: string, membroId?: string): Promise<boolean> {
+  async register(email: string, nome: string, passwordSecret: string, inviteCode?: string, membroId?: string): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          username, 
+          email, 
+          nome,
           password: passwordSecret,
           inviteCode,
           membroId
@@ -90,7 +93,7 @@ export class TenantSessionService {
         return false
       }
 
-      return this.login(username, passwordSecret)
+      return this.login(email, passwordSecret)
     } catch (err) {
       console.error('Falha de conexão ao registrar:', err)
       return false
@@ -103,6 +106,42 @@ export class TenantSessionService {
       throw new Error(await lerMensagemErro(response, 'Convite inválido'))
     }
     return response.json() as Promise<InvitePreview>
+  }
+
+  async forgotPassword(email: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      if (!response.ok) {
+        console.error('Erro forgotPassword:', await lerMensagemErro(response, response.statusText))
+        return false
+      }
+      return true
+    } catch (err) {
+      console.error('Falha de conexão em forgotPassword:', err)
+      return false
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword })
+      })
+      if (!response.ok) {
+        console.error('Erro resetPassword:', await lerMensagemErro(response, response.statusText))
+        return false
+      }
+      return true
+    } catch (err) {
+      console.error('Falha de conexão em resetPassword:', err)
+      return false
+    }
   }
 
   async logout(): Promise<void> {

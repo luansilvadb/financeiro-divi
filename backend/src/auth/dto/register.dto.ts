@@ -3,12 +3,20 @@ import { IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
-    description: 'Nome de usuário desejado (único e case-insensitive)',
-    example: 'luan.silva',
+    description: 'E-mail do usuário (único e case-insensitive)',
+    example: 'luan@example.com',
   })
   @IsNotEmpty()
   @IsString()
-  username!: string;
+  email!: string;
+
+  @ApiProperty({
+    description: 'Nome de exibição global',
+    example: 'Luan Silva',
+  })
+  @IsNotEmpty()
+  @IsString()
+  nome!: string;
 
   @ApiProperty({
     description: 'Senha de acesso (mínimo de 6 caracteres)',

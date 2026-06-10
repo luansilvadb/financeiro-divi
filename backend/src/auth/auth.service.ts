@@ -1,29 +1,31 @@
-import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
 import type { JwtPayload } from './auth.types';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
+import { MailService } from '../shared/mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private mailService: MailService,
     @Inject(forwardRef(() => FinanceiroGateway))
     private gateway: FinanceiroGateway,
   ) {}
 
-  async register(username: string, passwordSecret: string, inviteCode?: string, membroId?: string) {
-    const cleanedUsername = username.trim().toLowerCase();
+  async register(email: string, nome: string, passwordSecret: string, inviteCode?: string, membroId?: string) {
+    const cleanedEmail = email.trim().toLowerCase();
     
     const existing = await this.prisma.usuario.findUnique({
-      where: { username: cleanedUsername },
+      where: { email: cleanedEmail },
     });
 
     if (existing) {
-      throw new ConflictException('Nome de usuário já está em uso.');
+      throw new ConflictException('E-mail já está em uso.');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -31,7 +33,8 @@ export class AuthService {
 
     const user = await this.prisma.usuario.create({
       data: {
-        username: cleanedUsername,
+        email: cleanedEmail,
+        nome: nome,
         passwordHash,
       },
     });
@@ -65,8 +68,8 @@ export class AuthService {
             data: {
               id: `membro-${randomUUID()}`,
               tenantId: tenant.id,
-              nome: user.username,
-              avatar: user.username.substring(0, 2).toUpperCase(),
+              nome: user.nome,
+              avatar: user.nome.substring(0, 2).toUpperCase(),
               userId: user.id,
             }
           });
@@ -78,15 +81,16 @@ export class AuthService {
 
     return {
       userId: user.id,
-      username: user.username,
+      email: user.email,
+      nome: user.nome,
     };
   }
 
-  async login(username: string, passwordSecret: string) {
-    const cleanedUsername = username.trim().toLowerCase();
+  async login(email: string, passwordSecret: string) {
+    const cleanedEmail = email.trim().toLowerCase();
     
     const user = await this.prisma.usuario.findUnique({
-      where: { username: cleanedUsername },
+      where: { email: cleanedEmail },
     });
 
     if (!user) {
@@ -98,11 +102,12 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    const payload = { sub: user.id, username: user.username };
+    const payload = { sub: user.id, email: user.email };
     return {
       access_token: this.jwtService.sign(payload),
       userId: user.id,
-      username: user.username,
+      email: user.email,
+      nome: user.nome,
     };
   }
 
@@ -142,8 +147,71 @@ export class AuthService {
 
     return {
       id: user.id,
-      username: user.username,
+      email: user.email,
+      nome: user.nome,
       tenants: tenantsList,
     };
+  }
+
+  async forgotPassword(email: string) {
+    const cleanedEmail = email.trim().toLowerCase();
+    
+    const user = await this.prisma.usuario.findUnique({
+      where: { email: cleanedEmail },
+    });
+
+    if (!user) {
+      // Simular sucesso para não expor se o e-mail existe
+      return { message: 'Se o e-mail existir, um link de recuperação foi enviado.' };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Expira em 1 hora
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Enviar e-mail sem travar a thread principal (ou aguardar)
+    await this.mailService.sendPasswordResetEmail(user.email, token).catch(e => {
+      console.error('Falha ao enviar email:', e);
+    });
+
+    return { message: 'Se o e-mail existir, um link de recuperação foi enviado.' };
+  }
+
+  async resetPassword(token: string, newPasswordSecret: string) {
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { usuario: true },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Token inválido ou expirado.');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Token expirado.');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPasswordSecret, salt);
+
+    await this.prisma.$transaction([
+      this.prisma.usuario.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.deleteMany({
+        where: { userId: resetToken.userId }, // Deleta todos os tokens do usuário por segurança
+      }),
+    ]);
+
+    return { message: 'Senha redefinida com sucesso.' };
   }
 }

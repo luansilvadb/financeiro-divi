@@ -3,6 +3,8 @@ import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiConflictResponse, ApiUnauthorizedResponse, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
@@ -25,7 +27,8 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(
-      registerDto.username, 
+      registerDto.email,
+      registerDto.nome,
       registerDto.password, 
       registerDto.inviteCode, 
       registerDto.membroId
@@ -42,7 +45,7 @@ export class AuthController {
   @Public()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto.username, loginDto.password);
+    return this.authService.login(loginDto.email, loginDto.password);
   }
 
   @ApiOperation({ summary: 'Obter dados e perfil do usuário logado' })
@@ -55,5 +58,22 @@ export class AuthController {
   @Get('me')
   async getMe(@Request() req: AuthenticatedRequest) {
     return this.authService.getMe(req.user.userId);
+  }
+
+  @ApiOperation({ summary: 'Solicitar link de recuperação de senha' })
+  @ApiOkResponse({ description: 'Se o e-mail existir, um link foi enviado.' })
+  @Public()
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @ApiOperation({ summary: 'Redefinir a senha usando o token' })
+  @ApiOkResponse({ description: 'Senha redefinida com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Token inválido ou expirado.' })
+  @Public()
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
   }
 }

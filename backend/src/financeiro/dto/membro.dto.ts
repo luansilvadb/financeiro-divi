@@ -61,12 +61,12 @@ export class MembroDto {
   cargoId?: string;
 
   @ApiPropertyOptional({
-    description: 'Nome de usuário para criar um novo login para este membro (opcional)',
-    example: 'joaosilva',
+    description: 'E-mail para criar um novo login para este membro (opcional)',
+    example: 'joao@silva.com',
   })
   @IsOptional()
   @IsString()
-  username?: string;
+  email?: string;
 
   @ApiPropertyOptional({
     description: 'Senha para o novo login deste membro (opcional)',
