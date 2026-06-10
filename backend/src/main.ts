@@ -5,6 +5,12 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  if (!process.env.JWT_SECRET) {
+    logger.error('JWT_SECRET is not defined. Application cannot start.');
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: '*',
