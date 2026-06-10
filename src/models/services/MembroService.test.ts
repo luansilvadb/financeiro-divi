@@ -1,15 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
 import { MembroService } from './MembroService'
 import { Membro } from '../entities/Membro'
+import type { IMembroRepository } from '../repositories/IMembroRepository'
 
 describe('MembroService', () => {
   it('deve adicionar um membro com sucesso', async () => {
-    const mockMembroRepo = {
+    const mockMembroRepo: IMembroRepository = {
       salvar: vi.fn().mockResolvedValue(undefined),
       listarTodos: vi.fn(),
       buscarPorId: vi.fn()
     }
-    const service = new MembroService(mockMembroRepo as any)
+    const service = new MembroService(mockMembroRepo)
     const nome = 'Luan Silva'
     const novoMembro = await service.adicionarMembro(nome)
 
@@ -21,11 +22,12 @@ describe('MembroService', () => {
 
   it('deve desativar um membro com sucesso', async () => {
     const membroExistente = new Membro({ id: 'membro-1', nome: 'Membro Teste', ativo: true })
-    const mockMembroRepo = {
+    const mockMembroRepo: IMembroRepository = {
       salvar: vi.fn().mockResolvedValue(undefined),
-      buscarPorId: vi.fn().mockResolvedValue(membroExistente)
+      buscarPorId: vi.fn().mockResolvedValue(membroExistente),
+      listarTodos: vi.fn()
     }
-    const service = new MembroService(mockMembroRepo as any)
+    const service = new MembroService(mockMembroRepo)
     await service.desativarMembro('membro-1')
 
     expect(mockMembroRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({ id: 'membro-1', ativo: false }))
@@ -33,37 +35,47 @@ describe('MembroService', () => {
 
   it('deve ativar um membro com sucesso', async () => {
     const membroExistente = new Membro({ id: 'membro-2', nome: 'Membro Inativo', ativo: false })
-    const mockMembroRepo = {
+    const mockMembroRepo: IMembroRepository = {
       salvar: vi.fn().mockResolvedValue(undefined),
-      buscarPorId: vi.fn().mockResolvedValue(membroExistente)
+      buscarPorId: vi.fn().mockResolvedValue(membroExistente),
+      listarTodos: vi.fn()
     }
-    const service = new MembroService(mockMembroRepo as any)
+    const service = new MembroService(mockMembroRepo)
     await service.ativarMembro('membro-2')
 
     expect(mockMembroRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({ id: 'membro-2', ativo: true }))
   })
 
   it('deve lancar erro ao tentar desativar membro inexistente', async () => {
-    const mockMembroRepo = { buscarPorId: vi.fn().mockResolvedValue(null) }
-    const service = new MembroService(mockMembroRepo as any)
+    const mockMembroRepo: IMembroRepository = {
+      buscarPorId: vi.fn().mockResolvedValue(null),
+      salvar: vi.fn(),
+      listarTodos: vi.fn()
+    }
+    const service = new MembroService(mockMembroRepo)
     await expect(service.desativarMembro('membro-invalido')).rejects.toThrow('Membro não encontrado')
   })
 
   it('deve atualizar o nome de um membro com sucesso', async () => {
     const membroExistente = new Membro({ id: 'membro-3', nome: 'Nome Antigo', ativo: true })
-    const mockMembroRepo = {
+    const mockMembroRepo: IMembroRepository = {
       salvar: vi.fn().mockResolvedValue(undefined),
-      buscarPorId: vi.fn().mockResolvedValue(membroExistente)
+      buscarPorId: vi.fn().mockResolvedValue(membroExistente),
+      listarTodos: vi.fn()
     }
-    const service = new MembroService(mockMembroRepo as any)
+    const service = new MembroService(mockMembroRepo)
     await service.atualizarNomeMembro('membro-3', 'Nome Novo')
 
     expect(mockMembroRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({ id: 'membro-3', nome: 'Nome Novo' }))
   })
 
   it('deve lancar erro ao tentar atualizar nome de membro inexistente', async () => {
-    const mockMembroRepo = { buscarPorId: vi.fn().mockResolvedValue(null) }
-    const service = new MembroService(mockMembroRepo as any)
+    const mockMembroRepo: IMembroRepository = {
+      buscarPorId: vi.fn().mockResolvedValue(null),
+      salvar: vi.fn(),
+      listarTodos: vi.fn()
+    }
+    const service = new MembroService(mockMembroRepo)
     await expect(service.atualizarNomeMembro('membro-invalido', 'Nome Novo')).rejects.toThrow('Membro não encontrado')
   })
 })

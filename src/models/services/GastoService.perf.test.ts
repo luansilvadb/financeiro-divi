@@ -3,6 +3,9 @@ import { GastoService } from './GastoService'
 import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
+import type { IGastoRepository } from '../repositories/IGastoRepository'
+import type { IFaturaRepository } from '../repositories/IFaturaRepository'
+import type { ICartaoRepository } from '../repositories/ICartaoRepository'
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -24,7 +27,7 @@ describe('GastoService Performance', () => {
       }))
     }
 
-    const mockGastoRepo = {
+    const mockGastoRepo: IGastoRepository = {
       listarTodos: vi.fn().mockResolvedValue(gastos),
       salvar: vi.fn(async () => {
         await delay(LATENCY)
@@ -37,7 +40,23 @@ describe('GastoService Performance', () => {
       excluirMuitos: vi.fn()
     }
 
-    const service = new GastoService(mockGastoRepo as any, {} as any, {} as any)
+    const mockFaturaRepo: IFaturaRepository = {
+      buscarPorId: vi.fn(),
+      buscarPorCartaoEPeriodo: vi.fn(),
+      salvar: vi.fn(),
+      salvarMuitas: vi.fn(),
+      listarTodas: vi.fn(),
+      assegurarObterOuCriarFatura: vi.fn()
+    }
+
+    const mockCartaoRepo: ICartaoRepository = {
+      buscarPorId: vi.fn(),
+      salvar: vi.fn(),
+      listarTodos: vi.fn(),
+      excluir: vi.fn()
+    }
+
+    const service = new GastoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
 
     const start = performance.now()
     await service.removerAssociacaoContaFixa('fixed1')

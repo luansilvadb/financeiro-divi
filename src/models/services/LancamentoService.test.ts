@@ -4,10 +4,13 @@ import { Fatura } from '../entities/Fatura'
 import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
+import type { IGastoRepository } from '../repositories/IGastoRepository'
+import type { IFaturaRepository } from '../repositories/IFaturaRepository'
+import type { ICartaoRepository } from '../repositories/ICartaoRepository'
 
-function criarMockFaturaRepo(faturasIniciais: Fatura[] = []) {
+function criarMockFaturaRepo(faturasIniciais: Fatura[] = []): IFaturaRepository {
   const faturas = [...faturasIniciais]
-  const repo = {
+  const repo: IFaturaRepository = {
     buscarPorId: vi.fn(async (id: string) => faturas.find(f => f.id === id) || null),
     buscarPorCartaoEPeriodo: vi.fn(async (cartaoId: string, p: { mes: number; ano: number }) => 
       faturas.find(f => f.cartaoId === cartaoId && f.periodo.mes === p.mes && f.periodo.ano === p.ano) || null
@@ -45,13 +48,13 @@ function criarMockFaturaRepo(faturasIniciais: Fatura[] = []) {
 
 describe('LancamentoService', () => {
   it('deve lancar um gasto simples à vista com sucesso', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo: IGastoRepository = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const mockFaturaRepo = criarMockFaturaRepo([
       new Fatura({ id: 'f1', cartaoId: 'PIX_DEFAULT_ID', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     ])
-    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([]), excluir: vi.fn() }
+    const mockCartaoRepo: ICartaoRepository = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([]), excluir: vi.fn() }
 
-    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    const service = new LancamentoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     await service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'pix',
@@ -74,13 +77,13 @@ describe('LancamentoService', () => {
   })
 
   it('deve projetar gastos parcelados no cartao em multiplas faturas futuras abertas', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo: IGastoRepository = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaAtiva = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     const mockFaturaRepo = criarMockFaturaRepo([faturaAtiva])
-    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
+    const mockCartaoRepo: ICartaoRepository = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
 
-    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    const service = new LancamentoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     await service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'card',
@@ -110,13 +113,13 @@ describe('LancamentoService', () => {
   })
 
   it('deve permitir lancamento se a fatura ativa (atual) do lancamento estiver fechada ou acertada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo: IGastoRepository = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaFechada = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     const mockFaturaRepo = criarMockFaturaRepo([faturaFechada])
-    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
+    const mockCartaoRepo: ICartaoRepository = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
 
-    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    const service = new LancamentoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     
     await expect(service.lancarGastoOuEmprestimo({
       flow: 'expense',
@@ -133,15 +136,15 @@ describe('LancamentoService', () => {
   })
 
   it('deve permitir lancamento se alguma fatura futura do parcelamento estiver fechada ou acertada', async () => {
-    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
+    const mockGastoRepo: IGastoRepository = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     
     const faturaAtiva = new Fatura({ id: 'f-c1-5-2026', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'ABERTA' })
     const faturaFuturaFechada = new Fatura({ id: 'c1-6-2026', cartaoId: 'c1', periodo: { mes: 6, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA' })
     
     const mockFaturaRepo = criarMockFaturaRepo([faturaAtiva, faturaFuturaFechada])
-    const mockCartaoRepo = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
+    const mockCartaoRepo: ICartaoRepository = { buscarPorId: vi.fn(), salvar: vi.fn(), listarTodos: vi.fn().mockResolvedValue([{ id: 'c1', responsavelPadraoId: 'm1' }]), excluir: vi.fn() }
 
-    const service = new LancamentoService(mockGastoRepo as any, mockFaturaRepo as any, mockCartaoRepo as any)
+    const service = new LancamentoService(mockGastoRepo, mockFaturaRepo, mockCartaoRepo)
     
     await expect(service.lancarGastoOuEmprestimo({
       flow: 'expense',
