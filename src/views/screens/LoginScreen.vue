@@ -146,6 +146,7 @@ const onSubmit = async () => {
               v-model="nome"
               type="text"
               required
+              tabindex="1"
               placeholder="Como quer ser chamado"
               autocomplete="name"
               class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
@@ -162,6 +163,7 @@ const onSubmit = async () => {
               v-model="email"
               type="email"
               required
+              tabindex="2"
               placeholder="seu@email.com"
               autocomplete="email"
               class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
@@ -178,6 +180,7 @@ const onSubmit = async () => {
                 v-if="!isRegisterMode"
                 type="button" 
                 @click="emit('forgot-password')"
+                tabindex="5"
                 class="text-[10px] font-semibold text-ember hover:opacity-80 transition-opacity uppercase tracking-widest bg-transparent border-none cursor-pointer focus:outline-none"
               >
                 Esqueci a senha
@@ -189,6 +192,7 @@ const onSubmit = async () => {
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 required
+                tabindex="3"
                 placeholder="••••••••"
                 autocomplete="current-password"
                 class="w-full bg-canvas border border-stone rounded-card pl-4 pr-12 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
@@ -196,6 +200,7 @@ const onSubmit = async () => {
               <button
                 type="button"
                 @click="showPassword = !showPassword"
+                tabindex="4"
                 class="absolute inset-y-0 right-0 pr-4 flex items-center text-graphite hover:text-charcoal focus:outline-none transition-colors border-none bg-transparent cursor-pointer"
                 :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
               >
@@ -215,6 +220,7 @@ const onSubmit = async () => {
             type="submit"
             :disabled="loading"
             :aria-busy="loading"
+            tabindex="6"
             :aria-label="loading ? (isRegisterMode ? 'Criando conta...' : 'Entrando...') : (isRegisterMode ? 'Criar Conta e Entrar' : 'Entrar')"
             class="w-full bg-midnight hover:bg-charcoal text-white font-semibold py-4 px-6 rounded-pill text-sm tracking-widest uppercase transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 border-none cursor-pointer"
           >
@@ -230,6 +236,7 @@ const onSubmit = async () => {
           {{ isRegisterMode ? 'Já possui uma conta?' : 'Novo no DIVI?' }}
           <button
             type="button"
+            tabindex="7"
             class="ml-1 text-ember hover:opacity-80 font-bold focus:outline-none uppercase tracking-widest text-[10px] bg-transparent border-none cursor-pointer"
             @click="isRegisterMode = !isRegisterMode; errorMsg = ''; membroId = ''"
           >
