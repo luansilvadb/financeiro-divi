@@ -189,7 +189,7 @@ function voltar() {
                       maxlength="60"
                       autofocus
                       @keydown.enter="criarCasa"
-                      class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 pr-14 text-body text-charcoal placeholder-stone focus:outline-none focus:border-ember transition-all duration-200"
+                      class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 pr-14 text-body text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all duration-200"
                     />
                     <span
                       v-if="nomeCasa.length > 0"
@@ -244,7 +244,7 @@ function voltar() {
               placeholder="Ex: CASA-AB12C"
               autofocus
               @keydown.enter="entrarCasa"
-              class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 text-lg font-bold text-charcoal placeholder-stone focus:outline-none focus:border-midnight font-mono uppercase tracking-[0.2em] transition-all duration-200 text-center"
+              class="w-full bg-canvas border border-stone rounded-xl px-4 py-3.5 text-lg font-bold text-charcoal placeholder:text-ash focus:outline-none focus:border-midnight font-mono uppercase tracking-[0.2em] transition-all duration-200 text-center"
             />
           </div>
 

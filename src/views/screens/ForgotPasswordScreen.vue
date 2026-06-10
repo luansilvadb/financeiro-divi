@@ -74,7 +74,7 @@ const onSubmit = async () => {
               type="email"
               required
               placeholder="seu@email.com"
-              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder-smoke focus:outline-none focus:border-ember transition-all duration-200"
+              class="w-full bg-canvas border border-stone rounded-card px-4 py-3.5 text-body text-charcoal placeholder:text-ash focus:outline-none focus:border-ember transition-all duration-200"
             />
           </div>
 

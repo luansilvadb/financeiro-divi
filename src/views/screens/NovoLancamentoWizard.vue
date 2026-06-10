@@ -273,7 +273,7 @@ const handleGravar = async () => {
                   inputmode="decimal"
                   step="0.01"
                   min="0"
-                  class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-stone"
+                  class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-ash"
                   placeholder="0,00"
                   autofocus
                 />
@@ -314,7 +314,7 @@ const handleGravar = async () => {
                 id="wizard-description-input"
                 v-model="descricao"
                 type="text"
-                class="w-full bg-transparent border-none outline-none text-[23px] font-bold text-charcoal tracking-tight placeholder:text-stone"
+                class="w-full bg-transparent border-none outline-none text-[23px] font-bold text-charcoal tracking-tight placeholder:text-ash"
                 placeholder="Ex: Supermercado do mês"
                 autofocus
               />
