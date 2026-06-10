@@ -10,7 +10,7 @@ describe('FinanceiroService', () => {
   let prisma: PrismaService;
 
   const mockPrisma = {
-    $transaction: jest.fn((fn) => fn(mockPrisma)),
+    $transaction: jest.fn((promises) => Promise.all(promises)),
     gasto: {
       upsert: jest.fn().mockResolvedValue({ id: 'g1' }),
       findUnique: jest.fn().mockResolvedValue({ id: 'g1', divisoes: [] }),
@@ -31,7 +31,7 @@ describe('FinanceiroService', () => {
       create: jest.fn().mockResolvedValue({ id: 't1', name: 'Casa Teste', inviteCode: 'CASA-TESTE' }),
     },
     usuario: {
-      findUnique: jest.fn().mockResolvedValue({ id: 'u1', username: 'luan' }),
+      findUnique: jest.fn().mockResolvedValue({ id: 'u1', nome: 'Luan' }),
     },
     cargoCasa: {
       findMany: jest.fn(),
@@ -116,20 +116,20 @@ describe('FinanceiroService', () => {
         nome: 'Luan', 
         ativo: true, 
         role: Role.MORADOR,
-        username: 'luan.novo',
+        email: 'luan@novo.com',
         password: 'senha_secreta'
       };
-      const result = await service.salvarMembro('t1', data);
+      const result = await service.salvarMembro('t1', data as any);
       expect(prisma.membroCasa.upsert).toHaveBeenCalled();
-      expect(mockAuth.register).toHaveBeenCalledWith('luan.novo', 'senha_secreta');
+      expect(mockAuth.register).toHaveBeenCalledWith('luan@novo.com', 'Luan', 'senha_secreta');
       expect(result).toBeDefined();
     });
 
     it('deve rejeitar a criação de membro se não fornecer usuário e senha', async () => {
       jest.spyOn(prisma.membroCasa, 'findUnique').mockResolvedValue(null);
       const data = { id: 'm1', nome: 'Luan', ativo: true, role: Role.MORADOR };
-      await expect(service.salvarMembro('t1', data)).rejects.toThrow(
-        'Usuário e senha são obrigatórios para a criação de um novo morador.'
+      await expect(service.salvarMembro('t1', data as any)).rejects.toThrow(
+        'E-mail e senha são obrigatórios para a criação de um novo morador com acesso.'
       );
     });
 
