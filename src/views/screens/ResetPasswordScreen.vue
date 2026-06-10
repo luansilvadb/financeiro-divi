@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
+import { useAsync } from '../../composables/useAsync'
 
 const props = defineProps<{
   token: string
@@ -10,8 +11,7 @@ const props = defineProps<{
 const emit = defineEmits(['reset-success'])
 
 const newPassword = ref('')
-const loading = ref(false)
-const errorMsg = ref('')
+const { loading, errorMsg, run } = useAsync()
 const showPassword = ref(false)
 
 const onSubmit = async () => {
@@ -20,22 +20,17 @@ const onSubmit = async () => {
     return
   }
 
-  loading.value = true
-  errorMsg.value = ''
-  
-  try {
-    const success = await tenantSessionService.resetPassword(props.token, newPassword.value)
-    if (success) {
-      // Remover token da URL
-      window.history.replaceState({}, document.title, window.location.pathname)
-      emit('reset-success')
-    } else {
-      errorMsg.value = 'O link é inválido ou expirou. Solicite um novo link de recuperação.'
-    }
-  } catch (e: any) {
-    errorMsg.value = e.message || 'Erro inesperado'
-  } finally {
-    loading.value = false
+  const success = await run(
+    () => tenantSessionService.resetPassword(props.token, newPassword.value),
+    'Erro inesperado'
+  )
+
+  if (success) {
+    // Remover token da URL
+    window.history.replaceState({}, document.title, window.location.pathname)
+    emit('reset-success')
+  } else if (success === false) {
+    errorMsg.value = 'O link é inválido ou expirou. Solicite um novo link de recuperação.'
   }
 }
 </script>

@@ -2,29 +2,25 @@
 import { ref } from 'vue'
 import { tenantSessionService } from '../../shared/container'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
+import { useAsync } from '../../composables/useAsync'
 
 const emit = defineEmits(['back'])
 const email = ref('')
-const loading = ref(false)
 const message = ref('')
-const errorMsg = ref('')
+const { loading, errorMsg, run } = useAsync()
 
 const onSubmit = async () => {
-  loading.value = true
   message.value = ''
-  errorMsg.value = ''
   
-  try {
-    const success = await tenantSessionService.forgotPassword(email.value)
-    if (success) {
-      message.value = 'Se o e-mail estiver cadastrado, você receberá um link de recuperação em instantes.'
-    } else {
-      errorMsg.value = 'Falha ao solicitar recuperação. Tente novamente mais tarde.'
-    }
-  } catch (e: any) {
-    errorMsg.value = e.message || 'Erro inesperado'
-  } finally {
-    loading.value = false
+  const success = await run(
+    () => tenantSessionService.forgotPassword(email.value),
+    'Erro inesperado'
+  )
+
+  if (success) {
+    message.value = 'Se o e-mail estiver cadastrado, você receberá um link de recuperação em instantes.'
+  } else if (success === false) {
+    errorMsg.value = 'Falha ao solicitar recuperação. Tente novamente mais tarde.'
   }
 }
 </script>
