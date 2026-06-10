@@ -282,18 +282,4 @@ const onMouseDown = (e: MouseEvent) => {
   opacity: 0;
 }
 
-/* Custom Scrollbar consistent with DESIGN.md */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone);
-  border-radius: 9999px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #d8d4d0;
-}
 </style>
