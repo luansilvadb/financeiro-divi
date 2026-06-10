@@ -36,8 +36,8 @@ export function useMembros() {
     return promiseInicializacao
   }
 
-  const adicionarMembro = async (nome: string, username?: string, password?: string) => {
-    await membroService.adicionarMembro(nome, username, password)
+  const adicionarMembro = async (nome: string, email?: string, password?: string) => {
+    await membroService.adicionarMembro(nome, email, password)
     await carregar()
   }
 

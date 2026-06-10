@@ -14,6 +14,7 @@ interface MembroDto {
   createdAt?: string
   userId?: string
   username?: string
+  email?: string
 }
 
 export class HttpMembroRepository extends HttpBaseRepository implements IMembroRepository {
@@ -42,7 +43,7 @@ export class HttpMembroRepository extends HttpBaseRepository implements IMembroR
     return list.find(m => m.id === id) || null
   }
 
-  async salvar(membro: Membro, credentials?: { username?: string; password?: string }): Promise<void> {
+  async salvar(membro: Membro, credentials?: { email?: string; password?: string }): Promise<void> {
     await this.request('/financeiro/membros', {
       method: 'POST',
       body: JSON.stringify({

@@ -144,8 +144,8 @@ describe('ConfiguracoesMembros', () => {
 
     const form = wrapper.findComponent({ name: 'MembroFormBottomSheet' })
     expect(form.exists()).toBe(true)
-    await form.vm.$emit('salvar', { nome: 'Nova', username: 'nova', password: '123' })
-    expect(mockAdicionarMembro).toHaveBeenCalledWith('Nova', 'nova', '123')
+    await form.vm.$emit('salvar', { nome: 'Nova', email: 'nova@email.com', password: '123' })
+    expect(mockAdicionarMembro).toHaveBeenCalledWith('Nova', 'nova@email.com', '123')
   })
 
   it('deve emitir logout ao clicar no botao Sair da Conta', async () => {

@@ -42,7 +42,7 @@ const toast = useToast()
 const variants: ('ember' | 'sky' | 'sunburst' | 'flamingo' | 'meadow')[] = ['ember', 'sky', 'sunburst', 'flamingo', 'meadow']
 
 type FormExpose = { resetForm: () => void }
-interface NovoMembroDados { nome: string; username: string; password: string }
+interface NovoMembroDados { nome: string; email: string; password: string }
 interface SalvarCargoDados { id?: string; nome: string; permissoes: string[]; cor?: string }
 
 const membroFormRef = ref<FormExpose | null>(null)
@@ -121,7 +121,7 @@ const abrirNovoMembroForm = () => {
 
 const handleAdicionarMembro = async (dados: NovoMembroDados) => {
   try {
-    await adicionarMembro(dados.nome, dados.username, dados.password)
+    await adicionarMembro(dados.nome, dados.email, dados.password)
     toast.show('Membro adicionado com sucesso', 'success')
     novoMembroFormAberto.value = false
   } catch (error: unknown) {

@@ -13,19 +13,19 @@ const props = defineProps<Props>()
 const emit = defineEmits(['update:modelValue', 'salvar', 'cancelar'])
 
 const novoNome = ref('')
-const novoUsername = ref('')
+const novoEmail = ref('')
 const novoPassword = ref('')
 
 const resetForm = () => {
   novoNome.value = ''
-  novoUsername.value = ''
+  novoEmail.value = ''
   novoPassword.value = ''
 }
 
 const handleAdicionar = () => {
   emit('salvar', {
     nome: novoNome.value,
-    username: novoUsername.value,
+    email: novoEmail.value,
     password: novoPassword.value
   })
 }
@@ -55,7 +55,7 @@ export default {
         <MembroAvatar :nome="novoNome.trim() || '?'" variant="ember" size="md" />
         <div class="flex-1 min-w-0">
           <span class="text-sm font-bold text-charcoal leading-none block truncate">{{ novoNome.trim() || 'Nome do morador...' }}</span>
-          <p class="text-[10px] text-ash mt-0.5">@{{ novoUsername.trim() || 'usuario' }}</p>
+          <p class="text-[10px] text-ash mt-0.5">{{ novoEmail.trim() || 'morador@email.com' }}</p>
         </div>
         <span class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-stone text-ash uppercase tracking-widest shrink-0">Preview</span>
       </div>
@@ -76,8 +76,8 @@ export default {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Usuário</label>
-          <input v-model="novoUsername" type="text" placeholder="luana.ol" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember placeholder:text-ash text-sm transition-all" />
+          <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">E-mail</label>
+          <input v-model="novoEmail" type="email" placeholder="exemplo@email.com" autocomplete="email" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember placeholder:text-ash text-sm transition-all" />
         </div>
         <div class="space-y-2">
           <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
@@ -92,7 +92,7 @@ export default {
         <Button 
           variant="primary" 
           @click="handleAdicionar" 
-          :disabled="!novoNome.trim() || !novoUsername.trim() || !novoPassword.trim() || !activeTenantId" 
+          :disabled="!novoNome.trim() || !novoEmail.trim() || !novoPassword.trim() || !activeTenantId" 
           class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
         >Cadastrar</Button>
       </div>

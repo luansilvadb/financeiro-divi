@@ -6,9 +6,9 @@ export class MembroService {
     private repository: IMembroRepository
   ) {}
 
-  async adicionarMembro(nome: string, username?: string, password?: string): Promise<Membro> {
+  async adicionarMembro(nome: string, email?: string, password?: string): Promise<Membro> {
     const novo = new Membro({ id: crypto.randomUUID(), nome, ativo: true, role: 'MORADOR' })
-    await this.repository.salvar(novo, { username, password })
+    await this.repository.salvar(novo, { email, password })
     return novo
   }
 
