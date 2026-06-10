@@ -1,3 +1,5 @@
+import { logger } from '../../../shared/utils/logger'
+
 export class HttpBaseRepository {
   protected get baseUrl(): string {
     return (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
@@ -30,7 +32,7 @@ export class HttpBaseRepository {
         headers,
       })
     } catch (err: unknown) {
-      console.error(`Falha de conexão para ${url}:`, err)
+      logger.error(`Falha de conexão para ${url}:`, err)
       throw new Error('Não foi possível se conectar ao servidor do DIVI. Certifique-se de que a API está ativa e que há conexão com a internet.')
     }
 

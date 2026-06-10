@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client'
+import { logger } from '../../shared/utils/logger'
 
 export class SocketService {
   private socket: Socket | null = null
@@ -30,7 +31,7 @@ export class SocketService {
     })
 
     this.socket.on('connect_error', (error) => {
-      console.error('[SocketService] Erro de conexão:', error)
+      logger.error('[SocketService] Erro de conexão:', error)
     })
   }
 
@@ -47,7 +48,7 @@ export class SocketService {
       this.socket.off(event)
       this.socket.on(event, callback)
     } else {
-      console.warn(`[SocketService] Tentou registrar evento "${event}" sem socket conectado.`)
+      logger.warn(`[SocketService] Tentou registrar evento "${event}" sem socket conectado.`)
     }
   }
 }
