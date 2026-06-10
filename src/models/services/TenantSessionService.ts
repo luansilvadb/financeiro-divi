@@ -1,3 +1,5 @@
+import { logger } from '../../shared/utils/logger'
+
 export interface TenantSummary {
   id: string
   name: string
@@ -52,7 +54,7 @@ export class TenantSessionService {
       })
 
       if (!response.ok) {
-        console.error('Erro de login:', await lerMensagemErro(response, response.statusText))
+        logger.error('Erro de login:', await lerMensagemErro(response, response.statusText))
         return false
       }
 
@@ -69,7 +71,7 @@ export class TenantSessionService {
 
       return true
     } catch (err) {
-      console.error('Falha de conexão ao fazer login:', err)
+      logger.error('Falha de conexão ao fazer login:', err)
       return false
     }
   }
@@ -89,13 +91,13 @@ export class TenantSessionService {
       })
 
       if (!response.ok) {
-        console.error('Erro de cadastro:', await lerMensagemErro(response, response.statusText))
+        logger.error('Erro de cadastro:', await lerMensagemErro(response, response.statusText))
         return false
       }
 
       return this.login(email, passwordSecret)
     } catch (err) {
-      console.error('Falha de conexão ao registrar:', err)
+      logger.error('Falha de conexão ao registrar:', err)
       return false
     }
   }
@@ -116,12 +118,12 @@ export class TenantSessionService {
         body: JSON.stringify({ email })
       })
       if (!response.ok) {
-        console.error('Erro forgotPassword:', await lerMensagemErro(response, response.statusText))
+        logger.error('Erro forgotPassword:', await lerMensagemErro(response, response.statusText))
         return false
       }
       return true
     } catch (err) {
-      console.error('Falha de conexão em forgotPassword:', err)
+      logger.error('Falha de conexão em forgotPassword:', err)
       return false
     }
   }
@@ -134,12 +136,12 @@ export class TenantSessionService {
         body: JSON.stringify({ token, newPassword })
       })
       if (!response.ok) {
-        console.error('Erro resetPassword:', await lerMensagemErro(response, response.statusText))
+        logger.error('Erro resetPassword:', await lerMensagemErro(response, response.statusText))
         return false
       }
       return true
     } catch (err) {
-      console.error('Falha de conexão em resetPassword:', err)
+      logger.error('Falha de conexão em resetPassword:', err)
       return false
     }
   }
@@ -256,7 +258,7 @@ export class TenantSessionService {
         this.setActiveTenant(this.tenants[0].id)
       }
     } catch (err) {
-      console.error('Falha ao carregar sessão do usuário:', err)
+      logger.error('Falha ao carregar sessão do usuário:', err)
     }
   }
 }
