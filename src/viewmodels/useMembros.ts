@@ -1,40 +1,25 @@
 import { ref, computed } from 'vue'
 import { Membro, type MembroRole } from '../models/entities/Membro'
-
 import { membroRepository, membroService, tenantSessionService } from '../shared/container'
+import { createLockingInitializer } from '../shared/utils/initializer'
+
 const membros = ref<Membro[]>([])
-const inicializado = ref(false)
-let promiseInicializacao: Promise<void> | null = null
+
+const { inicializado, inicializar, carregar } = createLockingInitializer(async () => {
+  if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
+    membros.value = []
+    return
+  }
+  membros.value = await membroRepository.listarTodos()
+})
 
 export function useMembros() {
-
   const ativos = computed(() => membros.value.filter(m => m.ativo))
 
   const currentMembro = computed(() => {
     const currentUserId = tenantSessionService.getCurrentUserId()
     return membros.value.find(m => m.userId === currentUserId)
   })
-
-  const carregar = async () => {
-    if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
-      membros.value = []
-      inicializado.value = true
-      return
-    }
-    let lista = await membroRepository.listarTodos()
-    membros.value = lista
-    inicializado.value = true
-  }
-
-  const inicializar = async () => {
-    if (inicializado.value) return
-    if (promiseInicializacao) return promiseInicializacao
-    promiseInicializacao = carregar().catch((err) => {
-      promiseInicializacao = null
-      throw err
-    })
-    return promiseInicializacao
-  }
 
   const adicionarMembro = async (nome: string, username?: string, password?: string) => {
     await membroService.adicionarMembro(nome, username, password)

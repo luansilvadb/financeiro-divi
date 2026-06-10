@@ -1,33 +1,19 @@
 import { ref } from 'vue'
 import { Cargo } from '../models/entities/Cargo'
 import { cargoRepository, tenantSessionService } from '../shared/container'
+import { createLockingInitializer } from '../shared/utils/initializer'
 
 const cargos = ref<Cargo[]>([])
-const inicializado = ref(false)
-let promiseInicializacao: Promise<void> | null = null
+
+const { inicializado, inicializar, carregar } = createLockingInitializer(async () => {
+  if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
+    cargos.value = []
+    return
+  }
+  cargos.value = await cargoRepository.listarTodos()
+})
 
 export function useCargos() {
-  const carregar = async () => {
-    if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
-      cargos.value = []
-      inicializado.value = true
-      return
-    }
-    const lista = await cargoRepository.listarTodos()
-    cargos.value = lista
-    inicializado.value = true
-  }
-
-  const inicializar = async () => {
-    if (inicializado.value) return
-    if (promiseInicializacao) return promiseInicializacao
-    promiseInicializacao = carregar().catch((err) => {
-      promiseInicializacao = null
-      throw err
-    })
-    return promiseInicializacao
-  }
-
   const salvarCargo = async (nome: string, permissoes: string[], cor?: string, id?: string) => {
     const cargo = new Cargo({
       id: id || '',
