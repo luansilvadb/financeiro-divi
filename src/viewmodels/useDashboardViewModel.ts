@@ -34,8 +34,8 @@ export interface ConfirmarLancarBillInput {
 
 export interface DashboardProps { membros: { id: string; nome: string }[]; faturasAbertas: Fatura[]; faturasFechadas: Fatura[]; cartoes: Cartao[] }
 
-const isGastoValidoPeriodo = (x: Gasto) => !x.id.startsWith('audit-settlement-') && (!x.isSettlement || x.descricao.includes('Saldo Inicial'));
-const isGastoNaoSettlement = (x: Gasto) => !x.isSettlement;
+const isGastoValidoParaSoma = (gasto: Gasto) => !gasto.id.startsWith('audit-settlement-') && (!gasto.isSettlement || gasto.descricao.includes('Saldo Inicial'));
+const isGastoComum = (gasto: Gasto) => !gasto.isSettlement;
 
 export const useDashboardViewModel = (
   props: DashboardProps,
@@ -50,7 +50,7 @@ export const useDashboardViewModel = (
   const periodoSelecionado = periodosState.periodoSelecionado
   const todosGastos = cartoesEFaturas.gastos
 
-  const gastosFiltrados = computed(() => todosGastos.value.filter(x => gastoPertenceAoPeriodo(x, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
+  const gastosFiltrados = computed(() => todosGastos.value.filter(gasto => gastoPertenceAoPeriodo(gasto, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
   
   return {
     ...periodosState, 
@@ -59,17 +59,17 @@ export const useDashboardViewModel = (
     contasFixas: contasFixas.contasFixas, 
     gastosFaturaSelecionada: gastosFiltrados, 
     
-    totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoNaoSettlement).reduce((s, x) => s + valorParcelaAtual(x.valorTotal, x.installments, x.totalInstallments).centavos, 0)),
-    totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoValidoPeriodo).length),
+    totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoComum).reduce((soma, gasto) => soma + valorParcelaAtual(gasto.valorTotal, gasto.installments, gasto.totalInstallments).centavos, 0)),
+    totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoValidoParaSoma).length),
     
     getMembroNome: (id: string) => props.membros.find(m => m.id === id)?.nome || 'Desconhecido', 
-    formatarDinheiro: (c: number) => c / 100, 
+    formatarDinheiro: (centavos: number) => centavos / 100, 
     formatarMesAno, 
     showToast: toast.show,
     
     abrirNovoPeriodoBottomSheet: () => ui.abrirNovoPeriodoBottomSheet(periodosState.faturaAtivaVisualizada.value),
     
-    confirmarBaixaNetting: async (d: { from: string; to: string; valor: number; method: 'pix' | 'cash'; descricao: string }) => {
+    confirmarBaixaNetting: async (dados: { from: string; to: string; valor: number; method: 'pix' | 'cash'; descricao: string }) => {
       const fatura = periodosState.faturaPixPeriodoSelecionado.value
       if (!fatura) return
       
@@ -77,19 +77,16 @@ export const useDashboardViewModel = (
       try {
         await gastoService.lancarGastoOuEmprestimo({
           flow: 'expense',
-          paymentMethod: d.method === 'pix' ? 'pix' : 'card', // 'card' logic here is tricky, but let's stick to what works for netting
-          compradorId: d.from,
-          valor: d.valor,
-          descricao: d.descricao,
-          divisoes: [new DivisaoDeGasto(d.to, Dinheiro.deReais(d.valor))],
+          paymentMethod: dados.method === 'pix' ? 'pix' : 'card',
+          compradorId: dados.from,
+          valor: dados.valor,
+          descricao: dados.descricao,
+          divisoes: [new DivisaoDeGasto(dados.to, Dinheiro.deReais(dados.valor))],
           installments: 1,
           cardOwnerId: null,
           borrowerId: null,
           periodo: fatura.periodo
         })
-        
-        // Mark as settlement if possible? Actually, GastoService.lancarGastoOuEmprestimo doesn't support it directly.
-        // I might need a specific registrarAcertoNetting or similar if I want isSettlement: true.
         
         await cartoesEFaturas.inicializar()
         ui.fecharModal('acerto-netting')
@@ -99,14 +96,14 @@ export const useDashboardViewModel = (
       }
     },
     
-    confirmarAjusteGasto: async (d: ConfirmarAjusteGastoInput) => { 
-      await cartoesEFaturas.atualizarGasto(ui.gastoParaAjustar.value!.id, d)
+    confirmarAjusteGasto: async (dados: ConfirmarAjusteGastoInput) => { 
+      await cartoesEFaturas.atualizarGasto(ui.gastoParaAjustar.value!.id, dados)
       ui.fecharModal('ajustar-gasto')
       ui.gastoParaAjustar.value = null 
     },
     
-    confirmarLancarBill: async (d: ConfirmarLancarBillInput) => { 
-      await contasFixas.lancarGastoContaFixa(periodosState.faturaPixPeriodoSelecionado.value!.id, ui.billSelecionada.value!, d.valorCentavos, d.compradorId, d.splitIds)
+    confirmarLancarBill: async (dados: ConfirmarLancarBillInput) => { 
+      await contasFixas.lancarGastoContaFixa(periodosState.faturaPixPeriodoSelecionado.value!.id, ui.billSelecionada.value!, dados.valorCentavos, dados.compradorId, dados.splitIds)
       ui.fecharModal('lancar-conta-fixa')
       await cartoesEFaturas.inicializar() 
     },

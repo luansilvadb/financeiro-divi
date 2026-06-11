@@ -1,5 +1,4 @@
 import { Controller, Get, Post, Delete, Body, Param, Headers, Request } from '@nestjs/common';
-import { FinanceiroService } from './financeiro.service';
 import { MembroService } from './membro.service';
 import { CargoService } from './cargo.service';
 import { CartaoService } from './cartao.service';
@@ -26,7 +25,6 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 @Controller('financeiro')
 export class FinanceiroController {
   constructor(
-    private financeiroService: FinanceiroService,
     private membroService: MembroService,
     private cargoService: CargoService,
     private cartaoService: CartaoService,
@@ -39,7 +37,7 @@ export class FinanceiroController {
   @Public()
   @Get('tenants/invite/:code')
   async obterPreviewConvite(@Param('code') code: string) {
-    return this.financeiroService.obterPreviewConvite(code);
+    return this.membroService.obterPreviewConvite(code);
   }
 
   @ApiOperation({ summary: 'Criar um novo Tenant (casa)', description: 'Cria uma nova organização multitenant e vincula o usuário autenticado como administrador.' })
@@ -47,7 +45,7 @@ export class FinanceiroController {
   @ApiBadRequestResponse({ description: 'Dados de entrada inválidos' })
   @Post('tenants')
   async criarTenant(@Body() criarTenantDto: CriarTenantDto, @Request() req: AuthenticatedRequest) {
-    return this.financeiroService.criarTenant(criarTenantDto.name, req.user.userId);
+    return this.membroService.criarTenant(criarTenantDto.name, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Entrar em um Tenant existente usando código de convite', description: 'Associa o usuário autenticado a um tenant correspondente ao código de convite informado.' })
@@ -55,7 +53,7 @@ export class FinanceiroController {
   @ApiBadRequestResponse({ description: 'Código de convite inválido ou tenant inexistente' })
   @Post('tenants/entrar')
   async entrarTenantPorCodigo(@Body() entrarTenantDto: EntrarTenantDto, @Request() req: AuthenticatedRequest) {
-    return this.financeiroService.entrarTenantPorCodigo(entrarTenantDto.inviteCode, req.user.userId);
+    return this.membroService.entrarTenantPorCodigo(entrarTenantDto.inviteCode, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Listar todos os membros do tenant', description: 'Retorna a lista de membros que participam do rateio no tenant ativo.' })

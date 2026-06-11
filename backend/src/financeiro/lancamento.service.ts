@@ -25,40 +25,57 @@ export class LancamentoService {
 
   async salvarGasto(tenantId: string, gastoData: GastoDto) {
     const result = await this.prisma.$transaction(async (tx) => {
-      return this.upsertGastoTx(tx, tenantId, gastoData);
-    });
-    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
-    return serializeBigInt(result);
-  }
-
-  async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[]) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      const saved = [];
-      for (const g of gastosList) {
-        saved.push(await this.upsertGastoTx(tx, tenantId, g));
+      if (gastoData.isSettlement) {
+        return this.registrarAcertoTx(tx, tenantId, gastoData);
       }
-      return saved;
+      if (gastoData.isLoan) {
+        return this.salvarEmprestimoTx(tx, tenantId, gastoData);
+      }
+      return this.salvarDespesaComumTx(tx, tenantId, gastoData);
     });
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serializeBigInt(result);
   }
 
-  private async upsertGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+  async salvarDespesaComum(tenantId: string, gastoData: GastoDto) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      return this.salvarDespesaComumTx(tx, tenantId, gastoData);
+    });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serializeBigInt(result);
+  }
+
+  async salvarEmprestimo(tenantId: string, gastoData: GastoDto) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      return this.salvarEmprestimoTx(tx, tenantId, gastoData);
+    });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serializeBigInt(result);
+  }
+
+  async registrarAcerto(tenantId: string, gastoData: GastoDto) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      return this.registrarAcertoTx(tx, tenantId, gastoData);
+    });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serializeBigInt(result);
+  }
+
+  private async salvarDespesaComumTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    return this.upsertGastoCompletoTx(tx, tenantId, { ...g, isLoan: false, isSettlement: false });
+  }
+
+  private async salvarEmprestimoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    return this.upsertGastoCompletoTx(tx, tenantId, { ...g, isLoan: true, isSettlement: false });
+  }
+
+  private async registrarAcertoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    return this.upsertGastoCompletoTx(tx, tenantId, { ...g, isLoan: false, isSettlement: true });
+  }
+
+  private async upsertGastoCompletoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
     await tx.divisaoGasto.deleteMany({ where: { gastoId: g.id, tenantId } });
 
-    await this.persistirGastoBase(tx, tenantId, g);
-
-    if (g.divisoes?.length) {
-      await this.persistirDivisoesGasto(tx, tenantId, g.id, g.divisoes);
-    }
-
-    return tx.gasto.findUnique({
-      where: { id_tenantId: { id: g.id, tenantId } },
-      include: { divisoes: true },
-    });
-  }
-
-  private async persistirGastoBase(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
     const data = {
       faturaId: g.faturaId,
       descricao: g.descricao,
@@ -76,27 +93,45 @@ export class LancamentoService {
       grupoParcelasId: g.grupoParcelasId,
     };
 
-    return tx.gasto.upsert({
+    await tx.gasto.upsert({
       where: { id_tenantId: { id: g.id, tenantId } },
       create: { id: g.id, tenantId, ...data },
       update: data,
     });
+
+    if (g.divisoes?.length) {
+      await tx.divisaoGasto.createMany({
+        data: g.divisoes.map(d => ({
+          tenantId,
+          gastoId: g.id,
+          membroId: d.membroId,
+          valorCentavos: BigInt(d.valorCentavos || 0),
+        })),
+      });
+    }
+
+    return tx.gasto.findUnique({
+      where: { id_tenantId: { id: g.id, tenantId } },
+      include: { divisoes: true },
+    });
   }
 
-  private async persistirDivisoesGasto(
-    tx: Prisma.TransactionClient,
-    tenantId: string,
-    gastoId: string,
-    divisoes: { membroId: string; valorCentavos: number }[]
-  ) {
-    return tx.divisaoGasto.createMany({
-      data: divisoes.map(d => ({
-        tenantId,
-        gastoId,
-        membroId: d.membroId,
-        valorCentavos: BigInt(d.valorCentavos || 0),
-      })),
+  async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[]) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const saved = [];
+      for (const g of gastosList) {
+        if (g.isSettlement) {
+          saved.push(await this.registrarAcertoTx(tx, tenantId, g));
+        } else if (g.isLoan) {
+          saved.push(await this.salvarEmprestimoTx(tx, tenantId, g));
+        } else {
+          saved.push(await this.salvarDespesaComumTx(tx, tenantId, g));
+        }
+      }
+      return saved;
     });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serializeBigInt(result);
   }
 
   async excluirGasto(tenantId: string, id: string) {

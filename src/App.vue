@@ -39,6 +39,26 @@ const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
 const isMonthClosed = ref(false)
 const toast = useToast()
 
+const assegurarDadosIniciais = async () => {
+  const tenantId = tenantSessionService.getActiveTenantId()
+  if (!tenantId) return
+
+  isLoading.value = true
+  try {
+    socketService.desconectar()
+    await Promise.all([
+      recarregarMembros(),
+      inicializarCartoes(),
+      inicializarContasFixas()
+    ])
+    inicializarSocket(tenantId)
+  } catch (error: unknown) {
+    console.error('Erro na inicialização de dados:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const handlePeriodoStatusChanged = (fechado: boolean) => {
   isMonthClosed.value = fechado
 }
@@ -102,12 +122,7 @@ onMounted(async () => {
       if (!isAuthed.value) return
       hasTenant.value = !!tenantSessionService.getActiveTenantId()
       if (hasTenant.value) {
-        await Promise.all([
-          inicializarMembros(),
-          inicializarCartoes(),
-          inicializarContasFixas()
-        ])
-        inicializarSocket(tenantSessionService.getActiveTenantId()!)
+        await assegurarDadosIniciais()
       }
     } catch (error: unknown) {
       console.error('Erro na inicialização da sessão:', error)
@@ -143,43 +158,13 @@ const handleAuthSuccess = async () => {
   isAuthed.value = true
   hasTenant.value = !!tenantSessionService.getActiveTenantId()
   if (hasTenant.value) {
-    isLoading.value = true
-    try {
-      await Promise.all([
-        recarregarMembros(),
-        inicializarCartoes(),
-        inicializarContasFixas()
-      ])
-      inicializarSocket(tenantSessionService.getActiveTenantId()!)
-    } catch (error: unknown) {
-      console.error('Erro na inicialização pós-auth:', error)
-    } finally {
-      isLoading.value = false
-    }
+    await assegurarDadosIniciais()
   }
 }
 
 const handleCasaSelecionada = async () => {
   hasTenant.value = true
-  
-  const skeletonTimer = setTimeout(() => {
-    isLoading.value = true
-  }, 150)
-
-  try {
-    socketService.desconectar()
-    await Promise.all([
-      recarregarMembros(),
-      inicializarCartoes(),
-      inicializarContasFixas()
-    ])
-    inicializarSocket(tenantSessionService.getActiveTenantId()!)
-  } catch (error: unknown) {
-    console.error('Erro ao inicializar dados da nova casa:', error)
-  } finally {
-    clearTimeout(skeletonTimer)
-    isLoading.value = false
-  }
+  await assegurarDadosIniciais()
 }
 
 const handleLogout = async () => {

@@ -6,18 +6,16 @@ import { DivisaoDeGasto } from '../../models/entities/DivisaoDeGasto'
 import { Dinheiro } from '../../models/entities/Dinheiro'
 import { gastoService } from '../../shared/container'
 import Button from '../components/ui/Button.vue'
-import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import { useToast } from '../../composables/useToast'
 import { mensagemErro } from '../../shared/utils/mensagemErro'
-import { obterCorCartao } from '../../shared/utils/obterCorCartao'
-import {
-  Wallet,
-  CreditCard,
-  Handshake,
-  Plus,
-  Minus,
-  Check
-} from 'lucide-vue-next'
+import { CreditCard } from 'lucide-vue-next'
+
+// Componentes de Etapa
+import StepFlowSelection from '../components/wizard/StepFlowSelection.vue'
+import StepMemberSelection from '../components/wizard/StepMemberSelection.vue'
+import StepValueInput from '../components/wizard/StepValueInput.vue'
+import StepDescriptionInput from '../components/wizard/StepDescriptionInput.vue'
+import StepSplitSelector from '../components/wizard/StepSplitSelector.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -82,28 +80,11 @@ const canAdvance = computed(() => {
   }
 })
 
-const quickChips = computed(() => wizFlow.value === 'loan' 
-  ? ['Empréstimo', 'Luz dele', 'Uber compartilhado', 'Supermercado']
-  : ['Mercado', 'Ifood', 'Luz', 'Internet', 'Água', 'Limpeza']
-)
-
-const selecionarFluxo = (flow: 'expense' | 'loan', payment: 'pix' | 'card', cardOwner: string | null) => {
+const selecionarFluxo = ({ flow, payment, cardOwner }: any) => {
   wizFlow.value = flow
   wizPayment.value = payment
   wizCardOwner.value = cardOwner
   next()
-}
-
-const infoParcelamento = computed(() => {
-  if (installments.value <= 1) return 'À vista'
-  const parcela = (Number(valor.value) / installments.value).toFixed(2).replace('.', ',')
-  return `${installments.value}x de R$ ${parcela}`
-})
-
-const toggleSplitMember = (id: string) => {
-  const idx = participantesDivisao.value.indexOf(id)
-  if (idx >= 0) participantesDivisao.value.splice(idx, 1)
-  else participantesDivisao.value.push(id)
 }
 
 const handleGravar = async () => {
@@ -185,190 +166,56 @@ const handleGravar = async () => {
     </header>
 
     <div class="flex-1 p-5 sm:p-6 bg-white overflow-y-auto custom-scrollbar">
-      <!-- FLUXO NORMAL DO WIZARD -->
       <div :key="currentState" class="w-full">
-          <div v-if="currentState === 'FLOW_SELECTION'" class="grid gap-3" role="listbox" aria-label="Opções de pagamento">
-            <button
-              @click="selecionarFluxo('expense', 'pix', null)"
-              role="option"
-              :aria-selected="wizFlow === 'expense' && wizPayment === 'pix'"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left border-none cursor-pointer"
-            >
-              <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <Wallet class="w-5 h-5" aria-hidden="true" />
-              </div>
-              <div class="min-w-0">
-                <strong class="block text-[15px] font-bold text-charcoal tracking-tight">PIX ou Dinheiro</strong>
-                <span class="text-xs text-graphite font-semibold">Gasto à vista do caixa</span>
-              </div>
-            </button>
+        <StepFlowSelection
+          v-if="currentState === 'FLOW_SELECTION'"
+          :cartoes="cartoes"
+          :is-cartao-trancado="isCartaoTrancado"
+          :wiz-flow="wizFlow"
+          :wiz-payment="wizPayment"
+          :wiz-card-owner="wizCardOwner"
+          @select="selecionarFluxo"
+        />
 
-            <button
-              v-for="c in cartoes"
-              :key="c.id"
-              :disabled="isCartaoTrancado(c.id)"
-              @click="selecionarFluxo('expense', 'card', c.id)"
-              role="option"
-              :aria-selected="wizCardOwner === c.id"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
-            >
-              <div 
-                class="w-10 h-10 rounded-full shadow-subtle flex items-center justify-center shrink-0 border transition-all duration-300"
-                :style="{ 
-                  backgroundColor: obterCorCartao(c.nome) + '10', 
-                  borderColor: obterCorCartao(c.nome) + '20' 
-                }"
-              >
-                <CreditCard class="w-5 h-5" :style="{ color: obterCorCartao(c.nome) }" aria-hidden="true" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <strong class="text-[15px] font-bold text-charcoal tracking-tight">Cartão {{ c.nome }}</strong>
-                  <span v-if="isCartaoTrancado(c.id)" class="text-[10px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded border border-coral/20 shrink-0">FECHADA</span>
-                </div>
-                <span class="text-xs text-graphite font-semibold">Despesa sob fatura</span>
-              </div>
-            </button>
+        <StepMemberSelection
+          v-else-if="currentState === 'BUYER_SELECTION' || currentState === 'LENDER_SELECTION'"
+          :membros="props.membros"
+          :current-state="currentState"
+          :selected-id="compradorSelecionadoId"
+          @select="(id) => { compradorSelecionadoId = id; next() }"
+        />
 
+        <StepMemberSelection
+          v-else-if="currentState === 'BORROWER_SELECTION'"
+          :membros="props.membros"
+          :current-state="currentState"
+          :selected-id="borrowerId"
+          :comprador-selecionado-id="compradorSelecionadoId"
+          @select="(id) => { borrowerId = id; next() }"
+        />
 
+        <StepValueInput
+          v-else-if="currentState === 'VALUE'"
+          v-model:valor="valor"
+          v-model:installments="installments"
+          :wiz-flow="wizFlow"
+          :wiz-payment="wizPayment"
+        />
 
-            <button
-              @click="selecionarFluxo('loan', 'pix', null)"
-              role="option"
-              :aria-selected="wizFlow === 'loan'"
-              class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left border-none cursor-pointer"
-            >
-              <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <Handshake class="w-5 h-5" aria-hidden="true" />
-              </div>
-              <div class="min-w-0">
-                <strong class="block text-[15px] font-bold text-charcoal tracking-tight">Empréstimo pessoal</strong>
-                <span class="text-xs text-graphite font-semibold">Direto entre moradores</span>
-              </div>
-            </button>
-          </div>
+        <StepDescriptionInput
+          v-else-if="currentState === 'DESCRIPTION'"
+          v-model:descricao="descricao"
+          :wiz-flow="wizFlow"
+        />
 
-          <div 
-            v-else-if="currentState === 'BUYER_SELECTION' || currentState === 'LENDER_SELECTION' || currentState === 'BORROWER_SELECTION'" 
-            class="grid grid-cols-2 gap-3"
-            role="listbox"
-            :aria-label="currentState === 'BORROWER_SELECTION' ? 'Selecionar quem pegou emprestado' : 'Selecionar quem pagou'"
-          >
-            <button
-              v-for="m in (currentState === 'BORROWER_SELECTION' ? props.membros.filter(m => m.id !== compradorSelecionadoId) : props.membros)"
-              :key="m.id"
-              @click="currentState === 'BORROWER_SELECTION' ? (borrowerId = m.id, next()) : (compradorSelecionadoId = m.id, next())"
-              role="option"
-              :aria-selected="borrowerId === m.id || compradorSelecionadoId === m.id"
-              class="group flex flex-col items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-all duration-300 border-none cursor-pointer"
-            >
-              <MembroAvatar 
-                :nome="m.nome" 
-                size="md" 
-                :variant="(borrowerId === m.id || compradorSelecionadoId === m.id) ? 'ember' : 'sky'" 
-              />
-              <span class="font-bold text-[11px] text-charcoal uppercase tracking-wider">{{ m.nome }}</span>
-            </button>
-          </div>
-
-          <div v-else-if="currentState === 'VALUE'" class="space-y-5">
-            <div class="rounded-card bg-parchment p-5 shadow-subtle transition-all duration-300">
-              <label for="wizard-value-input" class="block text-[10px] font-bold text-graphite uppercase tracking-widest mb-2">Valor total do lançamento</label>
-              <div class="flex items-center gap-2">
-                <span class="text-[23px] font-bold text-charcoal tracking-tight" aria-hidden="true">R$</span>
-                <input
-                  id="wizard-value-input"
-                  v-model.number="valor"
-                  type="number"
-                  inputmode="decimal"
-                  step="0.01"
-                  min="0"
-                  class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-ash"
-                  placeholder="0,00"
-                  autofocus
-                />
-              </div>
-            </div>
-
-            <div v-if="wizFlow === 'loan' || wizPayment === 'card'" class="rounded-card bg-white shadow-subtle p-4 space-y-3">
-              <span class="block text-[10px] font-bold text-graphite uppercase tracking-widest">Opções de Parcelamento</span>
-              <div class="flex items-center justify-between gap-3">
-                <button 
-                  type="button" 
-                  @click="installments = Math.max(1, installments - 1)" 
-                  class="w-10 h-10 rounded-full bg-stone hover:opacity-80 flex items-center justify-center border-none cursor-pointer transition-opacity"
-                  aria-label="Diminuir parcelas"
-                >
-                  <Minus class="w-4 h-4" aria-hidden="true" />
-                </button>
-                <div class="text-center" aria-live="polite">
-                  <span class="text-[23px] font-bold text-charcoal tracking-tight">{{ installments }}x</span>
-                  <p class="text-xs font-semibold text-graphite">{{ infoParcelamento }}</p>
-                </div>
-                <button 
-                  type="button" 
-                  @click="installments = Math.max(1, installments + 1)" 
-                  class="w-10 h-10 rounded-full bg-stone hover:opacity-80 flex items-center justify-center border-none cursor-pointer transition-opacity"
-                  aria-label="Aumentar parcelas"
-                >
-                  <Plus class="w-4 h-4" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="currentState === 'DESCRIPTION'" class="space-y-5">
-            <div class="rounded-card bg-parchment p-4 shadow-subtle">
-              <label for="wizard-description-input" class="block text-[10px] font-bold text-graphite uppercase tracking-widest mb-2">O que foi comprado?</label>
-              <input
-                id="wizard-description-input"
-                v-model="descricao"
-                type="text"
-                class="w-full bg-transparent border-none outline-none text-[23px] font-bold text-charcoal tracking-tight placeholder:text-ash"
-                placeholder="Ex: Supermercado do mês"
-                autofocus
-              />
-            </div>
-            <div class="flex gap-2 flex-wrap" role="group" aria-label="Sugestões rápidas">
-              <button
-                v-for="chip in quickChips"
-                :key="chip"
-                @click="descricao = chip"
-                class="px-3.5 py-2 rounded-full bg-stone hover:bg-ash/20 text-[11px] font-bold text-graphite transition-colors border-none cursor-pointer uppercase tracking-wider"
-              >
-                {{ chip }}
-              </button>
-            </div>
-          </div>
-
-          <div v-else-if="currentState === 'SPLIT'" class="space-y-4">
-            <div class="flex gap-2" role="group" aria-label="Atalhos de divisão">
-              <button @click="participantesDivisao = props.membros.map(m => m.id)" class="px-3.5 py-2 rounded-full bg-midnight text-white text-[10px] font-bold uppercase tracking-wider border-none cursor-pointer hover:bg-charcoal transition-colors">Todos</button>
-              <button @click="participantesDivisao = [compradorSelecionadoId]" class="px-3.5 py-2 rounded-full bg-stone text-charcoal text-[10px] font-bold uppercase tracking-wider border-none cursor-pointer hover:bg-ash/20 transition-colors">Apenas eu</button>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2" role="listbox" aria-multiselectable="true" aria-label="Selecionar membros para dividir">
-              <button
-                v-for="m in props.membros"
-                :key="m.id"
-                @click="toggleSplitMember(m.id)"
-                role="option"
-                :aria-selected="participantesDivisao.includes(m.id)"
-                class="group relative flex flex-col items-center gap-2 p-3 rounded-card transition-all duration-300 border-none cursor-pointer"
-                :class="[participantesDivisao.includes(m.id) ? 'bg-white shadow-subtle scale-[1.02]' : 'bg-parchment opacity-80']"
-              >
-                <MembroAvatar 
-                  :nome="m.nome" 
-                  size="md" 
-                  :variant="participantesDivisao.includes(m.id) ? 'meadow' : 'sky'" 
-                />
-                <span class="text-[10px] font-bold text-charcoal uppercase tracking-tight truncate max-w-full px-1">{{ m.nome }}</span>
-                <Check v-if="participantesDivisao.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow animate-in zoom-in-50 duration-300" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <StepSplitSelector
+          v-else-if="currentState === 'SPLIT'"
+          v-model:participantes-divisao="participantesDivisao"
+          :membros="props.membros"
+          :comprador-selecionado-id="compradorSelecionadoId"
+        />
       </div>
+    </div>
 
     <footer class="p-5 sm:p-6 border-t border-stone bg-white flex gap-3">
       <Button

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
@@ -15,6 +15,75 @@ export class MembroService {
     private authService: AuthService,
     private gateway: FinanceiroGateway
   ) {}
+
+  async obterPreviewConvite(inviteCode: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { inviteCode: inviteCode.toUpperCase() },
+      include: {
+        membros: {
+          where: { userId: null },
+          select: { id: true, nome: true, avatar: true }
+        }
+      }
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Casa não encontrada.');
+    }
+
+    return serializeBigInt({
+      id: tenant.id,
+      name: tenant.name,
+      membrosDisponiveis: tenant.membros
+    });
+  }
+
+  async criarTenant(name: string, userId: string) {
+    const inviteCode = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const tenant = await this.prisma.tenant.create({
+      data: {
+        name,
+        inviteCode,
+      },
+    });
+
+    const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
+    const nome = user?.nome || 'Membro Fundador';
+    const avatar = (nome || 'MF').substring(0, 2).toUpperCase();
+
+    await this.prisma.membroCasa.create({
+      data: {
+        id: `membro-${randomUUID()}`,
+        tenantId: tenant.id,
+        nome,
+        avatar,
+        userId,
+        role: Role.ADMIN,
+      },
+    });
+
+    return serializeBigInt(tenant);
+  }
+
+  async entrarTenantPorCodigo(inviteCode: string, userId: string) {
+    const cleanedCode = inviteCode.trim().toUpperCase();
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { inviteCode: cleanedCode },
+    });
+
+    if (!tenant) throw new NotFoundException('Código de convite inválido ou casa não encontrada.');
+
+    const isMemberAlready = await this.prisma.membroCasa.findFirst({
+      where: { tenantId: tenant.id, userId },
+    });
+
+    if (isMemberAlready) return serializeBigInt(tenant);
+
+    await this.vincularOuCriarMembroAoSistema(tenant.id, userId);
+
+    this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
+    return serializeBigInt(tenant);
+  }
 
   async listarMembros(tenantId: string) {
     const membros = await this.prisma.membroCasa.findMany({

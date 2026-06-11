@@ -1,5 +1,4 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { FinanceiroService } from './financeiro.service';
 import { MembroService } from './membro.service';
 import { CargoService } from './cargo.service';
 import { CartaoService } from './cartao.service';
@@ -12,7 +11,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [PrismaModule, forwardRef(() => AuthModule)],
   providers: [
-    FinanceiroService, 
     MembroService, 
     CargoService, 
     CartaoService, 
@@ -20,6 +18,6 @@ import { PrismaModule } from '../prisma/prisma.module';
     FinanceiroGateway
   ],
   controllers: [FinanceiroController],
-  exports: [FinanceiroService, FinanceiroGateway],
+  exports: [MembroService, FinanceiroGateway],
 })
 export class FinanceiroModule {}
