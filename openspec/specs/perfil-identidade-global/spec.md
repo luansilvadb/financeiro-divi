@@ -21,4 +21,4 @@ O sistema DEVE permitir que o usuário acesse as configurações de seu perfil e
 
 #### Scenario: Acessar configurações de perfil pela aba
 - **WHEN** o usuário toca na aba "Perfil" da navegação inferior
-- **THEN** o sistema exibe o painel de configurações do usuário e de sua identidade global
+- **THEN** o sistema SHALL renderizar o componente `PerfilUsuarioTab.vue` dentro do container de configurações, exibindo dados de identidade global e cartões vinculados
