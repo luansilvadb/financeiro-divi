@@ -4,9 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "packageManager": "pnpm@11.1.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "dev:backend": "pnpm --filter divi-backend run start:dev",
+    "build": "pnpm --filter divi-backend run build && vue-tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

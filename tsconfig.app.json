@@ -3,7 +3,8 @@
   // Configurações do compilador
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "types": ["vite/client"],
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
 
     /* Linting */
     "noUnusedLocals": true,
