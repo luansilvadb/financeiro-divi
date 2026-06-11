@@ -88,9 +88,6 @@ export class MembroService {
   async listarMembros(tenantId: string) {
     const membros = await this.prisma.membroCasa.findMany({
       where: { tenantId },
-      include: {
-        cargo: true,
-      },
     });
     return serializeBigInt(membros);
   }
@@ -122,21 +119,19 @@ export class MembroService {
   }
 
   private async persistirMembro(tenantId: string, data: MembroDto) {
-    const { id, nome, avatar, ativo, role, cargoId, userId } = data;
+    const { id, nome, avatar, ativo, role, userId } = data;
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
-    const finalCargoId = role === Role.ADMIN ? null : (cargoId || null);
 
     return this.prisma.membroCasa.upsert({
       where: { id_tenantId: { id, tenantId } },
       create: {
         id, tenantId, nome, avatar: defaultAvatar,
-        ativo: ativo!, role: role!, cargoId: finalCargoId, userId,
+        ativo: ativo!, role: role!, userId,
       },
       update: {
         nome, avatar: defaultAvatar,
-        ativo: ativo!, role: role!, cargoId: finalCargoId, userId,
+        ativo: ativo!, role: role!, userId,
       },
-      include: { cargo: true },
     });
   }
 

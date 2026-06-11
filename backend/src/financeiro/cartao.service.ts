@@ -29,8 +29,8 @@ export class CartaoService {
       },
     });
 
-    if (!membro || membro.id !== responsavelPadraoId) {
-      throw new BadRequestException('Você só pode cadastrar cartões nos quais você é o responsável padrão.');
+    if (!membro) {
+      throw new BadRequestException('Você não é membro desta moradia.');
     }
 
     const upserted = await this.prisma.cartao.upsert({

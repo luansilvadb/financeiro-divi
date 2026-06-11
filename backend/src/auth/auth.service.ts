@@ -6,6 +6,7 @@ import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
 import type { JwtPayload } from './auth.types';
 import { randomUUID, randomBytes } from 'crypto';
 import { MailService } from '../shared/mail/mail.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -40,50 +41,14 @@ export class AuthService {
         },
       });
 
-      let membroIdVinculado: string | null = null;
+      const { tenantId, membroId: membroIdVinculado } = await this.associarUsuarioAoTenantTx(
+        tx,
+        user,
+        inviteCode,
+        membroId
+      );
 
-      if (inviteCode) {
-        const tenant = await tx.tenant.findUnique({
-          where: { inviteCode: inviteCode.toUpperCase() }
-        });
-
-        if (tenant) {
-          let vinculado = false;
-
-          if (membroId && membroId !== 'novo') {
-            const membroExistente = await tx.membroCasa.findFirst({
-              where: { id: membroId, tenantId: tenant.id }
-            });
-
-            if (membroExistente) {
-              await tx.membroCasa.update({
-                where: {
-                  id_tenantId: { id: membroId, tenantId: tenant.id }
-                },
-                data: { userId: user.id }
-              });
-              vinculado = true;
-              membroIdVinculado = membroId;
-            }
-          }
-
-          if (!vinculado) {
-            const novoMembro = await tx.membroCasa.create({
-              data: {
-                id: `membro-${randomUUID()}`,
-                tenantId: tenant.id,
-                nome: user.nome,
-                avatar: user.nome.substring(0, 2).toUpperCase(),
-                userId: user.id,
-              }
-            });
-            membroIdVinculado = novoMembro.id;
-          }
-          
-          return { user, tenantId: tenant.id, membroId: membroIdVinculado };
-        }
-      }
-      return { user, tenantId: null, membroId: membroIdVinculado };
+      return { user, tenantId, membroId: membroIdVinculado };
     });
 
     if (result.tenantId) {
@@ -95,6 +60,70 @@ export class AuthService {
       email: result.user.email,
       nome: result.user.nome,
     };
+  }
+
+  private async associarUsuarioAoTenantTx(
+    tx: Prisma.TransactionClient,
+    user: any,
+    inviteCode?: string,
+    membroId?: string
+  ): Promise<{ tenantId: string | null; membroId: string | null }> {
+    if (!inviteCode) {
+      return { tenantId: null, membroId: null };
+    }
+
+    const tenant = await tx.tenant.findUnique({
+      where: { inviteCode: inviteCode.toUpperCase() }
+    });
+
+    if (!tenant) {
+      return { tenantId: null, membroId: null };
+    }
+
+    const membroIdVinculado = await this.vincularMembroExistenteTx(tx, tenant.id, user.id, membroId);
+    if (membroIdVinculado) {
+      return { tenantId: tenant.id, membroId: membroIdVinculado };
+    }
+
+    const novoMembro = await tx.membroCasa.create({
+      data: {
+        id: `membro-${randomUUID()}`,
+        tenantId: tenant.id,
+        nome: user.nome,
+        avatar: user.nome.substring(0, 2).toUpperCase(),
+        userId: user.id,
+      }
+    });
+
+    return { tenantId: tenant.id, membroId: novoMembro.id };
+  }
+
+  private async vincularMembroExistenteTx(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+    membroId?: string
+  ): Promise<string | null> {
+    if (!membroId || membroId === 'novo') {
+      return null;
+    }
+
+    const membroExistente = await tx.membroCasa.findFirst({
+      where: { id: membroId, tenantId }
+    });
+
+    if (!membroExistente) {
+      return null;
+    }
+
+    await tx.membroCasa.update({
+      where: {
+        id_tenantId: { id: membroId, tenantId }
+      },
+      data: { userId }
+    });
+
+    return membroId;
   }
 
   async login(email: string, passwordSecret: string) {

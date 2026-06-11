@@ -104,8 +104,11 @@ export class GastoService {
   }
 
   private async relancarGasto(original: Gasto, idsParaExcluir: string[], dados: AtualizarGastoDados): Promise<void> {
-    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
-    if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${original.id}`)
+    const periodo = original.faturaId
+      ? (await this.faturaRepo.buscarPorId(original.faturaId))?.periodo
+      : { mes: original.createdAt.getMonth() + 1, ano: original.createdAt.getFullYear() }
+
+    if (!periodo) throw new Error(`Fatura ou período original não encontrado para o gasto ${original.id}`)
 
     if (idsParaExcluir.length === 1) await this.gastoRepo.excluir(idsParaExcluir[0])
     else await this.gastoRepo.excluirMuitos(idsParaExcluir)
@@ -120,7 +123,7 @@ export class GastoService {
       installments: dados.installments,
       cardOwnerId: dados.cardOwner,
       borrowerId: original.borrowerId,
-      periodo: faturaOriginal.periodo
+      periodo: periodo
     })
   }
 
@@ -134,9 +137,9 @@ export class GastoService {
     const faturasPersistidas = await this.faturaRepo.listarTodas()
 
     for (const gasto of gastos) {
-      const faturaAtual = await this.faturaRepo.buscarPorId(gasto.faturaId)
+      const faturaAtual = gasto.faturaId ? await this.faturaRepo.buscarPorId(gasto.faturaId) : null
       let faturaId = gasto.faturaId
-      if (faturaAtual) {
+      if (faturaAtual && cartaoResolvido.cartaoId) {
         const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(
           cartaoResolvido.cartaoId,
           faturaAtual.periodo.mes,
@@ -166,9 +169,9 @@ export class GastoService {
     dados: AtualizarGastoDados,
     cartaoResolvido: CartaoResolvido
   ): Promise<void> {
-    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+    const faturaOriginal = original.faturaId ? await this.faturaRepo.buscarPorId(original.faturaId) : null
     let faturaId = original.faturaId
-    if (faturaOriginal) {
+    if (faturaOriginal && cartaoResolvido.cartaoId) {
       const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(
         cartaoResolvido.cartaoId,
         faturaOriginal.periodo.mes,
@@ -176,6 +179,8 @@ export class GastoService {
         cartaoResolvido.responsavelFaturaId
       )
       faturaId = novaFatura.id
+    } else {
+      faturaId = null
     }
 
     await this.gastoRepo.salvar(this.criarGastoAtualizado(
@@ -191,7 +196,7 @@ export class GastoService {
   private criarGastoAtualizado(
     original: Gasto,
     dados: AtualizarGastoDados,
-    faturaId: string,
+    faturaId: string | null,
     cardOwner: string | null,
     installments: number,
     totalInstallments: number

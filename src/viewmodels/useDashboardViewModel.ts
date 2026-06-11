@@ -129,7 +129,11 @@ export const useDashboardViewModel = (
       ui.itemParaEstornar.value = null
       
       if (t === 'Lançamento') {
-        if (i.id.startsWith('audit-settlement-')) return cartoesEFaturas.reabrirFatura((i as Gasto).faturaId)
+        if (i.id.startsWith('audit-settlement-')) {
+          const fid = (i as Gasto).faturaId
+          if (fid) return cartoesEFaturas.reabrirFatura(fid)
+          return
+        }
         await gastoService.excluirGasto(i.id)
         await cartoesEFaturas.inicializar()
         toast.show('Estornado', 'success')
@@ -142,13 +146,7 @@ export const useDashboardViewModel = (
     
     estornarContaFixa: (b: ContaFixa) => ui.abrirConfirmacaoEstornoGasto(gastosFiltrados.value.find(z => z.recurringBillId === b.id)!),
     
-    reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === periodoSelecionado.value.mes && f.periodo.ano === periodoSelecionado.value.ano).map(f => cartoesEFaturas.reabrirFatura(f.id))),
-    
-    excluirGasto: async (id: string) => { 
-      await gastoService.excluirGasto(id)
-      await cartoesEFaturas.inicializar()
-      toast.show('Lançamento estornado', 'success') 
-    }
+    reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === periodoSelecionado.value.mes && f.periodo.ano === periodoSelecionado.value.ano).map(f => cartoesEFaturas.reabrirFatura(f.id)))
   }
 }
 

@@ -12,13 +12,13 @@ export class GastoDto {
   @IsString()
   id!: string;
 
-  @ApiProperty({
-    description: 'ID da fatura associada a este gasto',
+  @ApiPropertyOptional({
+    description: 'ID da fatura associada a este gasto (opcional para gastos avulsos)',
     example: 'f1-e5a1b32d-2098-4d56-b7ff-11c57bc98188',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  faturaId!: string;
+  faturaId?: string;
 
   @ApiProperty({
     description: 'Descrição ou nome do gasto',

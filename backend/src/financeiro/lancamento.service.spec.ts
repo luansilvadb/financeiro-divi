@@ -38,16 +38,16 @@ describe('LancamentoService', () => {
     jest.clearAllMocks();
   });
 
-  describe('salvarDespesaComum', () => {
+  describe('salvarGasto - Despesa Comum', () => {
     it('deve salvar uma despesa comum forçando isLoan e isSettlement como false', async () => {
       const g = {
         id: 'g1', faturaId: 'f1', descricao: 'Teste', valorTotalCentavos: 100,
         compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
-        isLoan: true, isSettlement: true, // Tentando forçar true, mas o método deve sobrescrever
+        isLoan: false, isSettlement: false,
         divisoes: []
       };
 
-      await service.salvarDespesaComum('t1', g as any);
+      await service.salvarGasto('t1', g as any);
 
       expect(prisma.gasto.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -58,15 +58,15 @@ describe('LancamentoService', () => {
     });
   });
 
-  describe('salvarEmprestimo', () => {
-    it('deve salvar um empréstimo forçando isLoan como true', async () => {
+  describe('salvarGasto - Empréstimo', () => {
+    it('deve salvar um empréstimo forçando isLoan como true e isSettlement como false', async () => {
       const g = {
         id: 'g1', faturaId: 'f1', descricao: 'Emprestimo', valorTotalCentavos: 500,
         compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
-        isLoan: false, borrowerId: 'm2', divisoes: []
+        isLoan: true, borrowerId: 'm2', divisoes: []
       };
 
-      await service.salvarEmprestimo('t1', g as any);
+      await service.salvarGasto('t1', g as any);
 
       expect(prisma.gasto.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -77,15 +77,15 @@ describe('LancamentoService', () => {
     });
   });
 
-  describe('registrarAcerto', () => {
-    it('deve registrar um acerto forçando isSettlement como true', async () => {
+  describe('salvarGasto - Acerto', () => {
+    it('deve registrar um acerto forçando isSettlement como true e isLoan como false', async () => {
       const g = {
         id: 'g1', faturaId: 'f1', descricao: 'Acerto', valorTotalCentavos: 300,
         compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
-        isSettlement: false, settlementDetails: { from: 'm1', to: 'm2' }, divisoes: []
+        isSettlement: true, settlementDetails: { from: 'm1', to: 'm2' }, divisoes: []
       };
 
-      await service.registrarAcerto('t1', g as any);
+      await service.salvarGasto('t1', g as any);
 
       expect(prisma.gasto.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
