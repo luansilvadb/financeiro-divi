@@ -28,3 +28,7 @@ O sistema SHALL bloquear o acesso à navegação global e à dashboard principal
 - **WHEN** o usuário faz login e o sistema detecta que ele não possui nenhuma casa vinculada
 - **THEN** o sistema exibe a tela de Seleção de Casa (TenantSelectorScreen) de forma exclusiva e oculta a barra de navegação inferior (Floating Island)
 
+#### Scenario: Usuário escolhe criar uma casa
+- **WHEN** o usuário clica em "Criar uma casa nova" na tela de seleção
+- **THEN** o sistema transiciona para o Wizard de Onboarding (OnboardingWizard) e oculta a listagem de casas
+

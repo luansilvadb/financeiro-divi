@@ -1,0 +1,132 @@
+import { Injectable, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
+import { FinanceiroGateway } from './financeiro.gateway';
+import { serializeBigInt } from '../shared/utils/serialization';
+import { randomUUID } from 'crypto';
+import { Role } from '@prisma/client';
+import { MembroDto } from './dto/membro.dto';
+
+@Injectable()
+export class MembroService {
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
+    private gateway: FinanceiroGateway
+  ) {}
+
+  async listarMembros(tenantId: string) {
+    const membros = await this.prisma.membroCasa.findMany({
+      where: { tenantId },
+      include: {
+        cargo: true,
+      },
+    });
+    return serializeBigInt(membros);
+  }
+
+  async salvarMembro(tenantId: string, membroData: MembroDto) {
+    const { id, nome, email, password, ativo, role } = membroData;
+    let { userId } = membroData;
+
+    const finalEmail = email || (membroData as any).username;
+    const isActive = ativo !== undefined ? ativo : true;
+    const memberRole = role || Role.MORADOR;
+
+    await this.validarRegrasSalvarMembro(tenantId, id, finalEmail, password, memberRole, isActive);
+
+    if (!userId && finalEmail && password) {
+      const newUser = await this.authService.register(finalEmail, nome, password);
+      userId = newUser.userId;
+    }
+
+    const upserted = await this.persistirMembro(tenantId, {
+      ...membroData,
+      ativo: isActive,
+      role: memberRole,
+      userId,
+    });
+
+    this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
+    return serializeBigInt(upserted);
+  }
+
+  private async persistirMembro(tenantId: string, data: MembroDto) {
+    const { id, nome, avatar, ativo, role, cargoId, userId } = data;
+    const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
+    const finalCargoId = role === Role.ADMIN ? null : (cargoId || null);
+
+    return this.prisma.membroCasa.upsert({
+      where: { id_tenantId: { id, tenantId } },
+      create: {
+        id, tenantId, nome, avatar: defaultAvatar,
+        ativo: ativo!, role: role!, cargoId: finalCargoId, userId,
+      },
+      update: {
+        nome, avatar: defaultAvatar,
+        ativo: ativo!, role: role!, cargoId: finalCargoId, userId,
+      },
+      include: { cargo: true },
+    });
+  }
+
+  private async validarRegrasSalvarMembro(
+    tenantId: string, id: string, emailOrUsername?: string, password?: string,
+    newRole?: Role, isActive?: boolean
+  ) {
+    const membroAtual = await this.prisma.membroCasa.findUnique({
+      where: { id_tenantId: { id, tenantId } },
+    });
+
+    if (!membroAtual) {
+      if (!emailOrUsername?.trim() || !password?.trim()) {
+        throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
+      }
+      return;
+    }
+
+    const isAdminAtivo = membroAtual.role === Role.ADMIN && membroAtual.ativo;
+    const isLosingAdmin = !isActive || newRole !== Role.ADMIN;
+
+    if (isAdminAtivo && isLosingAdmin) {
+      const adminsAtivos = await this.prisma.membroCasa.count({
+        where: { tenantId, role: Role.ADMIN, ativo: true },
+      });
+      if (adminsAtivos <= 1) {
+        throw new BadRequestException('A moradia precisa ter pelo menos um administrador ativo.');
+      }
+    }
+  }
+
+  async vincularOuCriarMembroAoSistema(tenantId: string, userId: string) {
+    const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
+    const nome = user ? user.nome : 'Convidado';
+
+    const perfilExistente = await this.prisma.membroCasa.findFirst({
+      where: {
+        tenantId,
+        nome: { equals: nome, mode: 'insensitive' },
+        userId: null,
+      },
+    });
+
+    if (perfilExistente) {
+      await this.prisma.membroCasa.update({
+        where: { id_tenantId: { id: perfilExistente.id, tenantId } },
+        data: { userId },
+      });
+      return;
+    }
+
+    await this.prisma.membroCasa.create({
+      data: {
+        id: `membro-${randomUUID()}`,
+        tenantId,
+        nome: nome,
+        avatar: nome.substring(0, 2).toUpperCase(),
+        userId,
+      },
+    });
+  }
+}

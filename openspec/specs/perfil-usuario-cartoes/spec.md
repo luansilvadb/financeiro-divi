@@ -31,11 +31,23 @@ O sistema SHALL permitir que o usuário logado visualize e edite suas informaç�
 - **THEN** o sistema impede a requisição de salvamento, mantém o campo de edição ativo e exibe um Toast de erro correspondente
 
 ### Requirement: Gerenciamento Seguro de Cartões pelo Dono
-O sistema SHALL permitir que os cartões de crédito sejam cadastrados e excluídos apenas pelo morador correspondente ao usuário logado, utilizando **cards com profundidade Inset (shadow-subtle)**, preenchendo automaticamente o responsável pelo cartão e impedindo a alteração ou exclusão por terceiros.
+O sistema SHALL permitir que os cartões de crédito sejam cadastrados e excluídos apenas pelo morador correspondente ao usuário logado, utilizando **cards com profundidade Inset (shadow-subtle)**, preenchendo automaticamente o responsável pelo cartão e impedindo a alteração ou exclusão por terceiros. Adicionalmente, o fluxo de criação ou edição de cartões pessoais SHALL adotar o **Modo Foco (Zen Mode)** dentro do BottomSheet de Configurações, ocultando cabeçalhos de tela, abas e perfis de usuário de modo a maximizar a concentração no formulário, fornecendo um **botão circular de voltar premium** para saída linear e limpa.
 
-#### Scenario: Cadastrar cartão de crédito pessoal
-- **WHEN** o usuário insere o nome do cartão e o dia de fechamento na aba "Meu Perfil" e clica em "Cadastrar Cartão"
-- **THEN** o sistema cria o cartão de crédito associando-o automaticamente ao ID do membro do usuário autenticado, exibindo-o em um card padronizado com o novo design
+#### Scenario: Acessar formulário de cartão em Modo Foco
+- **WHEN** o usuário clica no botão "Novo Cartão" ou seleciona um cartão próprio na listagem "Meus Cartões"
+- **THEN** o sistema ativa o Modo Foco, oculta o card de perfil, as abas de navegação do perfil e o rodapé do Bottom Sheet, expandindo o card de cartões e exibindo o formulário de cadastro com o botão de voltar circular premium
+
+#### Scenario: Atribuição dinâmica de cores do cartão no frontend
+- **WHEN** o usuário insere o nome do cartão (ex: "Nubank", "C6 Carbon", "Inter") e salva o cartão
+- **THEN** o sistema identifica se o nome corresponde a alguma marca conhecida no frontend e aplica a cor correspondente (ex: roxo para Nubank, preto/grafite para C6, laranja para Inter), utilizando essa cor para renderização do card e de seus indicadores, sem necessitar de suporte a cores na API do backend
+
+#### Scenario: Cancelar criação do cartão em Modo Foco
+- **WHEN** o usuário clica no botão circular de voltar ou no botão de cancelar no formulário
+- **THEN** o sistema oculta o formulário de cadastro, desativa o Modo Foco (restaurando o cabeçalho, as abas de navegação e o card de perfil) e exibe novamente a listagem dos cartões do usuário
+
+#### Scenario: Cadastrar cartão de crédito pessoal com sucesso
+- **WHEN** o usuário insere o nome do cartão e o dia de fechamento e clica em confirmar no Modo Foco
+- **THEN** o sistema cria o cartão de crédito associando-o automaticamente ao ID do membro do usuário autenticado, atualiza a lista em tempo real, desativa o Modo Foco e retorna à listagem de cartões
 
 #### Scenario: Excluir cartão de crédito próprio
 - **WHEN** o usuário clica no botão de exclusão de um cartão de sua propriedade na listagem "Meus Cartões"

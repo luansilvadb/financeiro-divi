@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FinanceiroService } from './financeiro.service';
+import { MembroService } from './membro.service';
+import { CargoService } from './cargo.service';
+import { CartaoService } from './cartao.service';
+import { LancamentoService } from './lancamento.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
@@ -10,10 +14,16 @@ describe('FinanceiroService', () => {
   let prisma: PrismaService;
 
   const mockPrisma = {
-    $transaction: jest.fn((fn) => fn(mockPrisma)),
+    $transaction: jest.fn((fn) => {
+      if (typeof fn === 'function') return fn(mockPrisma);
+      return Promise.resolve(fn);
+    }),
     gasto: {
       upsert: jest.fn().mockResolvedValue({ id: 'g1' }),
       findUnique: jest.fn().mockResolvedValue({ id: 'g1', divisoes: [] }),
+      delete: jest.fn().mockResolvedValue({ id: 'g1' }),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      findMany: jest.fn().mockResolvedValue([]),
     },
     divisaoGasto: {
       deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -26,9 +36,11 @@ describe('FinanceiroService', () => {
       create: jest.fn().mockResolvedValue({ id: 'm1', role: 'ADMIN', ativo: true }),
       findFirst: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
     },
     tenant: {
       create: jest.fn().mockResolvedValue({ id: 't1', name: 'Casa Teste', inviteCode: 'CASA-TESTE' }),
+      findUnique: jest.fn().mockResolvedValue(null),
     },
     usuario: {
       findUnique: jest.fn().mockResolvedValue({ id: 'u1', username: 'luan' }),
@@ -40,7 +52,15 @@ describe('FinanceiroService', () => {
     },
     cartao: {
       upsert: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
     },
+    fatura: {
+      findMany: jest.fn().mockResolvedValue([]),
+      upsert: jest.fn().mockResolvedValue({ id: 'f1' }),
+    },
+    contaFixa: {
+      findMany: jest.fn().mockResolvedValue([]),
+    }
   };
 
   const mockAuth = {
@@ -54,6 +74,10 @@ describe('FinanceiroService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FinanceiroService,
+        MembroService,
+        CargoService,
+        CartaoService,
+        LancamentoService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuthService, useValue: mockAuth },
         { provide: FinanceiroGateway, useValue: mockGateway },
@@ -131,7 +155,7 @@ describe('FinanceiroService', () => {
     it('deve rejeitar a criação de membro se não fornecer usuário e senha', async () => {
       jest.spyOn(prisma.membroCasa, 'findUnique').mockResolvedValue(null);
       const data = { id: 'm1', nome: 'Luan', ativo: true, role: Role.MORADOR };
-      await expect(service.salvarMembro('t1', data)).rejects.toThrow(
+      await expect(service.salvarMembro('t1', (data as any))).rejects.toThrow(
         'Usuário e senha são obrigatórios para a criação de um novo morador.'
       );
     });
@@ -151,7 +175,7 @@ describe('FinanceiroService', () => {
       jest.spyOn(prisma.membroCasa, 'count').mockResolvedValue(1);
 
       const data = { id: 'm1', nome: 'Admin Unico', ativo: false, role: Role.ADMIN };
-      await expect(service.salvarMembro('t1', data)).rejects.toThrow(
+      await expect(service.salvarMembro('t1', (data as any))).rejects.toThrow(
         'A moradia precisa ter pelo menos um administrador ativo.'
       );
     });
@@ -171,7 +195,7 @@ describe('FinanceiroService', () => {
       jest.spyOn(prisma.membroCasa, 'count').mockResolvedValue(1);
 
       const data = { id: 'm1', nome: 'Admin Unico', ativo: true, role: Role.MORADOR };
-      await expect(service.salvarMembro('t1', data)).rejects.toThrow(
+      await expect(service.salvarMembro('t1', (data as any))).rejects.toThrow(
         'A moradia precisa ter pelo menos um administrador ativo.'
       );
     });

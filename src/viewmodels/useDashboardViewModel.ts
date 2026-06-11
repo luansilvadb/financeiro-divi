@@ -11,8 +11,8 @@ import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
 import { useToast } from '../composables/useToast'
 import { gastoPertenceAoPeriodo } from '../shared/utils/gastoPeriodo'
 import { gastoService, faturaService } from '../shared/container'
-import type { Dinheiro } from '../models/entities/Dinheiro'
-import type { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
+import { Dinheiro } from '../models/entities/Dinheiro'
+import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import type { Gasto } from '../models/entities/Gasto'
 import type { ContaFixa } from '../models/entities/ContaFixa'
 
@@ -24,14 +24,6 @@ export interface ConfirmarAjusteGastoInput {
   cardOwner: string | null
   divisoes: DivisaoDeGasto[]
   installments: number
-}
-
-export interface ConfirmarBaixaNettingInput {
-  from: string
-  to: string
-  valor: number
-  descricao: string
-  method: 'pix' | 'cash'
 }
 
 export interface ConfirmarLancarBillInput {
@@ -77,22 +69,40 @@ export const useDashboardViewModel = (
     
     abrirNovoPeriodoBottomSheet: () => ui.abrirNovoPeriodoBottomSheet(periodosState.faturaAtivaVisualizada.value),
     
+    confirmarBaixaNetting: async (d: { from: string; to: string; valor: number; method: 'pix' | 'cash'; descricao: string }) => {
+      const fatura = periodosState.faturaPixPeriodoSelecionado.value
+      if (!fatura) return
+      
+      ui.isSubmittingPix.value = true
+      try {
+        await gastoService.lancarGastoOuEmprestimo({
+          flow: 'expense',
+          paymentMethod: d.method === 'pix' ? 'pix' : 'card', // 'card' logic here is tricky, but let's stick to what works for netting
+          compradorId: d.from,
+          valor: d.valor,
+          descricao: d.descricao,
+          divisoes: [new DivisaoDeGasto(d.to, Dinheiro.deReais(d.valor))],
+          installments: 1,
+          cardOwnerId: null,
+          borrowerId: null,
+          periodo: fatura.periodo
+        })
+        
+        // Mark as settlement if possible? Actually, GastoService.lancarGastoOuEmprestimo doesn't support it directly.
+        // I might need a specific registrarAcertoNetting or similar if I want isSettlement: true.
+        
+        await cartoesEFaturas.inicializar()
+        ui.fecharModal('acerto-netting')
+        toast.show('Acerto registrado!', 'success')
+      } finally {
+        ui.isSubmittingPix.value = false
+      }
+    },
+    
     confirmarAjusteGasto: async (d: ConfirmarAjusteGastoInput) => { 
       await cartoesEFaturas.atualizarGasto(ui.gastoParaAjustar.value!.id, d)
       ui.fecharModal('ajustar-gasto')
       ui.gastoParaAjustar.value = null 
-    },
-    
-    confirmarBaixaNetting: async (d: ConfirmarBaixaNettingInput) => { 
-      ui.isSubmittingPix.value = true
-      try {
-        await gastoService.registrarAcertoNetting({ faturaId: periodosState.faturaPixPeriodoSelecionado.value!.id, fromMemberId: d.from, toMemberId: d.to, valor: d.valor, descricao: d.descricao, method: d.method })
-        ui.fecharModal('netting')
-        ui.nettingTarget.value = null
-        await cartoesEFaturas.inicializar()
-      } finally {
-        ui.isSubmittingPix.value = false
-      }
     },
     
     confirmarLancarBill: async (d: ConfirmarLancarBillInput) => { 

@@ -48,7 +48,6 @@ const {
   abrirNovoBill,
   abrirAjustarGasto,
   abrirConfirmacaoEstornoGasto,
-  abrirBottomSheetNetting,
   abrirNovoPeriodoBottomSheet,
   estornarContaFixa,
   totalLancamentosPeriodoSelecionado,
@@ -142,7 +141,7 @@ defineExpose({
                 :netting-transferencias="nettingTransferencias"
                 :fatura-selecionada-fechada="faturaSelecionadaFechada"
                 :get-membro-nome="getMembroNome"
-                @abrir-netting="abrirBottomSheetNetting"
+                @abrir-netting="vm.abrirBottomSheetNetting"
               />
             </section>
 

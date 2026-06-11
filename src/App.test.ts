@@ -61,7 +61,9 @@ const mountApp = () => mount(App, {
       ConfiguracoesMembros: true,
       TenantSwitcherModal: true,
       BottomSheet: { template: '<div><slot /></div>' },
-      BottomTabBar: true,
+      BottomTabBar: {
+        template: '<div><button data-testid="novo-lancamento-fab" class="w-11 h-11 rounded-full bg-ember" /></div>'
+      },
       ToastNotification: true,
       IllustrationMascot: true
     }
@@ -90,8 +92,8 @@ describe('App loading', () => {
 
     const fabButton = wrapper.get('[data-testid="novo-lancamento-fab"]')
 
-    expect(fabButton.classes()).toContain('w-16')
-    expect(fabButton.classes()).toContain('h-16')
+    expect(fabButton.classes()).toContain('w-11')
+    expect(fabButton.classes()).toContain('h-11')
     expect(fabButton.classes()).toContain('rounded-full')
     expect(fabButton.classes()).toContain('bg-ember')
   })

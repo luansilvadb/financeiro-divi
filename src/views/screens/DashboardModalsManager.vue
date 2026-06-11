@@ -2,12 +2,12 @@
 import { computed, unref } from 'vue'
 import PopupLancarContaFixa from '../components/ledger/PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from '../components/ledger/BottomSheetConfigurarContaFixa.vue'
-import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
 import BottomSheetAjustarGasto from '../components/ledger/BottomSheetAjustarGasto.vue'
 import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfirmacaoEstorno.vue'
 import BottomSheetNovoPeriodo from '../components/ledger/dashboard/BottomSheetNovoPeriodo.vue'
 import BottomSheetHistorico from '../components/ledger/dashboard/BottomSheetHistorico.vue'
 import BottomSheetCasas from '../components/ledger/dashboard/BottomSheetCasas.vue'
+import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
 import type { Cartao } from '../../models/entities/Cartao'
 import type { Fatura } from '../../models/entities/Fatura'
 import type { DashboardViewModel } from '../../viewmodels/useDashboardViewModel'
@@ -29,7 +29,6 @@ const props = defineProps<{
 }>()
 
 const isModalNoTopo = (nome: string) => props.vm.isModalNoTopo(nome)
-const nomeMembro = (id?: string) => id ? props.vm.getMembroNome(id) : ''
 const itemParaEstornar = computed(() => unref(props.vm.itemParaEstornar))
 const itemEstornoNome = computed(() => {
   const item = itemParaEstornar.value
@@ -70,18 +69,6 @@ const itemEstornoValor = computed(() => {
       @confirm="vm.confirmarNovoPeriodo"
     />
 
-    <BottomSheetAcertoCompensacao 
-      :visible="isModalNoTopo('netting')"
-      :from-id="unref(vm.nettingTarget)?.from"
-      :to-id="unref(vm.nettingTarget)?.to"
-      :from-name="nomeMembro(unref(vm.nettingTarget)?.from)"
-      :to-name="nomeMembro(unref(vm.nettingTarget)?.to)"
-      :suggested-value="unref(vm.nettingTarget)?.val || 0"
-      :loading="Boolean(unref(vm.isSubmittingPix))"
-      @cancel="vm.fecharModal('netting')"
-      @confirm="vm.confirmarBaixaNetting"
-    />
-
     <BottomSheetAjustarGasto 
       :visible="isModalNoTopo('ajustar-gasto')"
       :gasto="unref(vm.gastoParaAjustar)"
@@ -112,6 +99,18 @@ const itemEstornoValor = computed(() => {
       :visible="isModalNoTopo('casas')"
       :casas-multitenant="casasMultitenant"
       @close="vm.fecharModal('casas')"
+    />
+
+    <BottomSheetAcertoCompensacao
+      :visible="isModalNoTopo('acerto-netting')"
+      :from-id="unref(vm.nettingTarget)?.from"
+      :to-id="unref(vm.nettingTarget)?.to"
+      :from-name="vm.getMembroNome(unref(vm.nettingTarget)?.from)"
+      :to-name="vm.getMembroNome(unref(vm.nettingTarget)?.to)"
+      :suggested-value="unref(vm.nettingTarget)?.val || 0"
+      :loading="unref(vm.isSubmittingPix)"
+      @confirm="vm.confirmarBaixaNetting"
+      @cancel="vm.fecharModal('acerto-netting')"
     />
   </div>
 </template>

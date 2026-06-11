@@ -21,15 +21,6 @@ export interface LancarGastoInput {
   periodo: { mes: number; ano: number }
 }
 
-export interface NettingInput {
-  faturaId: string
-  descricao: string
-  valor: number
-  fromMemberId: string
-  toMemberId: string
-  method: 'pix' | 'cash'
-}
-
 type AtualizarGastoDados = {
   descricao: string
   valorTotal: Dinheiro
@@ -54,26 +45,6 @@ export class GastoService {
 
   async excluirGasto(id: string): Promise<void> {
     await this.gastoRepo.excluir(id)
-  }
-
-  async registrarAcertoNetting(dados: NettingInput): Promise<void> {
-    const total = Dinheiro.deReais(dados.valor)
-    await this.gastoRepo.salvar(new Gasto({
-      id: `netting-${dados.faturaId}-${dados.fromMemberId}-${dados.toMemberId}-${dados.valor}-${Date.now()}`,
-      faturaId: dados.faturaId,
-      descricao: dados.descricao,
-      valorTotal: total,
-      compradorId: dados.fromMemberId,
-      divisoes: [new DivisaoDeGasto(dados.toMemberId, total)],
-      isSettlement: true,
-      settlementDetails: {
-        fromMemberId: dados.fromMemberId,
-        toMemberId: dados.toMemberId,
-        method: dados.method as 'pix' | 'cash' | 'mutual'
-      },
-      installments: 1,
-      isLoan: false
-    }))
   }
 
   async lancarGastoContaFixa(dados: {

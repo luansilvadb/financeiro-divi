@@ -71,7 +71,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.login('luan@divi.com', 'senha-errada')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Erro de login:', 'Credenciais inválidas')
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Erro de login:'), 'Credenciais inválidas')
     })
 
     it('login deve retornar false em caso de falha de conexão', async () => {
@@ -79,7 +79,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.login('luan@divi.com', 'senha123')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Falha de conexão ao fazer login:', expect.any(Error))
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Falha de conexão ao fazer login:'), expect.any(Error))
     })
 
     it('register deve retornar false se a API retornar erro', async () => {
@@ -92,7 +92,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.register('luan@divi.com', 'Luan', 'senha123')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Erro de cadastro:', 'E-mail já cadastrado')
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Erro de cadastro:'), 'E-mail já cadastrado')
     })
 
     it('register deve retornar false em caso de falha de conexão', async () => {
@@ -100,7 +100,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.register('luan@divi.com', 'Luan', 'senha123')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Falha de conexão ao registrar:', expect.any(Error))
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Falha de conexão ao registrar:'), expect.any(Error))
     })
 
     it('getInvitePreview deve lançar erro se a API retornar erro', async () => {
@@ -124,7 +124,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.forgotPassword('luan@divi.com')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Erro forgotPassword:', 'Erro interno')
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Erro forgotPassword:'), 'Erro interno')
     })
 
     it('forgotPassword deve retornar false em caso de falha de conexão', async () => {
@@ -132,7 +132,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.forgotPassword('luan@divi.com')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Falha de conexão em forgotPassword:', expect.any(Error))
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Falha de conexão em forgotPassword:'), expect.any(Error))
     })
 
     it('resetPassword deve retornar false se a API retornar erro', async () => {
@@ -145,7 +145,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.resetPassword('token-invalido', 'nova-senha')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Erro resetPassword:', 'Token inválido')
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Erro resetPassword:'), 'Token inválido')
     })
 
     it('resetPassword deve retornar false em caso de falha de conexão', async () => {
@@ -153,7 +153,7 @@ describe('TenantSessionService', () => {
 
       const success = await service.resetPassword('token', 'senha')
       expect(success).toBe(false)
-      expect(console.error).toHaveBeenCalledWith('Falha de conexão em resetPassword:', expect.any(Error))
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Falha de conexão em resetPassword:'), expect.any(Error))
     })
 
     it('criarCasa deve lançar erro se a API retornar erro', async () => {
@@ -203,7 +203,7 @@ describe('TenantSessionService', () => {
       await service.inicializarSessao()
 
       expect(service.isAuthenticated()).toBe(true)
-      expect(console.error).toHaveBeenCalledWith('Falha ao carregar sessão do usuário:', expect.any(Error))
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Falha ao carregar sessão do usuário:'), expect.any(Error))
     })
   })
 })

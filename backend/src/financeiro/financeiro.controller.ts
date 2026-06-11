@@ -1,5 +1,9 @@
 import { Controller, Get, Post, Delete, Body, Param, Headers, Request } from '@nestjs/common';
 import { FinanceiroService } from './financeiro.service';
+import { MembroService } from './membro.service';
+import { CargoService } from './cargo.service';
+import { CartaoService } from './cartao.service';
+import { LancamentoService } from './lancamento.service';
 import { ApiTags, ApiBearerAuth, ApiHeader, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiUnauthorizedResponse, ApiBadRequestResponse, ApiBody } from '@nestjs/swagger';
 
 import { MembroDto } from './dto/membro.dto';
@@ -21,7 +25,13 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 @ApiUnauthorizedResponse({ description: 'Token JWT ausente ou inválido' })
 @Controller('financeiro')
 export class FinanceiroController {
-  constructor(private financeiroService: FinanceiroService) {}
+  constructor(
+    private financeiroService: FinanceiroService,
+    private membroService: MembroService,
+    private cargoService: CargoService,
+    private cartaoService: CartaoService,
+    private lancamentoService: LancamentoService,
+  ) {}
 
   @ApiOperation({ summary: 'Obter preview de uma casa pelo código de convite', description: 'Retorna nome da casa e membros disponíveis para vínculo (sem login).' })
   @ApiOkResponse({ description: 'Dados da casa retornados com sucesso' })
@@ -53,7 +63,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Membros listados com sucesso', type: [MembroDto] })
   @Get('membros')
   async listarMembros(@Headers('x-tenant-id') tenantId: string) {
-    return this.financeiroService.listarMembros(tenantId);
+    return this.membroService.listarMembros(tenantId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar um membro no tenant', description: 'Cria ou atualiza as informações de um membro associado ao tenant ativo.' })
@@ -62,7 +72,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN)
   @Post('membros')
   async salvarMembro(@Headers('x-tenant-id') tenantId: string, @Body() membroDto: MembroDto) {
-    return this.financeiroService.salvarMembro(tenantId, membroDto);
+    return this.membroService.salvarMembro(tenantId, membroDto);
   }
 
   @ApiOperation({ summary: 'Listar cartões de crédito do tenant', description: 'Retorna todos os cartões cadastrados no tenant ativo.' })
@@ -70,7 +80,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Cartões listados com sucesso', type: [CartaoDto] })
   @Get('cartoes')
   async listarCartoes(@Headers('x-tenant-id') tenantId: string) {
-    return this.financeiroService.listarCartoes(tenantId);
+    return this.cartaoService.listarCartoes(tenantId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar um cartão de crédito no tenant', description: 'Cria ou updates um cartão de crédito no tenant ativo.' })
@@ -83,7 +93,7 @@ export class FinanceiroController {
     @Body() cartaoDto: CartaoDto,
     @Request() req: AuthenticatedRequest
   ) {
-    return this.financeiroService.salvarCartao(tenantId, cartaoDto, req.user.userId);
+    return this.cartaoService.salvarCartao(tenantId, cartaoDto, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Excluir um cartão de crédito', description: 'Exclui um cartão de crédito específico a partir do seu ID.' })
@@ -92,7 +102,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('cartoes/:id')
   async excluirCartao(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.financeiroService.excluirCartao(tenantId, id);
+    return this.cartaoService.excluirCartao(tenantId, id);
   }
 
   @ApiOperation({ summary: 'Listar todas as faturas do tenant', description: 'Retorna a lista completa de faturas de cartões do tenant ativo.' })
@@ -100,7 +110,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Faturas listadas com sucesso', type: [FaturaDto] })
   @Get('faturas')
   async listarFaturas(@Headers('x-tenant-id') tenantId: string) {
-    return this.financeiroService.listarFaturas(tenantId);
+    return this.cartaoService.listarFaturas(tenantId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar uma fatura no tenant', description: 'Cria ou updates uma fatura de cartão de crédito no tenant ativo.' })
@@ -109,7 +119,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('faturas')
   async salvarFatura(@Headers('x-tenant-id') tenantId: string, @Body() faturaDto: FaturaDto) {
-    return this.financeiroService.salvarFatura(tenantId, faturaDto);
+    return this.cartaoService.salvarFatura(tenantId, faturaDto);
   }
 
   @ApiOperation({ summary: 'Salvar faturas em lote (batch)', description: 'Salva ou updates várias faturas simultaneamente para fins de sincronização.' })
@@ -119,7 +129,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('faturas/batch')
   async salvarMuitasFaturas(@Headers('x-tenant-id') tenantId: string, @Body() faturasDto: FaturaDto[]) {
-    return this.financeiroService.salvarMuitasFaturas(tenantId, faturasDto);
+    return this.cartaoService.salvarMuitasFaturas(tenantId, faturasDto);
   }
 
   @ApiOperation({ summary: 'Listar gastos do tenant', description: 'Retorna a lista completa de gastos cadastrados no tenant ativo.' })
@@ -127,7 +137,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Gastos listados com sucesso', type: [GastoDto] })
   @Get('gastos')
   async listarGastos(@Headers('x-tenant-id') tenantId: string) {
-    return this.financeiroService.listarGastos(tenantId);
+    return this.lancamentoService.listarGastos(tenantId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar um gasto no tenant', description: 'Cria ou updates as informações de um gasto (incluindo seu rateio de divisão) no tenant ativo.' })
@@ -136,7 +146,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('gastos')
   async salvarGasto(@Headers('x-tenant-id') tenantId: string, @Body() gastoDto: GastoDto) {
-    return this.financeiroService.salvarGasto(tenantId, gastoDto);
+    return this.lancamentoService.salvarGasto(tenantId, gastoDto);
   }
 
   @ApiOperation({ summary: 'Salvar gastos em lote (batch)', description: 'Sincroniza múltiplos gastos simultaneamente no banco de dados do tenant ativo.' })
@@ -146,7 +156,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('gastos/batch')
   async salvarMuitosGastos(@Headers('x-tenant-id') tenantId: string, @Body() gastosDto: GastoDto[]) {
-    return this.financeiroService.salvarMuitosGastos(tenantId, gastosDto);
+    return this.lancamentoService.salvarMuitosGastos(tenantId, gastosDto);
   }
 
   @ApiOperation({ summary: 'Excluir um gasto', description: 'Remove um gasto específico do tenant ativo através do seu ID.' })
@@ -155,7 +165,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('gastos/:id')
   async excluirGasto(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.financeiroService.excluirGasto(tenantId, id);
+    return this.lancamentoService.excluirGasto(tenantId, id);
   }
 
   @ApiOperation({ summary: 'Excluir gastos em lote (batch)', description: 'Exclui múltiplos gastos especificados no corpo da requisição.' })
@@ -164,7 +174,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('gastos/delete-batch')
   async excluirMuitosGastos(@Headers('x-tenant-id') tenantId: string, @Body() excluirDto: ExcluirMuitosGastosDto) {
-    return this.financeiroService.excluirMuitosGastos(tenantId, excluirDto.ids);
+    return this.lancamentoService.excluirMuitosGastos(tenantId, excluirDto.ids);
   }
 
   @ApiOperation({ summary: 'Listar contas fixas do tenant', description: 'Retorna a lista de todas as contas fixas cadastradas no tenant ativo.' })
@@ -172,7 +182,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Contas fixas listadas com sucesso', type: [ContaFixaDto] })
   @Get('contas-fixas')
   async listarContasFixas(@Headers('x-tenant-id') tenantId: string) {
-    return this.financeiroService.listarContasFixas(tenantId);
+    return this.lancamentoService.listarContasFixas(tenantId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar conta fixa no tenant', description: 'Cria ou updates uma conta fixa no tenant ativo.' })
@@ -181,7 +191,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('contas-fixas')
   async salvarContaFixa(@Headers('x-tenant-id') tenantId: string, @Body() contaFixaDto: ContaFixaDto) {
-    return this.financeiroService.salvarContaFixa(tenantId, contaFixaDto);
+    return this.lancamentoService.salvarContaFixa(tenantId, contaFixaDto);
   }
 
   @ApiOperation({ summary: 'Excluir uma conta fixa', description: 'Exclui uma conta fixa cadastrada no tenant ativo.' })
@@ -190,7 +200,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('contas-fixas/:id')
   async excluirContaFixa(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.financeiroService.excluirContaFixa(tenantId, id);
+    return this.lancamentoService.excluirContaFixa(tenantId, id);
   }
 
   @ApiOperation({ summary: 'Listar cargos do tenant', description: 'Retorna a lista de todos os cargos personalizados cadastrados no tenant ativo.' })
@@ -198,7 +208,7 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Cargos listados com sucesso', type: [CargoCasaDto] })
   @Get('cargos')
   async listarCargos(@Headers('x-tenant-id') tenantId: string) {
-    return this.financeiroService.listarCargos(tenantId);
+    return this.cargoService.listarCargos(tenantId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar cargo no tenant', description: 'Cria ou atualiza um cargo personalizado no tenant ativo.' })
@@ -207,7 +217,7 @@ export class FinanceiroController {
   @Roles(Role.ADMIN)
   @Post('cargos')
   async salvarCargo(@Headers('x-tenant-id') tenantId: string, @Body() cargoCasaDto: CargoCasaDto) {
-    return this.financeiroService.salvarCargo(tenantId, cargoCasaDto);
+    return this.cargoService.salvarCargo(tenantId, cargoCasaDto);
   }
 
   @ApiOperation({ summary: 'Excluir um cargo', description: 'Exclui um cargo personalizado cadastrado no tenant ativo.' })
@@ -216,6 +226,6 @@ export class FinanceiroController {
   @Roles(Role.ADMIN)
   @Delete('cargos/:id')
   async excluirCargo(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.financeiroService.excluirCargo(tenantId, id);
+    return this.cargoService.excluirCargo(tenantId, id);
   }
 }

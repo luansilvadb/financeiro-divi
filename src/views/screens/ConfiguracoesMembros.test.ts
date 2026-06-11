@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ConfiguracoesMembros from './ConfiguracoesMembros.vue'
 import { useMembros } from '../../viewmodels/useMembros'
@@ -93,7 +93,7 @@ describe('ConfiguracoesMembros', () => {
     expect(wrapper.findComponent({ name: 'ConfiguracoesCartoes' }).exists()).toBe(true)
   })
 
-  it('deve renderizar a lista de moradores ao alternar para a aba Controle de Acesso', async () => {
+  it('deve renderizar a lista de moradores ao alternar para a aba Acessos', async () => {
     const wrapper = mount(ConfiguracoesMembros, {
       global: { 
         stubs: { 
@@ -111,7 +111,7 @@ describe('ConfiguracoesMembros', () => {
     })
     
     const botoes = wrapper.findAll('button')
-    const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
+    const botaoAcesso = botoes.find(b => b.text().includes('Acessos'))
     expect(botaoAcesso).toBeDefined()
     await botaoAcesso?.trigger('click')
 
@@ -139,7 +139,7 @@ describe('ConfiguracoesMembros', () => {
     })
     
     const botoes = wrapper.findAll('button')
-    const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
+    const botaoAcesso = botoes.find(b => b.text().includes('Acessos'))
     await botaoAcesso?.trigger('click')
 
     const botaoNovoMorador = wrapper.findAll('button').find(b => b.text().includes('Novo Morador'))
@@ -294,6 +294,7 @@ describe('ConfiguracoesMembros', () => {
     // Ativar o Modo Foco
     const configuracoesCartoes = wrapper.findComponent({ name: 'ConfiguracoesCartoes' })
     await configuracoesCartoes.vm.$emit('focus-change', true)
+    await flushPromises()
 
     // Elementos devem sumir
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
@@ -304,6 +305,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Desativar o Modo Foco
     await configuracoesCartoes.vm.$emit('focus-change', false)
+    await flushPromises()
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
@@ -332,8 +334,9 @@ describe('ConfiguracoesMembros', () => {
 
     // Ir para a aba controle de acesso
     const botoes = wrapper.findAll('button')
-    const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
+    const botaoAcesso = botoes.find(b => b.text().includes('Acessos'))
     await botaoAcesso?.trigger('click')
+    await flushPromises()
 
     // Estado inicial: Modo Foco inativo
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
@@ -344,6 +347,7 @@ describe('ConfiguracoesMembros', () => {
     const items = wrapper.findAll('.cursor-pointer')
     const itemMembro = items.find(i => i.text().includes('Maria'))
     await itemMembro?.trigger('click')
+    await flushPromises()
 
     // Elementos devem sumir devido ao Modo Foco na edição
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
@@ -353,6 +357,7 @@ describe('ConfiguracoesMembros', () => {
     // Clicar no botão Cancelar da edição para fechar
     const botaoCancelar = wrapper.findAll('button').find(b => b.text().includes('Cancelar'))
     await botaoCancelar?.trigger('click')
+    await flushPromises()
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
@@ -377,10 +382,11 @@ describe('ConfiguracoesMembros', () => {
       }
     })
 
-    // Ir para a aba controle de acesso
+    // Ir para a aba Cargos
     const botoes = wrapper.findAll('button')
-    const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
-    await botaoAcesso?.trigger('click')
+    const botaoCargos = botoes.find(b => b.text().includes('Cargos'))
+    await botaoCargos?.trigger('click')
+    await flushPromises()
 
     // Estado inicial: Modo Foco inativo
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
@@ -390,6 +396,7 @@ describe('ConfiguracoesMembros', () => {
     // Clicar no botão "Novo Cargo" para abrir o formulário inline
     const botaoNovoCargo = wrapper.findAll('button').find(b => b.text().includes('Novo Cargo'))
     await botaoNovoCargo?.trigger('click')
+    await flushPromises()
 
     // Elementos devem sumir devido ao Modo Foco
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
@@ -399,6 +406,7 @@ describe('ConfiguracoesMembros', () => {
     // Clicar no botão Cancelar no formulário de cargo
     const form = wrapper.findComponent({ name: 'CargoFormBottomSheet' })
     await form.vm.$emit('cancelar')
+    await flushPromises()
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
@@ -406,6 +414,3 @@ describe('ConfiguracoesMembros', () => {
     expect(wrapper.text()).toContain('Fechar')
   })
 })
-
-
-

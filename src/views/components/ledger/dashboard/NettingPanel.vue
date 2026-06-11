@@ -10,10 +10,6 @@ defineProps<{
   faturaSelecionadaFechada: boolean
   getMembroNome: (id: string) => string
 }>()
-
-const emit = defineEmits<{
-  (e: 'abrirNetting', transferencia: TransferenciaNetting): void
-}>()
 </script>
 
 <template>
@@ -56,12 +52,13 @@ const emit = defineEmits<{
               <span class="text-[10px] font-bold text-charcoal uppercase truncate max-w-full text-center">{{ getMembroNome(t.to) }}</span>
             </div>
           </div>
-          
+
           <div class="w-full">
-            <Button 
+            <Button
               @click="$emit('abrirNetting', t)"
               variant="primary"
               class="w-full h-12 font-bold uppercase tracking-widest text-[10px] shadow-sm"
+              :disabled="faturaSelecionadaFechada"
             >
               Registrar Pagamento
             </Button>
