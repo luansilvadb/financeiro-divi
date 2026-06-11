@@ -78,8 +78,12 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Cartão salvo com sucesso', type: CartaoDto })
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('cartoes')
-  async salvarCartao(@Headers('x-tenant-id') tenantId: string, @Body() cartaoDto: CartaoDto) {
-    return this.financeiroService.salvarCartao(tenantId, cartaoDto);
+  async salvarCartao(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() cartaoDto: CartaoDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.financeiroService.salvarCartao(tenantId, cartaoDto, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Excluir um cartão de crédito', description: 'Exclui um cartão de crédito específico a partir do seu ID.' })

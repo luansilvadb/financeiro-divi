@@ -50,11 +50,10 @@ describe('useContasFixas', () => {
 
   const esperarTick = () => new Promise(resolve => setTimeout(resolve, 0))
 
-  it('deve carregar contas fixas padrao ao inicializar se vazio', async () => {
+  it('deve manter a lista de contas vazia ao inicializar se vazio', async () => {
     const { contasFixas, carregarTemplates } = useContasFixas()
     await carregarTemplates()
-    expect(contasFixas.value.length).toBe(5)
-    expect(contasFixas.value[0].id).toBe('aluguel')
+    expect(contasFixas.value.length).toBe(0)
   })
 
   it('deve cadastrar, atualizar e remover um template customizado', async () => {

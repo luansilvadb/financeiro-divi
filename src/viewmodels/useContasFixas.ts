@@ -24,7 +24,7 @@ export function useContasFixas() {
     }
 
     if (tenantSessionService.isAuthenticated() && !tenantSessionService.getActiveTenantId()) {
-      contasFixas.value = [...CONTAS_PADRAO]
+      contasFixas.value = []
       inicializado.value = true
       return
     }
@@ -32,14 +32,7 @@ export function useContasFixas() {
     const carregar = async () => {
       try {
         const saved = await contaFixaRepository.listarTodas()
-        if (saved && saved.length > 0) {
-          contasFixas.value = saved
-        } else {
-          contasFixas.value = [...CONTAS_PADRAO]
-          for (const template of CONTAS_PADRAO) {
-            await contaFixaRepository.salvar(template)
-          }
-        }
+        contasFixas.value = saved || []
       } catch (e) {
         console.error('Erro ao carregar contas fixas:', e)
       }

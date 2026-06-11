@@ -268,8 +268,20 @@ export class FinanceiroService {
     return serializeBigInt(cartoes);
   }
 
-  async salvarCartao(tenantId: string, cartaoData: CartaoDto) {
+  async salvarCartao(tenantId: string, cartaoData: CartaoDto, userId: string) {
     const { id, nome, diaFechamento, responsavelPadraoId } = cartaoData;
+
+    const membro = await this.prisma.membroCasa.findFirst({
+      where: {
+        tenantId,
+        userId,
+      },
+    });
+
+    if (!membro || membro.id !== responsavelPadraoId) {
+      throw new BadRequestException('Você só pode cadastrar cartões nos quais você é o responsável padrão.');
+    }
+
     const upserted = await this.prisma.cartao.upsert({
       where: {
         id_tenantId: { id, tenantId },

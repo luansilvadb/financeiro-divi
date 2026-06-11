@@ -38,6 +38,9 @@ describe('FinanceiroService', () => {
       upsert: jest.fn(),
       delete: jest.fn(),
     },
+    cartao: {
+      upsert: jest.fn(),
+    },
   };
 
   const mockAuth = {
@@ -245,6 +248,81 @@ describe('FinanceiroService', () => {
         where: { id_tenantId: { id: 'c1', tenantId: 't1' } },
       });
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('salvarCartao', () => {
+    it('deve salvar cartão com sucesso se o responsavelPadraoId for o ID do próprio membro', async () => {
+      jest.spyOn(prisma.membroCasa, 'findFirst').mockResolvedValue({
+        id: 'm1',
+        tenantId: 't1',
+        userId: 'u1',
+        nome: 'Luan',
+        avatar: 'L',
+        ativo: true,
+        role: Role.ADMIN,
+      } as any);
+
+      jest.spyOn(prisma.cartao, 'upsert').mockResolvedValue({
+        id: 'c1',
+        tenantId: 't1',
+        nome: 'Nubank Luan',
+        diaFechamento: 10,
+        responsavelPadraoId: 'm1',
+      } as any);
+
+      const data = {
+        id: 'c1',
+        nome: 'Nubank Luan',
+        diaFechamento: 10,
+        responsavelPadraoId: 'm1',
+      };
+
+      const result = await service.salvarCartao('t1', data, 'u1');
+
+      expect(prisma.membroCasa.findFirst).toHaveBeenCalledWith({
+        where: { tenantId: 't1', userId: 'u1' },
+      });
+      expect(prisma.cartao.upsert).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    it('deve rejeitar se o responsavelPadraoId não for o ID do próprio membro', async () => {
+      jest.spyOn(prisma.membroCasa, 'findFirst').mockResolvedValue({
+        id: 'm1',
+        tenantId: 't1',
+        userId: 'u1',
+        nome: 'Luan',
+        avatar: 'L',
+        ativo: true,
+        role: Role.ADMIN,
+      } as any);
+
+      const data = {
+        id: 'c1',
+        nome: 'Nubank Luan',
+        diaFechamento: 10,
+        responsavelPadraoId: 'm2',
+      };
+
+      await expect(service.salvarCartao('t1', data, 'u1')).rejects.toThrow(
+        'Você só pode cadastrar cartões nos quais você é o responsável padrão.'
+      );
+    });
+
+    it('deve rejeitar se o usuário não for um membro da casa', async () => {
+      jest.spyOn(prisma.membroCasa, 'findFirst').mockResolvedValue(null);
+
+      const data = {
+        id: 'c1',
+        nome: 'Nubank Luan',
+        diaFechamento: 10,
+        responsavelPadraoId: 'm1',
+      };
+
+      await expect(service.salvarCartao('t1', data, 'u1')).rejects.toThrow(
+        'Você só pode cadastrar cartões nos quais você é o responsável padrão.'
+      );
     });
   });
 });
