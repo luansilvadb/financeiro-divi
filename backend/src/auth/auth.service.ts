@@ -31,58 +31,69 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(passwordSecret, salt);
 
-    const user = await this.prisma.usuario.create({
-      data: {
-        email: cleanedEmail,
-        nome: nome,
-        passwordHash,
-      },
-    });
-
-    if (inviteCode) {
-      const tenant = await this.prisma.tenant.findUnique({
-        where: { inviteCode: inviteCode.toUpperCase() }
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.usuario.create({
+        data: {
+          email: cleanedEmail,
+          nome: nome,
+          passwordHash,
+        },
       });
 
-      if (tenant) {
-        let vinculado = false;
+      let membroIdVinculado: string | null = null;
 
-        if (membroId && membroId !== 'novo') {
-          const membroExistente = await this.prisma.membroCasa.findFirst({
-            where: { id: membroId, tenantId: tenant.id }
-          });
+      if (inviteCode) {
+        const tenant = await tx.tenant.findUnique({
+          where: { inviteCode: inviteCode.toUpperCase() }
+        });
 
-          if (membroExistente) {
-            await this.prisma.membroCasa.update({
-              where: {
-                id_tenantId: { id: membroId, tenantId: tenant.id }
-              },
-              data: { userId: user.id }
+        if (tenant) {
+          let vinculado = false;
+
+          if (membroId && membroId !== 'novo') {
+            const membroExistente = await tx.membroCasa.findFirst({
+              where: { id: membroId, tenantId: tenant.id }
             });
-            vinculado = true;
-          }
-        }
 
-        if (!vinculado) {
-          await this.prisma.membroCasa.create({
-            data: {
-              id: `membro-${randomUUID()}`,
-              tenantId: tenant.id,
-              nome: user.nome,
-              avatar: user.nome.substring(0, 2).toUpperCase(),
-              userId: user.id,
+            if (membroExistente) {
+              await tx.membroCasa.update({
+                where: {
+                  id_tenantId: { id: membroId, tenantId: tenant.id }
+                },
+                data: { userId: user.id }
+              });
+              vinculado = true;
+              membroIdVinculado = membroId;
             }
-          });
+          }
+
+          if (!vinculado) {
+            const novoMembro = await tx.membroCasa.create({
+              data: {
+                id: `membro-${randomUUID()}`,
+                tenantId: tenant.id,
+                nome: user.nome,
+                avatar: user.nome.substring(0, 2).toUpperCase(),
+                userId: user.id,
+              }
+            });
+            membroIdVinculado = novoMembro.id;
+          }
+          
+          return { user, tenantId: tenant.id, membroId: membroIdVinculado };
         }
-        
-        this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
       }
+      return { user, tenantId: null, membroId: membroIdVinculado };
+    });
+
+    if (result.tenantId) {
+      this.gateway.notificarAlteracao(result.tenantId, 'membros_alterados');
     }
 
     return {
-      userId: user.id,
-      email: user.email,
-      nome: user.nome,
+      userId: result.user.id,
+      email: result.user.email,
+      nome: result.user.nome,
     };
   }
 
