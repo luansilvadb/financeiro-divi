@@ -16,10 +16,7 @@ import {
   Handshake,
   Plus,
   Minus,
-  Check,
-  ArrowLeft,
-  Calendar,
-  ChevronDown
+  Check
 } from 'lucide-vue-next'
 
 interface Props {
