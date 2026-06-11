@@ -59,6 +59,7 @@ const mountApp = () => mount(App, {
       },
       NovoLancamentoWizard: true,
       ConfiguracoesMembros: true,
+      TenantSwitcherModal: true,
       BottomSheet: { template: '<div><slot /></div>' },
       BottomTabBar: true,
       ToastNotification: true,

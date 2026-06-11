@@ -2,7 +2,7 @@
 interface Props {
   nome: string
   variant?: 'ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const sizeClasses = {
+  xs: 'w-5 h-5 sm:w-5.5 sm:h-5.5 text-[9px]',
   sm: 'w-8 h-8 text-[10px]',
   md: 'w-10 h-10 text-sm',
   lg: 'w-14 h-14 text-lg'

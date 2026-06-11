@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const obterGasto = (conta: ContaFixa) => props.gastos.find(g => g.recurringBillId === conta.id)
 
-const obterNomeMembro = (id: string) => props.membros.find(m => m.id === id)!.nome
+const obterNomeMembro = (id: string) => props.membros.find(m => m.id === id)?.nome || 'Membro'
 </script>
 
 <template>

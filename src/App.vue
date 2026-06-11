@@ -8,11 +8,10 @@ import LoginScreen from './views/screens/LoginScreen.vue'
 import ForgotPasswordScreen from './views/screens/ForgotPasswordScreen.vue'
 import ResetPasswordScreen from './views/screens/ResetPasswordScreen.vue'
 import TenantSelectorScreen from './views/screens/TenantSelectorScreen.vue'
-import { Plus } from 'lucide-vue-next'
+import TenantSwitcherModal from './views/components/ui/TenantSwitcherModal.vue'
 import { useMembros } from './viewmodels/useMembros'
 import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
 import { useContasFixas } from './viewmodels/useContasFixas'
-import { useBottomSheetState } from './viewmodels/useBottomSheetState'
 import BottomTabBar, { type Tab } from './views/components/ui/BottomTabBar.vue'
 import { tenantSessionService, socketService } from './shared/container'
 import ToastNotification from './views/components/ui/ToastNotification.vue'
@@ -22,11 +21,10 @@ import { mensagemErro } from './shared/utils/mensagemErro'
 
 const isInitializing = ref(true)
 const isLoading = ref(tenantSessionService.isAuthenticated())
-const currentView = ref<'dashboard' | 'wizard' | 'settings'>('dashboard')
+const currentView = ref<'dashboard' | 'wizard' | 'settings' | 'tenantSwitcher'>('dashboard')
 const showForgot = ref(false)
 const resetToken = ref<string | null>(null)
 const activeTab = ref<Tab>('hoje')
-const { isAnyBottomSheetOpen } = useBottomSheetState()
 const { ativos, membros: todosMembros, inicializar: inicializarMembros, carregar: recarregarMembros } = useMembros()
 const {
   cartoes,
@@ -43,6 +41,16 @@ const toast = useToast()
 
 const handlePeriodoStatusChanged = (fechado: boolean) => {
   isMonthClosed.value = fechado
+}
+
+const handleTabChange = (tab: Tab) => {
+  if (tab === 'casas') {
+    currentView.value = 'tenantSwitcher'
+  } else if (tab === 'perfil') {
+    currentView.value = 'settings'
+  } else {
+    activeTab.value = tab
+  }
 }
 
 const handleFabClick = () => {
@@ -230,7 +238,7 @@ const handleLogout = async () => {
         <!-- Dashboard normal -->
         <div v-else class="min-h-screen bg-canvas text-graphite font-sans selection:bg-ember/20">
           <ToastNotification />
-          <div class="max-w-[75rem] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-36 md:pb-16 relative">
+          <div class="max-w-[75rem] mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-20 md:pb-24 relative">
             <main class="relative z-10">
               <DashboardSaldos
                 :membros="todosMembros"
@@ -245,22 +253,7 @@ const handleLogout = async () => {
             </main>
           </div>
 
-          <Transition name="fab-zoom">
-            <div
-              v-if="currentView === 'dashboard' && !isAnyBottomSheetOpen"
-              class="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
-            >
-              <button
-                class="w-16 h-16 rounded-full shadow-[0_12px_40px_rgba(255,62,0,0.5)] active:scale-90 flex items-center justify-center transition-all duration-500 ease-spring bg-ember hover:bg-ember/90 text-white border-none focus:outline-none pointer-events-auto cursor-pointer group fab-stable"
-                :class="isMonthClosed ? 'opacity-50 grayscale cursor-not-allowed' : ''"
-                @click="handleFabClick"
-                aria-label="Novo lançamento"
-                data-testid="novo-lancamento-fab"
-              >
-                <Plus class="w-9 h-9 stroke-[3.5px] group-hover:rotate-90 transition-transform duration-500 ease-spring" />
-              </button>
-            </div>
-          </Transition>
+
 
           <BottomSheet
             :model-value="currentView === 'wizard'"
@@ -290,7 +283,25 @@ const handleLogout = async () => {
             />
           </BottomSheet>
 
-          <BottomTabBar v-model="activeTab" />
+          <BottomSheet
+            :model-value="currentView === 'tenantSwitcher'"
+            @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
+            width-class="md:w-[440px]"
+            max-height="85dvh"
+            content-class="p-0 h-full"
+          >
+            <TenantSwitcherModal
+              v-if="currentView === 'tenantSwitcher'"
+              @casa-selecionada="currentView = 'dashboard'; handleCasaSelecionada()"
+            />
+          </BottomSheet>
+
+          <BottomTabBar 
+            :model-value="activeTab" 
+            :is-month-closed="isMonthClosed"
+            @update:model-value="handleTabChange" 
+            @click-fab="handleFabClick"
+          />
         </div>
       </div>
     </Transition>

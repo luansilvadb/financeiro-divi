@@ -118,7 +118,7 @@
 
   /* Compensação automática para QUALQUER elemento fixo de largura total na aplicação */
   .fixed.left-0.right-0 {
-    padding-right: var(--scrollbar-compensate) !important;
+    margin-right: var(--scrollbar-compensate) !important;
   }
 
   /* Custom Scrollbar Global integrada ao Design System do DIVI */

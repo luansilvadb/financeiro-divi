@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, reactive, type UnwrapRef, type Ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, type UnwrapRef, type Ref } from 'vue'
 import { tenantSessionService } from '../shared/container'
 import { useToast } from '../composables/useToast'
 import type { TenantSummary } from '../models/services/TenantSessionService'
@@ -178,6 +178,11 @@ export function useCasasMultitenant() {
     if (isAuthed.value) {
       carregarCasas()
     }
+    window.addEventListener('divi:tenant-changed', sincronizarCasas)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('divi:tenant-changed', sincronizarCasas)
   })
 
   return {
