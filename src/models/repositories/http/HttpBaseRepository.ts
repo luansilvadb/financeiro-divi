@@ -4,7 +4,8 @@ export class HttpBaseRepository {
   protected get baseUrl(): string {
     const url = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
     const normalized = url.replace(/\/+$/, '')
-    return normalized.endsWith('/api') ? normalized : `${normalized}/api`
+    const base = normalized.endsWith('/api') ? normalized : `${normalized}/api`
+    return `${base}/`
   }
 
   protected get token(): string | null {
@@ -27,9 +28,12 @@ export class HttpBaseRepository {
       headers.set('X-Tenant-ID', this.tenantId)
     }
 
+    // Remover barra inicial se existir para evitar barra dupla com a baseUrl que agora termina em /
+    const cleanUrl = url.startsWith('/') ? url.slice(1) : url
+
     let response: Response
     try {
-      response = await fetch(`${this.baseUrl}${url}`, {
+      response = await fetch(`${this.baseUrl}${cleanUrl}`, {
         ...options,
         headers,
       })

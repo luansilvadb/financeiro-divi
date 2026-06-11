@@ -44,12 +44,13 @@ export class TenantSessionService {
   private get baseUrl(): string {
     const url = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
     const normalized = url.replace(/\/+$/, '')
-    return normalized.endsWith('/api') ? normalized : `${normalized}/api`
+    const base = normalized.endsWith('/api') ? normalized : `${normalized}/api`
+    return `${base}/`
   }
 
   async login(email: string, passwordSecret: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/login`, {
+      const response = await fetch(`${this.baseUrl}auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: passwordSecret })
@@ -80,7 +81,7 @@ export class TenantSessionService {
 
   async register(email: string, nome: string, passwordSecret: string, inviteCode?: string, membroId?: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/register`, {
+      const response = await fetch(`${this.baseUrl}auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -105,7 +106,7 @@ export class TenantSessionService {
   }
 
   async getInvitePreview(code: string): Promise<InvitePreview> {
-    const response = await fetch(`${this.baseUrl}/financeiro/tenants/invite/${code}`)
+    const response = await fetch(`${this.baseUrl}financeiro/tenants/invite/${code}`)
     if (!response.ok) {
       throw new Error(await lerMensagemErro(response, 'Convite inválido'))
     }
@@ -114,7 +115,7 @@ export class TenantSessionService {
 
   async forgotPassword(email: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/forgot-password`, {
+      const response = await fetch(`${this.baseUrl}auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -132,7 +133,7 @@ export class TenantSessionService {
 
   async resetPassword(token: string, newPassword: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/reset-password`, {
+      const response = await fetch(`${this.baseUrl}auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword })
@@ -193,7 +194,7 @@ export class TenantSessionService {
 
   /** Cria uma nova casa e seleciona ela automaticamente */
   async criarCasa(nome: string): Promise<TenantSummary> {
-    const response = await fetch(`${this.baseUrl}/financeiro/tenants`, {
+    const response = await fetch(`${this.baseUrl}financeiro/tenants`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -214,7 +215,7 @@ export class TenantSessionService {
 
   /** Entra em uma casa existente pelo código de convite */
   async entrarCasa(inviteCode: string): Promise<TenantSummary> {
-    const response = await fetch(`${this.baseUrl}/financeiro/tenants/entrar`, {
+    const response = await fetch(`${this.baseUrl}financeiro/tenants/entrar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -238,7 +239,7 @@ export class TenantSessionService {
   private async carregarSessaoUsuario(): Promise<void> {
     if (!this.jwtToken) return
     try {
-      const response = await fetch(`${this.baseUrl}/auth/me`, {
+      const response = await fetch(`${this.baseUrl}auth/me`, {
         headers: {
           'Authorization': `Bearer ${this.jwtToken}`
         }
