@@ -2,7 +2,8 @@ import { logger } from '../../../shared/utils/logger'
 
 export class HttpBaseRepository {
   protected get baseUrl(): string {
-    return (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
+    const url = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
+    return url.replace(/\/+$/, '')
   }
 
   protected get token(): string | null {

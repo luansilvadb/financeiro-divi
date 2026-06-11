@@ -42,7 +42,8 @@ export class TenantSessionService {
   }
 
   private get baseUrl(): string {
-    return (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
+    const url = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000'
+    return url.replace(/\/+$/, '')
   }
 
   async login(email: string, passwordSecret: string): Promise<boolean> {
