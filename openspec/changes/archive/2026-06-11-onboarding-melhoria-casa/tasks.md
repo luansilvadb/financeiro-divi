@@ -20,4 +20,4 @@
 
 - [x] 4.1 Executar a suíte de testes unitários do frontend com Vitest e garantir que todos passem sem erros.
 - [x] 4.2 Executar a suíte de testes de integração e unitários do backend com Jest e garantir que continuem passando.
-- [ ] 4.3 Efetuar verificação manual criando um novo usuário e passando por todo o fluxo do onboarding parametrizando contas fixas e cartões de crédito.
+- [x] 4.3 Efetuar verificação manual criando um novo usuário e passando por todo o fluxo do onboarding parametrizando contas fixas e cartões de crédito.
