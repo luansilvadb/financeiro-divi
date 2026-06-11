@@ -28,22 +28,22 @@ describe('Security (e2e)', () => {
     await app.close();
   });
 
-  it('/financeiro/membros (GET) should return 401 Unauthorized without token', () => {
+  it('/api/financeiro/membros (GET) should return 401 Unauthorized without token', () => {
     return request(app.getHttpServer())
-      .get('/financeiro/membros')
+      .get('/api/financeiro/membros')
       .expect(401);
   });
 
-  it('/auth/login (POST) should not return 401 from guard', async () => {
+  it('/api/auth/login (POST) should not return 401 from guard', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({});
       expect(response.status).toBe(400);
   });
 
-  it('/financeiro/tenants/invite/CODE (GET) should be accessible without token (public)', async () => {
+  it('/api/financeiro/tenants/invite/CODE (GET) should be accessible without token (public)', async () => {
       const response = await request(app.getHttpServer())
-        .get('/financeiro/tenants/invite/NONEXISTENT')
+        .get('/api/financeiro/tenants/invite/NONEXISTENT')
       expect(response.status).toBe(404);
   });
 });

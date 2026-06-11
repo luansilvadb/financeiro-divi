@@ -12,11 +12,20 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
+  
+  // Configuração de CORS mais robusta
   app.enableCors({
-    origin: '*',
+    origin: true, // Reflete a origem da requisição
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization, X-Tenant-ID',
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Tenant-ID', 'Origin', 'X-Requested-With'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
+
+  // Prefixo global para todas as rotas da API
+  app.setGlobalPrefix('api');
+  
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const config = new DocumentBuilder()
@@ -37,7 +46,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api-docs', app, document);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

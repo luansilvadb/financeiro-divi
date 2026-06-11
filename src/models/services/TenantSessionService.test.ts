@@ -34,7 +34,7 @@ describe('TenantSessionService', () => {
 
     const success = await service.login('luan@divi.com', 'senha123')
     
-    expect(fetchMock).toHaveBeenCalledWith('http://localhost:3000/auth/login', expect.objectContaining({
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost:3000/api/auth/login', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ email: 'luan@divi.com', password: 'senha123' })
     }))
