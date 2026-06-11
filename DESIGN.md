@@ -120,3 +120,21 @@ The navigation is decoupled from the screen edges, floating as an 'Island' with:
   --ease-spring: cubic-bezier(0.19, 1, 0.22, 1);
 }
 ```
+
+## UX Philosophy — Focus Mode & Linear Journeys (Caminhos com Saída)
+
+A experiência de uso do Family prioriza a clareza mental do usuário, reduzindo distrações cognitivas e facilitando a conclusão de tarefas complexas através de três regras de ouro:
+
+### 1. Fluxo Ininterrupto (Tarefas Aninhadas)
+- Quando o usuário está no meio de um fluxo (ex: criando um lançamento no Wizard) e percebe que uma dependência está faltando (ex: um cartão não cadastrado), a interface deve permitir criar essa sub-entidade **inline** no mesmo container ou através de uma transição de tela local.
+- O progresso da tarefa principal **deve ser preservado na memória**. Após concluir o sub-fluxo, o usuário retorna exatamente ao ponto em que estava com o novo item criado pré-selecionado.
+
+### 2. Modo Foco (Zen Mode)
+- Ao transicionar para um sub-formulário ou tarefa secundária complexa que exija atenção redobrada, elementos que não façam parte desse contexto (como cabeçalhos de progresso geral, cards de perfil de fundo ou abas de navegação principal) devem ser ocultados suavemente.
+- Isso diminui a carga cognitiva do usuário e libera espaço na tela para preenchimento, melhorando drasticamente o uso em dispositivos móveis quando o teclado virtual é exibido.
+
+### 3. Consentimento Educado (Exclusões com Saída)
+- Ações destrutivas (como exclusão de membros, cargos ou cartões) não devem apagar os dados instantaneamente nem usar alertas padrão do navegador.
+- O botão de exclusão (`🗑️`) deve transicionar para um estado ou sub-tela local de confirmação que descreva o impacto lógico daquela remoção sobre a base de dados (ex: o que acontece com as faturas órfãs).
+- O botão de maior destaque visual nesta tela de confirmação deve ser sempre o de cancelamento/saída segura (`Não, Cancelar`), deixando a ação destrutiva em segundo plano.
+

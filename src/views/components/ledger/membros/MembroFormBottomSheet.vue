@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
+import { ArrowLeft } from 'lucide-vue-next'
 
 interface Props {
-  modelValue: boolean
   activeTenantId: string | null
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['update:modelValue', 'salvar', 'cancelar'])
+const emit = defineEmits(['salvar', 'cancelar'])
 
 const novoNome = ref('')
 const novoEmail = ref('')
@@ -40,17 +39,27 @@ export default {
 </script>
 
 <template>
-  <BottomSheet 
-    :modelValue="modelValue"
-    @update:modelValue="emit('update:modelValue', $event)"
-    subtitle="Adicione um novo membro à casa"
-    max-height="90dvh"
-  >
-    <template #title>
-      <h3 class="text-3xl font-display text-charcoal leading-tight">Novo <span class="text-ember">Morador</span></h3>
-    </template>
+  <div class="animate-in fade-in slide-in-from-right-3 duration-300">
+    <!-- Título com Botão Circular de Voltar -->
+    <div class="px-6 pt-6 pb-2 flex items-center gap-3">
+      <button 
+        type="button"
+        @click="emit('cancelar')" 
+        class="w-10 h-10 rounded-full bg-white border border-stone/60 text-charcoal flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 hover:text-ember hover:border-ash/50 active:scale-95 transition-all duration-300 ease-out focus:outline-none"
+        aria-label="Voltar"
+      >
+        <ArrowLeft class="w-5 h-5" />
+      </button>
+      <div>
+        <h3 class="text-heading-sm text-charcoal flex items-center gap-2">
+          Novo <span class="text-ember">Morador</span>
+        </h3>
+        <p class="text-[10px] text-ash font-medium mt-0.5 uppercase tracking-wider">Adicione um novo morador à casa</p>
+      </div>
+    </div>
 
-    <div class="space-y-6 pt-2">
+    <!-- Conteúdo do Formulário -->
+    <div class="p-6 space-y-6">
       <div class="flex items-center gap-3 p-3.5 rounded-2xl border border-stone bg-parchment/30">
         <MembroAvatar :nome="novoNome.trim() || '?'" variant="ember" size="md" />
         <div class="flex-1 min-w-0">
@@ -84,10 +93,9 @@ export default {
           <input v-model="novoPassword" type="password" placeholder="••••••" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember placeholder:text-ash text-sm transition-all" />
         </div>
       </div>
-    </div>
 
-    <template #footer>
-      <div class="flex gap-2.5">
+      <!-- Botões de Ação -->
+      <div class="flex gap-2.5 pt-2">
         <Button variant="secondary" @click="emit('cancelar')" class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12">Cancelar</Button>
         <Button 
           variant="primary" 
@@ -96,6 +104,7 @@ export default {
           class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12"
         >Cadastrar</Button>
       </div>
-    </template>
-  </BottomSheet>
+    </div>
+  </div>
 </template>
+

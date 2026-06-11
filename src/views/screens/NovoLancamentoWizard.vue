@@ -9,13 +9,17 @@ import Button from '../components/ui/Button.vue'
 import MembroAvatar from '../components/ui/MembroAvatar.vue'
 import { useToast } from '../../composables/useToast'
 import { mensagemErro } from '../../shared/utils/mensagemErro'
+import { obterCorCartao } from '../../shared/utils/obterCorCartao'
 import {
   Wallet,
   CreditCard,
   Handshake,
   Plus,
   Minus,
-  Check
+  Check,
+  ArrowLeft,
+  Calendar,
+  ChevronDown
 } from 'lucide-vue-next'
 
 interface Props {
@@ -184,6 +188,7 @@ const handleGravar = async () => {
     </header>
 
     <div class="flex-1 p-5 sm:p-6 bg-white overflow-y-auto custom-scrollbar">
+      <!-- FLUXO NORMAL DO WIZARD -->
       <div :key="currentState" class="w-full">
           <div v-if="currentState === 'FLOW_SELECTION'" class="grid gap-3" role="listbox" aria-label="Opções de pagamento">
             <button
@@ -210,8 +215,14 @@ const handleGravar = async () => {
               :aria-selected="wizCardOwner === c.id"
               class="group w-full flex items-center gap-3 p-4 rounded-card bg-parchment hover:bg-stone transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed border-none cursor-pointer"
             >
-              <div class="w-10 h-10 rounded-full bg-white shadow-subtle text-graphite flex items-center justify-center shrink-0">
-                <CreditCard class="w-5 h-5" aria-hidden="true" />
+              <div 
+                class="w-10 h-10 rounded-full shadow-subtle flex items-center justify-center shrink-0 border transition-all duration-300"
+                :style="{ 
+                  backgroundColor: obterCorCartao(c.nome) + '10', 
+                  borderColor: obterCorCartao(c.nome) + '20' 
+                }"
+              >
+                <CreditCard class="w-5 h-5" :style="{ color: obterCorCartao(c.nome) }" aria-hidden="true" />
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
@@ -221,6 +232,8 @@ const handleGravar = async () => {
                 <span class="text-xs text-graphite font-semibold">Despesa sob fatura</span>
               </div>
             </button>
+
+
 
             <button
               @click="selecionarFluxo('loan', 'pix', null)"

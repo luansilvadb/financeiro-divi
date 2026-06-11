@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useCartoesEFaturas } from '../../../viewmodels/useCartoesEFaturas'
 import { useMembros } from '../../../viewmodels/useMembros'
 import Button from '../ui/Button.vue'
@@ -8,6 +8,11 @@ import { useCasasMultitenant } from '../../../viewmodels/useCasasMultitenant'
 import { useToast } from '../../../composables/useToast'
 import { mensagemErro } from '../../../shared/utils/mensagemErro'
 import IllustrationMascot from '../ui/IllustrationMascot.vue'
+import { obterCorCartao } from '../../../shared/utils/obterCorCartao'
+
+const emit = defineEmits<{
+  (e: 'focus-change', active: boolean): void
+}>()
 
 const { activeTenantId } = useCasasMultitenant()
 const { currentMembro } = useMembros()
@@ -18,6 +23,10 @@ const nome = ref('')
 const diaFechamento = ref<number>(10)
 
 const formularioAberto = ref(false)
+
+watch(formularioAberto, (val) => {
+  emit('focus-change', val)
+})
 
 const meusCartoes = computed(() => {
   if (!currentMembro.value) return []
@@ -80,8 +89,14 @@ const handleExcluir = async (id: string) => {
               class="p-4 flex justify-between items-center bg-canvas/50 border border-stone/50 rounded-2xl hover:border-ember/40 transition-all duration-500 group"
             >
               <div class="flex items-center gap-4 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-white shadow-subtle flex items-center justify-center shrink-0 border border-stone/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                  <CreditCard class="w-5 h-5 text-ember" />
+                <div 
+                  class="w-10 h-10 rounded-xl shadow-subtle flex items-center justify-center shrink-0 border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                  :style="{ 
+                    backgroundColor: obterCorCartao(c.nome) + '10', 
+                    borderColor: obterCorCartao(c.nome) + '20' 
+                  }"
+                >
+                  <CreditCard class="w-5 h-5" :style="{ color: obterCorCartao(c.nome) }" />
                 </div>
                 <div class="min-w-0">
                   <span class="font-bold text-charcoal text-sm block truncate">{{ c.nome }}</span>
@@ -116,7 +131,7 @@ const handleExcluir = async (id: string) => {
           <button 
             type="button"
             @click="formularioAberto = false" 
-            class="w-10 h-10 rounded-full bg-stone hover:bg-stone/80 text-charcoal flex items-center justify-center cursor-pointer transition-all border-none focus:outline-none"
+            class="w-10 h-10 rounded-full bg-white border border-stone/60 text-charcoal flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 hover:text-ember hover:border-ash/50 active:scale-95 transition-all duration-300 ease-out focus:outline-none"
           >
             <ArrowLeft class="w-5 h-5" />
           </button>

@@ -142,6 +142,9 @@ describe('ConfiguracoesMembros', () => {
     const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
     await botaoAcesso?.trigger('click')
 
+    const botaoNovoMorador = wrapper.findAll('button').find(b => b.text().includes('Novo Morador'))
+    await botaoNovoMorador?.trigger('click')
+
     const form = wrapper.findComponent({ name: 'MembroFormBottomSheet' })
     expect(form.exists()).toBe(true)
     await form.vm.$emit('salvar', { nome: 'Nova', email: 'nova@email.com', password: '123' })
@@ -263,4 +266,146 @@ describe('ConfiguracoesMembros', () => {
     expect(wrapper.find('input[type="text"]').exists()).toBe(false)
     expect(wrapper.find('h3.truncate').text()).toBe('Luan')
   })
+
+  it('deve ocultar cabecalho, abas, card de perfil e rodape sob o estado isCartaoFocus (Modo Foco)', async () => {
+    const wrapper = mount(ConfiguracoesMembros, {
+      global: { 
+        stubs: { 
+          BottomSheet: true, 
+          MembroFormBottomSheet: true, 
+          CargoFormBottomSheet: true,
+          ConfiguracoesCartoes: true,
+          MembroAvatar: true,
+          ChevronRight: true,
+          User: true,
+          Shield: true,
+          Plus: true
+        } 
+      }
+    })
+
+    // Estado inicial: Modo Foco inativo
+    expect(wrapper.find('h2.text-display').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Meu Perfil')
+    expect(wrapper.text()).toContain('Sair da Conta')
+    expect(wrapper.text()).toContain('Fechar')
+
+    // Ativar o Modo Foco
+    const configuracoesCartoes = wrapper.findComponent({ name: 'ConfiguracoesCartoes' })
+    await configuracoesCartoes.vm.$emit('focus-change', true)
+
+    // Elementos devem sumir
+    expect(wrapper.find('h2.text-display').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Moradores & Cargos')
+    expect(wrapper.text()).not.toContain('Meu Perfil')
+    expect(wrapper.text()).not.toContain('Sair da Conta')
+    expect(wrapper.text()).not.toContain('Fechar')
+
+    // Desativar o Modo Foco
+    await configuracoesCartoes.vm.$emit('focus-change', false)
+
+    // Elementos devem reaparecer
+    expect(wrapper.find('h2.text-display').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Meu Perfil')
+    expect(wrapper.text()).toContain('Sair da Conta')
+    expect(wrapper.text()).toContain('Fechar')
+  })
+
+  it('deve ocultar cabecalho, abas, card de perfil e rodape ao abrir a edicao de morador (Modo Foco)', async () => {
+    const wrapper = mount(ConfiguracoesMembros, {
+      global: { 
+        stubs: { 
+          BottomSheet: true, 
+          MembroFormBottomSheet: true, 
+          CargoFormBottomSheet: true,
+          ConfiguracoesCartoes: true,
+          MembroAvatar: true,
+          ChevronRight: true,
+          User: true,
+          Shield: true,
+          Plus: true
+        } 
+      }
+    })
+
+    // Ir para a aba controle de acesso
+    const botoes = wrapper.findAll('button')
+    const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
+    await botaoAcesso?.trigger('click')
+
+    // Estado inicial: Modo Foco inativo
+    expect(wrapper.find('h2.text-display').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Fechar')
+
+    // Clicar em um membro para editar (abrir edicaoMembro/mostrarBottomSheet)
+    const items = wrapper.findAll('.cursor-pointer')
+    const itemMembro = items.find(i => i.text().includes('Maria'))
+    await itemMembro?.trigger('click')
+
+    // Elementos devem sumir devido ao Modo Foco na edição
+    expect(wrapper.find('h2.text-display').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Moradores & Cargos')
+    expect(wrapper.text()).not.toContain('Fechar')
+
+    // Clicar no botão Cancelar da edição para fechar
+    const botaoCancelar = wrapper.findAll('button').find(b => b.text().includes('Cancelar'))
+    await botaoCancelar?.trigger('click')
+
+    // Elementos devem reaparecer
+    expect(wrapper.find('h2.text-display').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Fechar')
+  })
+
+  it('deve ocultar cabecalho, abas, card de perfil e rodape ao abrir o formulario de novo cargo (Modo Foco)', async () => {
+    const wrapper = mount(ConfiguracoesMembros, {
+      global: { 
+        stubs: { 
+          BottomSheet: true, 
+          MembroFormBottomSheet: true, 
+          CargoFormBottomSheet: true,
+          ConfiguracoesCartoes: true,
+          MembroAvatar: true,
+          ChevronRight: true,
+          User: true,
+          Shield: true,
+          Plus: true
+        } 
+      }
+    })
+
+    // Ir para a aba controle de acesso
+    const botoes = wrapper.findAll('button')
+    const botaoAcesso = botoes.find(b => b.text().includes('Controle de Acesso'))
+    await botaoAcesso?.trigger('click')
+
+    // Estado inicial: Modo Foco inativo
+    expect(wrapper.find('h2.text-display').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Fechar')
+
+    // Clicar no botão "Novo Cargo" para abrir o formulário inline
+    const botaoNovoCargo = wrapper.findAll('button').find(b => b.text().includes('Novo Cargo'))
+    await botaoNovoCargo?.trigger('click')
+
+    // Elementos devem sumir devido ao Modo Foco
+    expect(wrapper.find('h2.text-display').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Moradores & Cargos')
+    expect(wrapper.text()).not.toContain('Fechar')
+
+    // Clicar no botão Cancelar no formulário de cargo
+    const form = wrapper.findComponent({ name: 'CargoFormBottomSheet' })
+    await form.vm.$emit('cancelar')
+
+    // Elementos devem reaparecer
+    expect(wrapper.find('h2.text-display').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Fechar')
+  })
 })
+
+
+
