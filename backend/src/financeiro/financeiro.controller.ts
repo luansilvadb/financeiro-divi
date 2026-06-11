@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Delete, Body, Param, Headers, Request } from '@nestjs/common';
 import { MembroService } from './membro.service';
-import { CargoService } from './cargo.service';
 import { CartaoService } from './cartao.service';
 import { LancamentoService } from './lancamento.service';
 import { ApiTags, ApiBearerAuth, ApiHeader, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiUnauthorizedResponse, ApiBadRequestResponse, ApiBody } from '@nestjs/swagger';
@@ -13,7 +12,6 @@ import { ContaFixaDto } from './dto/conta-fixa.dto';
 import { CriarTenantDto } from './dto/criar-tenant.dto';
 import { EntrarTenantDto } from './dto/entrar-tenant.dto';
 import { ExcluirMuitosGastosDto } from './dto/excluir-muitos-gastos.dto';
-import { CargoCasaDto } from './dto/cargo-casa.dto';
 import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
@@ -26,7 +24,6 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 export class FinanceiroController {
   constructor(
     private membroService: MembroService,
-    private cargoService: CargoService,
     private cartaoService: CartaoService,
     private lancamentoService: LancamentoService,
   ) {}
@@ -201,29 +198,5 @@ export class FinanceiroController {
     return this.lancamentoService.excluirContaFixa(tenantId, id);
   }
 
-  @ApiOperation({ summary: 'Listar cargos do tenant', description: 'Retorna a lista de todos os cargos personalizados cadastrados no tenant ativo.' })
-  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
-  @ApiOkResponse({ description: 'Cargos listados com sucesso', type: [CargoCasaDto] })
-  @Get('cargos')
-  async listarCargos(@Headers('x-tenant-id') tenantId: string) {
-    return this.cargoService.listarCargos(tenantId);
-  }
 
-  @ApiOperation({ summary: 'Salvar/atualizar cargo no tenant', description: 'Cria ou atualiza um cargo personalizado no tenant ativo.' })
-  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
-  @ApiOkResponse({ description: 'Cargo salvo com sucesso', type: CargoCasaDto })
-  @Roles(Role.ADMIN)
-  @Post('cargos')
-  async salvarCargo(@Headers('x-tenant-id') tenantId: string, @Body() cargoCasaDto: CargoCasaDto) {
-    return this.cargoService.salvarCargo(tenantId, cargoCasaDto);
-  }
-
-  @ApiOperation({ summary: 'Excluir um cargo', description: 'Exclui um cargo personalizado cadastrado no tenant ativo.' })
-  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
-  @ApiOkResponse({ description: 'Cargo excluído com sucesso' })
-  @Roles(Role.ADMIN)
-  @Delete('cargos/:id')
-  async excluirCargo(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.cargoService.excluirCargo(tenantId, id);
-  }
 }

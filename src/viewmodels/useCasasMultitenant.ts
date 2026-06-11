@@ -204,8 +204,8 @@ export function useCasasMultitenant() {
   }
 }
 
-export type CasasMultitenantViewModel = ReturnType<typeof useCasasMultitenant>
-export type CasasMultitenantView = {
+type CasasMultitenantViewModel = ReturnType<typeof useCasasMultitenant>
+type CasasMultitenantView = {
   [K in keyof CasasMultitenantViewModel]: UnwrapRef<CasasMultitenantViewModel[K]>
 }
 export type CasasModalView = Pick<

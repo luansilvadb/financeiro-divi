@@ -21,7 +21,7 @@ describe('CartaoResolver', () => {
   it('Scenario: Pagamento via PIX (sem cartão)', () => {
     const res = resolverCartao('pix', 'c1', 'membro-x', cartoes)
     expect(res).toEqual({
-      cartaoId: 'PIX_DEFAULT_ID',
+      cartaoId: null,
       cardOwner: null,
       responsavelFaturaId: 'membro-x',
     })
@@ -66,7 +66,7 @@ describe('CartaoResolver', () => {
   it('Scenario: Pagamento via cartão sem nenhum cartão existente no sistema', () => {
     const res = resolverCartao('card', 'c1', 'membro-x', [])
     expect(res).toEqual({
-      cartaoId: 'PIX_DEFAULT_ID',
+      cartaoId: null,
       cardOwner: null,
       responsavelFaturaId: 'membro-x',
     })

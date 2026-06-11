@@ -37,30 +37,6 @@ export class LancamentoService {
     return serializeBigInt(result);
   }
 
-  async salvarDespesaComum(tenantId: string, gastoData: GastoDto) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return this.salvarDespesaComumTx(tx, tenantId, gastoData);
-    });
-    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
-    return serializeBigInt(result);
-  }
-
-  async salvarEmprestimo(tenantId: string, gastoData: GastoDto) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return this.salvarEmprestimoTx(tx, tenantId, gastoData);
-    });
-    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
-    return serializeBigInt(result);
-  }
-
-  async registrarAcerto(tenantId: string, gastoData: GastoDto) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      return this.registrarAcertoTx(tx, tenantId, gastoData);
-    });
-    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
-    return serializeBigInt(result);
-  }
-
   private async salvarDespesaComumTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
     return this.upsertGastoCompletoTx(tx, tenantId, { ...g, isLoan: false, isSettlement: false });
   }
