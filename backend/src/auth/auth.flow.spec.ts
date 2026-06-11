@@ -20,6 +20,11 @@ describe('AuthFlow Integration', () => {
             usuario: { findUnique: jest.fn(), create: jest.fn() },
             tenant: { findUnique: jest.fn() },
             membroCasa: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
+            $transaction: jest.fn(async (callback) => callback({
+                usuario: prisma.usuario,
+                tenant: prisma.tenant,
+                membroCasa: prisma.membroCasa
+            })),
           }
         },
         { provide: MailService, useValue: { sendPasswordResetEmail: jest.fn() } },
