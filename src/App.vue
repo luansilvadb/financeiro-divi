@@ -25,7 +25,7 @@ const currentView = ref<'dashboard' | 'wizard' | 'settings' | 'tenantSwitcher'>(
 const showForgot = ref(false)
 const resetToken = ref<string | null>(null)
 const activeTab = ref<Tab>('hoje')
-const { ativos, membros: todosMembros, inicializar: inicializarMembros, carregar: recarregarMembros } = useMembros()
+const { ativos, membros: todosMembros, carregar: recarregarMembros } = useMembros()
 const {
   cartoes,
   inicializar: inicializarCartoes,
