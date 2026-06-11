@@ -4,14 +4,6 @@ import type { Gasto } from '../models/entities/Gasto'
 
 import { contaFixaRepository, gastoService, tenantSessionService } from '../shared/container'
 
-const CONTAS_PADRAO: ContaFixa[] = [
-  { id: 'aluguel', name: 'Aluguel da Casa', icon: '🔑', fixedValueCentavos: 150000, defaultSplit: [] },
-  { id: 'luz', name: 'Energia (Luz)', icon: '💡', fixedValueCentavos: null, defaultSplit: [] },
-  { id: 'agua', name: 'Água', icon: '💧', fixedValueCentavos: null, defaultSplit: [] },
-  { id: 'internet', name: 'Internet', icon: '🌐', fixedValueCentavos: 12000, defaultSplit: [] },
-  { id: 'cachorro', name: 'Cuidados Cachorro', icon: '🐶', fixedValueCentavos: null, defaultSplit: [] }
-]
-
 const contasFixas = ref<ContaFixa[]>([])
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null

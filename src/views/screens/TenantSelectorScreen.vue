@@ -3,7 +3,7 @@ import { ref, reactive } from 'vue'
 import { tenantSessionService, contaFixaRepository, cartaoRepository } from '../../shared/container'
 import { Cartao } from '../../models/entities/Cartao'
 import { useMembros } from '../../viewmodels/useMembros'
-import { Home, Plus, Key, ArrowRight, LogOut, Check, ChevronLeft, CreditCard, Calendar, Trash2, ShieldAlert } from 'lucide-vue-next'
+import { Plus, Key, ArrowRight, LogOut, Check, ChevronLeft, CreditCard, Trash2 } from 'lucide-vue-next'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 import { useAsync } from '../../composables/useAsync'
 
@@ -360,7 +360,7 @@ function voltar() {
             <!-- PASSO 2: Parametrizar Contas Fixas -->
             <div v-else-if="etapaWizard === 2" key="passo-contas" class="animate-in fade-in slide-in-from-right-2 duration-200">
               <header class="flex items-center gap-4 mb-5">
-                <button @click="voltarWizard" class="w-9 h-9 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
+                <button @click="voltar" class="w-9 h-9 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
                   <ChevronLeft class="w-4.5 h-4.5" />
                 </button>
                 <div>
@@ -463,7 +463,7 @@ function voltar() {
             <!-- PASSO 3: Cartões de Crédito -->
             <div v-else-if="etapaWizard === 3" key="passo-cartoes" class="animate-in fade-in slide-in-from-right-2 duration-200">
               <header class="flex items-center gap-4 mb-5">
-                <button @click="voltarWizard" class="w-9 h-9 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
+                <button @click="voltar" class="w-9 h-9 rounded-full bg-stone hover:bg-ash/20 flex items-center justify-center text-charcoal transition-colors border-none cursor-pointer">
                   <ChevronLeft class="w-4.5 h-4.5" />
                 </button>
                 <div>
