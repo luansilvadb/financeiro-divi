@@ -29,21 +29,21 @@ class Tenant {
 class MembroCasa {
   +String id
   +UUID tenantId
-  +UUID userId
+  +UUID? userId
   +Boolean ativo
   +Role role
-  +BigInt rendaCentavos
+  +BigInt? rendaCentavos
 }
 
 class Gasto {
   +String id
   +UUID tenantId
-  +String faturaId
+  +String? faturaId
   +BigInt valorTotalCentavos
   +String compradorId
   +Boolean isLoan
   +Boolean isSettlement
-  +Json settlementDetails
+  +Json? settlementDetails
   +PaymentMethod method
   +SplitMode splitMode
   +Boolean isPrivate
@@ -56,7 +56,7 @@ class Fatura {
   +Int mes
   +Int ano
   +String status
-  +DateTime dataPagamentoBanco
+  +DateTime? dataPagamentoBanco
 }
 
 class ProductValidationEvent {
@@ -64,35 +64,57 @@ class ProductValidationEvent {
   +UUID tenantId
   +ValidationEventType type
   +String dedupeKey
-  +String periodKey
-  +Json metadata
+  +String? periodKey
+  +Json? metadata
+  +DateTime createdAt
+}
+
+class AuditLog {
+  +UUID id
+  +UUID tenantId
+  +String membroId
+  +String acao
+  +String detalhes
   +DateTime createdAt
 }
 
 class GastoDto {
   +String id
   +Boolean isSettlement
-  +SettlementDetails settlementDetails
+  +SettlementDetails? settlementDetails
   +PaymentMethod method
-  +SplitMode splitMode
+  +SplitMode? splitMode
 }
 
 class ValidationStatusDto {
   +DateTime tenantCreatedAt
-  +DateTime secondLinkedMemberAt
-  +DateTime firstExpenseAt
+  +DateTime? secondLinkedMemberAt
+  +DateTime? firstExpenseAt
   +String[] closedPeriods
-  +DateTime firstSettlementAt
+  +DateTime? firstSettlementAt
   +Boolean activationComplete
   +Boolean repeatedValue
+}
+
+class MembroComRenda {
+  +String id
+  +String? nome
+  +Number? rendaCentavos
+}
+
+class RateioUtils {
+  +obterMembrosSelecionadosSemRenda(membros, participantesIds) MembroComRenda[]
+  +calcularRateioProporcionalCentavos(totalCentavos, participantes) Record~String, Number~
 }
 
 Tenant "1" -- "0..*" MembroCasa : possui
 Tenant "1" -- "0..*" Gasto : registra
 Tenant "1" -- "0..*" Fatura : organiza
 Tenant "1" -- "0..*" ProductValidationEvent : acumula marcos
+Tenant "1" -- "0..*" AuditLog : registra auditoria
 GastoDto --> Gasto : cria ou atualiza
 ProductValidationEvent --> ValidationStatusDto : agrega
+RateioUtils ..> MembroComRenda : valida e calcula
 ```
 
 ### Existing Types to Preserve
@@ -101,6 +123,7 @@ ProductValidationEvent --> ValidationStatusDto : agrega
 - `AuditLog` continua representando rastreabilidade visivel ao usuario. `ProductValidationEvent` possui finalidade distinta: medir marcos de produto sem registrar detalhes financeiros.
 - `DivisaoGasto` permanece com valores finais em centavos. Nao criar entidade de formula de rateio nem recalcular gastos historicos quando a renda mudar.
 - `Gasto.settlementDetails` continua sendo JSON estruturado com `fromMemberId`, `toMemberId` e `method`.
+- `MembroComRenda` e `RateioUtils` representam contratos puros do frontend em `src/shared/utils/rateio.ts`; nao sao entidades persistidas nem armazenam formulas historicas.
 
 ### New Enums
 
@@ -141,7 +164,8 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Estender o fluxo de lancamento para `expense`, `loan` e `settlement`.
    - Para `settlement`, persistir `isSettlement = true`, `isLoan = false`, uma unica divisao para o recebedor e `settlementDetails` coerente com origem, destino e metodo.
    - Tratar `cash` como metodo sem cartao, assim como `pix` para resolucao de fatura, mas preservar o valor `cash` no gasto e no detalhe do acerto.
-   - Rejeitar acerto com origem igual ao destino, valor nao positivo ou membros fora do tenant.
+   - Rejeitar acerto com origem igual ao destino, valor nao positivo, membros fora do tenant, metodo divergente, mais de uma divisao, rateio diferente de `CUSTOM`, privacidade, parcelamento, cartao ou fatura associada.
+   - Exigir uma unica divisao para o recebedor com valor exatamente igual ao total e manter acertos fora dos acumuladores granulares de despesa do `ExtratoService`.
 
 5. API e seguranca:
    - Adicionar somente leitura `GET /api/financeiro/validacao/status`, protegida por JWT, `X-Tenant-ID` e `Role.ADMIN`.
@@ -151,6 +175,7 @@ ProductValidationEvent --> ValidationStatusDto : agrega
 
 6. Compatibilidade e migracao:
    - Adicionar colunas com defaults seguros e executar backfill implicito via default `CUSTOM`.
+   - A migracao implementada tambem sincroniza campos de negocio ja presentes no schema: adiciona `renda_centavos` e `is_private` quando ausentes, torna `gastos.fatura_id` anulavel para acertos sem fatura e cria `audit_logs` de forma tolerante a ambientes parcialmente migrados.
    - Nao alterar IDs, relacoes compostas, contratos de tenant ou historico de divisoes.
    - Mudancas nos servicos devem ser incrementais e trabalhar com as alteracoes nao relacionadas ja presentes no worktree.
 
@@ -162,6 +187,7 @@ ProductValidationEvent --> ValidationStatusDto : agrega
 2. `HttpGastoRepository` continua implementando `IGastoRepository` e passa a mapear `splitMode`, `isSettlement`, `settlementDetails` e `cash` sem alterar os demais metodos.
 3. `Gasto` continua sendo uma classe de dominio simples e recebe `splitMode` e o metodo ampliado sem heranca ou wrappers novos.
 4. `ValidationStatusDto` e um DTO de resposta; nao deve virar entidade persistida.
+5. `MembroComRenda` e as funcoes de `src/shared/utils/rateio.ts` formam uma camada funcional sem estado, compartilhada pelas telas de rateio.
 
 ### Dependencies
 
@@ -169,8 +195,9 @@ ProductValidationEvent --> ValidationStatusDto : agrega
 2. `LancamentoService` depende de `ProductValidationService` para registrar primeiro gasto e primeiro acerto dentro da transacao de persistencia.
 3. `CartaoService` depende de `ProductValidationService` para registrar o fechamento consolidado de cada periodo.
 4. `FinanceiroController` injeta `ProductValidationService` para consultar o status da casa ativa.
-5. `NovoLancamentoWizard` usa `StepSplitSelector` para validar a disponibilidade de renda e envia `splitMode` ao `GastoService`.
+5. `StepSplitSelector` e `NovoLancamentoWizard` dependem de `obterMembrosSelecionadosSemRenda`; o wizard tambem usa `calcularRateioProporcionalCentavos` antes de enviar `splitMode` ao `GastoService`.
 6. `GastoService` e `LancamentoService` do frontend preservam e propagam `splitMode`, `flow = settlement`, `settlementDetails` e `cash` ate `HttpGastoRepository`.
+7. `ExtratoService` continua calculando saldos, mas ignora `isSettlement` nos acumuladores granulares de PIX/cartao para nao classificar liquidacoes como consumo.
 
 ### Layered Architecture
 
@@ -187,6 +214,7 @@ ProductValidationEvent --> ValidationStatusDto : agrega
 4. Frontend Domain Layer:
    - Representar explicitamente tipo de fluxo, metodo e criterio de rateio.
    - Preservar metadados ao editar ou recriar gastos parcelados.
+   - Centralizar validacao de renda e distribuicao proporcional em funcoes puras com valores inteiros em centavos.
 5. ViewModel and View Layer:
    - Bloquear proporcionalidade invalida antes do envio.
    - Comunicar as consequencias de privacidade e o objetivo de fechamento mensal com texto factual.
@@ -210,17 +238,24 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Mapear tabela para `product_validation_events`.
    - Usar `onDelete: Cascade` na relacao com `Tenant`.
    - Registros existentes de `gastos` devem receber `CUSTOM` sem reescrever divisoes.
+   - A migration `20260612012222_product_validation_events` usa `ADD COLUMN IF NOT EXISTS` para `membros_casa.renda_centavos` e `gastos.is_private`, remove `NOT NULL` de `gastos.fatura_id` e cria `audit_logs` com indice e foreign key tolerantes a execucao em bancos parcialmente atualizados.
 4. Completion criteria:
    - `prisma generate` funciona.
    - A migracao sobe em banco vazio e em banco com gastos existentes.
+5. Implemented verification state:
+   - `prisma validate` conclui com schema valido.
+   - `prisma generate --no-engine` conclui e gera os enums/delegates usados pela compilacao.
+   - A execucao padrao de `prisma generate` no ambiente Windows observado ficou bloqueada por `EPERM` ao renomear `query_engine-windows.dll.node`, pois outro processo Node mantinha o DLL aberto; nao foi identificada falha de schema.
+   - A migration foi aplicada com sucesso em 11 de junho de 2026 ao banco PostgreSQL remoto existente, e `prisma db pull --print` confirmou `gastos.split_mode`, `SplitMode` e `product_validation_events`.
+   - A aplicacao em uma instancia PostgreSQL vazia permanece como validacao pendente.
 
 ### 2. Create Backend Service - ProductValidationService
 
 1. Responsibility: registrar marcos idempotentes e produzir o resumo de ativacao da casa.
 2. Methods:
    - `registrarMarco(tenantId: string, type: ValidationEventType, dedupeKey: string, options?: { periodKey?: string; metadata?: ValidationMetadata }, tx?: Prisma.TransactionClient): Promise<void>`
-     - Usar `upsert` pela chave composta.
-     - Na atualizacao, nao sobrescrever `createdAt` nem metadata original.
+     - Usar `createMany({ data: [evento], skipDuplicates: true })` apoiado pela chave unica composta, evitando a corrida de `upsert` observada em fechamentos concorrentes.
+     - Em conflito, manter o evento original sem sobrescrever `createdAt` nem metadata.
      - Sanitizar metadata por allowlist; rejeitar chaves desconhecidas em desenvolvimento e ignora-las em producao com log de warning.
    - `registrarSegundoUsuarioSeAplicavel(tenantId: string, tx?: Prisma.TransactionClient): Promise<void>`
      - Contar membros ativos com `userId` nao nulo.
@@ -233,13 +268,16 @@ ProductValidationEvent --> ValidationStatusDto : agrega
      - Ler o `Tenant.createdAt` e eventos do tenant.
      - Ordenar periodos cronologicamente e retornar somente strings `YYYY-MM` validas.
      - Calcular `activationComplete` e `repeatedValue` conforme Approach.
-3. Dependency injection: `PrismaService` e `Logger` do NestJS.
+3. Dependency injection and logging:
+   - Injetar somente `PrismaService` pelo construtor.
+   - Instanciar `Logger` internamente com `new Logger(ProductValidationService.name)` para avisar sobre metadata ignorada em producao.
 4. Transaction management:
    - Aceitar `Prisma.TransactionClient` opcional para compartilhar a transacao do dominio.
    - A leitura consolidada de periodo ocorre apos o upsert da fatura ter sido confirmado.
 5. Error behavior:
    - Falha ao registrar marco dentro da transacao deve abortar a operacao para evitar evidencia divergente.
    - A consulta de status para tenant inexistente deve lancar `NotFoundException`.
+   - Chave de metadata desconhecida deve lancar `Error("Metadata de validação não permitida: <chave>")` fora de producao e ser ignorada com warning em producao.
 
 ### 3. Integrate Tenant and Membership Milestones - MembroService
 
@@ -257,6 +295,9 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Criacao de tenant grava exatamente um marco.
    - Dois usuarios vinculados gravam o marco; um usuario mais perfis virtuais nao gravam.
    - Repetir entrada ou salvar o mesmo membro nao duplica evento.
+6. Implemented coverage state:
+   - `MembroService` possui teste para criacao transacional da casa e chamada de `TENANT_CREATED` com o mesmo client Prisma.
+   - Os cenarios de dois usuarios reais, perfis virtuais e repeticao de entrada permanecem como cobertura pendente especificada acima.
 
 ### 4. Persist Explicit Split Mode - Backend and Frontend Contracts
 
@@ -280,28 +321,40 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Todo novo gasto possui criterio persistido.
    - Gastos antigos continuam carregando como `custom`.
    - Compras parceladas preservam o mesmo criterio em todas as parcelas.
+7. Implemented compatibility behavior:
+   - `HttpGastoRepository` converte `EQUAL/INCOME/CUSTOM` para `equal/income/custom` e usa `custom` quando o payload legado omite `splitMode`.
+   - `BottomSheetAjustarGasto` trata gastos `cash` como `pix` apenas no editor antigo, cujo seletor continua limitado a `pix | card`; o dominio e a persistencia preservam `cash` nos fluxos de acerto.
 
 ### 5. Remove Invented Income Fallback - StepSplitSelector and NovoLancamentoWizard
 
 1. Responsibility: impedir que o produto crie um acordo financeiro nao fornecido pelos usuarios.
-2. `StepSplitSelector` computed state:
-   - Criar `membrosSelecionadosSemRenda: Membro[]` considerando apenas participantes selecionados.
+2. Shared pure functions in `src/shared/utils/rateio.ts`:
+   - `obterMembrosSelecionadosSemRenda<T extends MembroComRenda>(membros: T[], participantesIds: string[]): T[]` considera somente participantes selecionados com renda ausente, zero ou negativa.
+   - `calcularRateioProporcionalCentavos(totalCentavos: number, participantes: { id: string; rendaCentavos: number }[]): Record<string, number>` rejeita total nao inteiro, total negativo, lista vazia e renda nao finita ou nao positiva.
+   - Calcular cada parcela com `Math.floor`, ordenar a distribuicao do resto por renda decrescente e `id` crescente e garantir que a soma final seja exatamente o total.
+3. `StepSplitSelector` computed state:
+   - Criar `membrosSelecionadosSemRenda: Membro[]` usando a funcao pura compartilhada.
    - Criar `proporcionalDisponivel = membrosSelecionadosSemRenda.length === 0 && participantesDivisao.length > 0`.
    - Remover toda substituicao de renda zero pela media dos demais.
-3. UI behavior:
+4. UI behavior:
    - Permitir selecionar a aba proporcional para explicar o bloqueio, mas nao permitir confirmar o lancamento enquanto houver renda ausente.
    - Mostrar os nomes dos membros sem renda e as duas saidas: configurar renda ou escolher divisao igual.
    - Nao exibir percentuais ou valores estimados para renda ausente.
-4. `NovoLancamentoWizard` validation:
+5. `NovoLancamentoWizard` validation:
    - Atualizar `canAdvance` para retornar falso em `SPLIT` quando `splitType === 'proportional'` e houver participante sem renda positiva.
    - No `handleGravar`, validar novamente antes de calcular; em estado invalido, mostrar toast e nao chamar o servico.
-   - Para rateio valido, manter calculo em centavos e desempate deterministico.
+   - Para rateio valido, chamar `calcularRateioProporcionalCentavos` e converter o resultado para `DivisaoDeGasto`.
    - Enviar `splitMode: 'income'` ou `splitMode: 'equal'` conforme a escolha.
-5. Tests:
+6. Tests:
    - Proporcional com todas as rendas positivas fecha exatamente o total.
    - Proporcional com qualquer renda ausente nao salva e nao usa media.
    - Igualitario continua funcionando sem renda cadastrada.
    - Empate de renda distribui resto de centavos de forma estavel.
+7. Implemented coverage state:
+   - Testes puros verificam soma exata, desempate estavel e filtragem apenas dos participantes selecionados.
+   - `StepSplitSelector` verifica alerta nominal e ausencia de percentuais quando falta renda, alem do calculo 75/25 quando todas as rendas sao validas.
+   - `NovoLancamentoWizard` verifica botao de confirmacao desabilitado e ausencia de chamada ao servico no estado proporcional invalido.
+   - O teste explicito do fluxo igualitario sem renda permanece pendente.
 
 ### 6. Correct Settlement Flow - Frontend Domain and Backend Validation
 
@@ -316,16 +369,26 @@ ProductValidationEvent --> ValidationStatusDto : agrega
 4. Frontend `LancamentoService`:
    - Para `settlement`, criar `Gasto` com `isSettlement = true`, `isLoan = false`, `splitMode = custom` e detalhes obrigatorios.
    - Nao permitir parcelamento, privacidade ou cartao em acertos.
+   - Persistir acerto sem fatura, sem dono de cartao, com uma parcela e metodo `pix` ou `cash` preservado.
 5. `useDashboardViewModel.confirmarBaixaNetting`:
    - Enviar `flow: 'settlement'`, preservar `cash` sem convertê-lo para `card`, e preencher origem/destino.
 6. Backend `LancamentoService`:
    - Validar valor positivo, origem diferente do destino, detalhe coerente com comprador/divisao e existencia dos dois membros no tenant.
+   - Exigir `compradorId === fromMemberId`, `method === settlementDetails.method`, metodo em `pix | cash`, exatamente uma divisao para `toMemberId`, total da divisao igual ao gasto, `installments === 1`, `totalInstallments === 1`, `splitMode` ausente ou `CUSTOM`, `isPrivate !== true`, `cardOwnerId` ausente e `faturaId` ausente.
+   - Antes de remover ou recriar divisoes de qualquer gasto, somar `valorCentavos` e rejeitar lista vazia ou total divergente com `BadRequestException`.
    - Registrar `FIRST_SETTLEMENT_RECORDED/first` na mesma transacao, apenas em criacao nova de acerto.
-7. Tests:
+   - Usar as mensagens `Dados do acerto são inválidos.`, `Os membros do acerto não pertencem a esta casa.` e `A soma das divisões deve ser igual ao valor total do gasto.` nos tres grupos de validacao.
+7. Metrics behavior:
+   - `useDashboardViewModel.totalPeriodoSelecionado` filtra `isSettlement` das despesas comuns.
+   - `ExtratoService.obterBreakdownGranular` nao soma acertos em `pixFez`, `pixConsumo`, `cardFez` ou `cardConsumo`; o efeito contábil continua sendo tratado por `NettingService`.
+8. Tests:
    - Acerto Pix e dinheiro sao persistidos com os metodos corretos.
    - Acerto nao aparece como despesa comum nas somas existentes.
    - Acerto invalido e rejeitado antes de alterar dados.
    - Retry do mesmo acerto nao duplica o marco.
+9. Implemented coverage state:
+   - Frontend testa persistencia de acerto `pix` e `cash`, propagacao por `useDashboardViewModel` e exclusao dos acumuladores granulares de despesa.
+   - Backend testa o caminho valido de acerto e injecao do marco; rejeicoes por cada invariante e retry do mesmo acerto permanecem como cobertura pendente.
 
 ### 7. Register First Expense Milestone - LancamentoService
 
@@ -342,6 +405,9 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Emprestimo e acerto nao gravam primeiro gasto.
    - Edicao de gasto existente nao grava evento novo.
    - Batch de parcelas produz um evento.
+5. Implemented coverage state:
+   - Existe teste de criacao de primeira despesa com metadata allowlisted e uso do mesmo `TransactionClient`.
+   - Cenarios exclusivos de emprestimo, acerto, edicao e batch de parcelas permanecem como cobertura pendente.
 
 ### 8. Register Consolidated Period Closure - CartaoService
 
@@ -350,6 +416,7 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Apos persistir status `FECHADA`, chamar `registrarPeriodoFechadoSeConsolidado` para os pares `mes/ano` afetados.
    - Deduplicar pares de periodo no batch antes de consultar.
    - Nao registrar ao criar fatura aberta ou reabrir periodo.
+   - No batch, usar `Map<string, { mes, ano }>` com chave `${ano}-${mes}` depois de `prisma.$transaction(operations)` e consultar cada periodo fechado deduplicado sequencialmente.
 3. Consolidation rule:
    - O periodo deve ter pelo menos uma fatura persistida.
    - Nenhuma fatura do mesmo tenant e periodo pode permanecer `ABERTA`.
@@ -362,6 +429,10 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Fechar a ultima fatura registra `YYYY-MM`.
    - Batch fechado registra uma vez.
    - Dois meses distintos fazem `repeatedValue = true`.
+6. Implemented coverage state:
+   - `CartaoService` testa chamada apos fechamento unitario e deduplicacao de um periodo fechado no batch, ignorando periodo aberto.
+   - `ProductValidationService` testa que periodo parcial nao registra e periodo totalmente fechado produz `2026-05`.
+   - Concorrencia real, reabertura seguida de novo fechamento e dois meses derivados pelo `CartaoService` permanecem como cobertura pendente; `obterStatus` cobre a flag `repeatedValue` com dois eventos distintos.
 
 ### 9. Expose Tenant Validation Status - FinanceiroController
 
@@ -375,10 +446,15 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Nao retornar eventos de outras casas, metadata bruta, contagens de receita ou informacoes pessoais.
 4. Swagger:
    - Documentar operacao, cabecalho, autorizacao, resposta e erros 401/403/404.
+   - Estado implementado: `@ApiBearerAuth` e `@ApiUnauthorizedResponse` estao no controller; o metodo possui `@ApiOperation`, `@ApiHeader`, `@ApiOkResponse`, `@Roles(Role.ADMIN)` e `@Get('validacao/status')`.
+   - Decorators Swagger especificos para 403 e 404 ainda nao foram adicionados ao metodo.
 5. Tests:
    - Admin do tenant recebe apenas seu status.
    - Morador e visualizador recebem 403.
    - Tenant inexistente ou nao associado nao vaza dados.
+6. Implemented coverage state:
+   - O teste do controller verifica metadata `roles = [ADMIN]`, delegacao para `obterStatus(tenantId)` e contrato de retorno mockado.
+   - Testes HTTP com guards para 403, associacao do tenant e resposta 404 permanecem pendentes.
 
 ### 10. Align Product Copy with the Validated Job
 
@@ -408,10 +484,19 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Edicao de parcelas preserva `splitMode`, privacidade e dados de acerto.
    - Netting continua calculando saldos corretamente.
    - Gastos antigos sem `splitMode` continuam carregando.
+   - Acertos nao contaminam os acumuladores granulares de despesa do `ExtratoService`.
 4. Commands:
    - Executar testes Vitest do frontend.
    - Executar testes Jest do backend.
    - Executar `pnpm run build` na raiz.
+5. Verification observed on June 11, 2026:
+   - Backend Jest: 9 suites e 27 testes aprovados.
+   - Frontend Vitest: 41 arquivos e 175 testes aprovados antes da inclusao do ultimo teste de `ExtratoService`; em seguida, 6 arquivos direcionados e 25 testes, incluindo o novo caso, foram aprovados.
+   - `vue-tsc -b`, `nest build`, `vite build`, `prisma validate` e `prisma generate --no-engine` concluem sem erros.
+   - `pnpm run build` nao concluiu apenas porque sua primeira etapa executa `prisma generate` padrao e o Windows retornou `EPERM` ao substituir um DLL do engine mantido aberto por outro processo Node.
+6. Known coverage gaps:
+   - Permanecem pendentes os testes negativos e idempotentes listados nas operacoes 3, 6, 7, 8 e 9.
+   - A migration foi aplicada ao banco PostgreSQL legado remoto e introspectada com sucesso; permanece pendente somente a verificacao em banco vazio.
 
 ## Norms
 
@@ -429,6 +514,8 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Divisoes sempre somam exatamente o total.
    - Tipos de fluxo, metodo e rateio sao unions/enums centralizados, sem strings duplicadas espalhadas.
    - Defaults de compatibilidade devem ser conservadores: `CUSTOM`, nunca uma inferencia mais especifica.
+   - Disponibilidade de renda e rateio proporcional usam `obterMembrosSelecionadosSemRenda` e `calcularRateioProporcionalCentavos`; componentes nao devem reimplementar essas regras.
+   - A distribuicao proporcional usa apenas inteiros, `Math.floor` e ordem deterministica por renda decrescente e ID crescente.
 4. Exception Handling:
    - Usar excecoes HTTP NestJS com mensagens acionaveis para validacoes de negocio.
    - Nao expor stack trace, SQL, IDs internos de outros tenants ou metadata de evento.
@@ -442,6 +529,7 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Manter Vue 3 Composition API, TypeScript estrito e os repositorios HTTP existentes.
    - Estado derivado usa `computed`; nao duplicar calculos de disponibilidade de renda entre componentes sem uma funcao pura compartilhada.
    - Mensagens de bloqueio devem usar `role="alert"` ou texto associado ao controle afetado.
+   - Acertos permanecem no dominio e no netting, mas nao entram em acumuladores de despesa comum ou consumo granular.
 7. Testing Standards:
    - Jest para backend e Vitest para frontend.
    - Testes verificam comportamento e contratos, nao detalhes privados de implementacao.
@@ -458,11 +546,13 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Perfis virtuais sem `userId` nao contam como segundo usuario.
    - Rateio proporcional nao pode prosseguir com renda ausente, zero ou negativa.
    - Acertos nao podem ser privados, parcelados nem associados a cartao.
+   - Acertos devem ter metodo `pix` ou `cash`, nenhuma fatura, `CUSTOM`, uma unica divisao integral para o recebedor e detalhes coerentes com comprador, origem e destino.
 2. Data Integrity Constraints:
    - `tenantId + type + dedupeKey` deve ser unico no banco.
    - `periodKey` deve seguir `YYYY-MM`, com mes entre 01 e 12.
    - A soma de `DivisaoGasto.valorCentavos` deve ser igual a `Gasto.valorTotalCentavos` para despesas, emprestimos e acertos.
    - Alteracoes de renda nao recalculam divisoes historicas.
+   - A validacao da soma das divisoes ocorre antes de `deleteMany`, impedindo que um payload invalido altere as divisoes persistidas.
 3. Privacy Constraints:
    - Eventos nao armazenam descricao, valor, renda, nomes, emails, IDs de membros, cartoes ou detalhes de compra.
    - O endpoint retorna apenas a casa ativa validada pelos guards.
@@ -472,16 +562,17 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Toda consulta e escrita deve filtrar por `tenantId`.
    - Dados privados continuam mascarados no backend antes da serializacao.
 5. Performance Constraints:
-   - Registrar um marco exige no maximo um upsert adicional no fluxo principal.
+   - Registrar um marco exige no maximo um `createMany` de um item adicional no fluxo principal.
    - Consulta de status deve usar indices e no maximo duas consultas Prisma simples.
    - Nao adicionar SDK de analytics, fila, cron job ou dependencia externa.
 6. Concurrency Constraints:
    - Requisicoes concorrentes para fechar faturas ou criar parcelas nao podem duplicar marcos.
-   - A constraint unica e o `upsert` sao obrigatorios para garantir convergencia.
+   - A constraint unica e `createMany({ skipDuplicates: true })` sao obrigatorios para garantir convergencia sem abortar transacoes em colisoes esperadas.
 7. Compatibility Constraints:
    - Payloads antigos sem `splitMode` continuam aceitos e persistidos como `CUSTOM`.
    - Gastos existentes continuam legiveis apos a migracao.
    - Nao alterar rotas existentes nem remover campos dos DTOs atuais.
+   - `gastos.fatura_id` deve aceitar `NULL` para acertos e gastos avulsos, conforme o schema Prisma e a migration sincronizada.
 8. Scope Constraints:
    - Nao implementar cobranca, planos, trial ou paywall.
    - Nao implementar Open Finance, OCR, importacao CSV/OFX ou pagamentos Pix.
@@ -495,3 +586,9 @@ ProductValidationEvent --> ValidationStatusDto : agrega
    - Todos os novos caminhos de negocio devem ter testes positivos, negativos e idempotentes.
    - Build frontend e backend devem concluir sem erros de tipo.
    - Nenhum teste existente pode ser removido ou enfraquecido para acomodar a mudanca.
+11. Implemented Error Contracts:
+   - Acerto estruturalmente invalido: `Dados do acerto são inválidos.`
+   - Origem ou destino fora da casa: `Os membros do acerto não pertencem a esta casa.`
+   - Divisoes vazias ou com soma divergente: `A soma das divisões deve ser igual ao valor total do gasto.`
+   - Tenant inexistente na consulta de status: `Casa não encontrada.`
+   - Rateio proporcional puro com argumentos invalidos: `Rateio proporcional requer valor em centavos e rendas positivas.`
