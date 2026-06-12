@@ -1,8 +1,31 @@
 import { ref, computed } from 'vue'
 import { Membro, type MembroRole } from '../models/entities/Membro'
+import type { RolePermissions } from '../models/repositories/IMembroRepository'
 
 import { membroRepository, membroService, tenantSessionService } from '../shared/container'
 const membros = ref<Membro[]>([])
+const tenantPermissions = ref<Record<string, RolePermissions>>({
+  MORADOR: {
+    ALLOW_LANCAR_GASTO: true,
+    ALLOW_GERENCIAR_CARTOES: true,
+    ALLOW_GERENCIAR_CONTAS_FIXAS: true,
+    ALLOW_REGISTRAR_NETTING: true,
+    ALLOW_VER_AUDIT_LOGS: true,
+    ALLOW_FECHAR_PERIODO: true,
+    ALLOW_ALTERAR_RENDA: true,
+    ALLOW_ALTERAR_NOME: true
+  },
+  VISUALIZADOR: {
+    ALLOW_LANCAR_GASTO: false,
+    ALLOW_GERENCIAR_CARTOES: false,
+    ALLOW_GERENCIAR_CONTAS_FIXAS: false,
+    ALLOW_REGISTRAR_NETTING: false,
+    ALLOW_VER_AUDIT_LOGS: false,
+    ALLOW_FECHAR_PERIODO: false,
+    ALLOW_ALTERAR_RENDA: false,
+    ALLOW_ALTERAR_NOME: false
+  }
+})
 const inicializado = ref(false)
 let promiseInicializacao: Promise<void> | null = null
 
@@ -23,6 +46,16 @@ export function useMembros() {
     }
     let lista = await membroRepository.listarTodos()
     membros.value = lista
+
+    if (tenantSessionService.getActiveTenantId()) {
+      try {
+        const perms = await membroRepository.obterPermissions()
+        tenantPermissions.value = perms
+      } catch (err) {
+        console.error('Erro ao carregar permissões do tenant:', err)
+      }
+    }
+
     inicializado.value = true
   }
 
@@ -51,8 +84,8 @@ export function useMembros() {
     await carregar()
   }
 
-  const atualizarCargoMembro = async (id: string, role: MembroRole, cargoId?: string) => {
-    await membroService.atualizarCargoMembro(id, role, cargoId)
+  const atualizarRoleMembro = async (id: string, role: MembroRole) => {
+    await membroService.atualizarRoleMembro(id, role)
     await carregar()
   }
 
@@ -66,16 +99,28 @@ export function useMembros() {
     await carregar()
   }
 
+  const atualizarPermissions = async (role: string, perms: Partial<RolePermissions>) => {
+    try {
+      const updated = await membroRepository.atualizarPermissions(role, perms)
+      tenantPermissions.value = updated
+    } catch (err) {
+      console.error('Erro ao atualizar permissões do tenant:', err)
+      throw err
+    }
+  }
+
   return {
     membros,
     ativos,
     currentMembro,
+    tenantPermissions,
     adicionarMembro,
     desativarMembro,
     ativarMembro,
-    atualizarCargoMembro,
+    atualizarRoleMembro,
     atualizarNomeMembro,
     atualizarRendaMembro,
+    atualizarPermissions,
     inicializar,
     carregar
   }

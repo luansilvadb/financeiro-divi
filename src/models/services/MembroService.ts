@@ -43,7 +43,7 @@ export class MembroService {
     await this.repository.salvar(atualizado)
   }
 
-  async atualizarCargoMembro(id: string, role: MembroRole, cargoId?: string): Promise<void> {
+  async atualizarRoleMembro(id: string, role: MembroRole): Promise<void> {
     const membro = await this.repository.buscarPorId(id)
     if (!membro) throw new Error('Membro não encontrado')
     const atualizado = new Membro({
@@ -51,7 +51,6 @@ export class MembroService {
       nome: membro.nome,
       ativo: membro.ativo,
       role: role,
-      cargoId: cargoId,
       dataCriacao: membro.dataCriacao,
       userId: membro.userId,
       rendaCentavos: membro.rendaCentavos
@@ -67,7 +66,6 @@ export class MembroService {
       nome: nome,
       ativo: membro.ativo,
       role: membro.role,
-      cargoId: membro.cargoId,
       dataCriacao: membro.dataCriacao,
       userId: membro.userId,
       rendaCentavos: membro.rendaCentavos
@@ -83,7 +81,6 @@ export class MembroService {
       nome: membro.nome,
       ativo: membro.ativo,
       role: membro.role,
-      cargoId: membro.cargoId,
       dataCriacao: membro.dataCriacao,
       userId: membro.userId,
       rendaCentavos: rendaCentavos

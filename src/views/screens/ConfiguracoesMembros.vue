@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useMembros } from '../../viewmodels/useMembros'
-import { useCargos } from '../../viewmodels/useCargos'
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
 import Button from '../components/ui/Button.vue'
 import PerfilUsuarioTab from '../components/settings/PerfilUsuarioTab.vue'
 import GestaoAcessoTab from '../components/settings/GestaoAcessoTab.vue'
-import GestaoCargosTab from '../components/settings/GestaoCargosTab.vue'
+import ConfiguracoesCasaTab from '../components/settings/ConfiguracoesCasaTab.vue'
 
 const emit = defineEmits(['voltar', 'logout'])
 
 const { carregar, currentMembro } = useMembros()
-const { inicializar: inicializarCargos } = useCargos()
-const { activeTenantId } = useCasasMultitenant()
+const activeTenantId = useCasasMultitenant().activeTenantId
 
-const activeTab = ref<'perfil' | 'acesso' | 'cargos'>('perfil')
+const activeTab = ref<'perfil' | 'acesso' | 'casa'>('perfil')
 const isModoFoco = ref(false)
+
+const isAdmin = computed(() => currentMembro.value?.role === 'ADMIN')
 
 const handleFocusChange = (active: boolean) => {
   isModoFoco.value = active
@@ -26,7 +26,7 @@ const handleLogout = () => {
 }
 
 onMounted(async () => {
-  await Promise.all([carregar(), inicializarCargos()])
+  await carregar()
 })
 </script>
 
@@ -34,8 +34,8 @@ onMounted(async () => {
   <div class="h-full flex flex-col bg-canvas overflow-hidden">
     <!-- Header -->
     <div v-if="!isModoFoco" class="shrink-0 p-6 sm:px-8 sm:pt-10">
-      <h2 class="text-display text-4xl sm:text-5xl text-charcoal">Moradores <span class="text-ember">&</span> Cargos</h2>
-      <p class="text-xs sm:text-sm text-ash font-bold mt-2 uppercase tracking-[0.2em]">Gestão de acessos da casa</p>
+      <h2 class="text-display text-4xl sm:text-5xl text-charcoal">Moradores <span class="text-ember">&</span> Acessos</h2>
+      <p class="text-xs sm:text-sm text-ash font-bold mt-2 uppercase tracking-[0.2em]">Quem mora aqui e como cada um contribui</p>
     </div>
 
     <!-- Navegação Floating Island -->
@@ -56,12 +56,12 @@ onMounted(async () => {
           Acessos
         </button>
         <button
-          v-if="currentMembro?.role === 'ADMIN'"
-          @click="activeTab = 'cargos'"
+          v-if="isAdmin"
+          @click="activeTab = 'casa'"
           class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
-          :class="activeTab === 'cargos' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
+          :class="activeTab === 'casa' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
         >
-          Cargos
+          Casa
         </button>
       </div>
     </div>
@@ -83,9 +83,9 @@ onMounted(async () => {
           @focus-change="handleFocusChange"
         />
 
-        <GestaoCargosTab 
-          v-else-if="activeTab === 'cargos'" 
-          :is-modo-foco="isModoFoco"
+        <ConfiguracoesCasaTab
+          v-else-if="activeTab === 'casa'"
+          :active-tenant-id="activeTenantId"
           @focus-change="handleFocusChange"
         />
 

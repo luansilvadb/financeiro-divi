@@ -11,6 +11,7 @@ const props = defineProps<{
   gastos: Gasto[]
   membros: { id: string; nome: string }[]
   isMonthClosed: boolean
+  isReadOnly?: boolean
 }>()
 
 const emit = defineEmits(['excluir', 'ajustar'])
@@ -105,7 +106,7 @@ const sortedGastos = computed(() => {
           </div>
 
           <!-- Ações do Feed -->
-          <div class="flex flex-col items-end gap-2 pt-3 border-t border-stone transition-opacity">
+          <div v-if="!props.isReadOnly" class="flex flex-col items-end gap-2 pt-3 border-t border-stone transition-opacity">
             <div class="flex justify-end gap-2 w-full">
               <Button 
                 v-if="!g.isSettlement"

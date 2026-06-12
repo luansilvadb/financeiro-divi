@@ -3,14 +3,9 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ConfiguracoesMembros from './ConfiguracoesMembros.vue'
 import { useMembros } from '../../viewmodels/useMembros'
-import { useCargos } from '../../viewmodels/useCargos'
 
 vi.mock('../../viewmodels/useMembros', () => ({
   useMembros: vi.fn()
-}))
-
-vi.mock('../../viewmodels/useCargos', () => ({
-  useCargos: vi.fn()
 }))
 
 vi.mock('../../viewmodels/useCasasMultitenant', () => ({
@@ -30,23 +25,16 @@ vi.mock('../../viewmodels/useCartoesEFaturas', () => ({
 
 describe('ConfiguracoesMembros', () => {
   const mockMembros = [
-    { id: '1', nome: 'Luan', ativo: true, role: 'ADMIN', userId: 'user-luan', cargoId: null, cargo: null },
-    { id: '2', nome: 'Maria', ativo: true, role: 'MORADOR', userId: 'user-maria', cargoId: 'cargo-1', cargo: { id: 'cargo-1', nome: 'Financeiro', cor: '#ef4444', permissoes: ['lancamentos'] } },
-    { id: '3', nome: 'Joao', ativo: false, role: 'MORADOR', userId: 'user-joao', cargoId: null, cargo: null }
-  ]
-
-  const mockCargos = [
-    { id: 'cargo-1', nome: 'Financeiro', cor: '#ef4444', permissoes: ['lancamentos'], totalMembros: 1 }
+    { id: '1', nome: 'Luan', ativo: true, role: 'ADMIN', userId: 'user-luan' },
+    { id: '2', nome: 'Maria', ativo: true, role: 'MORADOR', userId: 'user-maria' },
+    { id: '3', nome: 'Joao', ativo: false, role: 'MORADOR', userId: 'user-joao' }
   ]
 
   const mockAdicionarMembro = vi.fn()
   const mockDesativarMembro = vi.fn()
   const mockAtivarMembro = vi.fn()
-  const mockAtualizarCargoMembro = vi.fn()
+  const mockAtualizarRoleMembro = vi.fn()
   const mockAtualizarNomeMembro = vi.fn()
-
-  const mockSalvarCargo = vi.fn()
-  const mockExcluirCargo = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -58,16 +46,9 @@ describe('ConfiguracoesMembros', () => {
       adicionarMembro: mockAdicionarMembro,
       desativarMembro: mockDesativarMembro,
       ativarMembro: mockAtivarMembro,
-      atualizarCargoMembro: mockAtualizarCargoMembro,
+      atualizarRoleMembro: mockAtualizarRoleMembro,
       atualizarNomeMembro: mockAtualizarNomeMembro,
       carregar: vi.fn()
-    })
-
-    ;(useCargos as any).mockReturnValue({
-      cargos: ref(mockCargos),
-      salvarCargo: mockSalvarCargo,
-      excluirCargo: mockExcluirCargo,
-      inicializar: vi.fn()
     })
   })
 
@@ -87,7 +68,7 @@ describe('ConfiguracoesMembros', () => {
         } 
       }
     })
-    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Moradores & Acessos')
     expect(wrapper.text()).toContain('Luan') // Nome do currentMembro
     expect(wrapper.text()).toContain('Sair da Conta')
     expect(wrapper.findComponent({ name: 'ConfiguracoesCartoes' }).exists()).toBe(true)
@@ -286,7 +267,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Estado inicial: Modo Foco inativo
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Moradores & Acessos')
     expect(wrapper.text()).toContain('Meu Perfil')
     expect(wrapper.text()).toContain('Sair da Conta')
     expect(wrapper.text()).toContain('Fechar')
@@ -298,7 +279,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem sumir
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Moradores & Cargos')
+    expect(wrapper.text()).not.toContain('Moradores & Acessos')
     expect(wrapper.text()).not.toContain('Meu Perfil')
     expect(wrapper.text()).not.toContain('Sair da Conta')
     expect(wrapper.text()).not.toContain('Fechar')
@@ -309,7 +290,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Moradores & Acessos')
     expect(wrapper.text()).toContain('Meu Perfil')
     expect(wrapper.text()).toContain('Sair da Conta')
     expect(wrapper.text()).toContain('Fechar')
@@ -340,7 +321,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Estado inicial: Modo Foco inativo
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Moradores & Acessos')
     expect(wrapper.text()).toContain('Fechar')
 
     // Clicar em um membro para editar (abrir edicaoMembro/mostrarBottomSheet)
@@ -351,7 +332,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem sumir devido ao Modo Foco na edição
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Moradores & Cargos')
+    expect(wrapper.text()).not.toContain('Moradores & Acessos')
     expect(wrapper.text()).not.toContain('Fechar')
 
     // Clicar no botão Cancelar da edição para fechar
@@ -361,56 +342,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Cargos')
-    expect(wrapper.text()).toContain('Fechar')
-  })
-
-  it('deve ocultar cabecalho, abas, card de perfil e rodape ao abrir o formulario de novo cargo (Modo Foco)', async () => {
-    const wrapper = mount(ConfiguracoesMembros, {
-      global: { 
-        stubs: { 
-          BottomSheet: true, 
-          MembroFormBottomSheet: true, 
-          CargoFormBottomSheet: true,
-          ConfiguracoesCartoes: true,
-          MembroAvatar: true,
-          ChevronRight: true,
-          User: true,
-          Shield: true,
-          Plus: true
-        } 
-      }
-    })
-
-    // Ir para a aba Cargos
-    const botoes = wrapper.findAll('button')
-    const botaoCargos = botoes.find(b => b.text().includes('Cargos'))
-    await botaoCargos?.trigger('click')
-    await flushPromises()
-
-    // Estado inicial: Modo Foco inativo
-    expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Cargos')
-    expect(wrapper.text()).toContain('Fechar')
-
-    // Clicar no botão "Novo Cargo" para abrir o formulário inline
-    const botaoNovoCargo = wrapper.findAll('button').find(b => b.text().includes('Novo Cargo'))
-    await botaoNovoCargo?.trigger('click')
-    await flushPromises()
-
-    // Elementos devem sumir devido ao Modo Foco
-    expect(wrapper.find('h2.text-display').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Moradores & Cargos')
-    expect(wrapper.text()).not.toContain('Fechar')
-
-    // Clicar no botão Cancelar no formulário de cargo
-    const form = wrapper.findComponent({ name: 'CargoFormBottomSheet' })
-    await form.vm.$emit('cancelar')
-    await flushPromises()
-
-    // Elementos devem reaparecer
-    expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Cargos')
+    expect(wrapper.text()).toContain('Moradores & Acessos')
     expect(wrapper.text()).toContain('Fechar')
   })
 })

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { Fatura } from '../models/entities/Fatura'
 import { Cartao } from '../models/entities/Cartao'
-import { HttpAuditLogRepository, type AuditLogDto } from '../models/repositories/http/HttpAuditLogRepository'
+import { HttpAuditLogRepository } from '../models/repositories/http/HttpAuditLogRepository'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
@@ -155,16 +155,23 @@ export const useDashboardViewModel = (
     estornarContaFixa: (b: ContaFixa) => ui.abrirConfirmacaoEstornoGasto(gastosFiltrados.value.find(z => z.recurringBillId === b.id)!),
     
 
-    listarAuditLogs: async (): Promise<AuditLogDto[]> => {
+    reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === periodoSelecionado.value.mes && f.periodo.ano === periodoSelecionado.value.ano).map(f => cartoesEFaturas.reabrirFatura(f.id))),
+
+    abrirAuditLogs: async () => {
+      if (ui.isLogsLoading.value) return
+      
+      ui.isLogsLoading.value = true
+      ui.abrirModal('audit-logs')
+      
       try {
-        return await auditLogRepo.listarTodos()
+        ui.auditLogs.value = await auditLogRepo.listarTodos()
       } catch (error) {
         toast.show('Erro ao carregar histórico de atividades.', 'error')
-        return []
+        ui.auditLogs.value = []
+      } finally {
+        ui.isLogsLoading.value = false
       }
-    },
-
-    reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === periodoSelecionado.value.mes && f.periodo.ano === periodoSelecionado.value.ano).map(f => cartoesEFaturas.reabrirFatura(f.id)))
+    }
   }
 }
 

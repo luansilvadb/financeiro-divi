@@ -8,6 +8,7 @@ import BottomSheetNovoPeriodo from '../components/ledger/dashboard/BottomSheetNo
 import BottomSheetHistorico from '../components/ledger/dashboard/BottomSheetHistorico.vue'
 import BottomSheetCasas from '../components/ledger/dashboard/BottomSheetCasas.vue'
 import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
+import BottomSheetAuditLogs from '../components/ledger/dashboard/BottomSheetAuditLogs.vue'
 import type { Cartao } from '../../models/entities/Cartao'
 import type { Fatura } from '../../models/entities/Fatura'
 import type { DashboardViewModel } from '../../viewmodels/useDashboardViewModel'
@@ -111,6 +112,14 @@ const itemEstornoValor = computed(() => {
       :loading="unref(vm.isSubmittingPix)"
       @confirm="vm.confirmarBaixaNetting"
       @cancel="vm.fecharModal('acerto-netting')"
+    />
+
+    <BottomSheetAuditLogs
+      :visible="isModalNoTopo('audit-logs')"
+      :logs="unref(vm.auditLogs)"
+      :loading="unref(vm.isLogsLoading)"
+      :get-membro-nome="vm.getMembroNome"
+      @close="vm.fecharModal('audit-logs')"
     />
   </div>
 </template>

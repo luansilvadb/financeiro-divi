@@ -9,6 +9,7 @@ const props = defineProps<{
   gasto?: Gasto
   obterNomeMembro: (id: string) => string
   isMonthClosed: boolean
+  isReadOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -80,6 +81,7 @@ const cancelInteraction = () => {
 }
 
 const onPointerDown = (e: PointerEvent) => {
+  if (props.isReadOnly) return
   const card = cardRef.value
   if (!card) return
 
@@ -131,6 +133,7 @@ const onPointerDown = (e: PointerEvent) => {
 }
 
 const onPointerUp = () => {
+  if (props.isReadOnly) return
   if (!isHolding || hasTriggered) {
     isHolding = false
     return
@@ -174,9 +177,10 @@ onUnmounted(() => {
     @pointerup="onPointerUp"
     @pointerleave="onPointerLeave"
     @pointercancel="onPointerLeave"
-    class="relative overflow-hidden group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 select-none cursor-pointer hover:border-ember/30"
+    class="relative overflow-hidden group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 select-none"
     :class="[
-      gasto ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone'
+      gasto ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone',
+      { 'cursor-pointer hover:border-ember/30': !props.isReadOnly }
     ]"
     :data-testid="`conta-fixa-card-${bill.id}`"
   >
