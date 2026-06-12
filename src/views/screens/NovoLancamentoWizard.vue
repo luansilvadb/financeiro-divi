@@ -9,6 +9,7 @@ import Button from '../components/ui/Button.vue'
 import { useToast } from '../../composables/useToast'
 import { mensagemErro } from '../../shared/utils/mensagemErro'
 import { CreditCard } from 'lucide-vue-next'
+import { calcularRateioProporcionalCentavos, obterMembrosSelecionadosSemRenda } from '../../shared/utils/rateio'
 
 // Componentes de Etapa
 import StepFlowSelection from '../components/wizard/StepFlowSelection.vue'
@@ -70,6 +71,12 @@ const participantesDivisao = ref<string[]>(props.membros.map(m => m.id))
 const isPrivate = ref(false)
 const splitType = ref<'equal' | 'proportional'>('equal')
 
+const membrosSelecionadosSemRenda = computed(() =>
+  obterMembrosSelecionadosSemRenda(props.membros, participantesDivisao.value)
+)
+
+const proporcionalDisponivel = computed(() => membrosSelecionadosSemRenda.value.length === 0)
+
 const canAdvance = computed(() => {
   switch (currentState.value) {
     case 'BUYER_SELECTION':
@@ -77,7 +84,7 @@ const canAdvance = computed(() => {
     case 'BORROWER_SELECTION': return !!borrowerId.value
     case 'VALUE': return valor.value > 0
     case 'DESCRIPTION': return descricao.value.trim().length > 0
-    case 'SPLIT': return participantesDivisao.value.length > 0
+    case 'SPLIT': return participantesDivisao.value.length > 0 && (splitType.value !== 'proportional' || proporcionalDisponivel.value)
     default: return true
   }
 })
@@ -98,49 +105,26 @@ const handleGravar = async () => {
     if (wizFlow.value === 'loan') {
       divisoes = [new DivisaoDeGasto(borrowerId.value!, dValor)]
     } else if (splitType.value === 'proportional') {
+      if (!proporcionalDisponivel.value) {
+        toast.show('Informe a renda de todos os participantes ou escolha a divisão igual.', 'error')
+        return
+      }
+
       const participantesComRenda = participantesDivisao.value.map(id => {
         const m = props.membros.find(memb => memb.id === id)
-        const renda = m?.rendaCentavos && m.rendaCentavos > 0 ? Number(m.rendaCentavos) : 0
+        const renda = Number(m!.rendaCentavos)
         return { id, renda }
       })
 
-      const temMembrosSemRenda = participantesComRenda.some(p => p.renda === 0)
-      const membrosComRendaValida = participantesComRenda.filter(p => p.renda > 0)
+      const valoresDivisoes = calcularRateioProporcionalCentavos(
+        dValor.centavos,
+        participantesComRenda.map(participante => ({
+          id: participante.id,
+          rendaCentavos: participante.renda,
+        })),
+      )
 
-      if (membrosComRendaValida.length === 0) {
-        toast.show('Nenhum dos moradores possui renda. Aplicando divisão igualitária.', 'info')
-        divisoes = participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
-      } else {
-        if (temMembrosSemRenda) {
-          toast.show('Moradores sem renda participarão com uma renda estimada.', 'info')
-          const somaRendasValidas = membrosComRendaValida.reduce((acc, p) => acc + p.renda, 0)
-          const rendaMedia = Math.round(somaRendasValidas / membrosComRendaValida.length)
-          participantesComRenda.forEach(p => {
-            if (p.renda === 0) p.renda = rendaMedia
-          })
-        }
-
-        const somaRendasTotal = participantesComRenda.reduce((acc, p) => acc + p.renda, 0)
-        let restoCentavos = dValor.centavos
-        const valoresDivisoes: { [membroId: string]: number } = {}
-
-        participantesComRenda.forEach(p => {
-          const valorProporcional = Math.floor(dValor.centavos * (p.renda / somaRendasTotal))
-          valoresDivisoes[p.id] = valorProporcional
-          restoCentavos -= valorProporcional
-        })
-
-        const ordenadosPorRenda = [...participantesComRenda].sort((a, b) => b.renda - a.renda)
-        let idxResto = 0
-        while (restoCentavos > 0) {
-          const p = ordenadosPorRenda[idxResto % ordenadosPorRenda.length]
-          valoresDivisoes[p.id]++
-          restoCentavos--
-          idxResto++
-        }
-
-        divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deCentavos(valoresDivisoes[id])))
-      }
+      divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deCentavos(valoresDivisoes[id])))
     } else {
       divisoes = participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
     }
@@ -156,7 +140,8 @@ const handleGravar = async () => {
       cardOwnerId: wizCardOwner.value,
       borrowerId: borrowerId.value,
       periodo: obterPeriodoSelecionado(),
-      isPrivate: isPrivate.value
+      isPrivate: isPrivate.value,
+      splitMode: wizFlow.value === 'loan' ? 'custom' : splitType.value === 'proportional' ? 'income' : 'equal'
     })
     emit('salvar')
   } catch (error: unknown) {
@@ -262,7 +247,7 @@ const handleGravar = async () => {
             <div class="space-y-0.5 text-left">
               <span class="text-xs font-bold text-charcoal block">Gasto Privado</span>
               <p class="text-[10px] text-graphite font-medium leading-normal max-w-[320px]">
-                Oculta a descrição e itens da compra para outros moradores da casa. Apenas o valor total é computado no balanço geral.
+                Oculta somente a descrição para moradores não autorizados. Valor e impacto no saldo continuam compartilhados; o dono do cartão vê a descrição para conciliar a fatura.
               </p>
             </div>
             <button 

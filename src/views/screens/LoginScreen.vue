@@ -108,7 +108,7 @@ const onSubmit = async () => {
         </div>
 
         <p v-else class="text-body text-graphite max-w-[280px] mx-auto mt-2">
-          O orquestrador financeiro de alta precisão para sua casa
+          Organize despesas compartilhadas, feche o mês e entenda os acertos da casa
         </p>
       </div>
 

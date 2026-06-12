@@ -4,12 +4,14 @@ import { FinanceiroGateway } from './financeiro.gateway';
 import { serializeBigInt } from '../shared/utils/serialization';
 import { CartaoDto } from './dto/cartao.dto';
 import { FaturaDto } from './dto/fatura.dto';
+import { ProductValidationService } from './product-validation.service';
 
 @Injectable()
 export class CartaoService {
   constructor(
     private prisma: PrismaService,
-    private gateway: FinanceiroGateway
+    private gateway: FinanceiroGateway,
+    private productValidationService: ProductValidationService,
   ) {}
 
   async listarCartoes(tenantId: string) {
@@ -93,6 +95,9 @@ export class CartaoService {
         dataPagamentoBanco: dataPagamentoBanco ? new Date(dataPagamentoBanco) : null,
       },
     });
+    if (status === 'FECHADA') {
+      await this.productValidationService.registrarPeriodoFechadoSeConsolidado(tenantId, mes, ano);
+    }
     this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
     return serializeBigInt(upserted);
   }
@@ -120,6 +125,19 @@ export class CartaoService {
       });
     });
     const result = await this.prisma.$transaction(operations);
+    const periodosFechados = new Map<string, { mes: number; ano: number }>();
+    for (const fatura of faturasList) {
+      if (fatura.status === 'FECHADA') {
+        periodosFechados.set(`${fatura.ano}-${fatura.mes}`, { mes: fatura.mes, ano: fatura.ano });
+      }
+    }
+    for (const periodo of periodosFechados.values()) {
+      await this.productValidationService.registrarPeriodoFechadoSeConsolidado(
+        tenantId,
+        periodo.mes,
+        periodo.ano,
+      );
+    }
     this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
     return serializeBigInt(result);
   }

@@ -2,10 +2,13 @@ import { Injectable, BadRequestException, NotFoundException, forwardRef, Inject 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
+import { AuditLogService } from './audit-log.service';
 import { serializeBigInt } from '../shared/utils/serialization';
 import { randomUUID } from 'crypto';
 import { Role } from '@prisma/client';
 import { MembroDto } from './dto/membro.dto';
+import { ProductValidationService } from './product-validation.service';
+import { ValidationEventType } from '@prisma/client';
 
 @Injectable()
 export class MembroService {
@@ -13,7 +16,9 @@ export class MembroService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
-    private gateway: FinanceiroGateway
+    private gateway: FinanceiroGateway,
+    private auditLogService: AuditLogService,
+    private productValidationService: ProductValidationService,
   ) {}
 
   async obterPreviewConvite(inviteCode: string) {
@@ -40,26 +45,38 @@ export class MembroService {
 
   async criarTenant(name: string, userId: string) {
     const inviteCode = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const tenant = await this.prisma.tenant.create({
-      data: {
-        name,
-        inviteCode,
-      },
-    });
+    const tenant = await this.prisma.$transaction(async (tx) => {
+      const createdTenant = await tx.tenant.create({
+        data: {
+          name,
+          inviteCode,
+        },
+      });
 
-    const user = await this.prisma.usuario.findUnique({ where: { id: userId } });
-    const nome = user?.nome || 'Membro Fundador';
-    const avatar = (nome || 'MF').substring(0, 2).toUpperCase();
+      const user = await tx.usuario.findUnique({ where: { id: userId } });
+      const nome = user?.nome || 'Membro Fundador';
+      const avatar = (nome || 'MF').substring(0, 2).toUpperCase();
 
-    await this.prisma.membroCasa.create({
-      data: {
-        id: `membro-${randomUUID()}`,
-        tenantId: tenant.id,
-        nome,
-        avatar,
-        userId,
-        role: Role.ADMIN,
-      },
+      await tx.membroCasa.create({
+        data: {
+          id: `membro-${randomUUID()}`,
+          tenantId: createdTenant.id,
+          nome,
+          avatar,
+          userId,
+          role: Role.ADMIN,
+        },
+      });
+
+      await this.productValidationService.registrarMarco(
+        createdTenant.id,
+        ValidationEventType.TENANT_CREATED,
+        'first',
+        {},
+        tx,
+      );
+
+      return createdTenant;
     });
 
     return serializeBigInt(tenant);
@@ -77,9 +94,13 @@ export class MembroService {
       where: { tenantId: tenant.id, userId },
     });
 
-    if (isMemberAlready) return serializeBigInt(tenant);
+    if (isMemberAlready) {
+      await this.productValidationService.registrarSegundoUsuarioSeAplicavel(tenant.id);
+      return serializeBigInt(tenant);
+    }
 
     await this.vincularOuCriarMembroAoSistema(tenant.id, userId);
+    await this.productValidationService.registrarSegundoUsuarioSeAplicavel(tenant.id);
 
     this.gateway.notificarAlteracao(tenant.id, 'membros_alterados');
     return serializeBigInt(tenant);
@@ -92,13 +113,17 @@ export class MembroService {
     return serializeBigInt(membros);
   }
 
-  async salvarMembro(tenantId: string, membroData: MembroDto) {
-    const { id, nome, email, password, ativo, role } = membroData;
+  async salvarMembro(tenantId: string, membroData: MembroDto, executorUserId?: string) {
+    const { id, nome, email, password, ativo, role, rendaCentavos } = membroData;
     let { userId } = membroData;
 
     const finalEmail = email || (membroData as any).username;
     const isActive = ativo !== undefined ? ativo : true;
     const memberRole = role || Role.MORADOR;
+
+    const membroAtual = await this.prisma.membroCasa.findUnique({
+      where: { id_tenantId: { id, tenantId } },
+    });
 
     await this.validarRegrasSalvarMembro(tenantId, id, finalEmail, password, memberRole, isActive);
 
@@ -113,6 +138,33 @@ export class MembroService {
       role: memberRole,
       userId,
     });
+
+    if (upserted.ativo && upserted.userId) {
+      await this.productValidationService.registrarSegundoUsuarioSeAplicavel(tenantId);
+    }
+
+    if (membroAtual) {
+      const rendaAtual = membroAtual.rendaCentavos !== null ? Number(membroAtual.rendaCentavos) : null;
+      const rendaNova = (rendaCentavos !== undefined && rendaCentavos !== null) ? Number(rendaCentavos) : null;
+      if (rendaAtual !== rendaNova) {
+        let executorMembroId = id; // fallback
+        if (executorUserId) {
+          const executor = await this.prisma.membroCasa.findFirst({
+            where: { tenantId, userId: executorUserId }
+          });
+          if (executor) executorMembroId = executor.id;
+        }
+
+        const valorAntigoStr = rendaAtual !== null ? `R$ ${(rendaAtual / 100).toFixed(2)}` : 'não informada';
+        const valorNovoStr = rendaNova !== null ? `R$ ${(rendaNova / 100).toFixed(2)}` : 'não informada';
+        await this.auditLogService.registrar(
+          tenantId,
+          executorMembroId,
+          'ALTERAR_RENDA',
+          `Renda de ${membroAtual.nome} alterada de ${valorAntigoStr} para ${valorNovoStr}.`
+        );
+      }
+    }
 
     this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
     return serializeBigInt(upserted);

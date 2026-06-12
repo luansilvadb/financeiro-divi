@@ -1,5 +1,5 @@
 import { HttpBaseRepository } from './HttpBaseRepository'
-import { Gasto } from '../../entities/Gasto'
+import { Gasto, type PaymentMethod, type SplitMode } from '../../entities/Gasto'
 import { DivisaoDeGasto } from '../../entities/DivisaoDeGasto'
 import { Dinheiro } from '../../entities/Dinheiro'
 import type { IGastoRepository } from '../IGastoRepository'
@@ -18,10 +18,23 @@ interface GastoDto {
   recurringBillId?: string | null
   isSettlement?: boolean
   settlementDetails?: Gasto['settlementDetails']
-  method?: 'pix' | 'card'
+  method?: PaymentMethod
   cardOwnerId?: string | null
   grupoParcelasId?: string | null
   isPrivate?: boolean
+  splitMode?: 'EQUAL' | 'INCOME' | 'CUSTOM'
+}
+
+const toDomainSplitMode = (splitMode?: GastoDto['splitMode']): SplitMode => {
+  if (splitMode === 'EQUAL') return 'equal'
+  if (splitMode === 'INCOME') return 'income'
+  return 'custom'
+}
+
+const toApiSplitMode = (splitMode: SplitMode): NonNullable<GastoDto['splitMode']> => {
+  if (splitMode === 'equal') return 'EQUAL'
+  if (splitMode === 'income') return 'INCOME'
+  return 'CUSTOM'
 }
 
 export class HttpGastoRepository extends HttpBaseRepository implements IGastoRepository {
@@ -48,7 +61,8 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       method: item.method,
       cardOwner: item.cardOwnerId,
       grupoParcelasId: item.grupoParcelasId,
-      isPrivate: item.isPrivate
+      isPrivate: item.isPrivate,
+      splitMode: toDomainSplitMode(item.splitMode)
     })
   }
 
@@ -80,6 +94,7 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       cardOwnerId: gasto.cardOwner,
       grupoParcelasId: gasto.grupoParcelasId,
       isPrivate: gasto.isPrivate,
+      splitMode: toApiSplitMode(gasto.splitMode),
       divisoes: gasto.divisoes.map(d => ({
         membroId: d.membroId,
         valorCentavos: d.valor.centavos
@@ -118,4 +133,5 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
     const list = await this.request<GastoDto[]>('/financeiro/gastos')
     return list.map(item => this.mapToEntity(item))
   }
+
 }

@@ -17,6 +17,8 @@ model Tenant {
   faturas    Fatura[]
   gastos     Gasto[]
   contasFixas ContaFixa[]
+  auditLogs  AuditLog[]
+  validationEvents ProductValidationEvent[]
 
   @@map("tenants")
 }
@@ -49,6 +51,20 @@ enum Role {
   ADMIN
   MORADOR
   VISUALIZADOR
+}
+
+enum SplitMode {
+  EQUAL
+  INCOME
+  CUSTOM
+}
+
+enum ValidationEventType {
+  TENANT_CREATED
+  SECOND_LINKED_MEMBER_JOINED
+  FIRST_EXPENSE_CREATED
+  PERIOD_CLOSED
+  FIRST_SETTLEMENT_RECORDED
 }
 
 model MembroCasa {
@@ -124,6 +140,7 @@ model Gasto {
   cardOwnerId         String?  @map("card_owner_id")
   grupoParcelasId     String?  @map("grupo_parcelas_id")
   isPrivate           Boolean  @default(false) @map("is_private")
+  splitMode           SplitMode @default(CUSTOM) @map("split_mode")
   createdAt           DateTime @default(now()) @map("created_at")
 
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -163,6 +180,37 @@ model ContaFixa {
   @@id([id, tenantId])
   @@index([tenantId])
   @@map("contas_fixas")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  membroId  String   @map("membro_id")
+  acao      String
+  detalhes  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("audit_logs")
+}
+
+model ProductValidationEvent {
+  id        String              @id @default(uuid()) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  type      ValidationEventType
+  dedupeKey String              @map("dedupe_key")
+  periodKey String?             @map("period_key")
+  metadata  Json?
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, type, dedupeKey])
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("product_validation_events")
 }
 
 

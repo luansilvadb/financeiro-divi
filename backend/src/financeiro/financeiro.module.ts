@@ -2,10 +2,12 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MembroService } from './membro.service';
 import { CartaoService } from './cartao.service';
 import { LancamentoService } from './lancamento.service';
+import { AuditLogService } from './audit-log.service';
 import { FinanceiroController } from './financeiro.controller';
 import { AuthModule } from '../auth/auth.module';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { PrismaModule } from '../prisma/prisma.module';
+import { ProductValidationService } from './product-validation.service';
 
 @Module({
   imports: [PrismaModule, forwardRef(() => AuthModule)],
@@ -13,9 +15,11 @@ import { PrismaModule } from '../prisma/prisma.module';
     MembroService, 
     CartaoService, 
     LancamentoService, 
+    AuditLogService,
+    ProductValidationService,
     FinanceiroGateway
   ],
   controllers: [FinanceiroController],
-  exports: [MembroService, FinanceiroGateway],
+  exports: [MembroService, AuditLogService, ProductValidationService, FinanceiroGateway],
 })
 export class FinanceiroModule {}

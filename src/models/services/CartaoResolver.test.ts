@@ -27,6 +27,15 @@ describe('CartaoResolver', () => {
     })
   })
 
+  it('Scenario: Pagamento em dinheiro (sem cartão)', () => {
+    const res = resolverCartao('cash', 'c1', 'membro-x', cartoes)
+    expect(res).toEqual({
+      cartaoId: null,
+      cardOwner: null,
+      responsavelFaturaId: 'membro-x',
+    })
+  })
+
   it('Scenario: Pagamento via cartão com cardOwnerId válido (match por ID)', () => {
     const res = resolverCartao('card', 'c2', 'membro-x', cartoes)
     expect(res).toEqual({

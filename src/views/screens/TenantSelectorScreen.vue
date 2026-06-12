@@ -55,7 +55,7 @@ function voltar() {
           Olá, {{ username }} 👋
         </h1>
         <p class="text-body text-ash font-semibold">
-          Para começar, você precisa de uma <strong class="text-charcoal font-bold uppercase tracking-tighter">casa</strong>
+          Crie ou entre em uma <strong class="text-charcoal font-bold uppercase tracking-tighter">casa</strong> para organizar despesas e acertos
         </p>
       </div>
 
