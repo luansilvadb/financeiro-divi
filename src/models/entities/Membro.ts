@@ -12,6 +12,7 @@ export class Membro {
   readonly dataCriacao: Date
   readonly userId?: string
   readonly username?: string
+  readonly rendaCentavos?: number
 
   constructor(props: {
     id: string
@@ -23,6 +24,7 @@ export class Membro {
     dataCriacao?: Date
     userId?: string
     username?: string
+    rendaCentavos?: number
   }) {
     this.id = props.id
     this.nome = props.nome
@@ -33,5 +35,6 @@ export class Membro {
     this.dataCriacao = props.dataCriacao ?? new Date()
     this.userId = props.userId
     this.username = props.username
+    this.rendaCentavos = props.rendaCentavos
   }
 }

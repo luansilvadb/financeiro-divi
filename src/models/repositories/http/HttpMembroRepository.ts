@@ -15,6 +15,7 @@ interface MembroDto {
   userId?: string
   username?: string
   email?: string
+  rendaCentavos?: number
 }
 
 export class HttpMembroRepository extends HttpBaseRepository implements IMembroRepository {
@@ -34,7 +35,8 @@ export class HttpMembroRepository extends HttpBaseRepository implements IMembroR
       }) : undefined,
       dataCriacao: item.createdAt ? new Date(item.createdAt) : undefined,
       userId: item.userId,
-      username: item.username
+      username: item.username,
+      rendaCentavos: item.rendaCentavos
     }))
   }
 
@@ -53,6 +55,7 @@ export class HttpMembroRepository extends HttpBaseRepository implements IMembroR
         role: membro.role,
         cargoId: membro.cargoId,
         createdAt: membro.dataCriacao,
+        rendaCentavos: membro.rendaCentavos,
         ...(credentials || {})
       })
     })

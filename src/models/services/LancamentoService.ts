@@ -34,7 +34,7 @@ export class LancamentoService {
       const grupoParcelasId = crypto.randomUUID()
       const faturasParaSalvar: Fatura[] = []
       const gastosParaSalvar: Gasto[] = [
-        new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId })
+        new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false })
       ]
 
       let { mes, ano } = faturaAtiva.periodo
@@ -43,14 +43,14 @@ export class LancamentoService {
       for (let i = 2; i <= dados.installments; i++) {
         if (++mes > 12) { mes = 1; ano++ }
         const faturaFutura = await this.obterOuCriarFaturaMemoria(faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas)
-        gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId }))
+        gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false }))
       }
 
       if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
       await this.gastoRepo.salvarMuitos(gastosParaSalvar)
     } else {
       await this.gastoRepo.salvar(new Gasto({
-        id: crypto.randomUUID(), faturaId: faturaAtiva?.id ?? null, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null
+        id: crypto.randomUUID(), faturaId: faturaAtiva?.id ?? null, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null, isPrivate: dados.isPrivate || false
       }))
     }
   }

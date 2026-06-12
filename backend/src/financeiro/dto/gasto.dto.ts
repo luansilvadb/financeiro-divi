@@ -136,4 +136,12 @@ export class GastoDto {
   @ValidateNested({ each: true })
   @Type(() => DivisaoGastoDto)
   divisoes!: DivisaoGastoDto[];
+
+  @ApiPropertyOptional({
+    description: 'Informa se este gasto é privado (visível apenas para o comprador/pagador)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
 }

@@ -119,18 +119,21 @@ export class MembroService {
   }
 
   private async persistirMembro(tenantId: string, data: MembroDto) {
-    const { id, nome, avatar, ativo, role, userId } = data;
+    const { id, nome, avatar, ativo, role, userId, rendaCentavos } = data;
     const defaultAvatar = avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nome)}`;
+    const rendaBigInt = (rendaCentavos !== undefined && rendaCentavos !== null) ? BigInt(rendaCentavos) : null;
 
     return this.prisma.membroCasa.upsert({
       where: { id_tenantId: { id, tenantId } },
       create: {
         id, tenantId, nome, avatar: defaultAvatar,
         ativo: ativo!, role: role!, userId,
+        rendaCentavos: rendaBigInt,
       },
       update: {
         nome, avatar: defaultAvatar,
         ativo: ativo!, role: role!, userId,
+        rendaCentavos: rendaBigInt,
       },
     });
   }
@@ -148,6 +151,26 @@ export class MembroService {
         throw new BadRequestException('Usuário e senha são obrigatórios para a criação de um novo morador.');
       }
       return;
+    }
+
+    // Impede desativação se houver saldo contábil pendente
+    if (membroAtual.ativo && isActive === false) {
+      const totalPago = await this.prisma.gasto.aggregate({
+        where: { tenantId, compradorId: id },
+        _sum: { valorTotalCentavos: true }
+      });
+      const totalDevido = await this.prisma.divisaoGasto.aggregate({
+        where: { tenantId, membroId: id },
+        _sum: { valorCentavos: true }
+      });
+
+      const pago = Number(totalPago._sum.valorTotalCentavos || 0n);
+      const devido = Number(totalDevido._sum.valorCentavos || 0n);
+      const saldoCentavos = pago - devido;
+
+      if (saldoCentavos !== 0) {
+        throw new BadRequestException('Não é possível desativar um morador com saldo pendente na moradia (Saldo atual: R$ ' + (saldoCentavos / 100).toFixed(2).replace('.', ',') + ').');
+      }
     }
 
     const isAdminAtivo = membroAtual.role === Role.ADMIN && membroAtual.ativo;
@@ -192,5 +215,12 @@ export class MembroService {
         userId,
       },
     });
+  }
+
+  async obterMembroPorUsuario(tenantId: string, userId: string) {
+    const membro = await this.prisma.membroCasa.findFirst({
+      where: { tenantId, userId },
+    });
+    return serializeBigInt(membro);
   }
 }

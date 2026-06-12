@@ -14,18 +14,44 @@ const emit = defineEmits(['salvar', 'cancelar'])
 const novoNome = ref('')
 const novoEmail = ref('')
 const novoPassword = ref('')
+const novaRendaText = ref('')
 
 const resetForm = () => {
   novoNome.value = ''
   novoEmail.value = ''
   novoPassword.value = ''
+  novaRendaText.value = ''
+}
+
+const handleRendaInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  let value = target.value.replace(/\D/g, '')
+  if (value === '') {
+    novaRendaText.value = ''
+    return
+  }
+  const val = parseInt(value, 10) / 100
+  novaRendaText.value = val.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 const handleAdicionar = () => {
+  let rendaCentavos: number | undefined = undefined
+  if (novaRendaText.value) {
+    const cleanValue = novaRendaText.value.replace(/\./g, '').replace(',', '.')
+    const floatVal = parseFloat(cleanValue)
+    if (!isNaN(floatVal)) {
+      rendaCentavos = Math.round(floatVal * 100)
+    }
+  }
+
   emit('salvar', {
     nome: novoNome.value,
     email: novoEmail.value,
-    password: novoPassword.value
+    password: novoPassword.value,
+    rendaCentavos: rendaCentavos
   })
 }
 
@@ -92,6 +118,17 @@ export default {
           <label class="text-[10px] font-bold uppercase text-graphite tracking-widest ml-1 block">Senha</label>
           <input v-model="novoPassword" type="password" placeholder="••••••" class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember placeholder:text-ash text-sm transition-all" />
         </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-[10px] font-bold uppercase text-graphite tracking-widest ml-1">Renda Mensal (R$ - Opcional)</label>
+        <input
+          v-model="novaRendaText"
+          type="text"
+          placeholder="Ex: 3.500,00"
+          class="w-full px-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+          @input="handleRendaInput"
+        />
       </div>
 
       <!-- Botões de Ação -->

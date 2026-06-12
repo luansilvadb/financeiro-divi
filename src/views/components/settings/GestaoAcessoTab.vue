@@ -22,6 +22,7 @@ const {
   desativarMembro, 
   ativarMembro, 
   atualizarCargoMembro,
+  atualizarRendaMembro,
   currentMembro 
 } = useMembros()
 
@@ -31,7 +32,7 @@ const toast = useToast()
 const variants: ('ember' | 'sky' | 'sunburst' | 'flamingo' | 'meadow')[] = ['ember', 'sky', 'sunburst', 'flamingo', 'meadow']
 
 type FormExpose = { resetForm: () => void }
-interface NovoMembroDados { nome: string; email: string; password: string }
+interface NovoMembroDados { nome: string; email: string; password: string; rendaCentavos?: number }
 
 const membroFormRef = ref<FormExpose | null>(null)
 const novoMembroFormAberto = ref(false)
@@ -39,6 +40,7 @@ const mostrarBottomSheet = ref(false)
 const membroSelecionado = ref<Membro | null>(null)
 const cargoSelecionadoId = ref<string | null>(null)
 const ativoSelecionado = ref(true)
+const rendaSelecionadaText = ref('')
 const salvando = ref(false)
 
 const podeGerenciarMoradores = computed(() => {
@@ -70,7 +72,7 @@ const abrirNovoMembroForm = () => {
 
 const handleAdicionarMembro = async (dados: NovoMembroDados) => {
   try {
-    await adicionarMembro(dados.nome, dados.email, dados.password)
+    await adicionarMembro(dados.nome, dados.email, dados.password, dados.rendaCentavos)
     toast.show('Membro adicionado com sucesso', 'success')
     novoMembroFormAberto.value = false
     emit('focus-change', false)
@@ -79,10 +81,27 @@ const handleAdicionarMembro = async (dados: NovoMembroDados) => {
   }
 }
 
+const handleRendaInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  let value = target.value.replace(/\D/g, '')
+  if (value === '') {
+    rendaSelecionadaText.value = ''
+    return
+  }
+  const val = parseInt(value, 10) / 100
+  rendaSelecionadaText.value = val.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
 const abrirEdicaoMembro = (membro: Membro) => {
   membroSelecionado.value = membro
   cargoSelecionadoId.value = membro.role === 'ADMIN' ? 'ADMIN' : (membro.cargoId || null)
   ativoSelecionado.value = membro.ativo
+  rendaSelecionadaText.value = membro.rendaCentavos 
+    ? (membro.rendaCentavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : ''
   mostrarBottomSheet.value = true
   emit('focus-change', true)
 }
@@ -101,6 +120,19 @@ const handleSalvarEdicao = async () => {
     if (ativoSelecionado.value !== membroSelecionado.value.ativo) {
       if (ativoSelecionado.value) await ativarMembro(membroSelecionado.value.id)
       else await desativarMembro(membroSelecionado.value.id)
+    }
+
+    let novaRendaCentavos: number | undefined = undefined
+    if (rendaSelecionadaText.value) {
+      const cleanValue = rendaSelecionadaText.value.replace(/\./g, '').replace(',', '.')
+      const floatVal = parseFloat(cleanValue)
+      if (!isNaN(floatVal)) {
+        novaRendaCentavos = Math.round(floatVal * 100)
+      }
+    }
+
+    if (novaRendaCentavos !== membroSelecionado.value.rendaCentavos) {
+      await atualizarRendaMembro(membroSelecionado.value.id, novaRendaCentavos)
     }
     
     toast.show('Alterações salvas com sucesso', 'success')
@@ -161,6 +193,16 @@ const cancelarNovoMembro = () => {
             <option value="ADMIN">Administrador</option>
             <option v-for="c in cargos" :key="c.id" :value="c.id">{{ c.nome }}</option>
           </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase tracking-widest text-graphite block ml-1">Renda Mensal (R$)</label>
+          <input
+            v-model="rendaSelecionadaText"
+            type="text"
+            placeholder="Ex: 3.500,00"
+            class="w-full p-3.5 rounded-2xl border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+            @input="handleRendaInput"
+          />
         </div>
         <div class="flex items-center justify-between p-3.5 bg-parchment border border-stone rounded-2xl">
           <span class="text-xs font-bold text-charcoal">Morador Ativo</span>

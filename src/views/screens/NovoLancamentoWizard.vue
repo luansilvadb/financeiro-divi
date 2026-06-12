@@ -18,7 +18,7 @@ import StepDescriptionInput from '../components/wizard/StepDescriptionInput.vue'
 import StepSplitSelector from '../components/wizard/StepSplitSelector.vue'
 
 interface Props {
-  membros: { id: string; nome: string }[]
+  membros: { id: string; nome: string; rendaCentavos?: number }[]
 }
 
 const props = defineProps<Props>()
@@ -67,6 +67,8 @@ const compradorSelecionadoId = ref('')
 const borrowerId = ref<string | null>(null)
 const installments = ref(1)
 const participantesDivisao = ref<string[]>(props.membros.map(m => m.id))
+const isPrivate = ref(false)
+const splitType = ref<'equal' | 'proportional'>('equal')
 
 const canAdvance = computed(() => {
   switch (currentState.value) {
@@ -91,9 +93,57 @@ const handleGravar = async () => {
   isSubmitting.value = true
   try {
     const dValor = Dinheiro.deReais(Number(valor.value))
-    const divisoes = wizFlow.value === 'loan'
-      ? [new DivisaoDeGasto(borrowerId.value!, dValor)]
-      : participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
+    let divisoes: DivisaoDeGasto[] = []
+    
+    if (wizFlow.value === 'loan') {
+      divisoes = [new DivisaoDeGasto(borrowerId.value!, dValor)]
+    } else if (splitType.value === 'proportional') {
+      const participantesComRenda = participantesDivisao.value.map(id => {
+        const m = props.membros.find(memb => memb.id === id)
+        const renda = m?.rendaCentavos && m.rendaCentavos > 0 ? Number(m.rendaCentavos) : 0
+        return { id, renda }
+      })
+
+      const temMembrosSemRenda = participantesComRenda.some(p => p.renda === 0)
+      const membrosComRendaValida = participantesComRenda.filter(p => p.renda > 0)
+
+      if (membrosComRendaValida.length === 0) {
+        toast.show('Nenhum dos moradores possui renda. Aplicando divisão igualitária.', 'info')
+        divisoes = participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
+      } else {
+        if (temMembrosSemRenda) {
+          toast.show('Moradores sem renda participarão com uma renda estimada.', 'info')
+          const somaRendasValidas = membrosComRendaValida.reduce((acc, p) => acc + p.renda, 0)
+          const rendaMedia = Math.round(somaRendasValidas / membrosComRendaValida.length)
+          participantesComRenda.forEach(p => {
+            if (p.renda === 0) p.renda = rendaMedia
+          })
+        }
+
+        const somaRendasTotal = participantesComRenda.reduce((acc, p) => acc + p.renda, 0)
+        let restoCentavos = dValor.centavos
+        const valoresDivisoes: { [membroId: string]: number } = {}
+
+        participantesComRenda.forEach(p => {
+          const valorProporcional = Math.floor(dValor.centavos * (p.renda / somaRendasTotal))
+          valoresDivisoes[p.id] = valorProporcional
+          restoCentavos -= valorProporcional
+        })
+
+        const ordenadosPorRenda = [...participantesComRenda].sort((a, b) => b.renda - a.renda)
+        let idxResto = 0
+        while (restoCentavos > 0) {
+          const p = ordenadosPorRenda[idxResto % ordenadosPorRenda.length]
+          valoresDivisoes[p.id]++
+          restoCentavos--
+          idxResto++
+        }
+
+        divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deCentavos(valoresDivisoes[id])))
+      }
+    } else {
+      divisoes = participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
+    }
 
     await gastoService.lancarGastoOuEmprestimo({
       flow: wizFlow.value!,
@@ -105,7 +155,8 @@ const handleGravar = async () => {
       installments: installments.value,
       cardOwnerId: wizCardOwner.value,
       borrowerId: borrowerId.value,
-      periodo: obterPeriodoSelecionado()
+      periodo: obterPeriodoSelecionado(),
+      isPrivate: isPrivate.value
     })
     emit('salvar')
   } catch (error: unknown) {
@@ -202,17 +253,36 @@ const handleGravar = async () => {
           :wiz-payment="wizPayment"
         />
 
-        <StepDescriptionInput
-          v-else-if="currentState === 'DESCRIPTION'"
-          v-model:descricao="descricao"
-          :wiz-flow="wizFlow"
-        />
+        <div v-else-if="currentState === 'DESCRIPTION'" class="space-y-6 animate-in fade-in duration-300">
+          <StepDescriptionInput
+            v-model:descricao="descricao"
+            :wiz-flow="wizFlow"
+          />
+          <div class="flex items-center justify-between p-3.5 bg-stone/20 border border-stone/60 rounded-2xl transition-all duration-300">
+            <div class="space-y-0.5 text-left">
+              <span class="text-xs font-bold text-charcoal block">Gasto Privado</span>
+              <p class="text-[10px] text-graphite font-medium leading-normal max-w-[320px]">
+                Oculta a descrição e itens da compra para outros moradores da casa. Apenas o valor total é computado no balanço geral.
+              </p>
+            </div>
+            <button 
+              type="button"
+              @click="isPrivate = !isPrivate" 
+              class="w-11 h-6 rounded-full p-0.5 border-none cursor-pointer transition-colors shrink-0" 
+              :class="isPrivate ? 'bg-meadow' : 'bg-stone'"
+            >
+              <div class="bg-white w-5 h-5 rounded-full shadow-subtle transform transition-transform" :class="isPrivate ? 'translate-x-5' : 'translate-x-0'" />
+            </button>
+          </div>
+        </div>
 
         <StepSplitSelector
           v-else-if="currentState === 'SPLIT'"
           v-model:participantes-divisao="participantesDivisao"
+          v-model:splitType="splitType"
           :membros="props.membros"
           :comprador-selecionado-id="compradorSelecionadoId"
+          :valor-total="Number(valor)"
         />
       </div>
     </div>
