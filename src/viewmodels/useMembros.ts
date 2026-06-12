@@ -11,6 +11,7 @@ const tenantPermissions = ref<Record<string, RolePermissions>>({
     ALLOW_GERENCIAR_CONTAS_FIXAS: true,
     ALLOW_REGISTRAR_NETTING: true,
     ALLOW_VER_AUDIT_LOGS: true,
+    ALLOW_FECHAR_PERIODO: true,
     ALLOW_ALTERAR_RENDA: true,
     ALLOW_ALTERAR_NOME: true
   },
@@ -20,6 +21,7 @@ const tenantPermissions = ref<Record<string, RolePermissions>>({
     ALLOW_GERENCIAR_CONTAS_FIXAS: false,
     ALLOW_REGISTRAR_NETTING: false,
     ALLOW_VER_AUDIT_LOGS: false,
+    ALLOW_FECHAR_PERIODO: false,
     ALLOW_ALTERAR_RENDA: false,
     ALLOW_ALTERAR_NOME: false
   }
