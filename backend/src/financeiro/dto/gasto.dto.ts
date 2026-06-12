@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray, IsObject } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray, IsObject, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { DivisaoGastoDto } from './divisao-gasto.dto';
+import { SplitMode } from '@prisma/client';
 
 export class GastoDto {
   @ApiProperty({
@@ -144,4 +145,13 @@ export class GastoDto {
   @IsOptional()
   @IsBoolean()
   isPrivate?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Critério de rateio escolhido no momento do lançamento',
+    enum: SplitMode,
+    example: SplitMode.EQUAL,
+  })
+  @IsOptional()
+  @IsEnum(SplitMode)
+  splitMode?: SplitMode;
 }

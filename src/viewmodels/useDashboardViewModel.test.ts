@@ -7,6 +7,19 @@ import { Cartao } from '../models/entities/Cartao'
 import { Fatura } from '../models/entities/Fatura'
 import { Gasto } from '../models/entities/Gasto'
 
+const containerMocks = vi.hoisted(() => ({
+  lancar: vi.fn(),
+  excluir: vi.fn(),
+}))
+
+vi.mock('../shared/container', () => ({
+  gastoService: {
+    lancarGastoOuEmprestimo: containerMocks.lancar,
+    excluirGasto: containerMocks.excluir,
+  },
+  faturaService: {},
+}))
+
 vi.mock('../composables/useToast', () => {
   const showMock = vi.fn()
   const hideMock = vi.fn()
@@ -121,5 +134,20 @@ describe('useDashboardViewModel', () => {
     expect(mockCartoesEFaturas.atualizarGasto).toHaveBeenCalledWith('g1', dadosAjuste)
     expect(vm.isModalNoTopo('ajustar-gasto')).toBe(false)
     expect(vm.gastoParaAjustar.value).toBeNull()
+  })
+
+  it.each(['pix', 'cash'] as const)('registra acerto %s preservando origem, destino e método', async (method) => {
+    const vm = createViewModel(dummyProps, vi.fn())
+
+    await vm.confirmarBaixaNetting({
+      from: 'm1', to: 'm2', valor: 75, method, descricao: 'Acerto mensal',
+    })
+
+    expect(containerMocks.lancar).toHaveBeenCalledWith(expect.objectContaining({
+      flow: 'settlement',
+      paymentMethod: method,
+      splitMode: 'custom',
+      settlementDetails: { fromMemberId: 'm1', toMemberId: 'm2', method },
+    }))
   })
 })

@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { Fatura } from '../models/entities/Fatura'
 import { Cartao } from '../models/entities/Cartao'
+import { HttpAuditLogRepository, type AuditLogDto } from '../models/repositories/http/HttpAuditLogRepository'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
@@ -42,6 +43,7 @@ export const useDashboardViewModel = (
   emit: (event: 'periodoStatusChanged', isLocked: boolean) => void
 ) => {
   const ui = useDashboardUIState()
+  const auditLogRepo = new HttpAuditLogRepository()
   const toast = useToast()
   const cartoesEFaturas = useCartoesEFaturas()
   const contasFixas = useContasFixas()
@@ -76,8 +78,8 @@ export const useDashboardViewModel = (
       ui.isSubmittingPix.value = true
       try {
         await gastoService.lancarGastoOuEmprestimo({
-          flow: 'expense',
-          paymentMethod: dados.method === 'pix' ? 'pix' : 'card',
+          flow: 'settlement',
+          paymentMethod: dados.method,
           compradorId: dados.from,
           valor: dados.valor,
           descricao: dados.descricao,
@@ -85,7 +87,13 @@ export const useDashboardViewModel = (
           installments: 1,
           cardOwnerId: null,
           borrowerId: null,
-          periodo: fatura.periodo
+          periodo: fatura.periodo,
+          splitMode: 'custom',
+          settlementDetails: {
+            fromMemberId: dados.from,
+            toMemberId: dados.to,
+            method: dados.method,
+          }
         })
         
         await cartoesEFaturas.inicializar()
@@ -146,6 +154,16 @@ export const useDashboardViewModel = (
     
     estornarContaFixa: (b: ContaFixa) => ui.abrirConfirmacaoEstornoGasto(gastosFiltrados.value.find(z => z.recurringBillId === b.id)!),
     
+
+    listarAuditLogs: async (): Promise<AuditLogDto[]> => {
+      try {
+        return await auditLogRepo.listarTodos()
+      } catch (error) {
+        toast.show('Erro ao carregar histórico de atividades.', 'error')
+        return []
+      }
+    },
+
     reabrirPeriodoSelecionado: () => Promise.all(props.faturasFechadas.filter(f => f.periodo.mes === periodoSelecionado.value.mes && f.periodo.ano === periodoSelecionado.value.ano).map(f => cartoesEFaturas.reabrirFatura(f.id)))
   }
 }

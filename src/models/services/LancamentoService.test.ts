@@ -44,6 +44,38 @@ function criarMockFaturaRepo(faturasIniciais: Fatura[] = []) {
 }
 
 describe('LancamentoService', () => {
+  it.each(['pix', 'cash'] as const)('deve registrar acerto %s como liquidação real', async (method) => {
+    const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn() }
+    const service = new LancamentoService(
+      mockGastoRepo as any,
+      criarMockFaturaRepo() as any,
+      { listarTodos: vi.fn().mockResolvedValue([]) } as any,
+    )
+
+    await service.lancarGastoOuEmprestimo({
+      flow: 'settlement',
+      paymentMethod: method,
+      compradorId: 'm1',
+      valor: 80,
+      descricao: 'Acerto',
+      divisoes: [new DivisaoDeGasto('m2', Dinheiro.deReais(80))],
+      installments: 1,
+      cardOwnerId: null,
+      borrowerId: null,
+      periodo: { mes: 5, ano: 2026 },
+      splitMode: 'custom',
+      settlementDetails: { fromMemberId: 'm1', toMemberId: 'm2', method },
+    })
+
+    expect(mockGastoRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      isSettlement: true,
+      isLoan: false,
+      method,
+      splitMode: 'custom',
+      settlementDetails: { fromMemberId: 'm1', toMemberId: 'm2', method },
+    }))
+  })
+
   it('deve lancar um gasto simples à vista com sucesso', async () => {
     const mockGastoRepo = { salvar: vi.fn(), salvarMuitos: vi.fn(), excluir: vi.fn(), excluirMuitos: vi.fn(), listarTodos: vi.fn(), buscarPorId: vi.fn() }
     const mockFaturaRepo = criarMockFaturaRepo([
@@ -55,6 +87,7 @@ describe('LancamentoService', () => {
     await service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'pix',
+      splitMode: 'equal',
       compradorId: 'm1',
       valor: 150.50,
       descricao: 'Supermercado',
@@ -84,6 +117,7 @@ describe('LancamentoService', () => {
     await service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'card',
+      splitMode: 'equal',
       compradorId: 'm1',
       valor: 300,
       descricao: 'Compra Parcelada',
@@ -121,6 +155,7 @@ describe('LancamentoService', () => {
     await expect(service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'card',
+      splitMode: 'equal',
       compradorId: 'm1',
       valor: 100,
       descricao: 'Tentativa permitida',
@@ -146,6 +181,7 @@ describe('LancamentoService', () => {
     await expect(service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'card',
+      splitMode: 'equal',
       compradorId: 'm1',
       valor: 300,
       descricao: 'Parcelamento permitido',
@@ -168,6 +204,7 @@ describe('LancamentoService', () => {
     await service.lancarGastoOuEmprestimo({
       flow: 'loan',
       paymentMethod: 'pix',
+      splitMode: 'custom',
       compradorId: 'm1',
       valor: 50,
       descricao: 'Café',
@@ -194,6 +231,7 @@ describe('LancamentoService', () => {
     await service.lancarGastoOuEmprestimo({
       flow: 'loan',
       paymentMethod: 'pix',
+      splitMode: 'custom',
       compradorId: 'm1',
       valor: 50,
       descricao: '   ',
@@ -218,6 +256,7 @@ describe('LancamentoService', () => {
     await service.lancarGastoOuEmprestimo({
       flow: 'expense',
       paymentMethod: 'card',
+      splitMode: 'equal',
       compradorId: 'm1',
       valor: 100,
       descricao: 'Compra Unica',
@@ -241,6 +280,7 @@ describe('LancamentoService', () => {
     await service.lancarGastoOuEmprestimo({
       flow: 'loan',
       paymentMethod: 'card',
+      splitMode: 'custom',
       compradorId: 'm1',
       valor: 200,
       descricao: 'Emprestimo Parcelado',

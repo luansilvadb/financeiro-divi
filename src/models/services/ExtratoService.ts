@@ -86,8 +86,8 @@ export class ExtratoService {
         if (g.borrowerId && breakdown[g.borrowerId]) {
           breakdown[g.borrowerId].loanTomou += valorParcela
         }
-      } else {
-        if (g.method === 'pix' || g.isSettlement) {
+      } else if (!g.isSettlement) {
+        if (g.method === 'pix' || g.method === 'cash') {
           if (g.compradorId && breakdown[g.compradorId]) {
             breakdown[g.compradorId].pixFez += valorParcela
           }

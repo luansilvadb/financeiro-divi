@@ -51,8 +51,23 @@ const {
   abrirNovoPeriodoBottomSheet,
   estornarContaFixa,
   totalLancamentosPeriodoSelecionado,
-  reabrirPeriodoSelecionado
+  reabrirPeriodoSelecionado,
+  listarAuditLogs
 } = vm
+
+const mostrarAuditLogs = ref(false)
+const logsAuditoria = ref<any[]>([])
+const carregandoLogs = ref(false)
+
+const abrirAuditLogs = async () => {
+  mostrarAuditLogs.value = true
+  carregandoLogs.value = true
+  try {
+    logsAuditoria.value = await listarAuditLogs()
+  } finally {
+    carregandoLogs.value = false
+  }
+}
 
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
 const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
@@ -111,6 +126,7 @@ defineExpose({
         :active-tenant-obj="activeTenantObj"
         @open-historico="vm.abrirModal('historico')"
         @open-casas="vm.abrirModal('casas')"
+        @open-audit-logs="abrirAuditLogs"
       />
 
       <!-- Container Estabilizado -->
@@ -122,9 +138,9 @@ defineExpose({
                 <IllustrationMascot variant="sky" :size="140" mood="chill" />
               </div>
               <div class="space-y-3 px-6">
-                <h3 class="text-3xl font-display text-charcoal leading-tight">O silêncio das<br><span class="text-sky">Contas</span></h3>
+                <h3 class="text-3xl font-display text-charcoal leading-tight">Comece pelas<br><span class="text-sky">Despesas</span></h3>
                 <p class="text-sm text-graphite max-w-[280px] mx-auto leading-relaxed font-medium">
-                  Tudo em ordem por aqui. Nenhum lançamento registrado ainda. Comece sua aventura financeira adicionando um gasto!
+                  Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
                 </p>
               </div>
             </div>
@@ -225,5 +241,75 @@ defineExpose({
       :faturasFechadas="props.faturasFechadas"
       :casasMultitenant="{ activeTenantId, casas, form, copiedCode, isCreating, isEntering, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
     />
+
+    <!-- Modal de Logs de Auditoria (Atividades da Casa) -->
+    <div
+      v-if="mostrarAuditLogs"
+      class="fixed inset-0 bg-midnight/35 backdrop-blur-sm z-50 flex items-end justify-center md:items-center animate-in fade-in duration-300"
+      @click.self="mostrarAuditLogs = false"
+    >
+      <div
+        class="bg-canvas border border-stone w-full md:max-w-lg rounded-t-3xl md:rounded-3xl shadow-xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-5 duration-300 overflow-hidden"
+      >
+        <header class="p-6 border-b border-stone shrink-0 flex items-center justify-between">
+          <div>
+            <h3 class="text-heading text-charcoal font-display">Atividades <span class="text-ember">da Casa</span></h3>
+            <p class="text-[10px] text-graphite font-bold uppercase tracking-widest mt-1">Histórico de auditoria contábil</p>
+          </div>
+          <button
+            type="button"
+            @click="mostrarAuditLogs = false"
+            class="w-10 h-10 rounded-full bg-white border border-stone/60 text-ash flex items-center justify-center cursor-pointer transition-all hover:bg-stone hover:text-charcoal focus:outline-none"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+          <div v-if="carregandoLogs" class="flex flex-col items-center justify-center py-12 space-y-4">
+            <div class="w-8 h-8 border-4 border-ember border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-ash font-bold uppercase tracking-wider">Carregando...</p>
+          </div>
+
+          <div v-else-if="logsAuditoria.length === 0" class="flex flex-col items-center justify-center py-16 text-center space-y-4">
+            <IllustrationMascot variant="sky" :size="80" mood="chill" class="opacity-45" />
+            <p class="text-xs text-ash font-bold italic max-w-[240px]">Nenhuma atividade registrada na casa ainda.</p>
+          </div>
+
+          <div v-else class="space-y-6">
+            <div
+              v-for="log in logsAuditoria"
+              :key="log.id"
+              class="flex gap-4 items-start pb-4 border-b border-stone/30 last:border-b-0"
+            >
+              <div
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 shadow-subtle border"
+                :class="{
+                  'bg-meadow/10 border-meadow/20': log.acao === 'CRIAR_GASTO',
+                  'bg-sky/10 border-sky/20': log.acao === 'EDITAR_GASTO',
+                  'bg-coral/10 border-coral/20': log.acao === 'EXCLUIR_GASTO',
+                  'bg-sunburst/10 border-sunburst/20': log.acao === 'ALTERAR_RENDA',
+                }"
+              >
+                <span v-if="log.acao === 'CRIAR_GASTO'">💸</span>
+                <span v-else-if="log.acao === 'EDITAR_GASTO'">✏️</span>
+                <span v-else-if="log.acao === 'EXCLUIR_GASTO'">🗑️</span>
+                <span v-else-if="log.acao === 'ALTERAR_RENDA'">💰</span>
+              </div>
+              <div class="space-y-1 min-w-0">
+                <p class="text-xs text-charcoal font-medium leading-relaxed">
+                  {{ log.detalhes }}
+                </p>
+                <div class="flex items-center gap-2 text-[9px] text-ash font-bold uppercase tracking-wide">
+                  <span>{{ getMembroNome(log.membroId) }}</span>
+                  <span>•</span>
+                  <span>{{ new Date(log.createdAt).toLocaleString('pt-BR') }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
 import { Check } from 'lucide-vue-next'
+import { obterMembrosSelecionadosSemRenda } from '../../../shared/utils/rateio'
 
 interface Member {
   id: string
@@ -41,8 +42,16 @@ const selecionarApenasEu = () => {
   internalParticipantes.value = [props.compradorSelecionadoId]
 }
 
+const membrosSelecionadosSemRenda = computed(() =>
+  obterMembrosSelecionadosSemRenda(props.membros, props.participantesDivisao)
+)
+
+const proporcionalDisponivel = computed(() =>
+  props.participantesDivisao.length > 0 && membrosSelecionadosSemRenda.value.length === 0
+)
+
 const proporcoesMembros = computed(() => {
-  if (props.splitType !== 'proportional' || props.participantesDivisao.length === 0) {
+  if (props.splitType !== 'proportional' || !proporcionalDisponivel.value) {
     return {}
   }
   
@@ -52,39 +61,10 @@ const proporcoesMembros = computed(() => {
     return { id, renda }
   })
 
-  const temMembrosSemRenda = participantesComRenda.some(p => p.renda === 0)
-  const membrosComRendaValida = participantesComRenda.filter(p => p.renda > 0)
-
-  if (membrosComRendaValida.length === 0) {
-    const pct = 100 / props.participantesDivisao.length
-    const resultado: { [id: string]: { percent: number; valor?: number; estimada: boolean } } = {}
-    props.participantesDivisao.forEach(id => {
-      resultado[id] = {
-        percent: pct,
-        estimada: false,
-        valor: props.valorTotal ? (props.valorTotal / props.participantesDivisao.length) : undefined
-      }
-    })
-    return resultado
-  }
-
-  if (temMembrosSemRenda) {
-    const somaRendasValidas = membrosComRendaValida.reduce((acc, p) => acc + p.renda, 0)
-    const rendaMedia = Math.round(somaRendasValidas / membrosComRendaValida.length)
-    participantesComRenda.forEach(p => {
-      if (p.renda === 0) {
-        p.renda = rendaMedia
-      }
-    })
-  }
-
   const somaRendasTotal = participantesComRenda.reduce((acc, p) => acc + p.renda, 0)
-  const resultado: { [id: string]: { percent: number; valor?: number; estimada: boolean } } = {}
+  const resultado: { [id: string]: { percent: number; valor?: number } } = {}
 
   participantesComRenda.forEach(p => {
-    const mOriginal = props.membros.find(memb => memb.id === p.id)
-    const estimada = !mOriginal?.rendaCentavos || Number(mOriginal.rendaCentavos) <= 0
-
     const percent = (p.renda / somaRendasTotal) * 100
     let valorEstimado: number | undefined = undefined
     if (props.valorTotal) {
@@ -93,8 +73,7 @@ const proporcoesMembros = computed(() => {
 
     resultado[p.id] = {
       percent,
-      valor: valorEstimado,
-      estimada
+      valor: valorEstimado
     }
   })
 
@@ -125,6 +104,16 @@ const proporcoesMembros = computed(() => {
           Proporcional
         </button>
       </div>
+    </div>
+
+    <div
+      v-if="splitType === 'proportional' && !proporcionalDisponivel"
+      role="alert"
+      class="p-3.5 rounded-2xl border border-sunburst/30 bg-sunburst/10 text-[11px] text-charcoal font-semibold leading-relaxed"
+    >
+      Informe uma renda positiva para
+      <strong>{{ membrosSelecionadosSemRenda.map(membro => membro.nome).join(', ') }}</strong>
+      ou escolha a divisão igual para continuar.
     </div>
 
     <div class="flex gap-2" role="group" aria-label="Atalhos de divisão">
@@ -166,7 +155,6 @@ const proporcoesMembros = computed(() => {
           <span v-if="proporcoesMembros[m.id]?.valor !== undefined" class="block text-[8px] text-slate-500 font-semibold mt-0.5">
             R$ {{ (proporcoesMembros[m.id]?.valor ?? 0).toFixed(2).replace('.', ',') }}
           </span>
-          <span v-if="proporcoesMembros[m.id]?.estimada" class="text-[8px] text-amber-600 block mt-0.5 font-medium">*est.</span>
         </span>
         <Check v-if="internalParticipantes.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow animate-in zoom-in-50 duration-300" aria-hidden="true" />
       </button>

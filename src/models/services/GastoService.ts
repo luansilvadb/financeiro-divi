@@ -1,7 +1,7 @@
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../repositories/ICartaoRepository'
-import { Gasto } from '../entities/Gasto'
+import { Gasto, type PaymentMethod, type SplitMode } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import type { Fatura } from '../entities/Fatura'
@@ -9,8 +9,8 @@ import { LancamentoService } from './LancamentoService'
 import { resolverCartao, type CartaoResolvido } from './CartaoResolver'
 
 export interface LancarGastoInput {
-  flow: 'expense' | 'loan'
-  paymentMethod: 'pix' | 'card'
+  flow: 'expense' | 'loan' | 'settlement'
+  paymentMethod: PaymentMethod
   compradorId: string
   valor: number
   descricao: string
@@ -20,6 +20,12 @@ export interface LancarGastoInput {
   borrowerId: string | null
   periodo: { mes: number; ano: number }
   isPrivate?: boolean
+  splitMode: SplitMode
+  settlementDetails?: {
+    fromMemberId: string
+    toMemberId: string
+    method: 'pix' | 'cash'
+  }
 }
 
 type AtualizarGastoDados = {
@@ -115,7 +121,7 @@ export class GastoService {
     else await this.gastoRepo.excluirMuitos(idsParaExcluir)
 
     await this.lancarGastoOuEmprestimo({
-      flow: original.isLoan ? 'loan' : 'expense',
+      flow: original.isSettlement ? 'settlement' : original.isLoan ? 'loan' : 'expense',
       paymentMethod: dados.method,
       compradorId: dados.compradorId,
       valor: dados.valorTotal.centavos / 100,
@@ -124,7 +130,16 @@ export class GastoService {
       installments: dados.installments,
       cardOwnerId: dados.cardOwner,
       borrowerId: original.borrowerId,
-      periodo: periodo
+      periodo: periodo,
+      isPrivate: original.isPrivate,
+      splitMode: original.splitMode,
+      settlementDetails: original.settlementDetails && original.settlementDetails.method !== 'mutual'
+        ? {
+            fromMemberId: original.settlementDetails.fromMemberId,
+            toMemberId: original.settlementDetails.toMemberId,
+            method: original.settlementDetails.method,
+          }
+        : undefined
     })
   }
 
@@ -218,7 +233,9 @@ export class GastoService {
       borrowerId: original.borrowerId,
       recurringBillId: original.recurringBillId,
       isSettlement: original.isSettlement,
-      settlementDetails: original.settlementDetails
+      settlementDetails: original.settlementDetails,
+      isPrivate: original.isPrivate,
+      splitMode: original.splitMode
     })
   }
 
@@ -242,7 +259,9 @@ export class GastoService {
       settlementDetails: g.settlementDetails,
       method: g.method,
       cardOwner: g.cardOwner,
-      grupoParcelasId: g.grupoParcelasId
+      grupoParcelasId: g.grupoParcelasId,
+      isPrivate: g.isPrivate,
+      splitMode: g.splitMode
     }))
 
     await this.gastoRepo.salvarMuitos(gastosParaSalvar)

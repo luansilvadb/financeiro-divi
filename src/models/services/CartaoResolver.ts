@@ -1,4 +1,5 @@
 import { Cartao } from '../entities/Cartao'
+import type { PaymentMethod } from '../entities/Gasto'
 
 export interface CartaoResolvido {
   cartaoId: string | null
@@ -7,12 +8,12 @@ export interface CartaoResolvido {
 }
 
 export function resolverCartao(
-  method: 'pix' | 'card',
+  method: PaymentMethod,
   cardOwnerId: string | null,
   compradorId: string,
   todosCartoes: Cartao[]
 ): CartaoResolvido {
-  if (method === 'pix') {
+  if (method !== 'card') {
     return {
       cartaoId: null,
       cardOwner: null,

@@ -1,6 +1,9 @@
 import { Dinheiro } from './Dinheiro'
 import { DivisaoDeGasto } from './DivisaoDeGasto'
 
+export type PaymentMethod = 'pix' | 'card' | 'cash'
+export type SplitMode = 'equal' | 'income' | 'custom'
+
 export interface GastoProps {
   id: string
   faturaId: string | null
@@ -17,13 +20,15 @@ export interface GastoProps {
   settlementDetails?: {
     fromMemberId: string
     toMemberId: string
+    color?: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
-  method?: 'pix' | 'card'
+  method?: PaymentMethod
   cardOwner?: string | null
   grupoParcelasId?: string | null
   createdAt?: Date | string
   isPrivate?: boolean
+  splitMode?: SplitMode
 }
 
 export class Gasto {
@@ -44,11 +49,12 @@ export class Gasto {
     toMemberId: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
-  public readonly method: 'pix' | 'card'
+  public readonly method: PaymentMethod
   public readonly cardOwner: string | null
   public readonly grupoParcelasId: string | null
   public readonly createdAt: Date
   public readonly isPrivate: boolean
+  public readonly splitMode: SplitMode
 
   constructor(props: GastoProps) {
     this.id = props.id
@@ -69,5 +75,6 @@ export class Gasto {
     this.grupoParcelasId = props.grupoParcelasId || null
     this.createdAt = props.createdAt ? new Date(props.createdAt) : new Date()
     this.isPrivate = props.isPrivate || false
+    this.splitMode = props.splitMode || 'custom'
   }
 }

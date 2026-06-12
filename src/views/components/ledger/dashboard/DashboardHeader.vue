@@ -2,7 +2,6 @@
 <script setup lang="ts">
 import { CheckCircle2, Home, Bell, ChevronDown } from 'lucide-vue-next'
 import IllustrationMascot from '../../ui/IllustrationMascot.vue'
-import { useToast } from '../../../../composables/useToast'
 import type { TenantSummary } from '../../../../models/services/TenantSessionService'
 
 defineProps<{
@@ -13,14 +12,13 @@ defineProps<{
   activeTenantObj: TenantSummary | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'openHistorico'): void
+  (e: 'openAuditLogs'): void
 }>()
 
-const toast = useToast()
-
 const handleNotificationsClick = () => {
-  toast.show('Você não tem novas notificações.', 'info')
+  emit('openAuditLogs')
 }
 </script>
 

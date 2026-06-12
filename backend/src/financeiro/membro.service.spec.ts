@@ -3,13 +3,16 @@ import { MembroService } from './membro.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
+import { AuditLogService } from './audit-log.service';
 import { Role } from '@prisma/client';
+import { ProductValidationService } from './product-validation.service';
 
 describe('MembroService', () => {
   let service: MembroService;
   let prisma: PrismaService;
 
   const mockPrisma = {
+    $transaction: jest.fn((fn) => fn(mockPrisma)),
     membroCasa: {
       findUnique: jest.fn(),
       count: jest.fn(),
@@ -34,6 +37,14 @@ describe('MembroService', () => {
   const mockGateway = {
     notificarAlteracao: jest.fn(),
   };
+  const mockAuditLog = {
+    registrar: jest.fn().mockResolvedValue({}),
+    listar: jest.fn().mockResolvedValue([]),
+  };
+  const mockProductValidation = {
+    registrarMarco: jest.fn().mockResolvedValue(undefined),
+    registrarSegundoUsuarioSeAplicavel: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -42,6 +53,8 @@ describe('MembroService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuthService, useValue: mockAuth },
         { provide: FinanceiroGateway, useValue: mockGateway },
+        { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: ProductValidationService, useValue: mockProductValidation },
       ],
     }).compile();
 
@@ -67,6 +80,13 @@ describe('MembroService', () => {
           role: Role.ADMIN
         })
       });
+      expect(mockProductValidation.registrarMarco).toHaveBeenCalledWith(
+        't1',
+        'TENANT_CREATED',
+        'first',
+        {},
+        mockPrisma,
+      );
       expect(result).toBeDefined();
     });
   });

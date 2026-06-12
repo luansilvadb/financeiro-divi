@@ -74,7 +74,7 @@ describe('GastoService.atualizarGastoCompleto', () => {
   })
 
   it('atualiza um gasto individual preservando seus metadados', async () => {
-    const original = gasto({ recurringBillId: 'conta-1' })
+    const original = gasto({ recurringBillId: 'conta-1', isPrivate: true, splitMode: 'income' })
     vi.mocked(gastoRepo.buscarPorId).mockResolvedValue(original)
     vi.mocked(faturaRepo.buscarPorId).mockResolvedValue(fatura('f1', 6))
     vi.mocked(faturaRepo.assegurarObterOuCriarFatura).mockResolvedValue(fatura('f2', 6))
@@ -86,6 +86,8 @@ describe('GastoService.atualizarGastoCompleto', () => {
     expect(salvo.descricao).toBe('Atualizado')
     expect(salvo.recurringBillId).toBe('conta-1')
     expect(salvo.cardOwner).toBe('m1')
+    expect(salvo.isPrivate).toBe(true)
+    expect(salvo.splitMode).toBe('income')
   })
 
   it('recria um gasto individual quando ele passa a ser parcelado', async () => {
