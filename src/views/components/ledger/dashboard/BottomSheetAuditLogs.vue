@@ -11,7 +11,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits(['close'])
-</script>
+</script> 
 
 <template>
   <BottomSheet 
