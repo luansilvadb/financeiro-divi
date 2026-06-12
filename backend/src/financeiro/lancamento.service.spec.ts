@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LancamentoService } from './lancamento.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceiroGateway } from './financeiro.gateway';
+import { AuditLogService } from './audit-log.service';
+import { ProductValidationService } from './product-validation.service';
+import { SplitMode, ValidationEventType } from '@prisma/client';
 
 describe('LancamentoService', () => {
   let service: LancamentoService;
@@ -11,16 +14,34 @@ describe('LancamentoService', () => {
     $transaction: jest.fn((fn) => fn(mockPrisma)),
     gasto: {
       upsert: jest.fn().mockResolvedValue({ id: 'g1' }),
-      findUnique: jest.fn().mockResolvedValue({ id: 'g1', divisoes: [] }),
+      findUnique: jest.fn().mockResolvedValue({ id: 'g1', compradorId: 'm1', valorTotalCentavos: 100n, divisoes: [] }),
     },
     divisaoGasto: {
       deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       createMany: jest.fn().mockResolvedValue({ count: 0 }),
     },
+    membroCasa: {
+      findFirst: jest.fn().mockResolvedValue({ id: 'm1', nome: 'Membro Teste' }),
+      findUnique: jest.fn().mockResolvedValue({ id: 'm1', nome: 'Membro Teste' }),
+      count: jest.fn().mockResolvedValue(2),
+    },
+    fatura: {
+      findUnique: jest.fn().mockResolvedValue({ id: 'f1', cartaoId: 'c1' }),
+    },
+    cartao: {
+      findUnique: jest.fn().mockResolvedValue({ id: 'c1', responsavelPadraoId: 'm1' }),
+    }
   };
 
   const mockGateway = {
     notificarAlteracao: jest.fn(),
+  };
+  const mockAuditLog = {
+    registrar: jest.fn().mockResolvedValue({}),
+    listar: jest.fn().mockResolvedValue([]),
+  };
+  const mockProductValidation = {
+    registrarMarco: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -29,6 +50,8 @@ describe('LancamentoService', () => {
         LancamentoService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: FinanceiroGateway, useValue: mockGateway },
+        { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: ProductValidationService, useValue: mockProductValidation },
       ],
     }).compile();
 
@@ -38,16 +61,16 @@ describe('LancamentoService', () => {
     jest.clearAllMocks();
   });
 
-  describe('salvarDespesaComum', () => {
+  describe('salvarGasto - Despesa Comum', () => {
     it('deve salvar uma despesa comum forçando isLoan e isSettlement como false', async () => {
       const g = {
         id: 'g1', faturaId: 'f1', descricao: 'Teste', valorTotalCentavos: 100,
         compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
-        isLoan: true, isSettlement: true, // Tentando forçar true, mas o método deve sobrescrever
-        divisoes: []
+        isLoan: false, isSettlement: false,
+        divisoes: [{ membroId: 'm1', valorCentavos: 100 }]
       };
 
-      await service.salvarDespesaComum('t1', g as any);
+      await service.salvarGasto('t1', g as any);
 
       expect(prisma.gasto.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -56,17 +79,45 @@ describe('LancamentoService', () => {
         })
       );
     });
+
+    it('registra a primeira despesa nova com metadata sem dados financeiros', async () => {
+      mockPrisma.gasto.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'g-novo', divisoes: [] });
+      const g = {
+        id: 'g-novo', descricao: 'Teste', valorTotalCentavos: 100,
+        compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
+        isLoan: false, isSettlement: false, splitMode: SplitMode.EQUAL,
+        divisoes: [{ membroId: 'm1', valorCentavos: 100 }],
+      };
+
+      await service.salvarGasto('t1', g as any);
+
+      expect(mockProductValidation.registrarMarco).toHaveBeenCalledWith(
+        't1',
+        ValidationEventType.FIRST_EXPENSE_CREATED,
+        'first',
+        { metadata: {
+          splitMode: SplitMode.EQUAL,
+          paymentMethod: 'pix',
+          participantCount: 1,
+          installmentCount: 1,
+          isRecurringBill: false,
+        } },
+        mockPrisma,
+      );
+    });
   });
 
-  describe('salvarEmprestimo', () => {
-    it('deve salvar um empréstimo forçando isLoan como true', async () => {
+  describe('salvarGasto - Empréstimo', () => {
+    it('deve salvar um empréstimo forçando isLoan como true e isSettlement como false', async () => {
       const g = {
         id: 'g1', faturaId: 'f1', descricao: 'Emprestimo', valorTotalCentavos: 500,
         compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
-        isLoan: false, borrowerId: 'm2', divisoes: []
+        isLoan: true, borrowerId: 'm2', divisoes: [{ membroId: 'm2', valorCentavos: 500 }]
       };
 
-      await service.salvarEmprestimo('t1', g as any);
+      await service.salvarGasto('t1', g as any);
 
       expect(prisma.gasto.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -77,15 +128,17 @@ describe('LancamentoService', () => {
     });
   });
 
-  describe('registrarAcerto', () => {
-    it('deve registrar um acerto forçando isSettlement como true', async () => {
+  describe('salvarGasto - Acerto', () => {
+    it('deve registrar um acerto forçando isSettlement como true e isLoan como false', async () => {
       const g = {
-        id: 'g1', faturaId: 'f1', descricao: 'Acerto', valorTotalCentavos: 300,
+        id: 'g1', descricao: 'Acerto', valorTotalCentavos: 300,
         compradorId: 'm1', installments: 1, totalInstallments: 1, method: 'pix',
-        isSettlement: false, settlementDetails: { from: 'm1', to: 'm2' }, divisoes: []
+        isSettlement: true,
+        settlementDetails: { fromMemberId: 'm1', toMemberId: 'm2', method: 'pix' },
+        divisoes: [{ membroId: 'm2', valorCentavos: 300 }]
       };
 
-      await service.registrarAcerto('t1', g as any);
+      await service.salvarGasto('t1', g as any);
 
       expect(prisma.gasto.upsert).toHaveBeenCalledWith(
         expect.objectContaining({

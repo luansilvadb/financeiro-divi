@@ -91,4 +91,23 @@ describe('ExtratoService', () => {
     expect(extratoB[0].valorConsumido.centavos).toBe(5000)
     expect(extratoB[0].valorLiquido.centavos).toBe(-5000)
   })
+
+  it('não contabiliza acertos como despesa comum no breakdown', () => {
+    const acerto = new Gasto({
+      id: 'settlement-1',
+      faturaId: null,
+      descricao: 'Acerto mensal',
+      valorTotal: Dinheiro.deReais(50),
+      compradorId: 'A',
+      isSettlement: true,
+      settlementDetails: { fromMemberId: 'A', toMemberId: 'B', method: 'pix' },
+      method: 'pix',
+      divisoes: [new DivisaoDeGasto('B', Dinheiro.deReais(50))],
+    })
+
+    expect(ExtratoService.obterBreakdownGranular([{ id: 'A' }, { id: 'B' }], [acerto])).toEqual({
+      A: { pixFez: 0, pixConsumo: 0, cardFez: 0, cardConsumo: 0, loanFez: 0, loanTomou: 0 },
+      B: { pixFez: 0, pixConsumo: 0, cardFez: 0, cardConsumo: 0, loanFez: 0, loanTomou: 0 },
+    })
+  })
 })

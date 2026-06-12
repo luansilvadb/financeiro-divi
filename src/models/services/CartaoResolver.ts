@@ -1,20 +1,21 @@
 import { Cartao } from '../entities/Cartao'
+import type { PaymentMethod } from '../entities/Gasto'
 
 export interface CartaoResolvido {
-  cartaoId: string
+  cartaoId: string | null
   cardOwner: string | null
   responsavelFaturaId: string
 }
 
 export function resolverCartao(
-  method: 'pix' | 'card',
+  method: PaymentMethod,
   cardOwnerId: string | null,
   compradorId: string,
   todosCartoes: Cartao[]
 ): CartaoResolvido {
-  if (method === 'pix') {
+  if (method !== 'card') {
     return {
-      cartaoId: 'PIX_DEFAULT_ID',
+      cartaoId: null,
       cardOwner: null,
       responsavelFaturaId: compradorId,
     }
@@ -36,7 +37,7 @@ export function resolverCartao(
 
   const primeiroCartao = todosCartoes[0]
   return {
-    cartaoId: primeiroCartao?.id ?? 'PIX_DEFAULT_ID',
+    cartaoId: primeiroCartao?.id ?? null,
     cardOwner: null,
     responsavelFaturaId: compradorId,
   }

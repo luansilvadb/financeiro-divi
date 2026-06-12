@@ -25,13 +25,48 @@ export class LancamentoService {
       todosCartoes
     )
     
-    const faturaAtiva = await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, dados.periodo.mes, dados.periodo.ano, responsavelFaturaId)
+    const faturaAtiva = cartaoId
+      ? await this.faturaRepo.assegurarObterOuCriarFatura(cartaoId, dados.periodo.mes, dados.periodo.ano, responsavelFaturaId)
+      : null
 
+    if (dados.flow === 'settlement') {
+      if (
+        !dados.settlementDetails ||
+        dados.settlementDetails.fromMemberId === dados.settlementDetails.toMemberId ||
+        dados.valor <= 0 ||
+        dados.paymentMethod === 'card' ||
+        dados.installments !== 1 ||
+        dados.isPrivate === true
+      ) {
+        throw new Error('Dados do acerto são inválidos')
+      }
+      await this.gastoRepo.salvar(new Gasto({
+        id: crypto.randomUUID(),
+        faturaId: null,
+        descricao: dados.descricao,
+        valorTotal: total,
+        compradorId: dados.settlementDetails.fromMemberId,
+        divisoes: dados.divisoes,
+        installments: 1,
+        totalInstallments: 1,
+        isLoan: false,
+        isSettlement: true,
+        settlementDetails: dados.settlementDetails,
+        method: dados.paymentMethod,
+        cardOwner: null,
+        grupoParcelasId: null,
+        isPrivate: false,
+        splitMode: 'custom'
+      }))
+      return
+    }
+    
     if (dados.paymentMethod === 'card' && dados.installments > 1) {
+      if (!faturaAtiva) throw new Error('Não foi possível obter fatura para compra parcelada em cartão')
       const grupoParcelasId = crypto.randomUUID()
       const faturasParaSalvar: Fatura[] = []
       const gastosParaSalvar: Gasto[] = [
-        new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId })
+        new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode })
       ]
 
       let { mes, ano } = faturaAtiva.periodo
@@ -39,15 +74,15 @@ export class LancamentoService {
 
       for (let i = 2; i <= dados.installments; i++) {
         if (++mes > 12) { mes = 1; ano++ }
-        const faturaFutura = await this.obterOuCriarFaturaMemoria(faturaAtiva.cartaoId, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas)
-        gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId }))
+        const faturaFutura = await this.obterOuCriarFaturaMemoria(faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas)
+        gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode }))
       }
 
       if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
       await this.gastoRepo.salvarMuitos(gastosParaSalvar)
     } else {
       await this.gastoRepo.salvar(new Gasto({
-        id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null
+        id: crypto.randomUUID(), faturaId: faturaAtiva?.id ?? null, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode
       }))
     }
   }
@@ -62,9 +97,9 @@ export class LancamentoService {
     return novaFatura
   }
 
-  async lancarGastoContaFixa(dados: { faturaId: string; conta: { id: string; name: string }; valorCentavos: number; compradorId: string; participantes: string[] }): Promise<void> {
+  async lancarGastoContaFixa(dados: { faturaId: string | null; conta: { id: string; name: string }; valorCentavos: number; compradorId: string; participantes: string[] }): Promise<void> {
     const total = Dinheiro.deCentavos(dados.valorCentavos)
     const divisoes = dados.participantes.map((membroId, i) => new DivisaoDeGasto(membroId, total.valorNoIndice(dados.participantes.length, i)))
-    await this.gastoRepo.salvar(new Gasto({ id: `bill-${dados.faturaId}-${dados.conta.id}`, faturaId: dados.faturaId, descricao: `Talão: ${dados.conta.name}`, valorTotal: total, compradorId: dados.compradorId, divisoes, recurringBillId: dados.conta.id, installments: 1, isLoan: false }))
+    await this.gastoRepo.salvar(new Gasto({ id: `bill-${dados.faturaId || 'avulso'}-${dados.conta.id}`, faturaId: dados.faturaId, descricao: `Talão: ${dados.conta.name}`, valorTotal: total, compradorId: dados.compradorId, divisoes, recurringBillId: dados.conta.id, installments: 1, isLoan: false, splitMode: 'equal' }))
   }
 }

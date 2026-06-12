@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import NovoLancamentoWizard from './views/screens/NovoLancamentoWizard.vue'
 import DashboardSaldos from './views/screens/DashboardSaldos.vue'
 import ConfiguracoesMembros from './views/screens/ConfiguracoesMembros.vue'
@@ -25,7 +25,7 @@ const currentView = ref<'dashboard' | 'wizard' | 'settings' | 'tenantSwitcher'>(
 const showForgot = ref(false)
 const resetToken = ref<string | null>(null)
 const activeTab = ref<Tab>('hoje')
-const { ativos, membros: todosMembros, carregar: recarregarMembros } = useMembros()
+const { ativos, membros: todosMembros, carregar: recarregarMembros, currentMembro, tenantPermissions } = useMembros()
 const {
   cartoes,
   inicializar: inicializarCartoes,
@@ -38,6 +38,15 @@ const isAuthed = ref(tenantSessionService.isAuthenticated())
 const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
 const isMonthClosed = ref(false)
 const toast = useToast()
+const isReadOnly = computed(() => currentMembro.value?.role === 'VISUALIZADOR')
+const isLancarGastoBloqueado = computed(() => {
+  const role = currentMembro.value?.role
+  if (!role || role === 'ADMIN') return false
+  const perms = tenantPermissions.value[role]
+  const defaultAllow = role === 'MORADOR'
+  const allowed = perms ? perms.ALLOW_LANCAR_GASTO : defaultAllow
+  return !allowed
+})
 
 const assegurarDadosIniciais = async () => {
   const tenantId = tenantSessionService.getActiveTenantId()
@@ -78,6 +87,10 @@ const handleFabClick = () => {
     toast.show('Este mês está encerrado. Reabra o período para fazer novos lançamentos.', 'error')
     return
   }
+  if (isLancarGastoBloqueado.value) {
+    toast.show('O administrador desativou a permissão de lançar despesas para o seu papel.', 'error')
+    return
+  }
   currentView.value = 'wizard'
 }
 
@@ -97,6 +110,7 @@ const inicializarSocket = (tenantId: string) => {
   socketService.on('faturas_alteradas', recarregarDadosDebounced)
   socketService.on('membros_alterados', async () => await recarregarMembros())
   socketService.on('contas_fixas_alteradas', async () => await inicializarContasFixas())
+  socketService.on('permissoes_alteradas', async () => await recarregarMembros())
 }
 
 
@@ -232,6 +246,7 @@ const handleLogout = async () => {
                 :cartoes="cartoes"
                 :is-loading="isLoading"
                 :active-tab="activeTab"
+                :is-read-only="isReadOnly"
                 @openSettings="currentView = 'settings'"
                 @periodoStatusChanged="handlePeriodoStatusChanged"
               />
@@ -284,6 +299,7 @@ const handleLogout = async () => {
           <BottomTabBar 
             :model-value="activeTab" 
             :is-month-closed="isMonthClosed"
+            :is-read-only="isLancarGastoBloqueado"
             @update:model-value="handleTabChange" 
             @click-fab="handleFabClick"
           />

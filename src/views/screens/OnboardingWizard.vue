@@ -65,7 +65,7 @@ function handleVoltar() {
         </div>
         <h2 class="text-xl font-bold text-charcoal tracking-tight">Casa pronta! 🏡</h2>
         <p class="text-xs text-graphite mt-1">
-          A moradia <strong class="text-charcoal font-bold">{{ casaCriada.name }}</strong> foi configurada com sucesso.
+          A moradia <strong class="text-charcoal font-bold">{{ casaCriada.name }}</strong> está pronta para registrar despesas e fechar o mês.
         </p>
       </div>
 

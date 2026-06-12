@@ -1,7 +1,7 @@
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../repositories/ICartaoRepository'
-import { Gasto } from '../entities/Gasto'
+import { Gasto, type PaymentMethod, type SplitMode } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import type { Fatura } from '../entities/Fatura'
@@ -9,8 +9,8 @@ import { LancamentoService } from './LancamentoService'
 import { resolverCartao, type CartaoResolvido } from './CartaoResolver'
 
 export interface LancarGastoInput {
-  flow: 'expense' | 'loan'
-  paymentMethod: 'pix' | 'card'
+  flow: 'expense' | 'loan' | 'settlement'
+  paymentMethod: PaymentMethod
   compradorId: string
   valor: number
   descricao: string
@@ -19,6 +19,13 @@ export interface LancarGastoInput {
   cardOwnerId: string | null
   borrowerId: string | null
   periodo: { mes: number; ano: number }
+  isPrivate?: boolean
+  splitMode: SplitMode
+  settlementDetails?: {
+    fromMemberId: string
+    toMemberId: string
+    method: 'pix' | 'cash'
+  }
 }
 
 type AtualizarGastoDados = {
@@ -104,14 +111,17 @@ export class GastoService {
   }
 
   private async relancarGasto(original: Gasto, idsParaExcluir: string[], dados: AtualizarGastoDados): Promise<void> {
-    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
-    if (!faturaOriginal) throw new Error(`Fatura original não encontrada para o gasto ${original.id}`)
+    const periodo = original.faturaId
+      ? (await this.faturaRepo.buscarPorId(original.faturaId))?.periodo
+      : { mes: original.createdAt.getMonth() + 1, ano: original.createdAt.getFullYear() }
+
+    if (!periodo) throw new Error(`Fatura ou período original não encontrado para o gasto ${original.id}`)
 
     if (idsParaExcluir.length === 1) await this.gastoRepo.excluir(idsParaExcluir[0])
     else await this.gastoRepo.excluirMuitos(idsParaExcluir)
 
     await this.lancarGastoOuEmprestimo({
-      flow: original.isLoan ? 'loan' : 'expense',
+      flow: original.isSettlement ? 'settlement' : original.isLoan ? 'loan' : 'expense',
       paymentMethod: dados.method,
       compradorId: dados.compradorId,
       valor: dados.valorTotal.centavos / 100,
@@ -120,7 +130,16 @@ export class GastoService {
       installments: dados.installments,
       cardOwnerId: dados.cardOwner,
       borrowerId: original.borrowerId,
-      periodo: faturaOriginal.periodo
+      periodo: periodo,
+      isPrivate: original.isPrivate,
+      splitMode: original.splitMode,
+      settlementDetails: original.settlementDetails && original.settlementDetails.method !== 'mutual'
+        ? {
+            fromMemberId: original.settlementDetails.fromMemberId,
+            toMemberId: original.settlementDetails.toMemberId,
+            method: original.settlementDetails.method,
+          }
+        : undefined
     })
   }
 
@@ -134,9 +153,9 @@ export class GastoService {
     const faturasPersistidas = await this.faturaRepo.listarTodas()
 
     for (const gasto of gastos) {
-      const faturaAtual = await this.faturaRepo.buscarPorId(gasto.faturaId)
+      const faturaAtual = gasto.faturaId ? await this.faturaRepo.buscarPorId(gasto.faturaId) : null
       let faturaId = gasto.faturaId
-      if (faturaAtual) {
+      if (faturaAtual && cartaoResolvido.cartaoId) {
         const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(
           cartaoResolvido.cartaoId,
           faturaAtual.periodo.mes,
@@ -166,9 +185,9 @@ export class GastoService {
     dados: AtualizarGastoDados,
     cartaoResolvido: CartaoResolvido
   ): Promise<void> {
-    const faturaOriginal = await this.faturaRepo.buscarPorId(original.faturaId)
+    const faturaOriginal = original.faturaId ? await this.faturaRepo.buscarPorId(original.faturaId) : null
     let faturaId = original.faturaId
-    if (faturaOriginal) {
+    if (faturaOriginal && cartaoResolvido.cartaoId) {
       const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(
         cartaoResolvido.cartaoId,
         faturaOriginal.periodo.mes,
@@ -176,6 +195,8 @@ export class GastoService {
         cartaoResolvido.responsavelFaturaId
       )
       faturaId = novaFatura.id
+    } else {
+      faturaId = null
     }
 
     await this.gastoRepo.salvar(this.criarGastoAtualizado(
@@ -191,7 +212,7 @@ export class GastoService {
   private criarGastoAtualizado(
     original: Gasto,
     dados: AtualizarGastoDados,
-    faturaId: string,
+    faturaId: string | null,
     cardOwner: string | null,
     installments: number,
     totalInstallments: number
@@ -212,7 +233,9 @@ export class GastoService {
       borrowerId: original.borrowerId,
       recurringBillId: original.recurringBillId,
       isSettlement: original.isSettlement,
-      settlementDetails: original.settlementDetails
+      settlementDetails: original.settlementDetails,
+      isPrivate: original.isPrivate,
+      splitMode: original.splitMode
     })
   }
 
@@ -236,7 +259,9 @@ export class GastoService {
       settlementDetails: g.settlementDetails,
       method: g.method,
       cardOwner: g.cardOwner,
-      grupoParcelasId: g.grupoParcelasId
+      grupoParcelasId: g.grupoParcelasId,
+      isPrivate: g.isPrivate,
+      splitMode: g.splitMode
     }))
 
     await this.gastoRepo.salvarMuitos(gastosParaSalvar)

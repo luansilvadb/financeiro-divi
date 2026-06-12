@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import type { Tab } from '../components/ui/BottomTabBar.vue'
 import { useDashboardViewModel } from '../../viewmodels/useDashboardViewModel'
 import { useCasasMultitenant } from '../../viewmodels/useCasasMultitenant'
+import { useMembros } from '../../viewmodels/useMembros'
 import type { Fatura } from '../../models/entities/Fatura'
 import type { Cartao } from '../../models/entities/Cartao'
 import ContasFixasPanel from '../components/ledger/ContasFixasPanel.vue'
@@ -26,6 +27,7 @@ interface Props {
   cartoes: Cartao[]
   activeTab?: Tab
   isLoading?: boolean
+  isReadOnly?: boolean
 }
 
 const props = defineProps<Props>()
@@ -54,10 +56,6 @@ const {
   reabrirPeriodoSelecionado
 } = vm
 
-const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
-const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
-const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
-
 const {
   isAuthed,
   activeTenantId,
@@ -73,6 +71,33 @@ const {
   copyInviteCode,
   handleLogoutClick
 } = useCasasMultitenant()
+
+const { tenantPermissions, currentMembro } = useMembros()
+
+const obterBloqueioFlag = (flagName: 'ALLOW_LANCAR_GASTO' | 'ALLOW_GERENCIAR_CARTOES' | 'ALLOW_GERENCIAR_CONTAS_FIXAS' | 'ALLOW_REGISTRAR_NETTING' | 'ALLOW_VER_AUDIT_LOGS' | 'ALLOW_FECHAR_PERIODO') => {
+  if (props.isReadOnly) return true
+  const role = currentMembro.value?.role
+  if (!role || role === 'ADMIN') return false
+  const perms = tenantPermissions.value[role]
+  const defaultAllow = role === 'MORADOR'
+  const allowed = perms ? perms[flagName] : defaultAllow
+  return !allowed
+}
+
+const isLancarGastoBloqueado = computed(() => obterBloqueioFlag('ALLOW_LANCAR_GASTO'))
+const isGerenciarContasFixasBloqueado = computed(() => obterBloqueioFlag('ALLOW_GERENCIAR_CONTAS_FIXAS'))
+const isRegistrarNettingBloqueado = computed(() => obterBloqueioFlag('ALLOW_REGISTRAR_NETTING'))
+const isVerAuditLogsBloqueado = computed(() => obterBloqueioFlag('ALLOW_VER_AUDIT_LOGS'))
+const isFecharPeriodoBloqueado = computed(() => obterBloqueioFlag('ALLOW_FECHAR_PERIODO'))
+
+const abrirAuditLogs = () => {
+  if (isVerAuditLogsBloqueado.value) return
+  vm.abrirAuditLogs()
+}
+
+const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
+const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
+const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
 
 const transitionName = ref('tab-slide-right')
 const tabOrder: Tab[] = ['hoje', 'faturas']
@@ -109,8 +134,10 @@ defineExpose({
         :fatura-selecionada-fechada="faturaSelecionadaFechada"
         :is-authed="isAuthed"
         :active-tenant-obj="activeTenantObj"
+        :pode-ver-logs="!isVerAuditLogsBloqueado"
         @open-historico="vm.abrirModal('historico')"
         @open-casas="vm.abrirModal('casas')"
+        @open-audit-logs="abrirAuditLogs"
       />
 
       <!-- Container Estabilizado -->
@@ -119,12 +146,12 @@ defineExpose({
           <div v-if="isHoje" key="hoje" class="space-y-12 pb-2">
             <div v-if="totalLancamentosPeriodoSelecionado === 0" class="py-16 flex flex-col items-center justify-center text-center space-y-8 bg-parchment/30 rounded-3xl border-2 border-dashed border-stone/50 mx-1">
               <div class="animate-float">
-                <IllustrationMascot variant="sky" :size="140" mood="chill" />
+                <IllustrationMascot variant="sky" :size="140" mood="sleeping" />
               </div>
               <div class="space-y-3 px-6">
-                <h3 class="text-3xl font-display text-charcoal leading-tight">O silêncio das<br><span class="text-sky">Contas</span></h3>
+                <h3 class="text-3xl font-display text-charcoal leading-tight">Comece pelas<br><span class="text-sky">Despesas</span></h3>
                 <p class="text-sm text-graphite max-w-[280px] mx-auto leading-relaxed font-medium">
-                  Tudo em ordem por aqui. Nenhum lançamento registrado ainda. Comece sua aventura financeira adicionando um gasto!
+                  Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
                 </p>
               </div>
             </div>
@@ -141,6 +168,7 @@ defineExpose({
                 :netting-transferencias="nettingTransferencias"
                 :fatura-selecionada-fechada="faturaSelecionadaFechada"
                 :get-membro-nome="getMembroNome"
+                :is-read-only="isRegistrarNettingBloqueado"
                 @abrir-netting="vm.abrirBottomSheetNetting"
               />
             </section>
@@ -151,6 +179,7 @@ defineExpose({
                 :gastos="gastosFaturaSelecionada"
                 :membros="props.membros"
                 :is-month-closed="faturaSelecionadaFechada"
+                :is-read-only="isGerenciarContasFixasBloqueado"
                 @lancar="abrirLancarBill"
                 @configurar="abrirConfigurarBill"
                 @novo="abrirNovoBill"
@@ -163,6 +192,7 @@ defineExpose({
                 :gastos="gastosFaturaSelecionada"
                 :membros="props.membros"
                 :is-month-closed="faturaSelecionadaFechada"
+                :is-read-only="isLancarGastoBloqueado"
                 @excluir="abrirConfirmacaoEstornoGasto"
                 @ajustar="abrirAjustarGasto"
               />
@@ -190,6 +220,7 @@ defineExpose({
                   v-if="faturaSelecionadaFechada"
                   variant="secondary"
                   class="w-full md:w-auto bg-white border-stone text-charcoal font-bold uppercase tracking-widest text-[10px] h-12 px-8 shadow-sm"
+                  :disabled="isFecharPeriodoBloqueado"
                   @click="reabrirPeriodoSelecionado"
                 >
                   Reabrir Período
@@ -198,6 +229,7 @@ defineExpose({
                   v-else
                   variant="primary"
                   class="w-full md:w-auto !bg-midnight hover:!bg-charcoal text-white font-bold uppercase tracking-widest text-[10px] h-12 px-8 shadow-md"
+                  :disabled="isFecharPeriodoBloqueado"
                   @click="abrirNovoPeriodoBottomSheet"
                 >
                   Encerrar Mês

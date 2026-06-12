@@ -1,9 +1,12 @@
 import { Dinheiro } from './Dinheiro'
 import { DivisaoDeGasto } from './DivisaoDeGasto'
 
+export type PaymentMethod = 'pix' | 'card' | 'cash'
+export type SplitMode = 'equal' | 'income' | 'custom'
+
 export interface GastoProps {
   id: string
-  faturaId: string
+  faturaId: string | null
   descricao: string
   valorTotal: Dinheiro
   compradorId: string
@@ -17,16 +20,20 @@ export interface GastoProps {
   settlementDetails?: {
     fromMemberId: string
     toMemberId: string
+    color?: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
-  method?: 'pix' | 'card'
+  method?: PaymentMethod
   cardOwner?: string | null
   grupoParcelasId?: string | null
+  createdAt?: Date | string
+  isPrivate?: boolean
+  splitMode?: SplitMode
 }
 
 export class Gasto {
   public readonly id: string
-  public readonly faturaId: string
+  public readonly faturaId: string | null
   public readonly descricao: string
   public readonly valorTotal: Dinheiro
   public readonly compradorId: string
@@ -42,13 +49,16 @@ export class Gasto {
     toMemberId: string
     method: 'pix' | 'cash' | 'mutual'
   } | null
-  public readonly method: 'pix' | 'card'
+  public readonly method: PaymentMethod
   public readonly cardOwner: string | null
   public readonly grupoParcelasId: string | null
+  public readonly createdAt: Date
+  public readonly isPrivate: boolean
+  public readonly splitMode: SplitMode
 
   constructor(props: GastoProps) {
     this.id = props.id
-    this.faturaId = props.faturaId
+    this.faturaId = props.faturaId || null
     this.descricao = props.descricao
     this.valorTotal = props.valorTotal
     this.compradorId = props.compradorId
@@ -63,5 +73,8 @@ export class Gasto {
     this.method = props.method || 'pix'
     this.cardOwner = props.cardOwner || null
     this.grupoParcelasId = props.grupoParcelasId || null
+    this.createdAt = props.createdAt ? new Date(props.createdAt) : new Date()
+    this.isPrivate = props.isPrivate || false
+    this.splitMode = props.splitMode || 'custom'
   }
 }

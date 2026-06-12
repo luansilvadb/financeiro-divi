@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { User, Plus, ArrowLeft } from 'lucide-vue-next'
 import { useMembros } from '../../../viewmodels/useMembros'
-import { useCargos } from '../../../viewmodels/useCargos'
 import { useToast } from '../../../composables/useToast'
 import { Membro, type MembroRole } from '../../../models/entities/Membro'
 import { mensagemErro } from '../../../shared/utils/mensagemErro'
@@ -21,29 +20,29 @@ const {
   adicionarMembro, 
   desativarMembro, 
   ativarMembro, 
-  atualizarCargoMembro,
+  atualizarRoleMembro,
+  atualizarRendaMembro,
   currentMembro 
 } = useMembros()
 
-const { cargos } = useCargos()
 const toast = useToast()
 
 const variants: ('ember' | 'sky' | 'sunburst' | 'flamingo' | 'meadow')[] = ['ember', 'sky', 'sunburst', 'flamingo', 'meadow']
 
 type FormExpose = { resetForm: () => void }
-interface NovoMembroDados { nome: string; email: string; password: string }
+interface NovoMembroDados { nome: string; email: string; password: string; rendaCentavos?: number }
 
 const membroFormRef = ref<FormExpose | null>(null)
 const novoMembroFormAberto = ref(false)
 const mostrarBottomSheet = ref(false)
 const membroSelecionado = ref<Membro | null>(null)
-const cargoSelecionadoId = ref<string | null>(null)
+const roleSelecionada = ref<MembroRole>('MORADOR')
 const ativoSelecionado = ref(true)
+const rendaSelecionadaText = ref('')
 const salvando = ref(false)
 
 const podeGerenciarMoradores = computed(() => {
-  if (currentMembro.value?.role === 'ADMIN') return true
-  return currentMembro.value?.cargo?.permissoes.includes('GERENCIAR_MORADORES') ?? false
+  return currentMembro.value?.role === 'ADMIN'
 })
 
 const podeEditarRole = computed(() => {
@@ -70,7 +69,7 @@ const abrirNovoMembroForm = () => {
 
 const handleAdicionarMembro = async (dados: NovoMembroDados) => {
   try {
-    await adicionarMembro(dados.nome, dados.email, dados.password)
+    await adicionarMembro(dados.nome, dados.email, dados.password, dados.rendaCentavos)
     toast.show('Membro adicionado com sucesso', 'success')
     novoMembroFormAberto.value = false
     emit('focus-change', false)
@@ -79,10 +78,28 @@ const handleAdicionarMembro = async (dados: NovoMembroDados) => {
   }
 }
 
+const handleRendaInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  let value = target.value.replace(/\D/g, '')
+  if (value === '') {
+    rendaSelecionadaText.value = ''
+    return
+  }
+  const val = parseInt(value, 10) / 100
+  rendaSelecionadaText.value = val.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
 const abrirEdicaoMembro = (membro: Membro) => {
+  if (!podeGerenciarMoradores.value) return
   membroSelecionado.value = membro
-  cargoSelecionadoId.value = membro.role === 'ADMIN' ? 'ADMIN' : (membro.cargoId || null)
+  roleSelecionada.value = membro.role
   ativoSelecionado.value = membro.ativo
+  rendaSelecionadaText.value = membro.rendaCentavos 
+    ? (membro.rendaCentavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : ''
   mostrarBottomSheet.value = true
   emit('focus-change', true)
 }
@@ -91,16 +108,29 @@ const handleSalvarEdicao = async () => {
   if (!membroSelecionado.value) return
   salvando.value = true
   try {
-    const novaRole: MembroRole = cargoSelecionadoId.value === 'ADMIN' ? 'ADMIN' : 'MORADOR'
-    const novoCargoId = novaRole === 'ADMIN' ? undefined : (cargoSelecionadoId.value || undefined)
+    const novaRole = roleSelecionada.value
     
-    if (cargoSelecionadoId.value !== (membroSelecionado.value.role === 'ADMIN' ? 'ADMIN' : membroSelecionado.value.cargoId)) {
-      await atualizarCargoMembro(membroSelecionado.value.id, novaRole, novoCargoId)
+    const roleAlterada = novaRole !== membroSelecionado.value.role
+    if (roleAlterada) {
+      await atualizarRoleMembro(membroSelecionado.value.id, novaRole)
     }
     
     if (ativoSelecionado.value !== membroSelecionado.value.ativo) {
       if (ativoSelecionado.value) await ativarMembro(membroSelecionado.value.id)
       else await desativarMembro(membroSelecionado.value.id)
+    }
+
+    let novaRendaCentavos: number | undefined = undefined
+    if (rendaSelecionadaText.value) {
+      const cleanValue = rendaSelecionadaText.value.replace(/\./g, '').replace(',', '.')
+      const floatVal = parseFloat(cleanValue)
+      if (!isNaN(floatVal)) {
+        novaRendaCentavos = Math.round(floatVal * 100)
+      }
+    }
+
+    if (novaRendaCentavos !== membroSelecionado.value.rendaCentavos) {
+      await atualizarRendaMembro(membroSelecionado.value.id, novaRendaCentavos)
     }
     
     toast.show('Alterações salvas com sucesso', 'success')
@@ -155,12 +185,30 @@ const cancelarNovoMembro = () => {
       </div>
 
       <div class="p-6 space-y-6">
+        <!-- Papel na Casa (Role sistêmica) -->
         <div class="space-y-2">
-          <label class="text-[10px] font-bold uppercase tracking-widest text-graphite block ml-1">Cargo</label>
-          <select v-model="cargoSelecionadoId" :disabled="!podeEditarRole" class="w-full p-3.5 rounded-2xl border border-stone bg-white outline-none font-bold text-charcoal">
+          <label class="text-[10px] font-bold uppercase tracking-widest text-graphite block ml-1">Papel na Casa</label>
+          <select v-model="roleSelecionada" :disabled="!podeEditarRole"
+            class="w-full p-3.5 rounded-2xl border border-stone bg-white outline-none font-bold text-charcoal">
             <option value="ADMIN">Administrador</option>
-            <option v-for="c in cargos" :key="c.id" :value="c.id">{{ c.nome }}</option>
+            <option value="MORADOR">Morador</option>
+            <option value="VISUALIZADOR">Visualizador</option>
           </select>
+          <!-- Descrição contextual por role -->
+          <p v-if="roleSelecionada === 'VISUALIZADOR'" class="text-[10px] text-ash ml-1">
+            Exemplos: filho dependente, ex-parceiro em transição, contador externo.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase tracking-widest text-graphite block ml-1">Renda Mensal (R$)</label>
+          <input
+            v-model="rendaSelecionadaText"
+            type="text"
+            placeholder="Ex: 3.500,00"
+            class="w-full p-3.5 rounded-2xl border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember transition-all text-sm"
+            @input="handleRendaInput"
+          />
         </div>
         <div class="flex items-center justify-between p-3.5 bg-parchment border border-stone rounded-2xl">
           <span class="text-xs font-bold text-charcoal">Morador Ativo</span>
@@ -199,6 +247,7 @@ const cancelarNovoMembro = () => {
               :key="membro.id"
               :membro="membro"
               :variant="variants[idx % variants.length]"
+              :clickable="podeGerenciarMoradores"
               @click="abrirEdicaoMembro(membro)"
             />
           </div>

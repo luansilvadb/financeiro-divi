@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray, IsObject } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsOptional, ValidateNested, IsArray, IsObject, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { DivisaoGastoDto } from './divisao-gasto.dto';
+import { SplitMode } from '@prisma/client';
 
 export class GastoDto {
   @ApiProperty({
@@ -12,13 +13,13 @@ export class GastoDto {
   @IsString()
   id!: string;
 
-  @ApiProperty({
-    description: 'ID da fatura associada a este gasto',
+  @ApiPropertyOptional({
+    description: 'ID da fatura associada a este gasto (opcional para gastos avulsos)',
     example: 'f1-e5a1b32d-2098-4d56-b7ff-11c57bc98188',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  faturaId!: string;
+  faturaId?: string;
 
   @ApiProperty({
     description: 'Descrição ou nome do gasto',
@@ -136,4 +137,21 @@ export class GastoDto {
   @ValidateNested({ each: true })
   @Type(() => DivisaoGastoDto)
   divisoes!: DivisaoGastoDto[];
+
+  @ApiPropertyOptional({
+    description: 'Informa se este gasto é privado (visível apenas para o comprador/pagador)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Critério de rateio escolhido no momento do lançamento',
+    enum: SplitMode,
+    example: SplitMode.EQUAL,
+  })
+  @IsOptional()
+  @IsEnum(SplitMode)
+  splitMode?: SplitMode;
 }

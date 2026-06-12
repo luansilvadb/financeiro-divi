@@ -72,7 +72,12 @@ const onSubmit = async () => {
       <!-- Brand Logo / Header -->
       <div class="text-center mb-8 relative">
         <div class="inline-flex justify-center mb-4 transform hover:rotate-12 transition-transform duration-300 pointer-events-none">
-          <IllustrationMascot variant="ember" :size="48" mood="happy" class="animate-wobble" />
+          <IllustrationMascot 
+            variant="ember" 
+            :size="48" 
+            :mood="loading ? 'surprised' : (isRegisterMode ? 'excited' : 'happy')" 
+            class="animate-wobble" 
+          />
         </div>
         <h1 class="text-display text-4xl mb-2">
           DIVI<span class="text-ember">.</span>
@@ -108,7 +113,7 @@ const onSubmit = async () => {
         </div>
 
         <p v-else class="text-body text-graphite max-w-[280px] mx-auto mt-2">
-          O orquestrador financeiro de alta precisão para sua casa
+          Organize despesas compartilhadas, feche o mês e entenda os acertos da casa
         </p>
       </div>
 

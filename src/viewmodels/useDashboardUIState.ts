@@ -3,6 +3,7 @@ import { formatarMesAno } from '../shared/utils/meses'
 import type { Gasto } from '../models/entities/Gasto'
 import type { ContaFixa } from '../models/entities/ContaFixa'
 import type { Fatura } from '../models/entities/Fatura'
+import type { AuditLogDto } from '../models/repositories/http/HttpAuditLogRepository'
 
 export function useDashboardUIState() {
   const modalStack = ref<string[]>([])
@@ -18,12 +19,16 @@ export function useDashboardUIState() {
   const itemParaEstornar = ref<Gasto | ContaFixa | null>(null)
   const itemTypeParaEstornar = ref('')
   const nettingTarget = ref<any | null>(null)
+  
+  const auditLogs = ref<AuditLogDto[]>([])
+  const isLogsLoading = ref(false)
 
   return {
     modalStack, abrirModal, fecharModal, isModalNoTopo,
     gastoParaAjustar, billSelecionada, nomeNovoPeriodo,
     isDropdownAbertosOpen, isSubmittingPix, itemParaEstornar, itemTypeParaEstornar,
     nettingTarget,
+    auditLogs, isLogsLoading,
     abrirConfirmacaoEstornoGasto: (g: Gasto) => { itemParaEstornar.value = g; itemTypeParaEstornar.value = 'Lançamento'; abrirModal('confirmacao-estorno') },
     abrirConfirmacaoEstornoBill: (b: ContaFixa) => { itemParaEstornar.value = b; itemTypeParaEstornar.value = 'Conta Fixa'; abrirModal('confirmacao-estorno') },
     abrirLancarBill: (b: ContaFixa) => { billSelecionada.value = b; abrirModal('lancar-conta-fixa') },

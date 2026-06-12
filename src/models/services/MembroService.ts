@@ -6,8 +6,8 @@ export class MembroService {
     private repository: IMembroRepository
   ) {}
 
-  async adicionarMembro(nome: string, email?: string, password?: string): Promise<Membro> {
-    const novo = new Membro({ id: crypto.randomUUID(), nome, ativo: true, role: 'MORADOR' })
+  async adicionarMembro(nome: string, email?: string, password?: string, rendaCentavos?: number): Promise<Membro> {
+    const novo = new Membro({ id: crypto.randomUUID(), nome, ativo: true, role: 'MORADOR', rendaCentavos })
     await this.repository.salvar(novo, { email, password })
     return novo
   }
@@ -21,7 +21,9 @@ export class MembroService {
       nome: membro.nome,
       ativo: false,
       role: membro.role,
-      dataCriacao: membro.dataCriacao
+      dataCriacao: membro.dataCriacao,
+      userId: membro.userId,
+      rendaCentavos: membro.rendaCentavos
     })
     await this.repository.salvar(atualizado)
   }
@@ -34,12 +36,14 @@ export class MembroService {
       nome: membro.nome,
       ativo: true,
       role: membro.role,
-      dataCriacao: membro.dataCriacao
+      dataCriacao: membro.dataCriacao,
+      userId: membro.userId,
+      rendaCentavos: membro.rendaCentavos
     })
     await this.repository.salvar(atualizado)
   }
 
-  async atualizarCargoMembro(id: string, role: MembroRole, cargoId?: string): Promise<void> {
+  async atualizarRoleMembro(id: string, role: MembroRole): Promise<void> {
     const membro = await this.repository.buscarPorId(id)
     if (!membro) throw new Error('Membro não encontrado')
     const atualizado = new Membro({
@@ -47,9 +51,9 @@ export class MembroService {
       nome: membro.nome,
       ativo: membro.ativo,
       role: role,
-      cargoId: cargoId,
       dataCriacao: membro.dataCriacao,
-      userId: membro.userId
+      userId: membro.userId,
+      rendaCentavos: membro.rendaCentavos
     })
     await this.repository.salvar(atualizado)
   }
@@ -62,9 +66,24 @@ export class MembroService {
       nome: nome,
       ativo: membro.ativo,
       role: membro.role,
-      cargoId: membro.cargoId,
       dataCriacao: membro.dataCriacao,
-      userId: membro.userId
+      userId: membro.userId,
+      rendaCentavos: membro.rendaCentavos
+    })
+    await this.repository.salvar(atualizado)
+  }
+
+  async atualizarRendaMembro(id: string, rendaCentavos?: number): Promise<void> {
+    const membro = await this.repository.buscarPorId(id)
+    if (!membro) throw new Error('Membro não encontrado')
+    const atualizado = new Membro({
+      id: membro.id,
+      nome: membro.nome,
+      ativo: membro.ativo,
+      role: membro.role,
+      dataCriacao: membro.dataCriacao,
+      userId: membro.userId,
+      rendaCentavos: rendaCentavos
     })
     await this.repository.salvar(atualizado)
   }

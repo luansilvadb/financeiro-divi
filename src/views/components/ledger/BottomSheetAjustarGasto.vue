@@ -32,7 +32,7 @@ watch(() => props.gasto, (newG) => {
     descInput.value = newG.descricao || ''
     valorInput.value = newG.valorTotal?.centavos ? newG.valorTotal.centavos / 100 : 0
     quemPaga.value = newG.compradorId || ''
-    activeMethod.value = newG.method || 'pix'
+    activeMethod.value = newG.method === 'card' ? 'card' : 'pix'
     
     let cardIdResolved: string | null = null
     if (newG.method === 'card') {

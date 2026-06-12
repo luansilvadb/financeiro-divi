@@ -6,14 +6,47 @@ vi.mock('../shared/container', () => ({
   membroRepository: {
     listarTodos: vi.fn().mockResolvedValue([]),
     salvar: vi.fn(),
-    buscarPorId: vi.fn()
+    buscarPorId: vi.fn(),
+    obterPermissions: vi.fn().mockResolvedValue({
+      MORADOR: {
+        ALLOW_LANCAR_GASTO: true,
+        ALLOW_GERENCIAR_CARTOES: true,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: true,
+        ALLOW_REGISTRAR_NETTING: true,
+        ALLOW_VER_AUDIT_LOGS: true,
+        ALLOW_ALTERAR_RENDA: true,
+        ALLOW_ALTERAR_NOME: true
+      },
+      VISUALIZADOR: {
+        ALLOW_LANCAR_GASTO: false,
+        ALLOW_GERENCIAR_CARTOES: false,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: false,
+        ALLOW_REGISTRAR_NETTING: false,
+        ALLOW_VER_AUDIT_LOGS: false,
+        ALLOW_ALTERAR_RENDA: false,
+        ALLOW_ALTERAR_NOME: false
+      }
+    }),
+    atualizarPermissions: vi.fn().mockImplementation(async (role, p) => ({
+      MORADOR: {
+        ALLOW_LANCAR_GASTO: true,
+        ALLOW_GERENCIAR_CARTOES: true,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: true,
+        ALLOW_REGISTRAR_NETTING: true,
+        ALLOW_VER_AUDIT_LOGS: true,
+        ALLOW_ALTERAR_RENDA: true,
+        ALLOW_ALTERAR_NOME: true
+      },
+      [role]: p
+    }))
   },
   membroService: {
     adicionarMembro: vi.fn(),
     desativarMembro: vi.fn(),
     ativarMembro: vi.fn(),
-    atualizarCargoMembro: vi.fn(),
-    atualizarNomeMembro: vi.fn()
+    atualizarRoleMembro: vi.fn(),
+    atualizarNomeMembro: vi.fn(),
+    atualizarRendaMembro: vi.fn()
   },
   tenantSessionService: {
     isAuthenticated: () => true,
@@ -51,7 +84,7 @@ describe('useMembros', () => {
 
     await adicionarMembro('Novo Membro')
 
-    expect(membroService.adicionarMembro).toHaveBeenCalledWith('Novo Membro', undefined, undefined)
+    expect(membroService.adicionarMembro).toHaveBeenCalledWith('Novo Membro', undefined, undefined, undefined)
     expect(membros.value.length).toBe(1)
     expect(membros.value[0].nome).toBe('Novo Membro')
   })
@@ -78,7 +111,7 @@ describe('useMembros', () => {
     expect(ativos.value.length).toBe(0)
   })
 
-  it('deve atualizar o cargo de um membro delegando ao MembroService', async () => {
+  it('deve atualizar a role de um membro delegando ao MembroService', async () => {
     const membro = new Membro({ id: 'm1', nome: 'Membro', role: 'MORADOR' })
     let listCounter = 0
     vi.mocked(membroRepository.listarTodos).mockImplementation(async () => {
@@ -89,17 +122,17 @@ describe('useMembros', () => {
       return [membro]
     })
 
-    const { membros, atualizarCargoMembro, carregar } = useMembros()
+    const { membros, atualizarRoleMembro, carregar } = useMembros()
     await carregar()
 
-    await atualizarCargoMembro('m1', 'ADMIN')
+    await atualizarRoleMembro('m1', 'ADMIN')
 
-    expect(membroService.atualizarCargoMembro).toHaveBeenCalledWith('m1', 'ADMIN', undefined)
+    expect(membroService.atualizarRoleMembro).toHaveBeenCalledWith('m1', 'ADMIN')
     expect(membros.value[0].role).toBe('ADMIN')
   })
 
   it('deve atualizar o nome de um membro delegando ao MembroService', async () => {
-    const membro = new Membro({ id: 'm1', nome: 'Membro Antigo' })
+    const membro = new Membro({ id: 'm1', nome: 'Membro' })
     let listCounter = 0
     vi.mocked(membroRepository.listarTodos).mockImplementation(async () => {
       listCounter++
@@ -116,5 +149,32 @@ describe('useMembros', () => {
 
     expect(membroService.atualizarNomeMembro).toHaveBeenCalledWith('m1', 'Membro Novo')
     expect(membros.value[0].nome).toBe('Membro Novo')
+  })
+
+  it('deve atualizar a renda de um membro delegando ao MembroService', async () => {
+    const miembro = new Membro({ id: 'm1', nome: 'Membro', rendaCentavos: 1000 })
+    let listCounter = 0
+    vi.mocked(membroRepository.listarTodos).mockImplementation(async () => {
+      listCounter++
+      if (listCounter > 1) {
+        return [new Membro({ id: 'm1', nome: 'Membro', rendaCentavos: 5000 })]
+      }
+      return [miembro]
+    })
+
+    const { membros, atualizarRendaMembro, carregar } = useMembros()
+    await carregar()
+
+    await atualizarRendaMembro('m1', 5000)
+
+    expect(membroService.atualizarRendaMembro).toHaveBeenCalledWith('m1', 5000)
+    expect(membros.value[0].rendaCentavos).toBe(5000)
+  })
+
+  it('deve atualizar as permissões do tenant e salvar no estado', async () => {
+    const { tenantPermissions, atualizarPermissions } = useMembros()
+    await atualizarPermissions('MORADOR', { ALLOW_LANCAR_GASTO: false })
+    expect(membroRepository.atualizarPermissions).toHaveBeenCalledWith('MORADOR', { ALLOW_LANCAR_GASTO: false })
+    expect(tenantPermissions.value.MORADOR.ALLOW_LANCAR_GASTO).toBe(false)
   })
 })

@@ -9,6 +9,7 @@ defineProps<{
   nettingTransferencias: TransferenciaNetting[]
   faturaSelecionadaFechada: boolean
   getMembroNome: (id: string) => string
+  isReadOnly?: boolean
 }>()
 </script>
 
@@ -58,7 +59,7 @@ defineProps<{
               @click="$emit('abrirNetting', t)"
               variant="primary"
               class="w-full h-12 font-bold uppercase tracking-widest text-[10px] shadow-sm"
-              :disabled="faturaSelecionadaFechada"
+              :disabled="faturaSelecionadaFechada || isReadOnly"
             >
               Registrar Pagamento
             </Button>

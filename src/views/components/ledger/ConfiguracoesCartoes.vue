@@ -15,7 +15,7 @@ const emit = defineEmits<{
 }>()
 
 const { activeTenantId } = useCasasMultitenant()
-const { currentMembro } = useMembros()
+const { currentMembro, tenantPermissions } = useMembros()
 const { cartoes, adicionarCartao, excluirCartao } = useCartoesEFaturas()
 const toast = useToast()
 
@@ -23,6 +23,14 @@ const nome = ref('')
 const diaFechamento = ref<number>(10)
 
 const formularioAberto = ref(false)
+
+const podeGerenciarCartoes = computed(() => {
+  const role = currentMembro.value?.role
+  if (!role || role === 'ADMIN') return true
+  const perms = tenantPermissions.value[role]
+  const defaultAllow = role === 'MORADOR'
+  return perms ? perms.ALLOW_GERENCIAR_CARTOES : defaultAllow
+})
 
 watch(formularioAberto, (val) => {
   emit('focus-change', val)
@@ -70,7 +78,7 @@ const handleExcluir = async (id: string) => {
         </div>
 
         <div class="p-4 space-y-4">
-          <div class="flex justify-center pb-2">
+          <div v-if="podeGerenciarCartoes" class="flex justify-center pb-2">
             <Button 
               @click="formularioAberto = true"
               variant="secondary"
@@ -107,6 +115,7 @@ const handleExcluir = async (id: string) => {
               </div>
 
               <button
+                v-if="podeGerenciarCartoes"
                 @click="handleExcluir(c.id)"
                 class="bg-coral/5 text-coral hover:bg-coral hover:text-white border-none rounded-full h-10 w-10 flex items-center justify-center transition-all duration-500 active:scale-90 cursor-pointer shrink-0"
                 aria-label="Excluir cartão"
