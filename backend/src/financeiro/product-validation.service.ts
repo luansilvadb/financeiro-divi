@@ -40,15 +40,18 @@ export class ProductValidationService {
     const db = tx || this.prisma;
     const metadata = this.sanitizarMetadata(options.metadata);
 
-    await db.productValidationEvent.createMany({
-      data: [{
+    await db.productValidationEvent.upsert({
+      where: {
+        tenantId_type_dedupeKey: { tenantId, type, dedupeKey },
+      },
+      create: {
         tenantId,
         type,
         dedupeKey,
         periodKey: options.periodKey,
         metadata: metadata as Prisma.InputJsonValue | undefined,
-      }],
-      skipDuplicates: true,
+      },
+      update: {},
     });
   }
 

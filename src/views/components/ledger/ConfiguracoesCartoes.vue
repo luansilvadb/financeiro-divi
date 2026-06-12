@@ -100,11 +100,9 @@ const handleExcluir = async (id: string) => {
                 </div>
                 <div class="min-w-0">
                   <span class="font-bold text-charcoal text-sm block truncate">{{ c.nome }}</span>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="text-caption text-[9px] text-ash">
-                      Fecha dia {{ c.diaFechamento }}
-                    </span>
-                  </div>
+                  <p class="text-caption text-[9px] mt-1 text-ash">
+                    Fecha dia {{ c.diaFechamento }}
+                  </p>
                 </div>
               </div>
 

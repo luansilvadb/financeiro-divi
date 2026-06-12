@@ -4,7 +4,7 @@ import { ProductValidationService } from './product-validation.service';
 describe('ProductValidationService', () => {
   const prisma = {
     productValidationEvent: {
-      createMany: jest.fn().mockResolvedValue({ count: 1 }),
+      upsert: jest.fn().mockResolvedValue({}),
       findMany: jest.fn(),
     },
     membroCasa: { count: jest.fn() },
@@ -18,27 +18,19 @@ describe('ProductValidationService', () => {
     service = new ProductValidationService(prisma as any);
   });
 
-  it('converge chamadas concorrentes sem sobrescrever o evento original', async () => {
-    prisma.productValidationEvent.createMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce({ count: 0 });
+  it('usa upsert pela chave composta sem sobrescrever o evento original', async () => {
+    await service.registrarMarco('t1', ValidationEventType.FIRST_EXPENSE_CREATED, 'first');
+    await service.registrarMarco('t1', ValidationEventType.FIRST_EXPENSE_CREATED, 'first');
 
-    await Promise.all([
-      service.registrarMarco('t1', ValidationEventType.FIRST_EXPENSE_CREATED, 'first'),
-      service.registrarMarco('t1', ValidationEventType.FIRST_EXPENSE_CREATED, 'first'),
-    ]);
-
-    expect(prisma.productValidationEvent.createMany).toHaveBeenCalledTimes(2);
-    expect(prisma.productValidationEvent.createMany).toHaveBeenLastCalledWith({
-      data: [{
+    expect(prisma.productValidationEvent.upsert).toHaveBeenCalledTimes(2);
+    expect(prisma.productValidationEvent.upsert).toHaveBeenLastCalledWith(expect.objectContaining({
+      where: { tenantId_type_dedupeKey: {
         tenantId: 't1',
         type: ValidationEventType.FIRST_EXPENSE_CREATED,
         dedupeKey: 'first',
-        periodKey: undefined,
-        metadata: undefined,
-      }],
-      skipDuplicates: true,
-    });
+      } },
+      update: {},
+    }));
   });
 
   it('rejeita metadata fora da allowlist em desenvolvimento', async () => {
@@ -58,14 +50,13 @@ describe('ProductValidationService', () => {
   it('só registra período quando todas as faturas persistidas estão fechadas', async () => {
     prisma.fatura.findMany.mockResolvedValueOnce([{ status: 'FECHADA' }, { status: 'ABERTA' }]);
     await service.registrarPeriodoFechadoSeConsolidado('t1', 5, 2026);
-    expect(prisma.productValidationEvent.createMany).not.toHaveBeenCalled();
+    expect(prisma.productValidationEvent.upsert).not.toHaveBeenCalled();
 
     prisma.fatura.findMany.mockResolvedValueOnce([{ status: 'FECHADA' }, { status: 'FECHADA' }]);
     await service.registrarPeriodoFechadoSeConsolidado('t1', 5, 2026);
-    expect(prisma.productValidationEvent.createMany).toHaveBeenCalledWith({
-      data: [expect.objectContaining({ periodKey: '2026-05' })],
-      skipDuplicates: true,
-    });
+    expect(prisma.productValidationEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({ periodKey: '2026-05' }),
+    }));
   });
 
   it('deriva ativação e repetição apenas dos eventos do tenant consultado', async () => {
