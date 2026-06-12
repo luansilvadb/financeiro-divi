@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { FinanceiroGateway } from './financeiro.gateway';
@@ -46,10 +46,33 @@ export class MembroService {
   async criarTenant(name: string, userId: string) {
     const inviteCode = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     const tenant = await this.prisma.$transaction(async (tx) => {
+      const defaultPermissions = {
+        MORADOR: {
+          ALLOW_LANCAR_GASTO: true,
+          ALLOW_GERENCIAR_CARTOES: true,
+          ALLOW_GERENCIAR_CONTAS_FIXAS: true,
+          ALLOW_REGISTRAR_NETTING: true,
+          ALLOW_VER_AUDIT_LOGS: true,
+          ALLOW_ALTERAR_RENDA: true,
+          ALLOW_ALTERAR_NOME: true,
+          ALLOW_FECHAR_PERIODO: true,
+        },
+        VISUALIZADOR: {
+          ALLOW_LANCAR_GASTO: false,
+          ALLOW_GERENCIAR_CARTOES: false,
+          ALLOW_GERENCIAR_CONTAS_FIXAS: false,
+          ALLOW_REGISTRAR_NETTING: false,
+          ALLOW_VER_AUDIT_LOGS: false,
+          ALLOW_ALTERAR_RENDA: false,
+          ALLOW_ALTERAR_NOME: false,
+          ALLOW_FECHAR_PERIODO: false,
+        }
+      };
       const createdTenant = await tx.tenant.create({
         data: {
           name,
           inviteCode,
+          permissions: defaultPermissions,
         },
       });
 
@@ -124,6 +147,46 @@ export class MembroService {
     const membroAtual = await this.prisma.membroCasa.findUnique({
       where: { id_tenantId: { id, tenantId } },
     });
+
+    if (executorUserId) {
+      const executorMembro = await this.prisma.membroCasa.findFirst({
+        where: { tenantId, userId: executorUserId }
+      });
+
+      if (executorMembro && executorMembro.role !== Role.ADMIN) {
+        if (id !== executorMembro.id) {
+          throw new ForbiddenException('Você só pode editar os seus próprios dados.');
+        }
+        if (membroAtual) {
+          if (role && role !== membroAtual.role) {
+            throw new BadRequestException('Você não pode alterar o seu próprio papel.');
+          }
+          if (ativo !== undefined && ativo !== membroAtual.ativo) {
+            throw new BadRequestException('Você não pode alterar o seu próprio status de atividade.');
+          }
+
+          // Validar alteração de nome/renda contra as feature flags da role do executor
+          const permissions = await this.obterTenantPermissions(tenantId);
+          const rolePermissions = permissions[executorMembro.role] || {};
+
+          if (nome !== undefined && nome !== membroAtual.nome) {
+            const allowed = rolePermissions.ALLOW_ALTERAR_NOME !== false;
+            if (!allowed) {
+              throw new ForbiddenException('O administrador da moradia desativou a permissão de alterar o nome para o seu papel.');
+            }
+          }
+
+          const rendaAtual = membroAtual.rendaCentavos !== null ? Number(membroAtual.rendaCentavos) : null;
+          const rendaNova = (rendaCentavos !== undefined && rendaCentavos !== null) ? Number(rendaCentavos) : null;
+          if (rendaNova !== rendaAtual) {
+            const allowed = rolePermissions.ALLOW_ALTERAR_RENDA !== false;
+            if (!allowed) {
+              throw new ForbiddenException('O administrador da moradia desativou a permissão de alterar a renda para o seu papel.');
+            }
+          }
+        }
+      }
+    }
 
     await this.validarRegrasSalvarMembro(tenantId, id, finalEmail, password, memberRole, isActive);
 
@@ -274,5 +337,127 @@ export class MembroService {
       where: { tenantId, userId },
     });
     return serializeBigInt(membro);
+  }
+
+  async obterTenantPermissions(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { permissions: true }
+    });
+
+    const defaultPermissions = {
+      MORADOR: {
+        ALLOW_LANCAR_GASTO: true,
+        ALLOW_GERENCIAR_CARTOES: true,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: true,
+        ALLOW_REGISTRAR_NETTING: true,
+        ALLOW_VER_AUDIT_LOGS: true,
+        ALLOW_ALTERAR_RENDA: true,
+        ALLOW_ALTERAR_NOME: true,
+        ALLOW_FECHAR_PERIODO: true,
+      },
+      VISUALIZADOR: {
+        ALLOW_LANCAR_GASTO: false,
+        ALLOW_GERENCIAR_CARTOES: false,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: false,
+        ALLOW_REGISTRAR_NETTING: false,
+        ALLOW_VER_AUDIT_LOGS: false,
+        ALLOW_ALTERAR_RENDA: false,
+        ALLOW_ALTERAR_NOME: false,
+        ALLOW_FECHAR_PERIODO: false,
+      }
+    };
+
+    if (!tenant || !tenant.permissions) {
+      return defaultPermissions;
+    }
+
+    const currentPermissions = (tenant.permissions as Record<string, any>) || {};
+    const merged: Record<string, any> = {};
+
+    // Mapear todas as roles persistidas no banco
+    for (const role of Object.keys(currentPermissions)) {
+      merged[role] = {
+        ALLOW_LANCAR_GASTO: currentPermissions[role]?.ALLOW_LANCAR_GASTO !== false,
+        ALLOW_GERENCIAR_CARTOES: currentPermissions[role]?.ALLOW_GERENCIAR_CARTOES !== false,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: currentPermissions[role]?.ALLOW_GERENCIAR_CONTAS_FIXAS !== false,
+        ALLOW_REGISTRAR_NETTING: currentPermissions[role]?.ALLOW_REGISTRAR_NETTING !== false,
+        ALLOW_VER_AUDIT_LOGS: currentPermissions[role]?.ALLOW_VER_AUDIT_LOGS !== false,
+        ALLOW_ALTERAR_RENDA: currentPermissions[role]?.ALLOW_ALTERAR_RENDA !== false,
+        ALLOW_ALTERAR_NOME: currentPermissions[role]?.ALLOW_ALTERAR_NOME !== false,
+        ALLOW_FECHAR_PERIODO: currentPermissions[role]?.ALLOW_FECHAR_PERIODO !== false,
+      };
+    }
+
+    // Tratamento de retrocompatibilidade de dados de migration anterior (caso chaves estejam na raiz)
+    if (currentPermissions.ALLOW_MORADOR_LANCAR_GASTO !== undefined && !merged.MORADOR) {
+      merged.MORADOR = {
+        ALLOW_LANCAR_GASTO: currentPermissions.ALLOW_MORADOR_LANCAR_GASTO !== false,
+        ALLOW_GERENCIAR_CARTOES: currentPermissions.ALLOW_MORADOR_GERENCIAR_CARTOES !== false,
+        ALLOW_GERENCIAR_CONTAS_FIXAS: currentPermissions.ALLOW_MORADOR_GERENCIAR_CONTAS_FIXAS !== false,
+        ALLOW_REGISTRAR_NETTING: currentPermissions.ALLOW_MORADOR_REGISTRAR_NETTING !== false,
+        ALLOW_VER_AUDIT_LOGS: currentPermissions.ALLOW_MORADOR_VER_AUDIT_LOGS !== false,
+      };
+    }
+
+    // Garantir que as roles padrão estejam presentes
+    if (!merged.MORADOR) {
+      merged.MORADOR = defaultPermissions.MORADOR;
+    }
+    if (!merged.VISUALIZADOR) {
+      merged.VISUALIZADOR = defaultPermissions.VISUALIZADOR;
+    }
+
+    return merged;
+  }
+
+  async atualizarTenantPermissions(tenantId: string, roleName: string, permissionsData: any, executorUserId: string) {
+    const executor = await this.prisma.membroCasa.findFirst({
+      where: { tenantId, userId: executorUserId }
+    });
+
+    if (!executor || executor.role !== Role.ADMIN) {
+      throw new ForbiddenException('Apenas administradores podem atualizar as permissões da moradia.');
+    }
+
+    const currentPermissions = await this.obterTenantPermissions(tenantId);
+    const currentRolePermissions = currentPermissions[roleName] || {
+      ALLOW_LANCAR_GASTO: true,
+      ALLOW_GERENCIAR_CARTOES: true,
+      ALLOW_GERENCIAR_CONTAS_FIXAS: true,
+      ALLOW_REGISTRAR_NETTING: true,
+      ALLOW_VER_AUDIT_LOGS: true,
+    };
+
+    const updatedRolePermissions = {
+      ALLOW_LANCAR_GASTO: permissionsData.ALLOW_LANCAR_GASTO !== undefined ? !!permissionsData.ALLOW_LANCAR_GASTO : currentRolePermissions.ALLOW_LANCAR_GASTO,
+      ALLOW_GERENCIAR_CARTOES: permissionsData.ALLOW_GERENCIAR_CARTOES !== undefined ? !!permissionsData.ALLOW_GERENCIAR_CARTOES : currentRolePermissions.ALLOW_GERENCIAR_CARTOES,
+      ALLOW_GERENCIAR_CONTAS_FIXAS: permissionsData.ALLOW_GERENCIAR_CONTAS_FIXAS !== undefined ? !!permissionsData.ALLOW_GERENCIAR_CONTAS_FIXAS : currentRolePermissions.ALLOW_GERENCIAR_CONTAS_FIXAS,
+      ALLOW_REGISTRAR_NETTING: permissionsData.ALLOW_REGISTRAR_NETTING !== undefined ? !!permissionsData.ALLOW_REGISTRAR_NETTING : currentRolePermissions.ALLOW_REGISTRAR_NETTING,
+      ALLOW_VER_AUDIT_LOGS: permissionsData.ALLOW_VER_AUDIT_LOGS !== undefined ? !!permissionsData.ALLOW_VER_AUDIT_LOGS : currentRolePermissions.ALLOW_VER_AUDIT_LOGS,
+      ALLOW_ALTERAR_RENDA: permissionsData.ALLOW_ALTERAR_RENDA !== undefined ? !!permissionsData.ALLOW_ALTERAR_RENDA : currentRolePermissions.ALLOW_ALTERAR_RENDA,
+      ALLOW_ALTERAR_NOME: permissionsData.ALLOW_ALTERAR_NOME !== undefined ? !!permissionsData.ALLOW_ALTERAR_NOME : currentRolePermissions.ALLOW_ALTERAR_NOME,
+      ALLOW_FECHAR_PERIODO: permissionsData.ALLOW_FECHAR_PERIODO !== undefined ? !!permissionsData.ALLOW_FECHAR_PERIODO : currentRolePermissions.ALLOW_FECHAR_PERIODO,
+    };
+
+    const newPermissions = {
+      ...currentPermissions,
+      [roleName]: updatedRolePermissions
+    };
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { permissions: newPermissions }
+    });
+
+    await this.auditLogService.registrar(
+      tenantId,
+      executor.id,
+      'ALTERAR_RENDA',
+      `Permissões do papel ${roleName} da moradia foram atualizadas pelo administrador.`
+    );
+
+    this.gateway.notificarAlteracao(tenantId, 'permissoes_alteradas');
+    return newPermissions;
   }
 }

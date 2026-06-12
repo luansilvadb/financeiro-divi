@@ -11,6 +11,7 @@ const props = defineProps<{
   gastos: Gasto[]
   membros: { id: string; nome: string }[]
   isMonthClosed: boolean
+  isReadOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -62,13 +63,14 @@ const obterNomeMembro = (id: string) => props.membros.find(m => m.id === id)?.no
           :gasto="obterGasto(bill)"
           :obter-nome-membro="obterNomeMembro"
           :is-month-closed="props.isMonthClosed"
+          :is-read-only="props.isReadOnly"
           @lancar="$emit('lancar', bill)"
           @estornar="$emit('estornar', bill)"
           @configurar="$emit('configurar', bill)"
         />
       </template>
 
-      <div class="flex flex-col items-center gap-2 mt-3">
+      <div v-if="!props.isReadOnly" class="flex flex-col items-center gap-2 mt-3">
         <button
           @click="$emit('novo')"
           class="relative overflow-hidden group w-full flex justify-center items-center gap-3 p-4 rounded-xl border border-dashed border-stone bg-canvas/50 text-ash font-semibold text-[10px] uppercase tracking-[0.2em] transition-all duration-300 select-none cursor-pointer hover:border-ember hover:bg-ember/5 hover:text-ember active:scale-[0.97]"

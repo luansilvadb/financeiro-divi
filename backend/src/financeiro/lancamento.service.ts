@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { AuditLogService } from './audit-log.service';
@@ -36,6 +36,7 @@ export class LancamentoService {
   }
 
   async salvarGasto(tenantId: string, gastoData: GastoDto, executorUserId?: string) {
+    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     const result = await this.prisma.$transaction(async (tx) => {
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
 
@@ -195,6 +196,7 @@ export class LancamentoService {
   }
 
   async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[], executorUserId?: string) {
+    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     const result = await this.prisma.$transaction(async (tx) => {
       const saved = [];
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
@@ -275,6 +277,7 @@ export class LancamentoService {
   }
 
   async excluirGasto(tenantId: string, id: string, executorUserId?: string) {
+    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     await this.prisma.$transaction(async (tx) => {
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
       const gasto = await tx.gasto.findUnique({
@@ -284,7 +287,7 @@ export class LancamentoService {
       if (gasto) {
         const valorReais = (Number(gasto.valorTotalCentavos || 0) / 100).toFixed(2).replace('.', ',');
         const descricaoStr = gasto.isPrivate ? 'Gasto Pessoal' : `Gasto "${gasto.descricao}"`;
-        const detalhesLog = `${descricaoStr} de R$ ${valorReais} excluído do sistema.`;
+        const detalhesLog = `${descricaoStr} de R$ ${valorReais} excluído do system.`;
 
         await this.auditLogService.registrar(tenantId, executorMembroId, 'EXCLUIR_GASTO', detalhesLog, tx);
 
@@ -298,6 +301,7 @@ export class LancamentoService {
   }
 
   async excluirMuitosGastos(tenantId: string, ids: string[], executorUserId?: string) {
+    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     await this.prisma.$transaction(async (tx) => {
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
 
@@ -330,7 +334,8 @@ export class LancamentoService {
     return serializeBigInt(contas);
   }
 
-  async salvarContaFixa(tenantId: string, contaData: ContaFixaDto) {
+  async salvarContaFixa(tenantId: string, contaData: ContaFixaDto, executorUserId?: string) {
+    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_GERENCIAR_CONTAS_FIXAS');
     const { id, name, icon, fixedValueCentavos, defaultSplit } = contaData;
     const upserted = await this.prisma.contaFixa.upsert({
       where: {
@@ -355,7 +360,8 @@ export class LancamentoService {
     return serializeBigInt(upserted);
   }
 
-  async excluirContaFixa(tenantId: string, id: string) {
+  async excluirContaFixa(tenantId: string, id: string, executorUserId?: string) {
+    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_GERENCIAR_CONTAS_FIXAS');
     await this.prisma.contaFixa.delete({
       where: {
         id_tenantId: { id, tenantId },
@@ -365,4 +371,36 @@ export class LancamentoService {
     return { success: true };
   }
 
+  private async validarFeatureFlag(tx: Prisma.TransactionClient | any, tenantId: string, executorUserId: string | undefined, flagName: string) {
+    if (!executorUserId) return;
+    
+    const executor = await tx.membroCasa.findFirst({
+      where: { tenantId, userId: executorUserId }
+    });
+
+    if (executor && executor.role !== 'ADMIN') {
+      const tenant = await tx.tenant.findUnique({
+        where: { id: tenantId },
+        select: { permissions: true }
+      });
+      const permissions = (tenant?.permissions as Record<string, any>) || {};
+      const rolePermissions = permissions[executor.role] || {};
+
+      const moradorLegacyFlagMap: Record<string, string> = {
+        'ALLOW_LANCAR_GASTO': 'ALLOW_MORADOR_LANCAR_GASTO',
+        'ALLOW_GERENCIAR_CARTOES': 'ALLOW_MORADOR_GERENCIAR_CARTOES',
+        'ALLOW_GERENCIAR_CONTAS_FIXAS': 'ALLOW_MORADOR_GERENCIAR_CONTAS_FIXAS',
+        'ALLOW_REGISTRAR_NETTING': 'ALLOW_MORADOR_REGISTRAR_NETTING',
+        'ALLOW_VER_AUDIT_LOGS': 'ALLOW_MORADOR_VER_AUDIT_LOGS'
+      };
+      const legacyFlagName = moradorLegacyFlagMap[flagName] || flagName;
+
+      const isBlocked = rolePermissions[flagName] === false ||
+                        (executor.role === 'MORADOR' && permissions[legacyFlagName] === false);
+
+      if (isBlocked) {
+        throw new ForbiddenException('O administrador da moradia desativou esta permissão para o seu papel.');
+      }
+    }
+  }
 }

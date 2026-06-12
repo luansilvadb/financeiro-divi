@@ -11,6 +11,7 @@ model Tenant {
   id         String       @id @default(uuid()) @db.Uuid
   name       String
   inviteCode String       @unique @map("invite_code")
+  permissions Json?       @default("{}") @map("permissions")
   createdAt  DateTime     @default(now()) @map("created_at")
   membros    MembroCasa[]
   cartoes    Cartao[]
@@ -66,6 +67,8 @@ enum ValidationEventType {
   PERIOD_CLOSED
   FIRST_SETTLEMENT_RECORDED
 }
+
+
 
 model MembroCasa {
   id        String

@@ -6,7 +6,6 @@ import { HttpCartaoRepository } from '../models/repositories/http/HttpCartaoRepo
 import { HttpFaturaRepository } from '../models/repositories/http/HttpFaturaRepository'
 import { HttpGastoRepository } from '../models/repositories/http/HttpGastoRepository'
 import { HttpContaFixaRepository } from '../models/repositories/http/HttpContaFixaRepository'
-import { HttpCargoRepository } from '../models/repositories/http/HttpCargoRepository'
 
 
 import { MembroService } from '../models/services/MembroService'
@@ -21,7 +20,6 @@ export const cartaoRepository = new HttpCartaoRepository()
 const faturaRepository = new HttpFaturaRepository()
 export const gastoRepository = new HttpGastoRepository()
 export const contaFixaRepository = new HttpContaFixaRepository()
-export const cargoRepository = new HttpCargoRepository()
 
 const lancamentoService = new LancamentoService(
   gastoRepository,

@@ -30,22 +30,19 @@ export class TenantRoleGuard implements CanActivate {
     }
 
     const membro = await this.prisma.membroCasa.findFirst({
-      where: {
-        tenantId,
-        userId: user.userId,
-        ativo: true,
-      },
+      where: { tenantId, userId: user.userId, ativo: true },
     });
 
     if (!membro) {
       throw new ForbiddenException('Você não é um membro ativo desta moradia.');
     }
 
-    const hasRole = requiredRoles.includes(membro.role);
-    if (!hasRole) {
-      throw new ForbiddenException('Você não possui permissão para executar esta ação.');
-    }
+    // ADMIN é super-papel — sempre passa
+    if (membro.role === Role.ADMIN) return true;
 
-    return true;
+    // Verifica @Roles (lógica existente preservada)
+    if (requiredRoles?.length && requiredRoles.includes(membro.role)) return true;
+
+    throw new ForbiddenException('Você não possui permissão para executar esta ação.');
   }
 }

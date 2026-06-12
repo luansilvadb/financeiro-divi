@@ -32,9 +32,11 @@
   --shadow-subtle: var(--color-stone) 0px 0px 0px 1px inset;
   --shadow-lg: rgba(0, 0, 0, 0.15) 0px 0px 24px 0px;
   --shadow-sm: rgba(0, 0, 0, 0.04) 0px 1px 6px 0px, rgba(0, 0, 0, 0.05) 0px 0px 24px 0px;
+  --shadow-premium: 0 10px 40px -6px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1);
 
   /* Easings */
   --ease-spring: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-jelly: cubic-bezier(0.68, -0.6, 0.32, 1.6);
 }
 
 @layer components {
@@ -161,13 +163,13 @@
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-2px); }
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-3px) rotate(0.2deg); }
   }
 
   @keyframes wobble {
-    0%, 100% { transform: rotate(-0.5deg); }
-    50% { transform: rotate(0.5deg); }
+    0%, 100% { transform: rotate(-0.8deg) scale(1); }
+    50% { transform: rotate(0.8deg) scale(1.01); }
   }
 
   .animate-float {

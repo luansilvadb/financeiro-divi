@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Headers, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Headers, Request } from '@nestjs/common';
 import { MembroService } from './membro.service';
 import { CartaoService } from './cartao.service';
 import { LancamentoService } from './lancamento.service';
@@ -70,6 +70,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Listar todos os membros do tenant', description: 'Retorna a lista de membros que participam do rateio no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo no qual a operação será executada', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Membros listados com sucesso', type: [MembroDto] })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
   @Get('membros')
   async listarMembros(@Headers('x-tenant-id') tenantId: string) {
     return this.membroService.listarMembros(tenantId);
@@ -78,7 +79,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Salvar/atualizar um membro no tenant', description: 'Cria ou atualiza as informações de um membro associado ao tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Membro salvo com sucesso', type: MembroDto })
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MORADOR)
   @Post('membros')
   async salvarMembro(
     @Headers('x-tenant-id') tenantId: string,
@@ -91,6 +92,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Listar cartões de crédito do tenant', description: 'Retorna todos os cartões cadastrados no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Cartões listados com sucesso', type: [CartaoDto] })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
   @Get('cartoes')
   async listarCartoes(@Headers('x-tenant-id') tenantId: string) {
     return this.cartaoService.listarCartoes(tenantId);
@@ -114,13 +116,18 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Cartão excluído com sucesso' })
   @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('cartoes/:id')
-  async excluirCartao(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.cartaoService.excluirCartao(tenantId, id);
+  async excluirCartao(
+    @Headers('x-tenant-id') tenantId: string, 
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.cartaoService.excluirCartao(tenantId, id, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Listar todas as faturas do tenant', description: 'Retorna a lista completa de faturas de cartões do tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Faturas listadas com sucesso', type: [FaturaDto] })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
   @Get('faturas')
   async listarFaturas(@Headers('x-tenant-id') tenantId: string) {
     return this.cartaoService.listarFaturas(tenantId);
@@ -131,8 +138,12 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Fatura salva com sucesso', type: FaturaDto })
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('faturas')
-  async salvarFatura(@Headers('x-tenant-id') tenantId: string, @Body() faturaDto: FaturaDto) {
-    return this.cartaoService.salvarFatura(tenantId, faturaDto);
+  async salvarFatura(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() faturaDto: FaturaDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.cartaoService.salvarFatura(tenantId, faturaDto, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Salvar faturas em lote (batch)', description: 'Salva ou updates várias faturas simultaneamente para fins de sincronização.' })
@@ -141,13 +152,18 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Faturas em lote sincronizadas com sucesso' })
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('faturas/batch')
-  async salvarMuitasFaturas(@Headers('x-tenant-id') tenantId: string, @Body() faturasDto: FaturaDto[]) {
-    return this.cartaoService.salvarMuitasFaturas(tenantId, faturasDto);
+  async salvarMuitasFaturas(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() faturasDto: FaturaDto[],
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.cartaoService.salvarMuitasFaturas(tenantId, faturasDto, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Listar gastos do tenant', description: 'Retorna a lista completa de gastos cadastrados no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo no qual a operação será executada', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gastos listados com sucesso', type: [GastoDto] })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
   @Get('gastos')
   async listarGastos(
     @Headers('x-tenant-id') tenantId: string,
@@ -227,6 +243,7 @@ export class FinanceiroController {
   @ApiOperation({ summary: 'Listar contas fixas do tenant', description: 'Retorna a lista de todas as contas fixas cadastradas no tenant ativo.' })
   @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Contas fixas listadas com sucesso', type: [ContaFixaDto] })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
   @Get('contas-fixas')
   async listarContasFixas(@Headers('x-tenant-id') tenantId: string) {
     return this.lancamentoService.listarContasFixas(tenantId);
@@ -237,8 +254,12 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Conta fixa salva com sucesso', type: ContaFixaDto })
   @Roles(Role.ADMIN, Role.MORADOR)
   @Post('contas-fixas')
-  async salvarContaFixa(@Headers('x-tenant-id') tenantId: string, @Body() contaFixaDto: ContaFixaDto) {
-    return this.lancamentoService.salvarContaFixa(tenantId, contaFixaDto);
+  async salvarContaFixa(
+    @Headers('x-tenant-id') tenantId: string, 
+    @Body() contaFixaDto: ContaFixaDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.lancamentoService.salvarContaFixa(tenantId, contaFixaDto, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Excluir uma conta fixa', description: 'Exclui uma conta fixa cadastrada no tenant ativo.' })
@@ -246,14 +267,43 @@ export class FinanceiroController {
   @ApiOkResponse({ description: 'Conta fixa excluída com sucesso' })
   @Roles(Role.ADMIN, Role.MORADOR)
   @Delete('contas-fixas/:id')
-  async excluirContaFixa(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string) {
-    return this.lancamentoService.excluirContaFixa(tenantId, id);
+  async excluirContaFixa(
+    @Headers('x-tenant-id') tenantId: string, 
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.lancamentoService.excluirContaFixa(tenantId, id, req.user.userId);
   }
 
-  @ApiOperation({ summary: 'Listar histórico de auditoria da casa', description: 'Retorna a lista completa de atividades registradas no tenant ativo.' })
-  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiOperation({ summary: 'Listar histórico de auditoria da casa' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo' })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
   @Get('audit-logs')
-  async listarAuditLogs(@Headers('x-tenant-id') tenantId: string) {
-    return this.auditLogService.listar(tenantId);
+  async listarAuditLogs(
+    @Headers('x-tenant-id') tenantId: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.auditLogService.listar(tenantId, req.user.userId);
+  }
+
+  @ApiOperation({ summary: 'Obter permissões dinâmicas de moradores do tenant ativo' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo' })
+  @Roles(Role.ADMIN, Role.MORADOR, Role.VISUALIZADOR)
+  @Get('tenants/permissions')
+  async obterTenantPermissions(@Headers('x-tenant-id') tenantId: string) {
+    return this.membroService.obterTenantPermissions(tenantId);
+  }
+
+  @ApiOperation({ summary: 'Atualizar permissões dinâmicas de um papel (exclusivo Admin)' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo' })
+  @Roles(Role.ADMIN)
+  @Patch('tenants/permissions/:role')
+  async atualizarTenantPermissions(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('role') role: string,
+    @Body() permissionsDto: any,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.membroService.atualizarTenantPermissions(tenantId, role, permissionsDto, req.user.userId);
   }
 }
