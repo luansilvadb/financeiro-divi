@@ -19,6 +19,7 @@ export interface LancarGastoInput {
   cardOwnerId: string | null
   borrowerId: string | null
   periodo: { mes: number; ano: number }
+  isPrivate?: boolean
 }
 
 type AtualizarGastoDados = {

@@ -6,16 +6,19 @@ import { Check } from 'lucide-vue-next'
 interface Member {
   id: string
   nome: string
+  rendaCentavos?: number
 }
 
 interface Props {
   membros: Member[]
   participantesDivisao: string[]
   compradorSelecionadoId: string
+  splitType: 'equal' | 'proportional'
+  valorTotal?: number
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['update:participantesDivisao'])
+const emit = defineEmits(['update:participantesDivisao', 'update:splitType'])
 
 const internalParticipantes = computed({
   get: () => props.participantesDivisao,
@@ -37,10 +40,93 @@ const selecionarTodos = () => {
 const selecionarApenasEu = () => {
   internalParticipantes.value = [props.compradorSelecionadoId]
 }
+
+const proporcoesMembros = computed(() => {
+  if (props.splitType !== 'proportional' || props.participantesDivisao.length === 0) {
+    return {}
+  }
+  
+  const participantesComRenda = props.participantesDivisao.map(id => {
+    const m = props.membros.find(memb => memb.id === id)
+    const renda = m?.rendaCentavos && Number(m.rendaCentavos) > 0 ? Number(m.rendaCentavos) : 0
+    return { id, renda }
+  })
+
+  const temMembrosSemRenda = participantesComRenda.some(p => p.renda === 0)
+  const membrosComRendaValida = participantesComRenda.filter(p => p.renda > 0)
+
+  if (membrosComRendaValida.length === 0) {
+    const pct = 100 / props.participantesDivisao.length
+    const resultado: { [id: string]: { percent: number; valor?: number; estimada: boolean } } = {}
+    props.participantesDivisao.forEach(id => {
+      resultado[id] = {
+        percent: pct,
+        estimada: false,
+        valor: props.valorTotal ? (props.valorTotal / props.participantesDivisao.length) : undefined
+      }
+    })
+    return resultado
+  }
+
+  if (temMembrosSemRenda) {
+    const somaRendasValidas = membrosComRendaValida.reduce((acc, p) => acc + p.renda, 0)
+    const rendaMedia = Math.round(somaRendasValidas / membrosComRendaValida.length)
+    participantesComRenda.forEach(p => {
+      if (p.renda === 0) {
+        p.renda = rendaMedia
+      }
+    })
+  }
+
+  const somaRendasTotal = participantesComRenda.reduce((acc, p) => acc + p.renda, 0)
+  const resultado: { [id: string]: { percent: number; valor?: number; estimada: boolean } } = {}
+
+  participantesComRenda.forEach(p => {
+    const mOriginal = props.membros.find(memb => memb.id === p.id)
+    const estimada = !mOriginal?.rendaCentavos || Number(mOriginal.rendaCentavos) <= 0
+
+    const percent = (p.renda / somaRendasTotal) * 100
+    let valorEstimado: number | undefined = undefined
+    if (props.valorTotal) {
+      valorEstimado = props.valorTotal * (p.renda / somaRendasTotal)
+    }
+
+    resultado[p.id] = {
+      percent,
+      valor: valorEstimado,
+      estimada
+    }
+  })
+
+  return resultado
+})
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4 animate-in fade-in duration-300">
+    <!-- Seletor do Tipo de Rateio -->
+    <div class="flex justify-between items-center p-3.5 bg-stone/20 rounded-2xl border border-stone/60">
+      <span class="text-xs font-bold text-charcoal">Divisão das Contas</span>
+      <div class="inline-flex p-1 bg-stone/40 rounded-xl relative whitespace-nowrap">
+        <button
+          type="button"
+          @click="emit('update:splitType', 'equal')"
+          class="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest cursor-pointer border-none transition-all duration-200"
+          :class="[splitType === 'equal' ? 'bg-white text-charcoal shadow-sm' : 'bg-transparent text-ash hover:text-charcoal']"
+        >
+          Igual
+        </button>
+        <button
+          type="button"
+          @click="emit('update:splitType', 'proportional')"
+          class="px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-widest cursor-pointer border-none transition-all duration-200"
+          :class="[splitType === 'proportional' ? 'bg-white text-charcoal shadow-sm' : 'bg-transparent text-ash hover:text-charcoal']"
+        >
+          Proporcional
+        </button>
+      </div>
+    </div>
+
     <div class="flex gap-2" role="group" aria-label="Atalhos de divisão">
       <button 
         @click="selecionarTodos" 
@@ -72,6 +158,16 @@ const selecionarApenasEu = () => {
           :variant="internalParticipantes.includes(m.id) ? 'meadow' : 'sky'" 
         />
         <span class="text-[10px] font-bold text-charcoal uppercase tracking-tight truncate max-w-full px-1">{{ m.nome }}</span>
+        <span 
+          v-if="splitType === 'proportional' && internalParticipantes.includes(m.id) && proporcoesMembros[m.id]"
+          class="text-[9px] font-bold text-ash mt-0.5 leading-none block text-center animate-in fade-in duration-300"
+        >
+          {{ Math.round(proporcoesMembros[m.id]?.percent ?? 0) }}%
+          <span v-if="proporcoesMembros[m.id]?.valor !== undefined" class="block text-[8px] text-slate-500 font-semibold mt-0.5">
+            R$ {{ (proporcoesMembros[m.id]?.valor ?? 0).toFixed(2).replace('.', ',') }}
+          </span>
+          <span v-if="proporcoesMembros[m.id]?.estimada" class="text-[8px] text-amber-600 block mt-0.5 font-medium">*est.</span>
+        </span>
         <Check v-if="internalParticipantes.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow animate-in zoom-in-50 duration-300" aria-hidden="true" />
       </button>
     </div>

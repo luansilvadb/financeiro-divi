@@ -67,6 +67,7 @@ export class LancamentoService {
       method: g.method,
       cardOwnerId: g.cardOwnerId,
       grupoParcelasId: g.grupoParcelasId,
+      isPrivate: g.isPrivate !== undefined ? g.isPrivate : false,
     };
 
     await tx.gasto.upsert({

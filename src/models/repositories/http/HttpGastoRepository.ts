@@ -21,6 +21,7 @@ interface GastoDto {
   method?: 'pix' | 'card'
   cardOwnerId?: string | null
   grupoParcelasId?: string | null
+  isPrivate?: boolean
 }
 
 export class HttpGastoRepository extends HttpBaseRepository implements IGastoRepository {
@@ -46,7 +47,8 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       settlementDetails: item.settlementDetails,
       method: item.method,
       cardOwner: item.cardOwnerId,
-      grupoParcelasId: item.grupoParcelasId
+      grupoParcelasId: item.grupoParcelasId,
+      isPrivate: item.isPrivate
     })
   }
 
@@ -77,6 +79,7 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       method: gasto.method,
       cardOwnerId: gasto.cardOwner,
       grupoParcelasId: gasto.grupoParcelasId,
+      isPrivate: gasto.isPrivate,
       divisoes: gasto.divisoes.map(d => ({
         membroId: d.membroId,
         valorCentavos: d.valor.centavos

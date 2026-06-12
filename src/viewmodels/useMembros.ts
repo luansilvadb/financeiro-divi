@@ -36,8 +36,8 @@ export function useMembros() {
     return promiseInicializacao
   }
 
-  const adicionarMembro = async (nome: string, email?: string, password?: string) => {
-    await membroService.adicionarMembro(nome, email, password)
+  const adicionarMembro = async (nome: string, email?: string, password?: string, rendaCentavos?: number) => {
+    await membroService.adicionarMembro(nome, email, password, rendaCentavos)
     await carregar()
   }
 
@@ -61,6 +61,11 @@ export function useMembros() {
     await carregar()
   }
 
+  const atualizarRendaMembro = async (id: string, rendaCentavos?: number) => {
+    await membroService.atualizarRendaMembro(id, rendaCentavos)
+    await carregar()
+  }
+
   return {
     membros,
     ativos,
@@ -70,6 +75,7 @@ export function useMembros() {
     ativarMembro,
     atualizarCargoMembro,
     atualizarNomeMembro,
+    atualizarRendaMembro,
     inicializar,
     carregar
   }

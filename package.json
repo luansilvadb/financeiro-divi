@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "dev:backend": "pnpm --filter divi-backend run start:dev",
-    "build": "pnpm --filter divi-backend run build && vue-tsc -b && vite build",
+    "build": "pnpm --filter divi-backend exec prisma generate && pnpm --filter divi-backend run build && vue-tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

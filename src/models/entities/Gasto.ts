@@ -23,6 +23,7 @@ export interface GastoProps {
   cardOwner?: string | null
   grupoParcelasId?: string | null
   createdAt?: Date | string
+  isPrivate?: boolean
 }
 
 export class Gasto {
@@ -47,6 +48,7 @@ export class Gasto {
   public readonly cardOwner: string | null
   public readonly grupoParcelasId: string | null
   public readonly createdAt: Date
+  public readonly isPrivate: boolean
 
   constructor(props: GastoProps) {
     this.id = props.id
@@ -66,5 +68,6 @@ export class Gasto {
     this.cardOwner = props.cardOwner || null
     this.grupoParcelasId = props.grupoParcelasId || null
     this.createdAt = props.createdAt ? new Date(props.createdAt) : new Date()
+    this.isPrivate = props.isPrivate || false
   }
 }

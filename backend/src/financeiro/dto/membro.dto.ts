@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsEnum, IsNumber } from 'class-validator';
 import { Role } from '@prisma/client';
 
 export class MembroDto {
@@ -75,4 +75,12 @@ export class MembroDto {
   @IsOptional()
   @IsString()
   password?: string;
+
+  @ApiPropertyOptional({
+    description: 'Renda autodeclarada do morador em centavos (opcional)',
+    example: 300000,
+  })
+  @IsOptional()
+  @IsNumber()
+  rendaCentavos?: number;
 }

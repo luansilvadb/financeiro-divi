@@ -128,11 +128,29 @@ export class FinanceiroController {
   }
 
   @ApiOperation({ summary: 'Listar gastos do tenant', description: 'Retorna a lista completa de gastos cadastrados no tenant ativo.' })
-  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
+  @ApiHeader({ name: 'X-Tenant-ID', required: true, description: 'ID do Tenant (casa) ativo no qual a operação será executada', example: 'd3b07384-d113-4c4c-a110-230c45aa835b' })
   @ApiOkResponse({ description: 'Gastos listados com sucesso', type: [GastoDto] })
   @Get('gastos')
-  async listarGastos(@Headers('x-tenant-id') tenantId: string) {
-    return this.lancamentoService.listarGastos(tenantId);
+  async listarGastos(
+    @Headers('x-tenant-id') tenantId: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const gastos = await this.lancamentoService.listarGastos(tenantId);
+    const membro = await this.membroService.obterMembroPorUsuario(tenantId, req.user.userId);
+
+    if (!membro || !Array.isArray(gastos)) {
+      return gastos;
+    }
+
+    return gastos.map((g: any) => {
+      if (g.isPrivate && g.compradorId !== membro.id && g.cardOwnerId !== membro.id) {
+        return {
+          ...g,
+          descricao: 'Gasto Pessoal',
+        };
+      }
+      return g;
+    });
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar um gasto no tenant', description: 'Cria ou updates as informações de um gasto (incluindo seu rateio de divisão) no tenant ativo.' })

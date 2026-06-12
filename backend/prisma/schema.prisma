@@ -59,9 +59,10 @@ model MembroCasa {
   ativo     Boolean  @default(true)
   role      Role     @default(MORADOR)
   userId    String?  @map("user_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
+  rendaCentavos BigInt?  @map("renda_centavos")
+  createdAt     DateTime @default(now()) @map("created_at")
   
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usuario   Usuario? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@id([id, tenantId])
@@ -122,6 +123,7 @@ model Gasto {
   method              String   @default("pix")
   cardOwnerId         String?  @map("card_owner_id")
   grupoParcelasId     String?  @map("grupo_parcelas_id")
+  isPrivate           Boolean  @default(false) @map("is_private")
   createdAt           DateTime @default(now()) @map("created_at")
 
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)

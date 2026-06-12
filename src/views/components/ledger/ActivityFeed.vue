@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Edit3, Trash2 } from 'lucide-vue-next'
+import { Edit3, Trash2, Lock } from 'lucide-vue-next'
 import { Gasto } from '../../../models/entities/Gasto'
 import { computed } from 'vue'
 import Card from '../ui/Card.vue'
@@ -59,8 +59,9 @@ const sortedGastos = computed(() => {
         >
           <div class="flex justify-between items-start gap-4">
             <div class="space-y-1">
-              <span class="font-semibold text-sm text-charcoal block">
-                {{ g.descricao }}
+              <span class="font-semibold text-sm text-charcoal flex items-center gap-1.5">
+                <span :class="{'italic text-ash': g.isPrivate}">{{ g.descricao }}</span>
+                <Lock v-if="g.isPrivate" class="w-3.5 h-3.5 text-ash shrink-0" aria-hidden="true" />
                 <span v-if="g.totalInstallments > 1" class="text-xs text-graphite font-semibold">
                   ({{ g.totalInstallments - g.installments + 1 }}/{{ g.totalInstallments }})
                 </span>
