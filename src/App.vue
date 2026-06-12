@@ -39,7 +39,6 @@ const hasTenant = ref(!!tenantSessionService.getActiveTenantId())
 const isMonthClosed = ref(false)
 const toast = useToast()
 const isReadOnly = computed(() => currentMembro.value?.role === 'VISUALIZADOR')
-const isMorador = computed(() => currentMembro.value?.role === 'MORADOR')
 const isLancarGastoBloqueado = computed(() => {
   const role = currentMembro.value?.role
   if (!role || role === 'ADMIN') return false

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { Fatura } from '../models/entities/Fatura'
 import { Cartao } from '../models/entities/Cartao'
-import { HttpAuditLogRepository, type AuditLogDto } from '../models/repositories/http/HttpAuditLogRepository'
+import { HttpAuditLogRepository } from '../models/repositories/http/HttpAuditLogRepository'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'

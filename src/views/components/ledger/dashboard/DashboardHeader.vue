@@ -1,7 +1,7 @@
 <!-- src/views/components/ledger/dashboard/DashboardHeader.vue -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { CheckCircle2, Home, Bell, ChevronDown, Calendar } from 'lucide-vue-next'
+import { CheckCircle2, Home, Bell, Calendar } from 'lucide-vue-next'
 import IllustrationMascot from '../../ui/IllustrationMascot.vue'
 import AppBar from '../../ui/AppBar.vue'
 import type { TenantSummary } from '../../../../models/services/TenantSessionService'
@@ -75,7 +75,7 @@ const handleNotificationsClick = () => {
         <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center transition-all group-hover:bg-ember/10 group-hover:text-ember order-first">
           <Calendar class="w-4 h-4 transition-all duration-500 ease-jelly group-hover:scale-110" aria-hidden="true" />
         </div>
-        <div class="flex flex-col transition-all duration-300" :style="{ transform: `scale(${1 - (0.1 * scrollRatio)})`, origin: 'left' }">
+        <div class="flex flex-col transition-all duration-300" :style="{ transform: `scale(${1 - (0.1 * scrollRatio)})`, transformOrigin: 'left' }">
           <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 flex items-center gap-1 transition-colors whitespace-nowrap text-ash/60 group-hover:text-ember">
             {{ currentYear }}
           </span>
@@ -164,7 +164,7 @@ const handleNotificationsClick = () => {
         aria-label="Ver atividade"
         title="Ver atividade"
       >
-        <div class="flex flex-col transition-all duration-300 text-right" :style="{ transform: `scale(${1 - (0.1 * scrollRatio)})`, origin: 'right' }">
+        <div class="flex flex-col transition-all duration-300 text-right" :style="{ transform: `scale(${1 - (0.1 * scrollRatio)})`, transformOrigin: 'right' }">
           <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember whitespace-nowrap">Logs</span>
           <span class="text-xs font-bold text-charcoal leading-none whitespace-nowrap">Atividade</span>
         </div>
