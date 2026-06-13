@@ -186,6 +186,8 @@ const handleLogout = async () => {
   await tenantSessionService.logout()
   isAuthed.value = false
   hasTenant.value = false
+  currentView.value = 'dashboard'
+  activeTab.value = 'hoje'
 }
 </script>
 
