@@ -49,9 +49,9 @@ function commitStyles(t: number): void {
   if (!header) return
 
   const pad = parseFloat(getComputedStyle(header).getPropertyValue('--parent-pad')) || 24
+  const translateY = (t * MAX_SHRINK_OFFSET) / 2
 
   // ── AppBar <header> ────────────────────────────────────────────────────────
-  header.style.height = `${EXPANDED_HEIGHT - MAX_SHRINK_OFFSET * t}px`
   header.style.backgroundColor = t > 0.05
     ? `rgba(251, 250, 249, ${Math.min(0.98, 0.98 * t)})`
     : 'transparent'
@@ -73,7 +73,7 @@ function commitStyles(t: number): void {
 
   // ── Branding Central ───────────────────────────────────────────────────────
   if (centerRef.value) {
-    centerRef.value.style.transform = `scale(${1 - 0.12 * t})`
+    centerRef.value.style.transform = `translateY(${translateY}px) scale(${1 - 0.12 * t})`
   }
 
   // ── Mascote (outer wrapper — transform exclusivo do scroll) ────────────────
@@ -90,7 +90,7 @@ function commitStyles(t: number): void {
 
   // ── Botão Esquerdo ─────────────────────────────────────────────────────────
   if (leftBtnRef.value) {
-    leftBtnRef.value.style.transform = `scale(${1 - 0.05 * t})`
+    leftBtnRef.value.style.transform = `translateY(${translateY}px) scale(${1 - 0.05 * t})`
     leftBtnRef.value.style.backgroundColor = `rgba(242, 240, 237, ${0.4 + 0.1 * t})`
     leftBtnRef.value.style.boxShadow = t > 0.8 ? 'var(--shadow-subtle)' : 'none'
   }
@@ -100,7 +100,7 @@ function commitStyles(t: number): void {
 
   // ── Botão Direito ──────────────────────────────────────────────────────────
   if (rightBtnRef.value) {
-    rightBtnRef.value.style.transform = `scale(${1 - 0.05 * t})`
+    rightBtnRef.value.style.transform = `translateY(${translateY}px) scale(${1 - 0.05 * t})`
     rightBtnRef.value.style.backgroundColor = `rgba(242, 240, 237, ${0.4 + 0.1 * t})`
     rightBtnRef.value.style.boxShadow = t > 0.8 ? 'var(--shadow-subtle)' : 'none'
   }

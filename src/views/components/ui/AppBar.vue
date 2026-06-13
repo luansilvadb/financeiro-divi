@@ -21,7 +21,7 @@ defineExpose({ headerEl, parallaxEl })
   -->
   <header
     ref="headerEl"
-    class="relative flex items-center justify-between sticky top-0 z-50 overflow-hidden"
+    class="relative flex items-center justify-between sticky z-50 overflow-hidden"
   >
     <!-- Background Parallax Layer (absolute — fora do fluxo flex) -->
     <!-- opacity e translateY são mutados diretamente pelo pai via parallaxEl ref -->
@@ -56,15 +56,15 @@ header {
    * Propriedades listadas aqui são as mutadas pelo RAF loop no DashboardHeader.
    * NÃO adicionar `transition` aqui — causaria double-interpolation jitter.
    */
-  will-change: height, padding, background-color, box-shadow, margin, width;
+  will-change: padding, background-color, box-shadow, margin, width;
 
   /* --parent-pad controla o breakout edge-to-edge e o padding interno.
      Lido pelo DashboardHeader via getComputedStyle para calcular os valores CSS. */
   --parent-pad: 1.5rem; /* 24px */
 
-  /* Altura base: 120px (EXPANDED_HEIGHT).
-     Mutada diretamente via headerEl.style.height pelo pai no commitStyles(). */
+  /* Altura física constante de 120px para evitar layout shift e flickering no mobile */
   height: 120px;
+  top: -68px;
 }
 
 @media (max-width: 640px) {

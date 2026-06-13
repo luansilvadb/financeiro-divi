@@ -11,13 +11,16 @@
 - **Jelly-like Fluidity**: Prioritize smoothness and elastic "jelly-like" micro-interactions inspired by iOS for a more tactile and delightful experience.
 - **Simplify Dashboard Header**: Reduce visual noise in the header while maintaining essential information (period, tenant, branding).
 - **Maintain Brand Identity**: Preserve the presence of the mascot "ember" and the warm color palette (ember, sunburst) in a more integrated manner.
-- **SliverAppBar Dynamics — Pinned Header**: Implement the pinned SliverAppBar behavior from Flutter using the Web platform equivalent:
-  - **`pinned: true`** → header is always visible at the top, never leaves the viewport. Uses CSS `position: sticky; top: 0`.
+- **SliverAppBar Dynamics — Pinned Header with Constant Height**: Implement the pinned SliverAppBar behavior from Flutter using a jitter-free Web layout:
+  - **`pinned: true`** → header is always visible at the top, never leaves the viewport. Uses CSS `position: sticky; top: -68px` (offset of expanded height minus collapsed height).
+  - **`constant height`** → the physical height of the header remains fixed at `120px` in the document layout to prevent layout shifts and scroll flickering on mobile browsers.
+  - **`counter-translation`** → to keep side buttons and central branding centered within the visible `52px` viewport at the bottom of the header, apply a vertical counter-translation of `translateY(shrinkOffset / 2)` to them during scroll.
   - **`floating: false`** → header does not immediately appear when scrolling up. It only expands when the user scrolls back to the top of the page.
   - **`snap: false`** → header does not snap. It collapses and expands linearly with the scroll position.
   - **`FlexibleSpaceBar`** → the space between `expandedHeight` and `collapsedHeight` is filled with rich interpolated content (mascot, tenant name, parallax background) whose opacity, scale, and position are driven by `shrinkOffset`.
 - **Zero-Jitter Scroll Architecture**: All scroll-driven style mutations must bypass the CSS transition pipeline entirely — using direct DOM manipulation (`el.style.xxx`) inside `requestAnimationFrame`. No Vue `ref`/`computed` on the scroll hot path.
 - **Physical Height Constraint**: `expandedHeight = 120px` (rich FlexibleSpace visible); `collapsedHeight = 52px` (~12mm physical). The delta (68px) is the `maxShrinkOffset` — the scroll distance over which the header fully collapses.
+- **No Layout Shift on Scroll**: The physical height of the header inside the document layout must remain constant at 120px. The height must not be mutated dynamically on the scroll path. Use top offset and counter-translation instead.
 
 ## Entities
 ```mermaid
@@ -118,6 +121,11 @@ BottomTabBar -- MembroAvatar : uses for profile
    - `shrinkOffset = clamp(scrollY, 0, maxExtent - minExtent)` — how many px the bar has shrunk from its maximum. Drives all interpolations.
    - `t = shrinkOffset / (maxExtent - minExtent)` — [0 = expanded, 1 = collapsed].
 
+   **Jitter-Free Web Layout Strategy (Constant Height & Counter-Translation)**:
+   To prevent layout shifts and flickering on mobile touch gestures, the header is styled with `position: sticky` and a negative top offset: `top: -68px` (which is `-(EXPANDED_HEIGHT - COLLAPSED_HEIGHT)`).
+   As the user scrolls, the header rolls up naturally by 68px and gets pinned there. The physical height of the header remains at 120px.
+   To keep the interactive elements (buttons, center logo) centered in the visible 52px region at the bottom of the header, a local vertical translation of `translateY(shrinkOffset / 2)` is applied to them.
+
    **Web Implementation Constants**:
    - `EXPANDED_HEIGHT = 120` (px) — `expandedHeight` equivalent. Generous FlexibleSpace for mascot, tenant name, parallax.
    - `COLLAPSED_HEIGHT = 52` (px) — `collapsedHeight` equivalent. Pinned bar (~12mm physical).
@@ -207,8 +215,8 @@ BottomTabBar -- MembroAvatar : uses for profile
    - `will-change: height, padding, background-color, box-shadow, margin, width` for GPU compositing.
 6. **Styles (baseline only — NO `transition` on scroll-driven properties)**:
    - Remove `transition-all`, `transition`, or any CSS transition from the `<header>` element's scoped styles and from its Tailwind class list. No transition class may be present on the header or the parallax wrapper.
-   - Apply `position: sticky; top: 0; z-index: 50; overflow: hidden` via class.
-   - Base height `120px` (EXPANDED_HEIGHT), expressed as a CSS value updated by the parent's `commitStyles()`. Note: the parent always sets `headerEl.style.height` on mount, so the CSS baseline is a fallback only.
+   - Apply `position: sticky; top: -68px; z-index: 50; overflow: hidden` via class.
+   - Base height is fixed at `120px` (EXPANDED_HEIGHT). This height does not change to prevent layout shifts.
    - CSS `transition` is only permitted on `:hover` / `:focus-visible` pseudo-classes that target non-scroll properties (e.g., ring, outline).
 
 ### Update Component - DashboardHeader.vue
@@ -225,12 +233,12 @@ BottomTabBar -- MembroAvatar : uses for profile
    c. Compute `t = shrinkOffset / MAX_SHRINK_OFFSET` (clamp [0, 1]).
    d. Call `commitStyles(t)`.
 6. **`commitStyles(t)` function** — direct DOM mutations (zero CSS `transition` on continuous scroll):
-   - **`headerEl`**: `height = ${120 - 68 * t}px`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — formulas from Approach §8.
+   - **`headerEl`**: `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — formulas from Approach §8. Do NOT mutate height.
    - **`parallaxEl`**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
-   - **`leftBtnRef`**: `transform`, `backgroundColor`, `boxShadow`.
-   - **`leftLabelRef`**: `transform`, `transformOrigin = left center`.
+   - **`leftBtnRef`**: `transform = translateY(${translateY}px) scale(${1 - 0.05 * t})`, where `translateY = (t * MAX_SHRINK_OFFSET) / 2`, `backgroundColor`, `boxShadow`.
+   - **`leftLabelRef`**: `transform = scale(${1 - 0.1 * t})`, `transformOrigin = left center`.
    - **`rightBtnRef` / `rightLabelRef`**: mirror of left.
-   - **`centerRef`**: `transform = scale(${1 - 0.12 * t})`.
+   - **`centerRef`**: `transform = translateY(${translateY}px) scale(${1 - 0.12 * t})`.
    - **`mascotRef`** (outer only): `top`, `right`, `transform` — no CSS animation on this element.
    - **`tenantNameRef`**: `opacity = max(0, 1 - 2.5 * t)`.
 7. **Mascot Wobble Preservation**: Two-layer isolation: outer = `mascotRef` (RAF-owned transform); inner = `animate-wobble` class (rotate + scale ±0.01, no conflict).
@@ -263,4 +271,5 @@ BottomTabBar -- MembroAvatar : uses for profile
 7. **No `transition-all` on Scroll-Driven Elements**: `transition-all` and any scroll-driven CSS `transition` is forbidden during continuous scroll.
 8. **No CSS Animation on Scroll-Driven `transform` Wrapper**: `@keyframes` animations (e.g., `animate-wobble`) must never be on an element that also receives JS `transform` mutations. Use inner/outer wrapper isolation.
 9. **SliverAppBar Pinned Fidelity**: The linear scrolling collapse (collapses from 0 to MAX_SHRINK_OFFSET scrollY, remains pinned at COLLAPSED_HEIGHT beyond that, and expands only when scrolling back to 0) must mirror Flutter's `SliverAppBar(pinned: true, floating: false)` behavior.
-10. **Physical Height Constraint**: `EXPANDED_HEIGHT = 120px`, `COLLAPSED_HEIGHT = 52px`. Do NOT use heights below 52px (collapses too aggressively) or above 128px (too large on mobile). `MAX_SHRINK_OFFSET = 68px`.
+10. **No Layout Shift on Scroll**: The physical height of the header inside the document layout must remain constant at 120px. The height must not be mutated dynamically on the scroll path. Use top offset and counter-translation instead.
+11. **Physical Height Constraint**: `EXPANDED_HEIGHT = 120px`, `COLLAPSED_HEIGHT = 52px`. Do NOT use heights below 52px (collapses too aggressively) or above 128px (too large on mobile). `MAX_SHRINK_OFFSET = 68px`.
