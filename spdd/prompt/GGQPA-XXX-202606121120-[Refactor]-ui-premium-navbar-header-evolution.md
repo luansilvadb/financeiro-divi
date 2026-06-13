@@ -11,12 +11,14 @@
 - **Jelly-like Fluidity**: Prioritize smoothness and elastic "jelly-like" micro-interactions inspired by iOS for a more tactile and delightful experience.
 - **Simplify Dashboard Header**: Reduce visual noise in the header while maintaining essential information (period, tenant, branding).
 - **Maintain Brand Identity**: Preserve the presence of the mascot "ember" and the warm color palette (ember, sunburst) in a more integrated manner.
-- **SliverAppBar Dynamics**: Implement a scrolling behavior similar to Flutter's SliverAppBar, where the header collapses into a pinned state when scrolling down, transitioning from an expanded transparent layout to a compact solid-colored pinned bar.
-- **Zero-Jitter Scroll Architecture**: The header collapse must be 100% jitter-free. Any involuntary stutter, jump, or double-interpolation caused by CSS `transition` fighting JS-driven style mutations is unacceptable. All scroll-driven style mutations must bypass the CSS transition pipeline entirely — using direct DOM manipulation (`el.style.xxx`) instead of reactive Vue state that triggers re-renders.
-- **Snap-Back Elimination**: Eliminate the "snap-back glitch" — the involuntary rapid bounce between expanded and collapsed states that occurs when scrolling near the trigger threshold. The transition must be decisively one-directional per scroll gesture.
-- **Scroll-Direction-Aware State Machine**: The header must respond to the **direction** of scroll (up vs. down), not to the absolute `scrollY` position. Scroll **down** collapses the header; scroll **up** expands it. The system must internally track its own interpolation variable `t` independently of `scrollY`.
-- **Dead Zone Stability**: Implement a configurable dead zone (`DEAD_ZONE_PX`, default 8px) of accumulated scroll delta before triggering any state transition. Small involuntary micro-scrolls within this zone must be silently absorbed, preventing spurious expand/collapse cycles.
-- **Physical Height Constraint**: The fully expanded header must measure approximately **12 mm physical height** on the device screen, which translates to 48–56 logical pixels depending on screen density. Use `52px` as the canonical logical pixel target for the expanded state height.
+- **SliverAppBar Dynamics — Flutter-Faithful**: Implement the exact four-property SliverAppBar behavior from Flutter using the Web platform equivalent:
+  - **`pinned: true`** → header is always visible at the top, never leaves the viewport. Uses CSS `position: sticky; top: 0`.
+  - **`floating: true`** → header immediately starts appearing as soon as the user scrolls up, regardless of current scroll position (not just from the page top).
+  - **`snap: true`** → when the user releases the scroll gesture (`scrollend` event), the header automatically animates to its fully expanded (`t=0`) or fully collapsed (`t=1`) state — it never remains in a partial mid-state.
+  - **`FlexibleSpaceBar`** → the space between `expandedHeight` and `collapsedHeight` is filled with rich interpolated content (mascot, tenant name, parallax background) whose opacity, scale, and position are driven by `shrinkOffset`.
+- **Zero-Jitter Scroll Architecture**: All scroll-driven style mutations must bypass the CSS transition pipeline entirely — using direct DOM manipulation (`el.style.xxx`) inside `requestAnimationFrame`. No Vue `ref`/`computed` on the scroll hot path.
+- **Snap-Back Elimination**: The snap animation uses `Web Animations API` (`element.animate()`) for the final settlement — NOT CSS `transition`. This decouples the snap animation from the continuous scroll engine, eliminating double-interpolation.
+- **Physical Height Constraint**: `expandedHeight = 120px` (rich FlexibleSpace visible); `collapsedHeight = 52px` (~12mm physical). The delta (68px) is the `maxShrinkOffset` — the scroll distance over which the header fully collapses.
 
 ## Entities
 ```mermaid
@@ -99,69 +101,108 @@ BottomTabBar -- MembroAvatar : uses for profile
      - **Symmetric Architecture**: Both side buttons share a fixed horizontal footprint and identical corner radius (`rounded-2xl`).
      - Minimalist Content: Maintain textual labels even in the compact state to ensure clarity and accessibility for all age groups. Align labels and icons in a high-density, integrated layout.
 
-8. **Sliver Scrolling Dynamics (Direction-Aware State Machine — Zero-Jitter Architecture)**:
+8. **Sliver Scrolling Dynamics — Flutter SliverAppBar Faithful (pinned + floating + snap)**:
 
-   > **Root Cause Analysis (Jitter Diagnosis)**: Two generations of bugs were identified:
-   > - **Generation 1 (fixed)**: CSS `transition-all` + JS `:style` conflict; Vue `ref`/`computed` re-renders on the hot path; `animate-wobble` vs. `:style` transform conflict on the mascot; `transition-all duration-300` on interior elements.
-   > - **Generation 2 (current — snap-back glitch)**: The previous fix still used `t = clamp(window.scrollY / INTERPOLATION_RANGE, 0, 1)` — a **position-based** mapping. This means any scroll position between 0 and 36px produces a different `t` on every frame. When the user scrolls slowly near this range, the header perpetually oscillates between expanded and collapsed states with each small scroll delta, producing the "snap-back" bounce and rapid flickering.
+   > **Source**: Behavior modeled after `SliverAppBar(pinned: true, floating: true, snap: true)` with `FlexibleSpaceBar` — the richest Flutter app bar mode, verified against `flutter.dev` and `api.flutter.dev` documentation.
 
-   **Corrected Architecture (Direction-Aware State Machine)**:
+   > **History of fixes**:
+   > - **Generation 1**: CSS `transition-all` + JS conflict; Vue reactivity on hot path; transform conflicts on mascot → Fixed via Direct DOM Mutation Pattern.
+   > - **Generation 2**: Direction-aware state machine with dead zone → Eliminated snap-back glitch but produced a non-Flutter-faithful experience (direction sensitivity, delta accumulation).
+   > - **Generation 3 (current)**: Full Flutter SliverAppBar model — position-based `shrinkOffset`, floating detection via delta, snap via `scrollend` + Web Animations API.
 
-   The fundamental shift: `t` is no longer derived from `window.scrollY`. Instead, `t` is a **self-owned JS variable** that is updated based on the **direction and magnitude of scroll deltas**. The engine computes `delta = scrollY - lastScrollY` and drives `t` forward or backward, with a dead zone to absorb micro-oscillations.
+   **Flutter SliverAppBar Conceptual Model (translated to Web)**:
 
-   - **Constants**:
-     - `EXPANDED_HEIGHT = 52` (px) — canonical logical pixel target for fully expanded state (~12mm physical on a 96dpi screen).
-     - `COLLAPSED_HEIGHT = 44` (px) — compact branding-only state.
-     - `INTERPOLATION_RANGE = EXPANDED_HEIGHT - COLLAPSED_HEIGHT = 8` (px).
-     - `DEAD_ZONE_PX = 8` — accumulated scroll delta in px that must be exceeded before `t` changes. Absorbs small involuntary micro-scrolls.
-     - `COLLAPSE_RATE = 1 / 40` — how much `t` advances per px of downward scroll delta (after dead zone).
-     - `EXPAND_RATE = 1 / 30` — how much `t` retreats per px of upward scroll delta (expand faster than collapse for responsiveness).
-     - `SNAP_THRESHOLD = 0.35` — if `t` crosses this threshold after a directional gesture, snap decisively to `t = 1` (collapsed) or `t = 0` (expanded) to eliminate the ambiguous mid-state.
+   Flutter's `SliverPersistentHeaderDelegate` exputes two key values every frame:
+   - `maxExtent = expandedHeight` — maximum painted height when fully expanded.
+   - `minExtent = collapsedHeight` — minimum painted height when pinned.
+   - `shrinkOffset = clamp(scrollY, 0, maxExtent - minExtent)` — how many px the bar has shrunk from its maximum. Drives all interpolations.
+   - `t = shrinkOffset / (maxExtent - minExtent)` — [0 = expanded, 1 = collapsed].
 
-   - **State Variables** (plain JS `let`, never reactive `ref`):
-     - `let t = 0` — current interpolation ratio [0 = expanded, 1 = collapsed]. Initial value 0 (expanded).
-     - `let lastScrollY = 0` — previous frame's `window.scrollY`.
-     - `let deadZoneAccum = 0` — accumulated unprocessed delta (px). Reset to 0 after dead zone is crossed.
-     - `let rafId: number | null = null`.
+   **Web Implementation Constants**:
+   - `EXPANDED_HEIGHT = 120` (px) — `expandedHeight` equivalent. Generous FlexibleSpace for mascot, tenant name, parallax.
+   - `COLLAPSED_HEIGHT = 52` (px) — `collapsedHeight` equivalent. Pinned bar (~12mm physical).
+   - `MAX_SHRINK_OFFSET = EXPANDED_HEIGHT - COLLAPSED_HEIGHT = 68` (px) — scroll distance for full collapse.
+   - `SNAP_DURATION_MS = 240` — milliseconds for the snap settlement animation (Web Animations API).
+   - `SNAP_EASING = 'cubic-bezier(0.4, 0.0, 0.2, 1)'` — Flutter's standard Material easing for snap.
 
-   - **`handleScroll()` function**: Called on `window.scroll` event (`{ passive: true }`). Cancels pending `rafId`, schedules `requestAnimationFrame(applyStyles)`.
+   **Scroll State Variables** (plain `let`, never Vue reactive):
+   - `let shrinkOffset = 0` — current shrink amount [0, MAX_SHRINK_OFFSET]. Derived from position, like Flutter.
+   - `let floatReveal = 0` — px revealed by upward scroll while page is not at top (floating behavior). Range [0, MAX_SHRINK_OFFSET].
+   - `let lastScrollY = 0` — previous `window.scrollY`, for delta computation.
+   - `let isSnapping = false` — prevents scroll events from fighting the snap animation.
+   - `let rafId: number | null = null`.
+   - `let snapAnimations: Animation[] = []` — array of running Web Animations for cancellation.
 
-   - **`applyStyles()` function** — direction-aware `t` computation:
-     1. Read `const currentScrollY = window.scrollY`.
-     2. `const delta = currentScrollY - lastScrollY`.
-     3. `lastScrollY = currentScrollY`.
-     4. **Boundary clamp**: If `currentScrollY <= 0`, force `t = 0` and `deadZoneAccum = 0` (always fully expanded at page top). Skip remaining logic.
-     5. `deadZoneAccum += delta`.
-     6. If `Math.abs(deadZoneAccum) < DEAD_ZONE_PX`, do NOT change `t`. Proceed directly to DOM mutations with current `t`.
-     7. Otherwise: `const effectiveDelta = deadZoneAccum - Math.sign(deadZoneAccum) * DEAD_ZONE_PX`; `deadZoneAccum = 0`.
-     8. If `effectiveDelta > 0` (scrolling down → collapse): `t = Math.min(1, t + effectiveDelta * COLLAPSE_RATE)`.
-     9. If `effectiveDelta < 0` (scrolling up → expand): `t = Math.max(0, t + effectiveDelta * EXPAND_RATE)`.
-     10. **Snap to stable state**: If `t > SNAP_THRESHOLD && t < 1`, set `t = 1`; if `t < (1 - SNAP_THRESHOLD) && t > 0`, set `t = 0`. This prevents the header from stalling in an indeterminate mid-state.
-     11. Apply DOM mutations with final `t` value.
+   **Three-Phase Scroll Behavior** (mimics Flutter exactly):
 
-   - **Mascot Transform Isolation**: The mascot outer wrapper (`mascotRef`) receives scroll-driven `top`, `right`, and `transform` mutations. It must NOT carry a CSS animation that writes to `transform`. Wobble animation is isolated to an inner child wrapper (Safeguard #8).
+   Phase A — **Collapsing** (scroll down from top):
+   - While `scrollY <= MAX_SHRINK_OFFSET`: `shrinkOffset = scrollY`. Header collapses linearly with scroll position. This is identical to Flutter's `SliverPersistentHeader` behavior at the top of the scroll.
+   - `t = shrinkOffset / MAX_SHRINK_OFFSET`.
+   - Apply interpolated styles immediately (no dead zone — Flutter has none in this phase).
 
-   - **FlexibleSpaceBar Integration** (same formulas as before, now driven by direction-aware `t`):
-     - **Branding Interpolation**: Center branding `transform = scale(${1.05 - 0.15 * t})`.
-     - **Mascot Symbiosis**: `top = ${-14 + 18 * t}px`, `right = ${-12 + 12 * t}px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`.
-     - **Tenant Name Fade**: `opacity = max(0, 1 - 2.8 * t)`.
+   Phase B — **Pinned** (scroll down beyond MAX_SHRINK_OFFSET):
+   - When `scrollY > MAX_SHRINK_OFFSET`: `shrinkOffset = MAX_SHRINK_OFFSET`, `t = 1`. Header stays fully collapsed at top.
+   - `floatReveal = 0` (reset).
 
-   - **Surface & Elevation (via Direct DOM)**:
-     - **Height**: `${EXPANDED_HEIGHT - INTERPOLATION_RANGE * t}px` (52px → 44px).
-     - **Background**: Transparent for `t ≤ 0.05`; `rgba(251, 250, 249, min(1.0, 0.98 * t))` for `t > 0.05`.
-     - **Shadow**: For `t > 0.6` → `0 ${6 * t²}px ${24 * t}px -4px rgba(67,70,69,${0.08*t}), 0 0 1px rgba(18,18,18,${0.1*t})`.
-     - **Border**: `1px solid rgba(242, 240, 237, ${max(0, (t - 0.8) * 10)})`.
+   Phase C — **Floating Reveal** (scroll up from anywhere):
+   - When `delta < 0` (scrolling up) AND `scrollY > 0`:
+     - `floatReveal = min(MAX_SHRINK_OFFSET, floatReveal + abs(delta))`.
+     - Effective `shrinkOffset = max(0, MAX_SHRINK_OFFSET - floatReveal)`.
+     - `t = shrinkOffset / MAX_SHRINK_OFFSET`.
+   - When `delta > 0` (scrolling down again): `floatReveal = max(0, floatReveal - delta)`. Collapses the float reveal.
+   - When `scrollY <= MAX_SHRINK_OFFSET`: Phase A takes over — `floatReveal = 0`.
 
-   - **Breakout & Padding (Edge-to-Edge)**:
-     - `marginLeft = ${-padPx * t}px`, `marginRight = ${-padPx * t}px`, `width = calc(100% + ${2 * padPx * t}px)`.
-     - `paddingLeft = ${padPx * (1 - t)}px`, `paddingRight = ${padPx * (1 - t)}px`.
-     - `--parent-pad`: `1.5rem` (≥640px); `1rem` (<640px).
+   **`handleScroll()` function**:
+   1. If `isSnapping`, return immediately (protect ongoing snap animation).
+   2. Cancel pending `rafId`, schedule `requestAnimationFrame(applyStyles)`.
 
-   - **Parallax Layer**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
+   **`applyStyles()` function**:
+   1. Read `currentScrollY = window.scrollY`; compute `delta = currentScrollY - lastScrollY`; update `lastScrollY`.
+   2. Determine phase:
+      - If `currentScrollY <= 0`: `shrinkOffset = 0`, `floatReveal = 0` → Phase A boundary.
+      - Else if `currentScrollY <= MAX_SHRINK_OFFSET` AND `delta >= 0`: Phase A — `shrinkOffset = currentScrollY`, `floatReveal = 0`.
+      - Else if `delta >= 0` (scroll down while pinned): Phase B — `shrinkOffset = MAX_SHRINK_OFFSET`, `floatReveal = max(0, floatReveal - delta)`.
+      - Else (scroll up — floating): Phase C — `floatReveal = min(MAX_SHRINK_OFFSET, floatReveal + abs(delta))`, `shrinkOffset = max(0, MAX_SHRINK_OFFSET - floatReveal)`.
+   3. Compute `t = shrinkOffset / MAX_SHRINK_OFFSET` (clamp [0, 1]).
+   4. Call `commitStyles(t)` — direct DOM mutations.
 
-   - **CSS Transition for Final Snap Only**: When `t` snaps discretely from a mid-value to 0 or 1 (step 10 above), apply a one-shot CSS transition on the `<header>` to smooth the snap: `header.style.transition = 'height 180ms ease-out, background-color 180ms ease-out'`, immediately after set `header.style.transition = ''` on the next RAF tick. This is the ONLY permitted use of CSS transition on scroll-driven properties — exclusively for the discrete snap settlement, never for continuous scroll.
+   **`handleScrollEnd()` function** (snap — triggered by `scrollend` event, no polyfill needed in Chrome 110+):
+   1. If `isSnapping`, return.
+   2. If `t === 0 || t === 1`, return (already settled).
+   3. Determine snap target: `targetT = t > 0.5 ? 1 : 0`.
+   4. Set `isSnapping = true`.
+   5. Cancel all existing `snapAnimations`.
+   6. Use `Web Animations API` (`element.animate()`) to tween `shrinkOffset` from current to `targetT * MAX_SHRINK_OFFSET` over `SNAP_DURATION_MS` with `SNAP_EASING`. On each animation `tick`, re-run `commitStyles(currentT)`. On finish: set `isSnapping = false`, `shrinkOffset = target`, update `lastScrollY = window.scrollY`.
+   7. Use `polyfillScrollEnd()` for Safari fallback: listen to `scroll` silence for 150ms to fire a synthetic `scrollend`.
 
-   - **RAF Pattern**: Cancel pending `rafId` before each new `requestAnimationFrame`. Clean up in `onUnmounted`.
+   **`commitStyles(t)` function** — direct DOM mutations, NO CSS transition:
+   - **`headerEl`**: `height = ${EXPANDED_HEIGHT - (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * t}px`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight`.
+   - **`parallaxEl`**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
+   - **`centerRef`**: `transform = scale(${1 - 0.12 * t})`.
+   - **`mascotRef`** (outer wrapper only): `top = ${-14 + 18 * t}px`, `right = ${-12 + 12 * t}px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`.
+   - **`tenantNameRef`**: `opacity = max(0, 1 - 2.5 * t)`.
+   - **`leftBtnRef`**: `transform = scale(${1 - 0.05 * t})`, `backgroundColor = rgba(242,240,237,${0.4 + 0.1*t})`, `boxShadow` for `t > 0.8`.
+   - **`leftLabelRef`**: `transform = scale(${1 - 0.1 * t})`, `transformOrigin = left center`.
+   - **`rightBtnRef` / `rightLabelRef`**: mirror of left.
+
+   **`Surface & Elevation`**:
+   - **Height**: `${EXPANDED_HEIGHT - (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * t}px` (120px → 52px).
+   - **Background**: Transparent for `t ≤ 0.05`; `rgba(251, 250, 249, min(0.98, 0.98 * t))` for `t > 0.05`.
+   - **Shadow**: For `t > 0.6` → `0 ${6 * t²}px ${24 * t}px -4px rgba(67,70,69,${0.08*t}), 0 0 1px rgba(18,18,18,${0.1*t})`.
+   - **Border**: `1px solid rgba(242, 240, 237, ${max(0, (t - 0.8) * 10)})`.
+
+   **Breakout & Padding (Edge-to-Edge — same as before)**:
+   - `marginLeft = ${-padPx * t}px`, `marginRight = ${-padPx * t}px`, `width = calc(100% + ${2 * padPx * t}px)`.
+   - `paddingLeft = ${padPx * (1 - t)}px`, `paddingRight = ${padPx * (1 - t)}px`.
+
+   **Parallax Layer**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
+
+   **Mascot Transform Isolation**: Outer wrapper (`mascotRef`) receives scroll-driven mutations only. Wobble CSS animation is isolated to the inner wrapper (Safeguard #8).
+
+   **Lifecycle**:
+   - `onMounted`: initialize `lastScrollY = window.scrollY`, `shrinkOffset = min(scrollY, MAX_SHRINK_OFFSET)`, call `commitStyles(shrinkOffset / MAX_SHRINK_OFFSET)`, register `scroll` (passive) + `scrollend` listeners.
+   - `onUnmounted`: remove both listeners, cancel `rafId`, cancel all `snapAnimations`.
+
 
 ## Structure
 
@@ -200,45 +241,49 @@ BottomTabBar -- MembroAvatar : uses for profile
 6. **Styles (baseline only — NO `transition` on scroll-driven properties)**:
    - Remove `transition-all`, `transition`, or any CSS transition from the `<header>` element's scoped styles and from its Tailwind class list. No transition class may be present on the header or the parallax wrapper.
    - Apply `position: sticky; top: 0; z-index: 50; overflow: hidden` via class.
-   - Base height `6rem` (96px), expressed as a CSS variable or inline style updated by the parent.
+   - Base height `120px` (EXPANDED_HEIGHT), expressed as a CSS value updated by the parent's `commitStyles()`. Note: the parent always sets `headerEl.style.height` on mount, so the CSS baseline is a fallback only.
    - CSS `transition` is only permitted on `:hover` / `:focus-visible` pseudo-classes that target non-scroll properties (e.g., ring, outline).
 
 ### Update Component - DashboardHeader.vue
-1. **Responsibility**: Own all scroll logic via a direction-aware state machine. Apply scroll-driven style mutations directly to DOM elements via `useTemplateRef`, bypassing Vue's reactivity pipeline and the CSS transition engine. Eliminate snap-back glitch through dead zone absorption and snap-to-stable-state logic.
-2. **State Machine Variables** (plain `let`, never Vue reactive):
-   - `let t = 0` — interpolation ratio [0 = expanded, 1 = collapsed]. Starts at 0.
-   - `let lastScrollY = 0` — previous `window.scrollY`, initialized to `window.scrollY` in `onMounted`.
-   - `let deadZoneAccum = 0` — accumulated unprocessed scroll delta in px.
+1. **Responsibility**: Implement a Flutter-faithful SliverAppBar (pinned + floating + snap) using the Web platform. Own all scroll logic. Apply scroll-driven style mutations directly to DOM elements via `useTemplateRef`, bypassing Vue's reactivity pipeline.
+2. **Scroll State Variables** (plain `let`, never Vue reactive):
+   - `let shrinkOffset = 0` — how many px the bar has shrunk from expanded. Mirrors Flutter's `shrinkOffset` parameter. Range [0, MAX_SHRINK_OFFSET].
+   - `let floatReveal = 0` — px revealed by upward scroll while page is scrolled past MAX_SHRINK_OFFSET (floating phase). Range [0, MAX_SHRINK_OFFSET].
+   - `let lastScrollY = 0` — previous `window.scrollY`.
+   - `let isSnapping = false` — blocks scroll updates during snap animation.
    - `let rafId: number | null = null`.
-   - Constants: `EXPANDED_HEIGHT = 52`, `COLLAPSED_HEIGHT = 44`, `INTERPOLATION_RANGE = 8`, `DEAD_ZONE_PX = 8`, `COLLAPSE_RATE = 1 / 40`, `EXPAND_RATE = 1 / 30`, `SNAP_THRESHOLD = 0.35`.
-3. **Template Refs**: Declare `useTemplateRef` for every scroll-interpolated element: `appBarRef`, `leftBtnRef`, `leftLabelRef`, `rightBtnRef`, `rightLabelRef`, `centerRef`, `mascotRef`, `tenantNameRef`.
-4. **`handleScroll()` function**: Cancel pending `rafId`, schedule `requestAnimationFrame(applyStyles)`. Registered with `{ passive: true }`.
-5. **`applyStyles()` function** — full direction-aware implementation:
-   a. `const currentScrollY = window.scrollY`.
-   b. `const delta = currentScrollY - lastScrollY`; `lastScrollY = currentScrollY`.
-   c. If `currentScrollY <= 0`: force `t = 0`, `deadZoneAccum = 0`, skip to DOM mutations.
-   d. `deadZoneAccum += delta`.
-   e. If `Math.abs(deadZoneAccum) < DEAD_ZONE_PX`: skip `t` update, proceed to DOM mutations with current `t`.
-   f. Else: `const eff = deadZoneAccum - Math.sign(deadZoneAccum) * DEAD_ZONE_PX`; `deadZoneAccum = 0`.
-      - If `eff > 0` (scroll down → collapse): `t = Math.min(1, t + eff * COLLAPSE_RATE)`.
-      - If `eff < 0` (scroll up → expand): `t = Math.max(0, t + eff * EXPAND_RATE)`.
-   g. **Snap to stable**: If `t > SNAP_THRESHOLD && t < 1` → `t = 1`; if `t < (1 - SNAP_THRESHOLD) && t > 0` → `t = 0`. Then apply a one-shot CSS transition for the snap only (see Approach §8).
-   h. Apply direct DOM mutations with final `t`.
-6. **Direct Style Mutations per element** (all inside `applyStyles`):
-   - **`headerEl`**: `height = ${52 - 8 * t}px`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — using formulas from Approach §8. Zero CSS `transition` on continuous scroll; one-shot transition only on snap.
+   - `let snapAnimations: Animation[] = []` — Web Animations API handles for cancellation.
+   - Constants: `EXPANDED_HEIGHT = 120`, `COLLAPSED_HEIGHT = 52`, `MAX_SHRINK_OFFSET = 68`, `SNAP_DURATION_MS = 240`, `SNAP_EASING = 'cubic-bezier(0.4, 0.0, 0.2, 1)'`.
+3. **Template Refs** (`useTemplateRef` for each scroll-interpolated element): `appBarRef`, `leftBtnRef`, `leftLabelRef`, `rightBtnRef`, `rightLabelRef`, `centerRef`, `mascotRef`, `tenantNameRef`.
+4. **`handleScroll()` function**: If `isSnapping`, return. Cancel pending `rafId`, schedule `requestAnimationFrame(applyStyles)`.
+5. **`applyStyles()` function** — Flutter three-phase engine:
+   a. Read `currentScrollY = window.scrollY`; `delta = currentScrollY - lastScrollY`; update `lastScrollY`.
+   b. **Phase A** (top of page, collapsing): if `currentScrollY <= MAX_SHRINK_OFFSET && delta >= 0`: `shrinkOffset = currentScrollY`, `floatReveal = 0`.
+   c. **Phase B** (pinned): if `delta >= 0 && currentScrollY > MAX_SHRINK_OFFSET`: `shrinkOffset = MAX_SHRINK_OFFSET`, `floatReveal = max(0, floatReveal - delta)`.
+   d. **Phase C** (floating, scroll up): if `delta < 0`: `floatReveal = min(MAX_SHRINK_OFFSET, floatReveal + abs(delta))`; `shrinkOffset = max(0, MAX_SHRINK_OFFSET - floatReveal)`.
+   e. Boundary: if `currentScrollY <= 0`: `shrinkOffset = 0`, `floatReveal = 0`.
+   f. Compute `t = shrinkOffset / MAX_SHRINK_OFFSET`, clamp [0, 1].
+   g. Call `commitStyles(t)`.
+6. **`handleScrollEnd()` function** (snap — Flutter `snap: true` equivalent):
+   a. If `isSnapping || t === 0 || t === 1`, return.
+   b. `targetT = t > 0.5 ? 1 : 0`.
+   c. Set `isSnapping = true`.
+   d. Cancel all running `snapAnimations`.
+   e. Animate `shrinkOffset` from current to `targetT * MAX_SHRINK_OFFSET` using Web Animations API: on each animation frame call `commitStyles(currentAnimatedT)`. On finish: `isSnapping = false`, `shrinkOffset = targetT * MAX_SHRINK_OFFSET`, `floatReveal = targetT === 0 ? shrinkOffset : 0`.
+   f. **Safari fallback** (`polyfillScrollEnd`): detect 150ms of scroll silence to fire synthetic `scrollend`.
+7. **`commitStyles(t)` function** — direct DOM mutations (zero CSS `transition` on continuous scroll):
+   - **`headerEl`**: `height = ${120 - 68 * t}px`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — formulas from Approach §8.
    - **`parallaxEl`**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
-   - **`leftBtnRef`**: `transform = scale(${1 - 0.05 * t})`, `backgroundColor = rgba(242,240,237,${0.4 + 0.1*t})`, `boxShadow` for `t > 0.8`.
-   - **`leftLabelRef`**: `transform = scale(${1 - 0.1 * t})`, `transformOrigin = left center`.
-   - **`rightBtnRef`**: mirror of left button.
-   - **`rightLabelRef`**: mirror of left label, `transformOrigin = right center`.
-   - **`centerRef`**: `transform = scale(${1.05 - 0.15 * t})`.
-   - **`mascotRef`**: `top = ${-14 + 18*t}px`, `right = ${-12 + 12*t}px`, `transform = scale(${0.95 - 0.2*t}) rotate(${4 - 4*t}deg)`. No CSS animation on this element.
-   - **`tenantNameRef`**: `opacity = ${Math.max(0, 1 - 2.8 * t)}`.
-7. **Mascot Wobble Preservation**: Two-layer wrapper isolation: outer = `mascotRef` (RAF-owned transform, no CSS animation); inner = `animate-wobble` class (rotate + scale ±0.01 only, does not conflict).
-8. **Template cleanup**: All scroll-driven style changes are removed from Vue template `:style` bindings. Template only contains static classes, `v-if`, `aria-*`, `@click`.
-9. **Text Label Retention**: Both buttons retain text labels in all scroll states — only scaled, never hidden.
-10. **Vertical Alignment**: All slot contents use `items-center` throughout the transition.
-11. **Lifecycle**: `onMounted` → set `lastScrollY = window.scrollY`, call `applyStyles()`, add scroll listener. `onUnmounted` → remove listener, cancel `rafId`.
+   - **`leftBtnRef`**: `transform`, `backgroundColor`, `boxShadow`.
+   - **`leftLabelRef`**: `transform`, `transformOrigin = left center`.
+   - **`rightBtnRef` / `rightLabelRef`**: mirror of left.
+   - **`centerRef`**: `transform = scale(${1 - 0.12 * t})`.
+   - **`mascotRef`** (outer only): `top`, `right`, `transform` — no CSS animation on this element.
+   - **`tenantNameRef`**: `opacity = max(0, 1 - 2.5 * t)`.
+8. **Mascot Wobble Preservation**: Two-layer isolation: outer = `mascotRef` (RAF/Snap-owned transform); inner = `animate-wobble` class (rotate + scale ±0.01, no conflict).
+9. **Template**: Static classes only, no `:style` bindings for scroll-driven properties.
+10. **Text Label Retention**: Both buttons retain labels in all scroll states.
+11. **Lifecycle**: `onMounted` → `lastScrollY = window.scrollY`, `shrinkOffset = min(scrollY, MAX_SHRINK_OFFSET)`, `commitStyles(initial t)`, register `scroll` (passive) + `scrollend` + `polyfillScrollEnd`. `onUnmounted` → remove all listeners, cancel `rafId`, cancel all `snapAnimations`.
 
 ### Update Component - BottomTabBar.vue
 1. **Responsibility**: Provide a floating, ergonomic navigation bar.
@@ -260,11 +305,11 @@ BottomTabBar -- MembroAvatar : uses for profile
 2. **Fluidity over Complexity**: Snappy and organic animations.
 3. **No Blur**: No glassmorphism.
 4. **Safe Area Resilience**: Handle `env(safe-area-inset-bottom)`.
-5. **No Breaking Changes**: Preserve event interfaces (`openHistorico`, `openAuditLogs`). The `scrollRatio` prop on `AppBar` is removed — any consumer that previously passed it must be updated to use the `expose` pattern.
-6. **Zero Jitter Contract**: Any implementation that produces visible stutter, frame-doubling, or jump during scroll is a regression and must not be merged. The test criterion is: drag-scroll at 60fps on a mid-range Android device (Pixel 6, Chrome) must produce a perfectly linear collapse with no visible jump between frames.
-7. **No `transition-all` on Scroll-Driven Elements**: The Tailwind class `transition-all` (and any shorthand `transition`) is forbidden on any element whose `transform`, `opacity`, `background-color`, `box-shadow`, `height`, `margin`, `padding`, or `width` is driven by the scroll RAF loop. Permitted exception: one-shot CSS transition applied programmatically on snap settlement only (Approach §8, final step).
-8. **No CSS Animation on Scroll-Driven `transform` Wrapper**: A CSS `@keyframes` animation (e.g., `animate-wobble`, `animate-float`) must never be applied to an element that also receives `transform` mutations via JS. Use inner/outer wrapper isolation instead.
-9. **No Position-Based `t` Mapping**: The interpolation variable `t` must NEVER be computed as `window.scrollY / constant`. It must be a self-owned JS variable driven by scroll **delta** and **direction**. Position-based mapping causes snap-back glitch when scrollY oscillates near the trigger threshold.
-10. **Dead Zone Mandatory**: The `DEAD_ZONE_PX` accumulator must be implemented. Removing or bypassing it reintroduces the rapid-flip oscillation bug at the transition boundary.
-11. **Snap-to-Stable Required**: After computing `t` from a directional delta, if `t` falls in the ambiguous middle band (`0 < t < SNAP_THRESHOLD` or `1 - SNAP_THRESHOLD < t < 1`), it must be snapped decisively to 0 or 1. Leaving `t` in a mid-state causes the header to appear frozen between states.
-12. **Physical Height Constraint**: The expanded header height must be 52px logical pixels. Do NOT use 96px or values above 60px, which exceed the 12mm physical target and reduce usable viewport area on mobile.
+5. **No Breaking Changes**: Preserve event interfaces (`openHistorico`, `openAuditLogs`). The `scrollRatio` prop on `AppBar` is removed — any consumer must use the `expose` pattern.
+6. **Zero Jitter Contract**: No stutter, frame-doubling, or jump during continuous scroll. Test criterion: drag-scroll at 60fps on Pixel 6 / Chrome. Snap animation uses Web Animations API, not CSS `transition`.
+7. **No `transition-all` on Scroll-Driven Elements**: `transition-all` and any scroll-driven CSS `transition` is forbidden during continuous scroll. Exception: Web Animations API snap only (never CSS `transition`).
+8. **No CSS Animation on Scroll-Driven `transform` Wrapper**: `@keyframes` animations (e.g., `animate-wobble`) must never be on an element that also receives JS `transform` mutations. Use inner/outer wrapper isolation.
+9. **Flutter Model Fidelity**: The three-phase model (Phase A: position-based collapse → Phase B: pinned → Phase C: floating reveal) must mirror Flutter's `SliverPersistentHeaderDelegate` behavior. Direct deviations (e.g., applying dead zones in Phase A, or not implementing floating) are regressions.
+10. **Snap via Web Animations API Only**: The snap animation MUST use `element.animate()`. CSS `transition` on `headerEl` during snap causes double-interpolation. The `isSnapping` guard MUST prevent scroll events from interfering with the snap animation.
+11. **Safari Fallback for `scrollend`**: The native `scrollend` event is required for snap. Because Safari ≤ 17 lacks support, implement `polyfillScrollEnd()` using a 150ms scroll-silence detector. Register on mount, deregister on unmount.
+12. **Physical Height Constraint**: `EXPANDED_HEIGHT = 120px`, `COLLAPSED_HEIGHT = 52px`. Do NOT use heights below 52px (collapses too aggressively) or above 128px (too large on mobile). `MAX_SHRINK_OFFSET = 68px`.
