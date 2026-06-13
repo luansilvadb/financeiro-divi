@@ -4,6 +4,7 @@
     <Transition name="fade">
       <div
         v-if="modelValue"
+        ref="backdropEl"
         class="fixed inset-0 z-[998] bg-black/40 transition-opacity duration-300"
         @click="onBackdropClick"
       />
@@ -16,7 +17,8 @@
         class="fixed inset-0 z-[999] flex justify-center items-end p-0 pointer-events-none"
       >
         <div
-          class="pointer-events-auto relative flex flex-col bg-canvas border-t border-x border-stone/30 shadow-lg transition-all duration-300 text-graphite
+          ref="sheetEl"
+          class="pointer-events-auto relative flex flex-col bg-canvas border-t border-x border-stone/30 shadow-lg text-graphite
                  rounded-t-[32px] max-h-[90dvh] w-full max-w-full min-w-0 overflow-hidden"
           :class="widthClass"
           :style="{ maxHeight, minHeight }"
@@ -58,7 +60,7 @@
           <div v-if="(title || $slots.header || $slots.title) && showDivider" class="h-px bg-stone/60 mx-6 shrink-0" />
 
           <!-- Content -->
-          <div :class="['overflow-y-auto flex-1 custom-scrollbar', contentClass]">
+          <div ref="contentEl" :class="['overflow-y-auto flex-1 custom-scrollbar', contentClass]">
             <slot />
           </div>
 
@@ -73,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { watch, onUnmounted, useTemplateRef, nextTick } from 'vue'
 import { useBottomSheetState } from '../../../viewmodels/useBottomSheetState'
 
 const props = defineProps({
@@ -124,6 +126,9 @@ watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     mountTime = Date.now()
     lockScroll()
+    nextTick(() => {
+      resetDragStyles(false)
+    })
   } else {
     registerClose()
   }
@@ -133,7 +138,96 @@ const onTransitionLeave = () => {
   unlockScroll()
 }
 
+// Refs do template
+const sheetEl = useTemplateRef<HTMLElement>('sheetEl')
+const backdropEl = useTemplateRef<HTMLElement>('backdropEl')
+const contentEl = useTemplateRef<HTMLElement>('contentEl')
+
+// Variáveis locais de controle de gesto (não reativas para máximo desempenho e suavidade)
+let touchStartY = 0
+let currentTranslateY = 0
+let isDragging = false
+let rafId: number | null = null
+let sheetHeight = 0
+
+// Função auxiliar para aplicar estilos diretamente acelerados por GPU
+const applyDragStyles = (delta: number) => {
+  if (sheetEl.value) {
+    sheetEl.value.style.transform = `translateY(${delta}px)`
+  }
+  if (backdropEl.value && sheetHeight > 0) {
+    const opacity = Math.max(0, Math.min(1, 1 - (delta / sheetHeight)))
+    backdropEl.value.style.opacity = opacity.toString()
+  }
+}
+
+// Agenda a atualização visual usando requestAnimationFrame
+const scheduleApplyStyles = (delta: number) => {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+  }
+  rafId = requestAnimationFrame(() => {
+    applyDragStyles(delta)
+    rafId = null
+  })
+}
+
+// Limpa as propriedades de transição inline para resposta tátil imediata
+const clearTransitions = () => {
+  if (sheetEl.value) {
+    sheetEl.value.style.transition = 'none'
+  }
+  if (backdropEl.value) {
+    backdropEl.value.style.transition = 'none'
+  }
+}
+
+// Restaura os estilos padrão do BottomSheet
+const resetDragStyles = (withTransition: boolean) => {
+  if (sheetEl.value) {
+    sheetEl.value.style.transition = withTransition ? 'transform 0.4s var(--ease-spring)' : ''
+    sheetEl.value.style.transform = ''
+  }
+  if (backdropEl.value) {
+    backdropEl.value.style.transition = withTransition ? 'opacity 0.4s ease-out' : ''
+    backdropEl.value.style.opacity = ''
+  }
+  
+  if (withTransition) {
+    setTimeout(() => {
+      if (props.modelValue) {
+        if (sheetEl.value) {
+          sheetEl.value.style.transition = ''
+          sheetEl.value.style.transform = ''
+        }
+        if (backdropEl.value) {
+          backdropEl.value.style.transition = ''
+          backdropEl.value.style.opacity = ''
+        }
+      }
+    }, 400)
+  }
+}
+
+// Animação de fechamento controlada imperativamente
+const animateCloseAndEmit = () => {
+  if (sheetEl.value) {
+    sheetEl.value.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    sheetEl.value.style.transform = 'translateY(100%)'
+  }
+  if (backdropEl.value) {
+    backdropEl.value.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    backdropEl.value.style.opacity = '0'
+  }
+  setTimeout(() => {
+    close()
+  }, 300)
+}
+
 onUnmounted(() => {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+  }
   if (props.modelValue) {
     registerClose()
     document.body.style.overflow = ''
@@ -141,18 +235,8 @@ onUnmounted(() => {
   }
 })
 
-const isScrollAtTop = (target: HTMLElement, currentTarget: HTMLElement): boolean => {
-  let el: HTMLElement | null = target
-  while (el && el !== currentTarget) {
-    if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) {
-      return false
-    }
-    el = el.parentElement
-  }
-  return true
-}
-
-const shouldStartDrag = (target: HTMLElement, currentTarget: HTMLElement): boolean => {
+// Proteção para não iniciar arraste em botões, campos de entrada ou marcadores no-drag
+const shouldStartDrag = (target: HTMLElement): boolean => {
   if (
     target.closest('button') ||
     target.closest('input') ||
@@ -164,100 +248,133 @@ const shouldStartDrag = (target: HTMLElement, currentTarget: HTMLElement): boole
   ) {
     return false
   }
-  return isScrollAtTop(target, currentTarget)
+  return true
 }
 
-const touchStartY = ref(0)
-const isDraggingTouch = ref(false)
-
+// Handlers de Toque Mobile
 const onTouchStart = (e: TouchEvent) => {
   const target = e.target as HTMLElement
-  const currentTarget = e.currentTarget as HTMLElement
-
-  if (!shouldStartDrag(target, currentTarget)) {
-    isDraggingTouch.value = false
+  if (!shouldStartDrag(target)) {
+    isDragging = false
     return
   }
 
-  touchStartY.value = e.touches[0].clientY
-  isDraggingTouch.value = true
+  touchStartY = e.touches[0].clientY
+  sheetHeight = sheetEl.value?.clientHeight || 0
+  
+  const scrollTop = contentEl.value?.scrollTop || 0
+  isDragging = scrollTop <= 0
+  
+  clearTransitions()
 }
 
 const onTouchMove = (e: TouchEvent) => {
-  if (!isDraggingTouch.value) return
+  const target = e.target as HTMLElement
+  if (!shouldStartDrag(target)) return
 
-  const delta = e.touches[0].clientY - touchStartY.value
-  if (delta > 0) {
-    if (e.cancelable) e.preventDefault()
-    const currentTarget = e.currentTarget as HTMLElement
-    currentTarget.style.transform = `translateY(${delta}px)`
-    currentTarget.style.transition = 'none'
+  const clientY = e.touches[0].clientY
+  const delta = clientY - touchStartY
+  const scrollTop = contentEl.value?.scrollTop || 0
+
+  if (isDragging) {
+    if (delta > 0) {
+      if (e.cancelable) e.preventDefault()
+      currentTranslateY = delta
+      scheduleApplyStyles(delta)
+    } else {
+      if (e.cancelable) e.preventDefault()
+      currentTranslateY = 0
+      scheduleApplyStyles(0)
+    }
+  } else {
+    // Transição contínua "scroll-to-drag"
+    if (delta > 0 && scrollTop <= 0) {
+      isDragging = true
+      touchStartY = clientY // redefine para o ponto de toque atual para suavizar a transição
+      currentTranslateY = 0
+      if (e.cancelable) e.preventDefault()
+      clearTransitions()
+      scheduleApplyStyles(0)
+    }
   }
 }
 
 const onTouchEnd = (e: TouchEvent) => {
-  if (!isDraggingTouch.value) return
-  isDraggingTouch.value = false
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
 
-  const delta = e.changedTouches[0].clientY - touchStartY.value
-  const currentTarget = e.currentTarget as HTMLElement
-  
-  if (delta > 100) {
-    currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-    currentTarget.style.transform = 'translateY(100%)'
-    close()
+  if (!isDragging) return
+  isDragging = false
+
+  const clientY = e.changedTouches[0].clientY
+  const finalDelta = clientY - touchStartY
+  const threshold = Math.max(100, sheetHeight * 0.25)
+
+  if (finalDelta > threshold) {
+    animateCloseAndEmit()
   } else {
-    currentTarget.style.transition = 'transform 0.4s var(--ease-spring)'
-    currentTarget.style.transform = 'translateY(0px)'
-    setTimeout(() => {
-      if (props.modelValue) {
-        currentTarget.style.transition = ''
-        currentTarget.style.transform = ''
-      }
-    }, 400)
+    resetDragStyles(true)
   }
 }
 
+// Handlers de Mouse Desktop
 const onMouseDown = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  const currentTarget = e.currentTarget as HTMLElement
+  if (!shouldStartDrag(target)) return
 
-  if (!shouldStartDrag(target, currentTarget)) return
+  touchStartY = e.clientY
+  sheetHeight = sheetEl.value?.clientHeight || 0
+  
+  const scrollTop = contentEl.value?.scrollTop || 0
+  isDragging = scrollTop <= 0
+  
+  clearTransitions()
 
-  const startY = e.clientY
+  const onMouseMove = (ev: MouseEvent) => {
+    const clientY = ev.clientY
+    const delta = clientY - touchStartY
+    const currentScrollTop = contentEl.value?.scrollTop || 0
 
-  const onMove = (ev: MouseEvent) => {
-    const delta = ev.clientY - startY
-    if (delta > 0) {
-      currentTarget.style.transform = `translateY(${delta}px)`
-      currentTarget.style.transition = 'none'
-    }
-  }
-
-  const onUp = (ev: MouseEvent) => {
-    const delta = ev.clientY - startY
-    
-    if (delta > 100) {
-      currentTarget.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-      currentTarget.style.transform = 'translateY(100%)'
-      close()
+    if (isDragging) {
+      currentTranslateY = delta > 0 ? delta : 0
+      scheduleApplyStyles(currentTranslateY)
     } else {
-      currentTarget.style.transition = 'transform 0.4s var(--ease-spring)'
-      currentTarget.style.transform = 'translateY(0px)'
-      setTimeout(() => {
-        if (props.modelValue) {
-          currentTarget.style.transition = ''
-          currentTarget.style.transform = ''
-        }
-      }, 400)
+      if (delta > 0 && currentScrollTop <= 0) {
+        isDragging = true
+        touchStartY = clientY
+        currentTranslateY = 0
+        clearTransitions()
+        scheduleApplyStyles(0)
+      }
     }
-    
-    window.removeEventListener('mousemove', onMove)
-    window.removeEventListener('mouseup', onUp)
   }
 
-  window.addEventListener('mousemove', onMove)
-  window.addEventListener('mouseup', onUp)
+  const onMouseUp = (ev: MouseEvent) => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
+
+    if (isDragging) {
+      isDragging = false
+      const finalDelta = ev.clientY - touchStartY
+      const threshold = Math.max(100, sheetHeight * 0.25)
+      
+      if (finalDelta > threshold) {
+        animateCloseAndEmit()
+      } else {
+        resetDragStyles(true)
+      }
+    }
+
+    window.removeEventListener('mousemove', onMouseMove)
+    window.removeEventListener('mouseup', onMouseUp)
+  }
+
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', onMouseUp)
 }
 </script>
 
