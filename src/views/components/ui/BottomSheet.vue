@@ -147,6 +147,7 @@ const contentEl = useTemplateRef<HTMLElement>('contentEl')
 let touchStartY = 0
 let currentTranslateY = 0
 let isDragging = false
+let ignoreGesture = false
 let rafId: number | null = null
 let sheetHeight = 0
 
@@ -255,10 +256,12 @@ const shouldStartDrag = (target: HTMLElement): boolean => {
 const onTouchStart = (e: TouchEvent) => {
   const target = e.target as HTMLElement
   if (!shouldStartDrag(target)) {
+    ignoreGesture = true
     isDragging = false
     return
   }
 
+  ignoreGesture = false
   touchStartY = e.touches[0].clientY
   sheetHeight = sheetEl.value?.clientHeight || 0
   
@@ -269,8 +272,7 @@ const onTouchStart = (e: TouchEvent) => {
 }
 
 const onTouchMove = (e: TouchEvent) => {
-  const target = e.target as HTMLElement
-  if (!shouldStartDrag(target)) return
+  if (ignoreGesture) return
 
   const clientY = e.touches[0].clientY
   const delta = clientY - touchStartY
@@ -281,7 +283,7 @@ const onTouchMove = (e: TouchEvent) => {
       if (e.cancelable) e.preventDefault()
       currentTranslateY = delta
       scheduleApplyStyles(delta)
-    } else {
+    } else if (currentTranslateY !== 0) {
       if (e.cancelable) e.preventDefault()
       currentTranslateY = 0
       scheduleApplyStyles(0)
@@ -300,6 +302,8 @@ const onTouchMove = (e: TouchEvent) => {
 }
 
 const onTouchEnd = (e: TouchEvent) => {
+  if (ignoreGesture) return
+
   if (rafId !== null) {
     cancelAnimationFrame(rafId)
     rafId = null
@@ -322,8 +326,12 @@ const onTouchEnd = (e: TouchEvent) => {
 // Handlers de Mouse Desktop
 const onMouseDown = (e: MouseEvent) => {
   const target = e.target as HTMLElement
-  if (!shouldStartDrag(target)) return
+  if (!shouldStartDrag(target)) {
+    ignoreGesture = true
+    return
+  }
 
+  ignoreGesture = false
   touchStartY = e.clientY
   sheetHeight = sheetEl.value?.clientHeight || 0
   
@@ -333,13 +341,20 @@ const onMouseDown = (e: MouseEvent) => {
   clearTransitions()
 
   const onMouseMove = (ev: MouseEvent) => {
+    if (ignoreGesture) return
+
     const clientY = ev.clientY
     const delta = clientY - touchStartY
     const currentScrollTop = contentEl.value?.scrollTop || 0
 
     if (isDragging) {
-      currentTranslateY = delta > 0 ? delta : 0
-      scheduleApplyStyles(currentTranslateY)
+      if (delta > 0) {
+        currentTranslateY = delta
+        scheduleApplyStyles(delta)
+      } else if (currentTranslateY !== 0) {
+        currentTranslateY = 0
+        scheduleApplyStyles(0)
+      }
     } else {
       if (delta > 0 && currentScrollTop <= 0) {
         isDragging = true
@@ -357,7 +372,7 @@ const onMouseDown = (e: MouseEvent) => {
       rafId = null
     }
 
-    if (isDragging) {
+    if (!ignoreGesture && isDragging) {
       isDragging = false
       const finalDelta = ev.clientY - touchStartY
       const threshold = Math.max(100, sheetHeight * 0.25)
