@@ -1,7 +1,7 @@
 <template>
   <div 
     :style="{ width: size + 'px', height: size + 'px' }" 
-    class="relative select-none pointer-events-none mascot-container transition-transform duration-500 ease-spring"
+    class="relative select-none pointer-events-none mascot-container"
     :class="[hovered ? 'scale-110' : 'scale-100']"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
@@ -18,13 +18,11 @@
         fill="black"
         fill-opacity="0.05"
         transform="translate(2, 3)"
-        class="transition-all duration-700 ease-spring"
       />
       <!-- Blob Body -->
       <path
         :d="blobPath"
         :fill="fillColor"
-        class="transition-all duration-700 ease-spring"
       />
       
       <!-- Embellishments: Blush -->
