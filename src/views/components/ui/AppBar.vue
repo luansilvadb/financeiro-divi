@@ -32,21 +32,18 @@ defineExpose({ headerEl, parallaxEl })
       <slot name="flexible-background" />
     </div>
 
-    <!-- Coluna Esquerda: width natural, empurrada para a esquerda -->
-    <div class="relative z-10 flex items-center justify-start shrink-0">
+    <!-- Coluna Esquerda: Left-aligned content column (flex-1 basis-0 justify-start) -->
+    <div class="relative z-10 flex-1 basis-0 flex items-center justify-start">
       <slot name="left" />
     </div>
 
-    <!-- Coluna Central: ABSOLUTAMENTE centrada — left:50% + translateX(-50%) -->
-    <!-- Garante que DIVI. está sempre em exatamente 50% da largura, independente das laterais -->
-    <div class="absolute left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none px-10">
-      <div class="pointer-events-auto">
-        <slot name="center" />
-      </div>
+    <!-- Coluna Central: Centered branding column (flex-shrink-0 min-w-max) -->
+    <div class="relative z-20 flex-shrink-0 min-w-max flex items-center justify-center">
+      <slot name="center" />
     </div>
 
-    <!-- Coluna Direita: width natural, empurrada para a direita -->
-    <div class="relative z-10 flex items-center justify-end shrink-0">
+    <!-- Coluna Direita: Right-aligned content column (flex-1 basis-0 justify-end) -->
+    <div class="relative z-10 flex-1 basis-0 flex items-center justify-end">
       <slot name="right" />
     </div>
   </header>
@@ -65,9 +62,9 @@ header {
      Lido pelo DashboardHeader via getComputedStyle para calcular os valores CSS. */
   --parent-pad: 1.5rem; /* 24px */
 
-  /* Altura base: 52px (~12mm físico — Physical Height Constraint, Safeguard #12).
+  /* Altura base: 120px (EXPANDED_HEIGHT).
      Mutada diretamente via headerEl.style.height pelo pai no commitStyles(). */
-  height: 52px;
+  height: 120px;
 }
 
 @media (max-width: 640px) {

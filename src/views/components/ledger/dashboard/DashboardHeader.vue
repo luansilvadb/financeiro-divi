@@ -22,121 +22,38 @@ const emit = defineEmits<{
 
 // ─── DOM Refs (Direct DOM Mutation Pattern) ───────────────────────────────────
 const appBarRef = useTemplateRef<InstanceType<typeof AppBar>>('appBarRef')
-const leftBtnRef = useTemplateRef<HTMLButtonElement>('leftBtnRef')
-const leftLabelRef = useTemplateRef<HTMLDivElement>('leftLabelRef')
-const rightBtnRef = useTemplateRef<HTMLButtonElement>('rightBtnRef')
-const rightLabelRef = useTemplateRef<HTMLDivElement>('rightLabelRef')
-const centerRef = useTemplateRef<HTMLDivElement>('centerRef')
-const mascotRef = useTemplateRef<HTMLDivElement>('mascotRef')
-const tenantNameRef = useTemplateRef<HTMLDivElement>('tenantNameRef')
+const leftBtnRef = useTemplateRef<HTMLElement>('leftBtnRef')
+const leftLabelRef = useTemplateRef<HTMLElement>('leftLabelRef')
+const rightBtnRef = useTemplateRef<HTMLElement>('rightBtnRef')
+const rightLabelRef = useTemplateRef<HTMLElement>('rightLabelRef')
+const centerRef = useTemplateRef<HTMLElement>('centerRef')
+const mascotRef = useTemplateRef<HTMLElement>('mascotRef')
+const tenantNameRef = useTemplateRef<HTMLElement>('tenantNameRef')
 
-// ─── Direction-Aware State Machine ───────────────────────────────────────────
-// ARQUITETURA: t é uma variável JS auto-gerenciada, NUNCA derivada de window.scrollY.
-// A causa raiz do snap-back glitch era o mapeamento position-based:
-//   t = scrollY / RANGE  →  oscila infinitamente quando scrollY flutua no threshold.
-// Solução: t é atualizado por DELTA de scroll, com dead zone e snap decisivo.
+// ─── Flutter-Faithful SliverAppBar Constants & State ──────────────────────────
+const EXPANDED_HEIGHT = 120
+const COLLAPSED_HEIGHT = 52
+const MAX_SHRINK_OFFSET = EXPANDED_HEIGHT - COLLAPSED_HEIGHT // 68
 
-const EXPANDED_HEIGHT = 52   // px — ~12mm físico em tela 96dpi
-const COLLAPSED_HEIGHT = 44  // px — estado colapsado (branding apenas)
-const INTERPOLATION_RANGE = EXPANDED_HEIGHT - COLLAPSED_HEIGHT  // 8px
-
-const DEAD_ZONE_PX = 8       // px acumulados antes de mover t (absorve micro-scrolls)
-const COLLAPSE_RATE = 1 / 40 // t avança X por px de delta descendo
-const EXPAND_RATE = 1 / 30   // t recua X por px de delta subindo (mais rápido)
-const SNAP_THRESHOLD = 0.35  // zona ambígua: snapa decisivamente para 0 ou 1
-
-// Variáveis de estado — plain let, NUNCA ref() reativo
-let t = 0               // [0=expandido, 1=colapsado]
-let lastScrollY = 0     // scrollY do frame anterior
-let deadZoneAccum = 0   // delta acumulado não processado (px)
+// Variáveis de estado locais — plain let, NUNCA Vue ref() reativo
+let shrinkOffset = 0 // [0, MAX_SHRINK_OFFSET]
 let rafId: number | null = null
-let snapTransitionPending = false
 
 /**
- * applyStyles — núcleo do estado machine.
- * 
- * Algoritmo (conforme spec SPDD §8):
- * 1. Computa delta = scrollY - lastScrollY
- * 2. Boundary: scrollY ≤ 0 → força t=0 (topo da página = sempre expandido)
- * 3. Acumula delta na dead zone — micro-scrolls são absorvidos silenciosamente
- * 4. Após cruzar DEAD_ZONE_PX, aplica delta efetivo à taxa collapse/expand
- * 5. Snap decisivo: t em zona ambígua → snapa para 0 ou 1 com transição suave
- * 6. Aplica estilos via el.style direto (zero Vue reactivity no hot path)
+ * commitStyles — aplica as mutações de estilo diretamente sobre os elementos DOM.
+ * Sem acoplar à reatividade do Vue e livre de transições CSS conflitantes.
  */
-function applyStyles(): void {
-  const currentScrollY = window.scrollY
-  const delta = currentScrollY - lastScrollY
-  lastScrollY = currentScrollY
-
-  // ── Boundary: topo da página ─────────────────────────────────────────────
-  if (currentScrollY <= 0) {
-    t = 0
-    deadZoneAccum = 0
-    commitStyles(false)
-    return
-  }
-
-  // ── Dead Zone ─────────────────────────────────────────────────────────────
-  deadZoneAccum += delta
-
-  let didSnap = false
-
-  if (Math.abs(deadZoneAccum) >= DEAD_ZONE_PX) {
-    // Extrai delta efetivo descontando a dead zone
-    const eff = deadZoneAccum - Math.sign(deadZoneAccum) * DEAD_ZONE_PX
-    deadZoneAccum = 0
-
-    if (eff > 0) {
-      // Scroll DOWN → colapsar
-      t = Math.min(1, t + eff * COLLAPSE_RATE)
-    } else {
-      // Scroll UP → expandir
-      t = Math.max(0, t + eff * EXPAND_RATE)
-    }
-
-    // ── Snap to stable state ────────────────────────────────────────────────
-    // Impede que t fique "preso" em zona ambígua (snap-back root cause)
-    if (t > SNAP_THRESHOLD && t < 1) {
-      t = 1
-      didSnap = true
-    } else if (t < (1 - SNAP_THRESHOLD) && t > 0) {
-      t = 0
-      didSnap = true
-    }
-  }
-
-  commitStyles(didSnap)
-}
-
-/**
- * commitStyles — aplica o valor final de t diretamente em el.style.
- * Separado de applyStyles para clareza e para controlar o snap transition.
- *
- * REGRA CRÍTICA (Norm #5 / Safeguard #7):
- * Nenhuma propriedade mutada aqui pode ter CSS `transition` durante scroll contínuo.
- * A única exceção é o one-shot snap transition (didSnap = true).
- */
-function commitStyles(didSnap: boolean): void {
+function commitStyles(t: number): void {
   const header = appBarRef.value?.headerEl
   const parallax = appBarRef.value?.parallaxEl
   if (!header) return
 
-  // Snap one-shot transition: suaviza apenas o salto discreto de snap
-  if (didSnap && !snapTransitionPending) {
-    snapTransitionPending = true
-    header.style.transition = 'height 180ms ease-out, background-color 180ms ease-out, box-shadow 180ms ease-out'
-    requestAnimationFrame(() => {
-      header.style.transition = ''
-      snapTransitionPending = false
-    })
-  }
-
   const pad = parseFloat(getComputedStyle(header).getPropertyValue('--parent-pad')) || 24
 
   // ── AppBar <header> ────────────────────────────────────────────────────────
-  header.style.height = `${EXPANDED_HEIGHT - INTERPOLATION_RANGE * t}px`
+  header.style.height = `${EXPANDED_HEIGHT - MAX_SHRINK_OFFSET * t}px`
   header.style.backgroundColor = t > 0.05
-    ? `rgba(251, 250, 249, ${Math.min(1.0, 0.98 * t)})`
+    ? `rgba(251, 250, 249, ${Math.min(0.98, 0.98 * t)})`
     : 'transparent'
   header.style.boxShadow = t > 0.6
     ? `0 ${6 * t * t}px ${24 * t}px -4px rgba(67,70,69,${0.08 * t}), 0 0 1px rgba(18,18,18,${0.1 * t})`
@@ -156,7 +73,7 @@ function commitStyles(didSnap: boolean): void {
 
   // ── Branding Central ───────────────────────────────────────────────────────
   if (centerRef.value) {
-    centerRef.value.style.transform = `scale(${1.05 - 0.15 * t})`
+    centerRef.value.style.transform = `scale(${1 - 0.12 * t})`
   }
 
   // ── Mascote (outer wrapper — transform exclusivo do scroll) ────────────────
@@ -168,7 +85,7 @@ function commitStyles(didSnap: boolean): void {
 
   // ── Tenant Name ────────────────────────────────────────────────────────────
   if (tenantNameRef.value) {
-    tenantNameRef.value.style.opacity = String(Math.max(0, 1 - 2.8 * t))
+    tenantNameRef.value.style.opacity = String(Math.max(0, 1 - 2.5 * t))
   }
 
   // ── Botão Esquerdo ─────────────────────────────────────────────────────────
@@ -192,15 +109,26 @@ function commitStyles(didSnap: boolean): void {
   }
 }
 
+/**
+ * applyStyles — implementa a rolagem linear simples (Pinned SliverAppBar).
+ */
+function applyStyles(): void {
+  const currentScrollY = window.scrollY
+  shrinkOffset = Math.max(0, Math.min(MAX_SHRINK_OFFSET, currentScrollY))
+  const t = shrinkOffset / MAX_SHRINK_OFFSET
+  commitStyles(t)
+}
+
 function handleScroll(): void {
   if (rafId !== null) cancelAnimationFrame(rafId)
   rafId = requestAnimationFrame(applyStyles)
 }
 
 onMounted(() => {
-  lastScrollY = window.scrollY  // inicializa com posição atual (evita delta espúrio)
+  shrinkOffset = Math.min(window.scrollY, MAX_SHRINK_OFFSET)
+  commitStyles(shrinkOffset / MAX_SHRINK_OFFSET)
+
   window.addEventListener('scroll', handleScroll, { passive: true })
-  applyStyles()  // aplica estado inicial
 })
 
 onUnmounted(() => {
