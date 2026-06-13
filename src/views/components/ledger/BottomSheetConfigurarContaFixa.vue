@@ -211,18 +211,18 @@ const salvar = () => {
 
         <!-- Campo de Input Customizado Expansível -->
         <div v-if="showingCustomInput" class="p-4 rounded-xl border border-stone bg-stone/20 space-y-3 animate-in fade-in slide-in-from-top-2 duration-250">
-          <div class="flex gap-2">
+          <div class="flex flex-col sm:flex-row gap-2">
             <input 
               v-model="customIconInput" 
               type="text" 
               placeholder="Cole ou digite um emoji..."
-              class="flex-grow px-3.5 py-3 rounded-lg border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember text-sm shadow-subtle"
+              class="w-full sm:flex-grow px-3.5 py-3 rounded-lg border border-stone bg-white outline-none font-bold text-charcoal focus:border-ember text-sm shadow-subtle"
               maxlength="4"
               @keyup.enter="confirmarCustomIcon"
             />
             <Button 
               variant="primary" 
-              class="px-4 text-[10px] uppercase font-bold tracking-widest h-[46px] shrink-0" 
+              class="w-full sm:w-auto px-4 text-[10px] uppercase font-bold tracking-widest h-[46px] shrink-0" 
               @click="confirmarCustomIcon"
               :disabled="!customIconInput.trim()"
             >

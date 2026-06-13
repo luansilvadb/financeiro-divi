@@ -21,93 +21,196 @@ const formatarBRL = (centavos: number) => {
   return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const formatarValorComSinal = (centavos: number, isPositive: boolean) => {
+  if (centavos === 0) {
+    return 'R$ 0,00'
+  }
+  const sinal = isPositive ? '+' : '-'
+  return `${sinal}R$ ${formatarBRL(centavos)}`
+}
+
+const obterClasseValor = (centavos: number, isPositive: boolean) => {
+  if (centavos === 0) {
+    return 'text-graphite font-semibold'
+  }
+  return isPositive ? 'text-meadow font-bold' : 'text-coral font-bold'
+}
+
 const toggleExtrato = () => {
   expanded.value = !expanded.value
 }
 
 const obterExtrato = () => {
-  return ExtratoService.obterExtratoMembro(props.membro.id, props.gastos)
+  return [...ExtratoService.obterExtratoMembro(props.membro.id, props.gastos)].reverse()
 }
 </script>
 
 <template>
   <div class="space-y-6">
-    <div class="flex justify-between items-center px-1">
-      <div class="flex items-center gap-4 group">
-        <MembroAvatar :nome="membro.nome" size="lg" />
-        <span class="font-bold text-[22px] sm:text-[28px] tracking-tighter text-charcoal truncate">{{ membro.nome }}</span>
+    <!-- Cabeçalho do Membro com Informações de Saldo Semânticas -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-1 pb-4 border-b border-stone/50">
+      <div class="flex items-center gap-4 group min-w-0">
+        <MembroAvatar :nome="membro.nome" size="lg" class="shrink-0" />
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-[22px] sm:text-[28px] tracking-tighter text-charcoal truncate leading-tight">
+            {{ membro.nome }}
+          </span>
+          <p class="text-xs text-graphite font-semibold mt-1">
+            {{ 
+              saldoUnificado > 0.005 
+                ? 'Você pagou a mais pelo grupo e tem dinheiro a receber.' 
+                : saldoUnificado < -0.005 
+                ? 'Você consumiu mais do que pagou e precisa acertar a diferença.' 
+                : 'Você está com as contas em dia no grupo!' 
+            }}
+          </p>
+        </div>
       </div>
-      <span 
-        class="text-[10px] sm:text-xs font-bold px-4 py-2 rounded-full shrink-0 uppercase tracking-widest shadow-sm"
-        :class="saldoUnificado > 0.005 ? 'bg-meadow/10 text-meadow' : saldoUnificado < -0.005 ? 'bg-coral/10 text-coral' : 'bg-stone text-graphite'"
+      
+      <div 
+        class="text-xs font-bold px-4 py-2.5 rounded-2xl shrink-0 uppercase tracking-widest shadow-sm text-center flex items-center justify-center self-start sm:self-center border"
+        :class="[
+          saldoUnificado > 0.005 
+            ? 'bg-meadow/10 text-meadow border-meadow/20' 
+            : saldoUnificado < -0.005 
+            ? 'bg-coral/10 text-coral border-coral/20' 
+            : 'bg-stone/50 text-graphite border-stone'
+        ]"
       >
-        Saldo: {{ saldoUnificado > 0.005 ? '+' : '' }}R$ {{ Math.abs(saldoUnificado || 0).toFixed(2).replace('.', ',') }}
-      </span>
+        {{ 
+          saldoUnificado > 0.005 
+            ? `A receber: R$ ${Math.abs(saldoUnificado).toFixed(2).replace('.', ',')}` 
+            : saldoUnificado < -0.005 
+            ? `A pagar: R$ ${Math.abs(saldoUnificado).toFixed(2).replace('.', ',')}` 
+            : 'Saldo Equilibrado' 
+        }}
+      </div>
     </div>
 
+    <!-- Cards Detalhados dos Fluxos -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- PIX -->
-      <div class="rounded-2xl bg-parchment p-5 flex flex-col justify-between shadow-subtle transition-all duration-300">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-9 h-9 rounded-full bg-white shadow-subtle flex items-center justify-center shrink-0">
+      <div class="rounded-2xl bg-parchment p-5 flex flex-col justify-between shadow-subtle border border-stone/30 hover:border-ember/20 transition-all duration-300">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-9 h-9 rounded-xl bg-white shadow-subtle flex items-center justify-center shrink-0">
             <Wallet class="w-4.5 h-4.5 text-ember" />
           </div>
-          <span class="text-[10px] font-semibold uppercase tracking-widest text-graphite opacity-60">PIX / Dinheiro</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-charcoal">PIX / Dinheiro</span>
         </div>
         
-        <div class="space-y-3">
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs font-semibold text-graphite">Pagou</span>
-            <span class="text-sm font-bold tracking-tight text-meadow">+R$ {{ formatarBRL(breakdown?.pixFez || 0) }}</span>
+        <div class="space-y-4">
+          <!-- Pagou -->
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-charcoal">Pagou para o grupo (+)</span>
+              <span class="text-[11px] text-graphite mt-0.5">Compras pagas por você</span>
+            </div>
+            <span 
+              class="text-sm tracking-tight shrink-0"
+              :class="obterClasseValor(breakdown?.pixFez || 0, true)"
+            >
+              {{ formatarValorComSinal(breakdown?.pixFez || 0, true) }}
+            </span>
           </div>
-          <div class="h-px w-full bg-stone" />
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs font-semibold text-graphite">Consumiu</span>
-            <span class="text-sm font-bold tracking-tight text-coral">-R$ {{ formatarBRL(breakdown?.pixConsumo || 0) }}</span>
+          
+          <div class="h-px w-full bg-stone/60" />
+          
+          <!-- Consumiu -->
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-charcoal">Sua parte consumida (-)</span>
+              <span class="text-[11px] text-graphite mt-0.5">O que você usou destas compras</span>
+            </div>
+            <span 
+              class="text-sm tracking-tight shrink-0"
+              :class="obterClasseValor(breakdown?.pixConsumo || 0, false)"
+            >
+              {{ formatarValorComSinal(breakdown?.pixConsumo || 0, false) }}
+            </span>
           </div>
         </div>
       </div>
 
       <!-- Cartão -->
-      <div class="rounded-2xl bg-parchment p-5 flex flex-col justify-between shadow-subtle transition-all duration-300">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-9 h-9 rounded-full bg-white shadow-subtle flex items-center justify-center shrink-0">
+      <div class="rounded-2xl bg-parchment p-5 flex flex-col justify-between shadow-subtle border border-stone/30 hover:border-ember/20 transition-all duration-300">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-9 h-9 rounded-xl bg-white shadow-subtle flex items-center justify-center shrink-0">
             <CreditCard class="w-4.5 h-4.5 text-ember" />
           </div>
-          <span class="text-[10px] font-semibold uppercase tracking-widest text-graphite opacity-60">Faturas</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-charcoal">Faturas</span>
         </div>
         
-        <div class="space-y-3">
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs font-semibold text-graphite">Usou</span>
-            <span class="text-sm font-bold tracking-tight text-meadow">+R$ {{ formatarBRL(breakdown?.cardFez || 0) }}</span>
+        <div class="space-y-4">
+          <!-- Usou -->
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-charcoal">Fez no seu cartão (+)</span>
+              <span class="text-[11px] text-graphite mt-0.5">Contas do grupo no seu cartão</span>
+            </div>
+            <span 
+              class="text-sm tracking-tight shrink-0"
+              :class="obterClasseValor(breakdown?.cardFez || 0, true)"
+            >
+              {{ formatarValorComSinal(breakdown?.cardFez || 0, true) }}
+            </span>
           </div>
-          <div class="h-px w-full bg-stone" />
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs font-semibold text-graphite">Consumiu</span>
-            <span class="text-sm font-bold tracking-tight text-coral">-R$ {{ formatarBRL(breakdown?.cardConsumo || 0) }}</span>
+          
+          <div class="h-px w-full bg-stone/60" />
+          
+          <!-- Consumiu -->
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-charcoal">Sua parte na fatura (-)</span>
+              <span class="text-[11px] text-graphite mt-0.5">O que gastou no cartão de outros</span>
+            </div>
+            <span 
+              class="text-sm tracking-tight shrink-0"
+              :class="obterClasseValor(breakdown?.cardConsumo || 0, false)"
+            >
+              {{ formatarValorComSinal(breakdown?.cardConsumo || 0, false) }}
+            </span>
           </div>
         </div>
       </div>
 
       <!-- Empréstimo -->
-      <div class="rounded-2xl bg-parchment p-5 flex flex-col justify-between shadow-subtle transition-all duration-300">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-9 h-9 rounded-full bg-white shadow-subtle flex items-center justify-center shrink-0">
+      <div class="rounded-2xl bg-parchment p-5 flex flex-col justify-between shadow-subtle border border-stone/30 hover:border-ember/20 transition-all duration-300">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-9 h-9 rounded-xl bg-white shadow-subtle flex items-center justify-center shrink-0">
             <Handshake class="w-4.5 h-4.5 text-ember" />
           </div>
-          <span class="text-[10px] font-semibold uppercase tracking-widest text-graphite opacity-60">Empréstimos</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-charcoal">Empréstimos</span>
         </div>
         
-        <div class="space-y-3">
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs font-semibold text-graphite">Emprestou</span>
-            <span class="text-sm font-bold tracking-tight text-meadow">+R$ {{ formatarBRL(breakdown?.loanFez || 0) }}</span>
+        <div class="space-y-4">
+          <!-- Emprestou -->
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-charcoal">Você emprestou (+)</span>
+              <span class="text-[11px] text-graphite mt-0.5">Dinheiro enviado para outros</span>
+            </div>
+            <span 
+              class="text-sm tracking-tight shrink-0"
+              :class="obterClasseValor(breakdown?.loanFez || 0, true)"
+            >
+              {{ formatarValorComSinal(breakdown?.loanFez || 0, true) }}
+            </span>
           </div>
-          <div class="h-px w-full bg-stone" />
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs font-semibold text-graphite">Tomou</span>
-            <span class="text-sm font-bold tracking-tight text-coral">-R$ {{ formatarBRL(breakdown?.loanTomou || 0) }}</span>
+          
+          <div class="h-px w-full bg-stone/60" />
+          
+          <!-- Tomou -->
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-charcoal">Pegou emprestado (-)</span>
+              <span class="text-[11px] text-graphite mt-0.5">Dinheiro recebido de outros</span>
+            </div>
+            <span 
+              class="text-sm tracking-tight shrink-0"
+              :class="obterClasseValor(breakdown?.loanTomou || 0, false)"
+            >
+              {{ formatarValorComSinal(breakdown?.loanTomou || 0, false) }}
+            </span>
           </div>
         </div>
       </div>

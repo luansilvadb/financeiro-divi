@@ -25,7 +25,7 @@ export class ExtratoService {
    * Calcula o extrato detalhado para um membro específico a partir de uma lista de gastos.
    */
   static obterExtratoMembro(membroId: string, gastos: Gasto[]): ItemExtrato[] {
-    const gastosOrdenados = [...gastos].sort((a, b) => a.id.localeCompare(b.id))
+    const gastosOrdenados = [...gastos].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
     
     let saldoAcumulado = Dinheiro.deCentavos(0)
     

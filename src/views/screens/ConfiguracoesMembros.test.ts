@@ -68,7 +68,7 @@ describe('ConfiguracoesMembros', () => {
         } 
       }
     })
-    expect(wrapper.text()).toContain('Moradores & Acessos')
+    expect(wrapper.text()).toContain('Perfil dos Usuários')
     expect(wrapper.text()).toContain('Luan') // Nome do currentMembro
     expect(wrapper.text()).toContain('Sair da Conta')
     expect(wrapper.findComponent({ name: 'ConfiguracoesCartoes' }).exists()).toBe(true)
@@ -267,7 +267,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Estado inicial: Modo Foco inativo
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Acessos')
+    expect(wrapper.text()).toContain('Perfil dos Usuários')
     expect(wrapper.text()).toContain('Meu Perfil')
     expect(wrapper.text()).toContain('Sair da Conta')
     expect(wrapper.text()).toContain('Fechar')
@@ -279,7 +279,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem sumir
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Moradores & Acessos')
+    expect(wrapper.text()).not.toContain('Perfil dos Usuários')
     expect(wrapper.text()).not.toContain('Meu Perfil')
     expect(wrapper.text()).not.toContain('Sair da Conta')
     expect(wrapper.text()).not.toContain('Fechar')
@@ -290,7 +290,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Acessos')
+    expect(wrapper.text()).toContain('Perfil dos Usuários')
     expect(wrapper.text()).toContain('Meu Perfil')
     expect(wrapper.text()).toContain('Sair da Conta')
     expect(wrapper.text()).toContain('Fechar')
@@ -321,7 +321,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Estado inicial: Modo Foco inativo
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Acessos')
+    expect(wrapper.text()).toContain('Perfil dos Usuários')
     expect(wrapper.text()).toContain('Fechar')
 
     // Clicar em um membro para editar (abrir edicaoMembro/mostrarBottomSheet)
@@ -332,7 +332,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem sumir devido ao Modo Foco na edição
     expect(wrapper.find('h2.text-display').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Moradores & Acessos')
+    expect(wrapper.text()).not.toContain('Perfil dos Usuários')
     expect(wrapper.text()).not.toContain('Fechar')
 
     // Clicar no botão Cancelar da edição para fechar
@@ -342,7 +342,7 @@ describe('ConfiguracoesMembros', () => {
 
     // Elementos devem reaparecer
     expect(wrapper.find('h2.text-display').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Moradores & Acessos')
+    expect(wrapper.text()).toContain('Perfil dos Usuários')
     expect(wrapper.text()).toContain('Fechar')
   })
 })

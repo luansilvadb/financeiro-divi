@@ -2,7 +2,11 @@ import { CartaoService } from './cartao.service';
 
 describe('CartaoService validation milestones', () => {
   const prisma = {
-    fatura: { upsert: jest.fn().mockResolvedValue({ id: 'f1' }) },
+    fatura: {
+      upsert: jest.fn().mockResolvedValue({ id: 'f1' }),
+      findUnique: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     $transaction: jest.fn(async (operations) => Promise.all(operations)),
   };
   const gateway = { notificarAlteracao: jest.fn() };

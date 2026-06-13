@@ -10,6 +10,7 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { Public } from './public.decorator';
 import type { AuthenticatedRequest } from './auth.types';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -75,5 +76,17 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
+  }
+
+  @ApiOperation({ summary: 'Realizar login ou cadastro via Google OAuth' })
+  @ApiOkResponse({
+    description: 'Login/Cadastro com o Google bem-sucedido',
+    type: LoginResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Credencial do Google inválida ou não verificada' })
+  @Public()
+  @Post('google')
+  async loginComGoogle(@Body() googleAuthDto: GoogleAuthDto) {
+    return this.authService.loginComGoogle(googleAuthDto);
   }
 }

@@ -7,9 +7,13 @@ import type { JwtPayload } from './auth.types';
 import { randomUUID, randomBytes } from 'crypto';
 import { MailService } from '../shared/mail/mail.service';
 import { Prisma } from '@prisma/client';
+import { OAuth2Client } from 'google-auth-library';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 
 @Injectable()
 export class AuthService {
+  private googleClient = new OAuth2Client();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -137,6 +141,10 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Esta conta está vinculada ao login do Google. Por favor, entre usando o Google.');
+    }
+
     const isMatch = await bcrypt.compare(passwordSecret, user.passwordHash);
     if (!isMatch) {
       throw new UnauthorizedException('Credenciais inválidas.');
@@ -253,5 +261,98 @@ export class AuthService {
     ]);
 
     return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  async loginComGoogle(googleAuthDto: GoogleAuthDto) {
+    const { credential, inviteCode, membroId } = googleAuthDto;
+
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (error) {
+      throw new UnauthorizedException('Credencial do Google inválida.');
+    }
+
+    if (!payload || !payload.email) {
+      throw new UnauthorizedException('Não foi possível obter o e-mail do Google.');
+    }
+
+    if (!payload.email_verified) {
+      throw new UnauthorizedException('O e-mail do Google não está verificado.');
+    }
+
+    const email = payload.email.trim().toLowerCase();
+    const nome = payload.name || 'Usuário Google';
+    const googleId = payload.sub; // Identificador exclusivo do Google
+
+    // Busca usuário pelo googleId ou pelo email
+    let user = await this.prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { googleId },
+          { email }
+        ]
+      }
+    });
+
+    let tenantId: string | null = null;
+
+    if (!user) {
+      // Cria novo usuário
+      const result = await this.prisma.$transaction(async (tx) => {
+        const novoUser = await tx.usuario.create({
+          data: {
+            email,
+            nome,
+            googleId,
+            passwordHash: null, // Login social não tem senha inicial
+          },
+        });
+
+        const { tenantId: tId } = await this.associarUsuarioAoTenantTx(
+          tx,
+          novoUser,
+          inviteCode,
+          membroId
+        );
+
+        return { user: novoUser, tenantId: tId };
+      });
+
+      user = result.user;
+      tenantId = result.tenantId;
+    } else {
+      // Se o usuário existe mas não tem googleId associado, vincula agora
+      if (!user.googleId) {
+        user = await this.prisma.usuario.update({
+          where: { id: user.id },
+          data: { googleId }
+        });
+      }
+
+      // Se houver um convite, associa o usuário existente à casa
+      if (inviteCode) {
+        const result = await this.prisma.$transaction(async (tx) => {
+          return this.associarUsuarioAoTenantTx(tx, user, inviteCode, membroId);
+        });
+        tenantId = result.tenantId;
+      }
+    }
+
+    if (tenantId) {
+      this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
+    }
+
+    const jwtPayload = { sub: user.id, email: user.email };
+    return {
+      access_token: this.jwtService.sign(jwtPayload),
+      userId: user.id,
+      email: user.email,
+      nome: user.nome,
+    };
   }
 }

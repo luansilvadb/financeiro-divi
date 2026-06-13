@@ -79,6 +79,37 @@ export class TenantSessionService {
     }
   }
 
+  async loginComGoogle(credential: string, inviteCode?: string, membroId?: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential, inviteCode, membroId })
+      })
+
+      if (!response.ok) {
+        logger.error('Erro de login com Google:', await lerMensagemErro(response, response.statusText))
+        return false
+      }
+
+      const data = await response.json() as LoginResponse
+      this.jwtToken = data.access_token
+      this.currentUserId = data.userId
+
+      localStorage.setItem('divi_jwt_token', data.access_token)
+      localStorage.setItem('divi_current_user_id', data.userId)
+      localStorage.setItem('divi_user_email', data.email)
+      localStorage.setItem('divi_username', data.nome)
+
+      await this.carregarSessaoUsuario()
+
+      return true
+    } catch (err) {
+      logger.error('Falha de conexão ao fazer login com Google:', err)
+      return false
+    }
+  }
+
   async register(email: string, nome: string, passwordSecret: string, inviteCode?: string, membroId?: string): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}auth/register`, {

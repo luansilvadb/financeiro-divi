@@ -282,6 +282,7 @@ const handleGravar = async () => {
         {{ stepIndex === 0 ? 'Cancelar' : 'Voltar' }}
       </Button>
       <Button
+        v-if="currentState !== 'FLOW_SELECTION' && currentState !== 'BUYER_SELECTION' && currentState !== 'LENDER_SELECTION' && currentState !== 'BORROWER_SELECTION'"
         class="flex-[2]"
         :disabled="!canAdvance || isSubmitting"
         :loading="isSubmitting"

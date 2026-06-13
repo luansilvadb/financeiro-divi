@@ -28,7 +28,8 @@ model Usuario {
   id           String       @id @default(uuid()) @db.Uuid
   email        String       @unique
   nome         String
-  passwordHash String       @map("password_hash")
+  passwordHash String?      @map("password_hash")
+  googleId     String?      @unique @map("google_id")
   createdAt    DateTime     @default(now()) @map("created_at")
   perfisMembro MembroCasa[]
   resetTokens  PasswordResetToken[]

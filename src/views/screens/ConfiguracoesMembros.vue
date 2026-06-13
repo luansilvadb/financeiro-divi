@@ -34,8 +34,8 @@ onMounted(async () => {
   <div class="h-full flex flex-col bg-canvas overflow-hidden">
     <!-- Header -->
     <div v-if="!isModoFoco" class="shrink-0 p-6 sm:px-8 sm:pt-10">
-      <h2 class="text-display text-4xl sm:text-5xl text-charcoal">Moradores <span class="text-ember">&</span> Acessos</h2>
-      <p class="text-xs sm:text-sm text-ash font-bold mt-2 uppercase tracking-[0.2em]">Quem mora aqui e como cada um contribui</p>
+      <h2 class="text-display text-4xl sm:text-5xl text-charcoal">Perfil <span class="text-ember">dos</span> Usuários</h2>
+      <p class="text-xs sm:text-sm text-ash font-bold mt-2 uppercase tracking-[0.2em]">Configure quem mora aqui e como cada um contribui</p>
     </div>
 
     <!-- Navegação Floating Island -->

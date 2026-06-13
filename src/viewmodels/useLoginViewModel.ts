@@ -50,6 +50,25 @@ export function useLoginViewModel() {
     return success
   }
 
+  const handleGoogleLogin = async (credential: string) => {
+    errorMsg.value = ''
+    if (!credential) {
+      errorMsg.value = 'Credencial do Google ausente.'
+      return false
+    }
+    const success = await tenantSessionService.loginComGoogle(
+      credential,
+      inviteCode.value,
+      membroId.value
+    )
+    if (success) {
+      isAuthed.value = true
+    } else {
+      errorMsg.value = 'Falha ao autenticar com o Google. Tente novamente.'
+    }
+    return success
+  }
+
   return {
     email,
     nome,
@@ -59,6 +78,7 @@ export function useLoginViewModel() {
     membroId,
     isAuthed,
     handleLogin,
-    handleRegister
+    handleRegister,
+    handleGoogleLogin
   }
 }

@@ -29,7 +29,7 @@ const variantColors = {
 <template>
   <div 
     :class="[
-      'relative flex items-center justify-center font-bold border transition-all duration-700 ease-spring shadow-subtle group-hover:scale-110 group-hover:rotate-3 blob-shape',
+      'relative flex items-center justify-center font-bold border transition-all duration-700 ease-spring shadow-subtle group-hover:scale-110 group-hover:rotate-3 blob-shape shrink-0',
       sizeClasses[size],
       variantColors[variant]
     ]"

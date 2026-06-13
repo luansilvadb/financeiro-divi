@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Gasto } from '../../../../models/entities/Gasto'
 import { ExtratoService } from '../../../../models/services/ExtratoService'
 import Card from '../../ui/Card.vue'
-import { Search } from 'lucide-vue-next'
+import { Search, HelpCircle } from 'lucide-vue-next'
 import DetalhamentoMembroCard from './DetalhamentoMembroCard.vue'
+import HelpExplanationModal from './HelpExplanationModal.vue'
 
 interface Props {
   membros: { id: string; nome: string }[]
@@ -13,6 +14,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const showHelpModal = ref(false)
 
 const detailedBreakdown = computed(() => {
   return ExtratoService.obterBreakdownGranular(props.membros, props.gastos)
@@ -33,6 +36,15 @@ const detailedBreakdown = computed(() => {
           </p>
         </div>
       </div>
+
+      <button 
+        @click="showHelpModal = true"
+        class="w-10 h-10 rounded-full hover:bg-stone flex items-center justify-center text-graphite hover:text-ember transition-colors border-none bg-transparent cursor-pointer active:scale-95"
+        title="Como funciona a divisão dos saldos?"
+        aria-label="Como funciona a divisão dos saldos?"
+      >
+        <HelpCircle class="w-5.5 h-5.5" />
+      </button>
     </div>
 
     <div class="p-4 sm:p-8 space-y-12">
@@ -45,5 +57,7 @@ const detailedBreakdown = computed(() => {
         :breakdown="detailedBreakdown[m.id]"
       />
     </div>
+
+    <HelpExplanationModal :show="showHelpModal" @close="showHelpModal = false" />
   </Card>
 </template>

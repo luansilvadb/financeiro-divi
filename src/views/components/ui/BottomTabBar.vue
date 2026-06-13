@@ -1,7 +1,7 @@
 <!-- src/views/components/ui/BottomTabBar.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Building2, Calendar, CreditCard, User, Plus } from 'lucide-vue-next'
+import { Building2, Home, Coins, User, Plus } from 'lucide-vue-next'
 import MembroAvatar from './MembroAvatar.vue'
 
 export type Tab = 'casas' | 'hoje' | 'faturas' | 'perfil'
@@ -20,16 +20,16 @@ const emit = defineEmits<{
 }>()
 
 const tabs = [
-  { id: 'casas', label: 'Casas', icon: Building2 },
-  { id: 'hoje', label: 'Hoje', icon: Calendar },
-  { id: 'faturas', label: 'Faturas', icon: CreditCard },
-  { id: 'perfil', label: 'Perfil', icon: User },
+  { id: 'casas', label: 'Minhas Casas', icon: Building2 },
+  { id: 'hoje', label: 'Início', icon: Home },
+  { id: 'faturas', label: 'Acertos', icon: Coins },
+  { id: 'perfil', label: 'Ajustes', icon: User },
 ] as const
 
-const userName = ref('Perfil')
+const userName = ref('Ajustes')
 
 onMounted(() => {
-  userName.value = localStorage.getItem('divi_username') || 'Perfil'
+  userName.value = localStorage.getItem('divi_username') || 'Ajustes'
 })
 </script>
 
@@ -44,7 +44,7 @@ onMounted(() => {
           @click="emit('update:modelValue', tab.id)"
           class="flex-1 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center relative group outline-none cursor-pointer border-none bg-transparent rounded-2xl transition-all duration-300 ease-jelly active:scale-92"
           :class="[
-            modelValue === tab.id ? 'text-ember' : 'text-graphite/60 hover:text-charcoal'
+            modelValue === tab.id ? 'text-ember' : 'text-graphite/85 hover:text-charcoal'
           ]"
           :aria-label="tab.label"
           :aria-selected="modelValue === tab.id"
@@ -61,7 +61,7 @@ onMounted(() => {
               class="w-5.5 h-5.5 transition-all duration-500 ease-jelly"
               :class="modelValue === tab.id ? 'stroke-[2.5px] drop-shadow-[0_2px_8px_rgba(255,62,0,0.2)] scale-110' : 'stroke-[1.8px] scale-100'"
             />
-            <span class="text-[9px] font-bold uppercase tracking-[0.1em] leading-none text-center">
+            <span class="text-[11px] font-bold leading-none text-center">
               {{ tab.label }}
             </span>
           </div>
@@ -74,7 +74,7 @@ onMounted(() => {
           @click="emit('click-fab')"
           :disabled="isMonthClosed || isReadOnly"
           class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-ember text-white flex items-center justify-center border-none transition-all duration-500 ease-jelly shadow-[0_12px_32px_-8px_rgba(255,62,0,0.5)] hover:bg-ember/90 hover:scale-105 active:scale-90 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed cursor-pointer group"
-          aria-label="Novo lançamento"
+          aria-label="Adicionar novo gasto"
           data-testid="novo-lancamento-fab"
         >
           <Plus class="w-6 h-6 stroke-[3px] group-hover:rotate-90 transition-transform duration-500 ease-jelly" />
@@ -89,7 +89,7 @@ onMounted(() => {
           @click="emit('update:modelValue', tab.id)"
           class="flex-1 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center relative group outline-none cursor-pointer border-none bg-transparent rounded-2xl transition-all duration-300 ease-jelly active:scale-92"
           :class="[
-            modelValue === tab.id ? 'text-ember' : 'text-graphite/60 hover:text-charcoal'
+            modelValue === tab.id ? 'text-ember' : 'text-graphite/85 hover:text-charcoal'
           ]"
           :aria-label="tab.label"
           :aria-selected="modelValue === tab.id"
@@ -115,7 +115,7 @@ onMounted(() => {
               class="w-5.5 h-5.5 transition-all duration-500 ease-jelly"
               :class="modelValue === tab.id ? 'stroke-[2.5px] drop-shadow-[0_2px_8px_rgba(255,62,0,0.2)] scale-110' : 'stroke-[1.8px] scale-100'"
             />
-            <span class="text-[9px] font-bold uppercase tracking-[0.1em] leading-none text-center">
+            <span class="text-[11px] font-bold leading-none text-center">
               {{ tab.label }}
             </span>
           </div>

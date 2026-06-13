@@ -20,7 +20,8 @@ const {
   membroId,
   errorMsg,
   handleLogin,
-  handleRegister
+  handleRegister,
+  handleGoogleLogin
 } = useLoginViewModel()
 
 const isRegisterMode = ref(false)
@@ -29,7 +30,59 @@ const housePreview = ref<InvitePreview | null>(null)
 const selectedMembroNome = ref('')
 const showPassword = ref(false)
 
+const inicializarGoogleSignIn = () => {
+  const google = (window as any).google
+  if (typeof google === 'undefined' || !google.accounts) {
+    console.error('Google SDK não foi carregado corretamente.')
+    return
+  }
+
+  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || '977793617300-substitua.apps.googleusercontent.com'
+
+  google.accounts.id.initialize({
+    client_id: clientId,
+    callback: async (response: any) => {
+      const success = await run(
+        () => handleGoogleLogin(response.credential),
+        'Ocorreu um erro ao autenticar com o Google'
+      )
+      if (success) {
+        emit('auth-success')
+      } else if (errorMsgAsync.value) {
+        errorMsg.value = errorMsgAsync.value
+      }
+    },
+    auto_select: false,
+    itp_support: true,
+  })
+
+  const btnContainer = document.getElementById('google-signin-btn')
+  if (btnContainer) {
+    google.accounts.id.renderButton(btnContainer, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'pill',
+      logo_alignment: 'left',
+      width: btnContainer.clientWidth || 320
+    })
+  }
+}
+
 onMounted(async () => {
+  if (!document.getElementById('google-jssdk')) {
+    const script = document.createElement('script')
+    script.id = 'google-jssdk'
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = () => inicializarGoogleSignIn()
+    document.head.appendChild(script)
+  } else {
+    setTimeout(() => inicializarGoogleSignIn(), 100)
+  }
+
   const params = new URLSearchParams(window.location.search)
   const code = params.get('invite')
   if (code) {
@@ -230,6 +283,18 @@ const onSubmit = async () => {
             <span v-if="loading" class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full" aria-hidden="true"></span>
             <span>{{ isRegisterMode ? 'Criar Conta e Entrar' : 'Entrar' }}</span>
           </button>
+
+          <!-- Divisor "OU" -->
+          <div class="flex items-center my-4">
+            <div class="flex-grow border-t border-stone"></div>
+            <span class="px-3 text-caption text-ash uppercase font-semibold tracking-wider text-[10px]">Ou</span>
+            <div class="flex-grow border-t border-stone"></div>
+          </div>
+
+          <!-- Google Sign-In Button Container -->
+          <div class="w-full flex justify-center">
+            <div id="google-signin-btn" class="w-full min-h-[44px]"></div>
+          </div>
         </form>
       </Transition>
 
