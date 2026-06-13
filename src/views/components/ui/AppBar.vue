@@ -56,7 +56,7 @@ header {
    * Propriedades listadas aqui são as mutadas pelo RAF loop no DashboardHeader.
    * NÃO adicionar `transition` aqui — causaria double-interpolation jitter.
    */
-  will-change: padding, background-color, box-shadow, margin, width;
+  will-change: background-color, box-shadow;
 
   /* --parent-pad controla o breakout edge-to-edge e o padding interno.
      Lido pelo DashboardHeader via getComputedStyle para calcular os valores CSS. */
@@ -65,6 +65,13 @@ header {
   /* Altura física constante de 120px para evitar layout shift e flickering no mobile */
   height: 120px;
   top: -68px;
+
+  /* Geometria lateral estática para evitar layout reflows durante o scroll */
+  margin-left: calc(-1 * var(--parent-pad));
+  margin-right: calc(-1 * var(--parent-pad));
+  width: calc(100% + 2 * var(--parent-pad));
+  padding-left: var(--parent-pad);
+  padding-right: var(--parent-pad);
 }
 
 @media (max-width: 640px) {

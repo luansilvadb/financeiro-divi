@@ -50,6 +50,7 @@ function commitStyles(t: number): void {
 
   const pad = parseFloat(getComputedStyle(header).getPropertyValue('--parent-pad')) || 24
   const translateY = (t * MAX_SHRINK_OFFSET) / 2
+  const translateX = Math.max(0, pad - 16) * t
 
   // ── AppBar <header> ────────────────────────────────────────────────────────
   header.style.backgroundColor = t > 0.05
@@ -59,11 +60,6 @@ function commitStyles(t: number): void {
     ? `0 ${6 * t * t}px ${24 * t}px -4px rgba(67,70,69,${0.08 * t}), 0 0 1px rgba(18,18,18,${0.1 * t})`
     : 'none'
   header.style.borderBottom = `1px solid rgba(242, 240, 237, ${Math.max(0, (t - 0.8) * 10)})`
-  header.style.marginLeft = `${-pad * t}px`
-  header.style.marginRight = `${-pad * t}px`
-  header.style.width = `calc(100% + ${2 * pad * t}px)`
-  header.style.paddingLeft = `${pad * (1 - t)}px`
-  header.style.paddingRight = `${pad * (1 - t)}px`
 
   // ── Parallax Layer ─────────────────────────────────────────────────────────
   if (parallax) {
@@ -90,7 +86,7 @@ function commitStyles(t: number): void {
 
   // ── Botão Esquerdo ─────────────────────────────────────────────────────────
   if (leftBtnRef.value) {
-    leftBtnRef.value.style.transform = `translateY(${translateY}px) scale(${1 - 0.05 * t})`
+    leftBtnRef.value.style.transform = `translateY(${translateY}px) translateX(${-translateX}px) scale(${1 - 0.05 * t})`
     leftBtnRef.value.style.backgroundColor = `rgba(242, 240, 237, ${0.4 + 0.1 * t})`
     leftBtnRef.value.style.boxShadow = t > 0.8 ? 'var(--shadow-subtle)' : 'none'
   }
@@ -100,7 +96,7 @@ function commitStyles(t: number): void {
 
   // ── Botão Direito ──────────────────────────────────────────────────────────
   if (rightBtnRef.value) {
-    rightBtnRef.value.style.transform = `translateY(${translateY}px) scale(${1 - 0.05 * t})`
+    rightBtnRef.value.style.transform = `translateY(${translateY}px) translateX(${translateX}px) scale(${1 - 0.05 * t})`
     rightBtnRef.value.style.backgroundColor = `rgba(242, 240, 237, ${0.4 + 0.1 * t})`
     rightBtnRef.value.style.boxShadow = t > 0.8 ? 'var(--shadow-subtle)' : 'none'
   }
