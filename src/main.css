@@ -99,6 +99,7 @@
     padding-right: var(--scrollbar-compensate);
     -webkit-tap-highlight-color: transparent;
     position: relative;
+    overscroll-behavior-y: none;
   }
 
   body::before {

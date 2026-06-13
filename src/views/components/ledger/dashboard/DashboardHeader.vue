@@ -72,15 +72,15 @@ const handleNotificationsClick = () => {
         aria-label="Selecionar período"
         @click="$emit('openHistorico')"
       >
-        <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center transition-all group-hover:bg-ember/10 group-hover:text-ember order-first">
-          <Calendar class="w-4 h-4 transition-all duration-300 ease-out group-hover:scale-110" aria-hidden="true" />
+        <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center group-hover:bg-ember/10 group-hover:text-ember order-first">
+          <Calendar class="w-4 h-4 group-hover:scale-110" aria-hidden="true" />
         </div>
         <div class="flex flex-col" :style="{ transform: `scale(${1 - (0.1 * scrollRatio)})`, transformOrigin: 'left' }">
-          <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 flex items-center gap-1 transition-colors whitespace-nowrap text-ash/60 group-hover:text-ember">
+          <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 flex items-center gap-1 whitespace-nowrap text-ash/60 group-hover:text-ember">
             {{ currentYear }}
           </span>
           <div class="flex items-center gap-1 whitespace-nowrap">
-            <span class="text-base font-bold tracking-tight transition-colors leading-none text-charcoal group-hover:text-ember">{{ currentMonthName }}</span>
+            <span class="text-base font-bold tracking-tight leading-none text-charcoal group-hover:text-ember">{{ currentMonthName }}</span>
             <CheckCircle2 v-if="faturaSelecionadaFechada" class="w-2.5 h-2.5 text-meadow animate-in zoom-in-50 duration-300" aria-label="Mês encerrado" />
           </div>
         </div>
@@ -168,8 +168,8 @@ const handleNotificationsClick = () => {
           <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember whitespace-nowrap">Logs</span>
           <span class="text-xs font-bold text-charcoal leading-none whitespace-nowrap">Atividade</span>
         </div>
-        <div class="w-8 h-8 rounded-full bg-white/40 flex items-center justify-center transition-all group-hover:bg-ember/10 group-hover:text-ember">
-          <Bell class="w-4 h-4 transition-all duration-300 ease-out group-hover:scale-110 group-active:rotate-[-12deg]" aria-hidden="true" />
+        <div class="w-8 h-8 rounded-full bg-white/40 flex items-center justify-center group-hover:bg-ember/10 group-hover:text-ember">
+          <Bell class="w-4 h-4 group-hover:scale-110 group-active:rotate-[-12deg]" aria-hidden="true" />
         </div>
       </button>
     </template>
