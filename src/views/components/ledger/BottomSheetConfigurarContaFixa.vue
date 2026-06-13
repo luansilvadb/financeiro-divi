@@ -5,6 +5,7 @@ import BottomSheet from '../ui/BottomSheet.vue'
 import Button from '../ui/Button.vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
 import { Check, ArrowLeft, Smile, ChevronRight } from 'lucide-vue-next'
+import { formatarBRL, aplicarMascaraBRLText } from '../../../shared/utils/formatarMoeda'
 
 const props = defineProps<{
   visible: boolean
@@ -17,6 +18,7 @@ const emit = defineEmits(['save', 'delete', 'cancel'])
 const name = ref('')
 const icon = ref('💡')
 const fixedValue = ref<number | null>(null)
+const fixedValueFormatado = ref('')
 const defaultSplit = ref<string[]>([])
 
 const modoSelecaoIcone = ref(false)
@@ -40,7 +42,9 @@ watch(() => props.bill, (newBill) => {
   if (newBill) {
     name.value = newBill.name
     icon.value = newBill.icon
-    fixedValue.value = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : null
+    const v = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : null
+    fixedValue.value = v
+    fixedValueFormatado.value = v !== null && v > 0 ? formatarBRL(v, false) : ''
     
     const validSplitIds = (newBill.defaultSplit || []).filter(id => 
       props.membros.some(m => m.id === id)
@@ -54,6 +58,7 @@ watch(() => props.bill, (newBill) => {
     name.value = ''
     icon.value = '💡'
     fixedValue.value = null
+    fixedValueFormatado.value = ''
     defaultSplit.value = props.membros.map(m => m.id)
   }
 }, { immediate: true })
@@ -87,6 +92,13 @@ const toggleSplit = (id: string) => {
   } else {
     defaultSplit.value.push(id)
   }
+}
+
+const handleFixedValueInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const mascarado = aplicarMascaraBRLText(target.value)
+  fixedValueFormatado.value = mascarado
+  fixedValue.value = mascarado === '' ? null : parseFloat(mascarado.replace(/\./g, '').replace(',', '.'))
 }
 
 const salvar = () => {
@@ -159,9 +171,10 @@ const salvar = () => {
         <div class="relative">
           <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
           <input 
-            v-model.number="fixedValue" 
-            type="number" 
-            step="0.01" 
+            :value="fixedValueFormatado"
+            @input="handleFixedValueInput"
+            type="text"
+            inputmode="numeric"
             class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-charcoal focus:border-ember transition-all text-sm" 
             placeholder="0,00" 
           />

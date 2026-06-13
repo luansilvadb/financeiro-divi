@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
 import { Check } from 'lucide-vue-next'
 import { obterMembrosSelecionadosSemRenda } from '../../../shared/utils/rateio'
+import { formatarBRL } from '../../../shared/utils/formatarMoeda'
 
 interface Member {
   id: string
@@ -153,7 +154,7 @@ const proporcoesMembros = computed(() => {
         >
           {{ Math.round(proporcoesMembros[m.id]?.percent ?? 0) }}%
           <span v-if="proporcoesMembros[m.id]?.valor !== undefined" class="block text-[8px] text-slate-500 font-semibold mt-0.5">
-            R$ {{ (proporcoesMembros[m.id]?.valor ?? 0).toFixed(2).replace('.', ',') }}
+            {{ formatarBRL(proporcoesMembros[m.id]?.valor ?? 0) }}
           </span>
         </span>
         <Check v-if="internalParticipantes.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow animate-in zoom-in-50 duration-300" aria-hidden="true" />

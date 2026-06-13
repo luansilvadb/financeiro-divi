@@ -3,6 +3,7 @@ import { ref, onUnmounted } from 'vue'
 import type { ContaFixa } from '../../../models/entities/ContaFixa'
 import { Check } from 'lucide-vue-next'
 import type { Gasto } from '../../../models/entities/Gasto'
+import { formatarCentavosParaBRL } from '../../../shared/utils/formatarMoeda'
 
 const props = defineProps<{
   bill: ContaFixa
@@ -209,7 +210,7 @@ onUnmounted(() => {
         <span class="font-bold text-sm block text-charcoal truncate tracking-tight">{{ bill.name }}</span>
         <div v-if="gasto" class="flex items-center mt-0.5">
           <span class="text-[10px] text-meadow font-semibold uppercase tracking-wider">
-            R$ {{ (gasto.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }} por {{ obterNomeMembro(gasto.compradorId) }}
+            {{ formatarCentavosParaBRL(gasto.valorTotal.centavos) }} por {{ obterNomeMembro(gasto.compradorId) }}
           </span>
         </div>
         <div v-else class="flex items-center mt-0.5">

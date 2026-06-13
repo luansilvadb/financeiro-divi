@@ -5,6 +5,7 @@ import { ExtratoService, type BreakdownGranular } from '../../../../models/servi
 import { Wallet, CreditCard, Handshake, ChevronDown, ChevronUp, History } from 'lucide-vue-next'
 import ItemExtratoCard from './ItemExtratoCard.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
+import { formatarBRL as utilsFormatarBRL, formatarCentavosParaBRL } from '../../../../shared/utils/formatarMoeda'
 
 interface Props {
   membro: { id: string; nome: string }
@@ -18,7 +19,7 @@ const props = defineProps<Props>()
 const expanded = ref(false)
 
 const formatarBRL = (centavos: number) => {
-  return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return formatarCentavosParaBRL(centavos, false)
 }
 
 const formatarValorComSinal = (centavos: number, isPositive: boolean) => {
@@ -79,9 +80,9 @@ const obterExtrato = () => {
       >
         {{ 
           saldoUnificado > 0.005 
-            ? `A receber: R$ ${Math.abs(saldoUnificado).toFixed(2).replace('.', ',')}` 
+            ? `A receber: ${utilsFormatarBRL(Math.abs(saldoUnificado))}` 
             : saldoUnificado < -0.005 
-            ? `A pagar: R$ ${Math.abs(saldoUnificado).toFixed(2).replace('.', ',')}` 
+            ? `A pagar: ${utilsFormatarBRL(Math.abs(saldoUnificado))}` 
             : 'Saldo Equilibrado' 
         }}
       </div>

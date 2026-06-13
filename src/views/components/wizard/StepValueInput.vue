@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { Plus, Minus } from 'lucide-vue-next'
+import { formatarBRL, aplicarMascaraBRLText } from '../../../shared/utils/formatarMoeda'
 
 interface Props {
   valor: number
@@ -12,10 +13,37 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits(['update:valor', 'update:installments'])
 
-const internalValor = computed({
-  get: () => props.valor,
-  set: (val) => emit('update:valor', val)
+const valorFormatado = ref('')
+
+onMounted(() => {
+  if (props.valor > 0) {
+    valorFormatado.value = formatarBRL(props.valor, false)
+  }
 })
+
+watch(() => props.valor, (newVal) => {
+  if (newVal === 0 && valorFormatado.value !== '') {
+    valorFormatado.value = ''
+  } else if (newVal > 0) {
+    const numericCurrent = parseFloat(valorFormatado.value.replace(/\./g, '').replace(',', '.'))
+    if (numericCurrent !== newVal) {
+      valorFormatado.value = formatarBRL(newVal, false)
+    }
+  }
+})
+
+const handleInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const maskedValue = aplicarMascaraBRLText(target.value)
+  valorFormatado.value = maskedValue
+  
+  if (maskedValue === '') {
+    emit('update:valor', 0)
+  } else {
+    const cleanValue = maskedValue.replace(/\./g, '').replace(',', '.')
+    emit('update:valor', parseFloat(cleanValue))
+  }
+}
 
 const internalInstallments = computed({
   get: () => props.installments,
@@ -24,8 +52,8 @@ const internalInstallments = computed({
 
 const infoParcelamento = computed(() => {
   if (props.installments <= 1) return 'À vista'
-  const parcela = (Number(props.valor) / props.installments).toFixed(2).replace('.', ',')
-  return `${props.installments}x de R$ ${parcela}`
+  const parcela = Number(props.valor) / props.installments
+  return `${props.installments}x de ${formatarBRL(parcela)}`
 })
 </script>
 
@@ -37,11 +65,10 @@ const infoParcelamento = computed(() => {
         <span class="text-[23px] font-bold text-charcoal tracking-tight" aria-hidden="true">R$</span>
         <input
           id="wizard-value-input"
-          v-model.number="internalValor"
-          type="number"
-          inputmode="decimal"
-          step="0.01"
-          min="0"
+          :value="valorFormatado"
+          @input="handleInput"
+          type="text"
+          inputmode="numeric"
           class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent border-none outline-none text-[40px] leading-none font-bold text-midnight tracking-tighter placeholder:text-ash"
           placeholder="0,00"
           autofocus

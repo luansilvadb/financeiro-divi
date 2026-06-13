@@ -12,9 +12,22 @@ export function useDashboardPeriodos(
   emit: (event: 'periodoStatusChanged', isLocked: boolean) => void
 ) {
   const obterPeriodoInicial = () => {
-    const faturaReferencia = getFaturasAbertas()?.[0] || getFaturasFechadas()?.[0]
-    const fallback = faturaReferencia?.periodo
-      ? { mes: faturaReferencia.periodo.mes, ano: faturaReferencia.periodo.ano }
+    const hoje = new Date()
+    const mesAtual = hoje.getMonth() + 1
+    const anoAtual = hoje.getFullYear()
+
+    // Prioriza a fatura aberta mais próxima do mês atual (evita faturas espúrias de períodos futuros)
+    const faturasAbertas = getFaturasAbertas() || []
+    const faturaProxima = faturasAbertas.length > 0
+      ? faturasAbertas.reduce((melhor, f) => {
+          const diffMelhor = Math.abs((melhor.periodo.ano - anoAtual) * 12 + (melhor.periodo.mes - mesAtual))
+          const diffAtual = Math.abs((f.periodo.ano - anoAtual) * 12 + (f.periodo.mes - mesAtual))
+          return diffAtual < diffMelhor ? f : melhor
+        })
+      : getFaturasFechadas()?.[0]
+
+    const fallback = faturaProxima?.periodo
+      ? { mes: faturaProxima.periodo.mes, ano: faturaProxima.periodo.ano }
       : undefined
     return obterPeriodoSelecionado(fallback)
   }

@@ -8,6 +8,7 @@ import { mensagemErro } from '../../../shared/utils/mensagemErro'
 import Button from '../ui/Button.vue'
 import MembroListItem from '../ledger/membros/MembroListItem.vue'
 import MembroFormBottomSheet from '../ledger/membros/MembroFormBottomSheet.vue'
+import { aplicarMascaraBRLText, formatarCentavosParaBRL } from '../../../shared/utils/formatarMoeda'
 
 const props = defineProps<{
   activeTenantId: string | null
@@ -80,16 +81,7 @@ const handleAdicionarMembro = async (dados: NovoMembroDados) => {
 
 const handleRendaInput = (e: Event) => {
   const target = e.target as HTMLInputElement
-  let value = target.value.replace(/\D/g, '')
-  if (value === '') {
-    rendaSelecionadaText.value = ''
-    return
-  }
-  const val = parseInt(value, 10) / 100
-  rendaSelecionadaText.value = val.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
+  rendaSelecionadaText.value = aplicarMascaraBRLText(target.value)
 }
 
 const abrirEdicaoMembro = (membro: Membro) => {
@@ -98,7 +90,7 @@ const abrirEdicaoMembro = (membro: Membro) => {
   roleSelecionada.value = membro.role
   ativoSelecionado.value = membro.ativo
   rendaSelecionadaText.value = membro.rendaCentavos 
-    ? (membro.rendaCentavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    ? formatarCentavosParaBRL(membro.rendaCentavos, false)
     : ''
   mostrarBottomSheet.value = true
   emit('focus-change', true)

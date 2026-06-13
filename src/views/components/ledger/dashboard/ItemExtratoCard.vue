@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { type ItemExtrato } from '../../../../models/services/ExtratoService'
+import { formatarCentavosParaBRL } from '../../../../shared/utils/formatarMoeda'
 
 interface Props {
   item: ItemExtrato
 }
 
 const props = defineProps<Props>()
-
-const formatarBRL = (centavos: number) => {
-  const reais = Math.abs(centavos) / 100
-  return reais.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
 
 const obterClasseSaldo = (centavos: number) => {
   if (centavos > 0) return 'text-meadow font-bold'
@@ -31,10 +27,10 @@ const obterSinalSaldo = (centavos: number) => {
       <span class="text-sm font-bold text-charcoal block truncate tracking-tight">{{ item.descricao }}</span>
       <div class="flex flex-wrap items-center gap-2">
         <span v-if="item.valorPago.centavos > 0" class="text-[10px] font-bold text-meadow bg-meadow/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
-          Pagou +R$ {{ (item.valorPago.centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+          Pagou +{{ formatarCentavosParaBRL(item.valorPago.centavos) }}
         </span>
         <span v-if="item.valorConsumido.centavos > 0" class="text-[10px] font-bold text-coral bg-coral/10 px-2 py-0.5 rounded-md uppercase tracking-wider">
-          Consumiu -R$ {{ (item.valorConsumido.centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+          Consumiu -{{ formatarCentavosParaBRL(item.valorConsumido.centavos) }}
         </span>
       </div>
     </div>
@@ -43,7 +39,7 @@ const obterSinalSaldo = (centavos: number) => {
         class="text-[13px] font-display block font-bold tracking-tight transition-colors"
         :class="obterClasseSaldo(item.saldoAcumulado.centavos)"
       >
-        {{ obterSinalSaldo(item.saldoAcumulado.centavos) }}R$ {{ formatarBRL(item.saldoAcumulado.centavos) }}
+        {{ obterSinalSaldo(item.saldoAcumulado.centavos) }}{{ formatarCentavosParaBRL(Math.abs(item.saldoAcumulado.centavos)) }}
       </span>
       <p class="text-[9px] text-graphite uppercase font-bold tracking-wider mt-0.5">Acumulado</p>
     </div>

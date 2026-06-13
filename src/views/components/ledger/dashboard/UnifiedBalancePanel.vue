@@ -2,6 +2,7 @@
 import { TrendingUp } from 'lucide-vue-next'
 import Card from '../../ui/Card.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
+import { formatarBRL } from '../../../../shared/utils/formatarMoeda'
 
 defineProps<{
   membrosVisiveis: { id: string; nome: string }[]
@@ -44,7 +45,7 @@ const variants: ('ember' | 'meadow' | 'sky' | 'sunburst' | 'flamingo')[] = ['emb
         </div>
         <div class="text-right">
           <span :class="['font-display text-xl sm:text-2xl block tracking-tighter', saldosUnificadosAtivos[m.id] > 0.005 ? 'text-meadow' : saldosUnificadosAtivos[m.id] < -0.005 ? 'text-coral' : 'text-graphite']">
-            {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}R$ {{ saldosUnificadosAtivos[m.id].toFixed(2).replace('.', ',') }}
+            {{ saldosUnificadosAtivos[m.id] > 0.005 ? '+' : '' }}{{ formatarBRL(saldosUnificadosAtivos[m.id]) }}
           </span>
         </div>
       </div>

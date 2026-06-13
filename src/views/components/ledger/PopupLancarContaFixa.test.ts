@@ -46,7 +46,7 @@ describe('PopupLancarContaFixa', () => {
       global: { stubs: { Teleport: true } }
     })
 
-    await wrapper.find('[data-testid="valor-conta-fixa"]').setValue(300)
+    await wrapper.find('[data-testid="valor-conta-fixa"]').setValue('30000')
     await wrapper.find('[data-testid="pagador-maria"]').trigger('click')
     await wrapper.find('[data-testid="split-joao"]').trigger('click')
     await wrapper.find('[data-testid="confirmar-conta-fixa"]').trigger('click')

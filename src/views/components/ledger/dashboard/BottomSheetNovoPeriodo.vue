@@ -5,6 +5,7 @@ import type { ContaFixa } from '../../../../models/entities/ContaFixa'
 import type { DashboardViewModel } from '../../../../viewmodels/useDashboardViewModel'
 import BottomSheet from '../../ui/BottomSheet.vue'
 import Button from '../../ui/Button.vue'
+import { formatarBRL } from '../../../../shared/utils/formatarMoeda'
 
 type NovoPeriodoViewModel = Pick<
   DashboardViewModel,
@@ -49,7 +50,7 @@ const emit = defineEmits(['close', 'confirm'])
       <div v-if="faturaAtivaVisualizada" class="grid grid-cols-2 gap-3">
         <div class="bg-parchment p-4 rounded-2xl border border-stone shadow-subtle">
           <p class="text-[10px] font-bold uppercase text-graphite tracking-widest mb-1">Total do Mês</p>
-          <p class="text-2xl font-display text-charcoal break-words">R$ {{ formatarDinheiro(totalPeriodoSelecionado).toFixed(2).replace('.', ',') }}</p>
+          <p class="text-2xl font-display text-charcoal break-words">{{ formatarBRL(formatarDinheiro(totalPeriodoSelecionado)) }}</p>
           <p class="text-[10px] text-graphite font-bold mt-1 uppercase opacity-60">{{ totalLancamentosPeriodoSelecionado }} lançamentos</p>
         </div>
 

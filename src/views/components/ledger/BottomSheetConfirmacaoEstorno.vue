@@ -44,7 +44,7 @@
           </div>
           <div v-if="itemValue" class="text-right shrink-0">
             <p class="text-[10px] font-bold uppercase text-graphite tracking-widest mb-1">Valor</p>
-            <p class="text-base font-bold text-ember tracking-tight">R$ {{ itemValue.toFixed(2).replace('.', ',') }}</p>
+            <p class="text-base font-bold text-ember tracking-tight">{{ formatarBRL(itemValue) }}</p>
           </div>
         </div>
       </div>
@@ -74,6 +74,7 @@
 <script setup lang="ts">
 import BottomSheet from '../ui/BottomSheet.vue'
 import Button from '../ui/Button.vue'
+import { formatarBRL } from '../../../shared/utils/formatarMoeda'
 
 defineProps<{
   visible: boolean

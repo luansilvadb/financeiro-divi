@@ -7,6 +7,7 @@ import { mensagemErro } from '../../../shared/utils/mensagemErro'
 import MembroAvatar from '../ui/MembroAvatar.vue'
 import Button from '../ui/Button.vue'
 import ConfiguracoesCartoes from '../ledger/ConfiguracoesCartoes.vue'
+import { aplicarMascaraBRLText, formatarCentavosParaBRL } from '../../../shared/utils/formatarMoeda'
 
 const props = defineProps<{
   isModoFoco: boolean
@@ -87,7 +88,7 @@ const inputRendaRef = ref<HTMLInputElement | null>(null)
 
 const iniciarEdicaoRenda = () => {
   rendaEditadaText.value = currentMembro.value?.rendaCentavos 
-    ? (currentMembro.value.rendaCentavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    ? formatarCentavosParaBRL(currentMembro.value.rendaCentavos, false)
     : ''
   editandoRenda.value = true
   nextTick(() => {
@@ -125,16 +126,7 @@ const handleSalvarRenda = async () => {
 
 const handleRendaInput = (e: Event) => {
   const target = e.target as HTMLInputElement
-  let value = target.value.replace(/\D/g, '')
-  if (value === '') {
-    rendaEditadaText.value = ''
-    return
-  }
-  const val = parseInt(value, 10) / 100
-  rendaEditadaText.value = val.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
+  rendaEditadaText.value = aplicarMascaraBRLText(target.value)
 }
 </script>
 
@@ -201,7 +193,7 @@ const handleRendaInput = (e: Event) => {
           <div v-if="!editandoRenda" class="flex items-center gap-2">
             <span class="text-[11px] text-graphite/70 font-semibold uppercase tracking-wider">Renda:</span>
             <span class="text-xs font-bold text-charcoal">
-              {{ currentMembro?.rendaCentavos ? 'R$ ' + (currentMembro.rendaCentavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Não informada' }}
+              {{ currentMembro?.rendaCentavos ? formatarCentavosParaBRL(currentMembro.rendaCentavos) : 'Não informada' }}
             </span>
             <button 
               v-if="podeAlterarRenda"

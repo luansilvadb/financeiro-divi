@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { AuditLogService } from './audit-log.service';
 import { serializeBigInt } from '../shared/utils/serialization';
+import { formatarCentavosParaBRL } from '../shared/utils/formatarMoeda';
 import { Prisma, SplitMode, ValidationEventType } from '@prisma/client';
 import { GastoDto } from './dto/gasto.dto';
 import { ContaFixaDto } from './dto/conta-fixa.dto';
@@ -76,13 +77,13 @@ export class LancamentoService {
         where: { id_tenantId: { id: gastoData.compradorId, tenantId } }
       });
       const compradorNome = comprador ? comprador.nome : 'Membro';
-      const valorReais = (Number(gastoData.valorTotalCentavos || 0) / 100).toFixed(2).replace('.', ',');
+      const valorFormatado = formatarCentavosParaBRL(gastoData.valorTotalCentavos || 0);
 
       let detalhesLog = '';
       if (gastoData.isPrivate) {
-        detalhesLog = `Gasto Pessoal de R$ ${valorReais} lançado por ${compradorNome}.`;
+        detalhesLog = `Gasto Pessoal de ${valorFormatado} lançado por ${compradorNome}.`;
       } else {
-        detalhesLog = `Gasto "${gastoData.descricao}" de R$ ${valorReais} lançado por ${compradorNome}.`;
+        detalhesLog = `Gasto "${gastoData.descricao}" de ${valorFormatado} lançado por ${compradorNome}.`;
       }
 
       await this.auditLogService.registrar(tenantId, executorMembroId, acao, detalhesLog, tx);
@@ -236,13 +237,13 @@ export class LancamentoService {
           where: { id_tenantId: { id: g.compradorId, tenantId } }
         });
         const compradorNome = comprador ? comprador.nome : 'Membro';
-        const valorReais = (Number(g.valorTotalCentavos || 0) / 100).toFixed(2).replace('.', ',');
+        const valorFormatado = formatarCentavosParaBRL(g.valorTotalCentavos || 0);
 
         let detalhesLog = '';
         if (g.isPrivate) {
-          detalhesLog = `Gasto Pessoal de R$ ${valorReais} lançado por ${compradorNome}.`;
+          detalhesLog = `Gasto Pessoal de ${valorFormatado} lançado por ${compradorNome}.`;
         } else {
-          detalhesLog = `Gasto "${g.descricao}" de R$ ${valorReais} lançado por ${compradorNome}.`;
+          detalhesLog = `Gasto "${g.descricao}" de ${valorFormatado} lançado por ${compradorNome}.`;
         }
 
         await this.auditLogService.registrar(tenantId, executorMembroId, acao, detalhesLog, tx);
@@ -285,9 +286,9 @@ export class LancamentoService {
       });
 
       if (gasto) {
-        const valorReais = (Number(gasto.valorTotalCentavos || 0) / 100).toFixed(2).replace('.', ',');
+        const valorFormatado = formatarCentavosParaBRL(gasto.valorTotalCentavos);
         const descricaoStr = gasto.isPrivate ? 'Gasto Pessoal' : `Gasto "${gasto.descricao}"`;
-        const detalhesLog = `${descricaoStr} de R$ ${valorReais} excluído do system.`;
+        const detalhesLog = `${descricaoStr} de ${valorFormatado} excluído do sistema.`;
 
         await this.auditLogService.registrar(tenantId, executorMembroId, 'EXCLUIR_GASTO', detalhesLog, tx);
 
@@ -311,9 +312,9 @@ export class LancamentoService {
         });
 
         if (gasto) {
-          const valorReais = (Number(gasto.valorTotalCentavos || 0) / 100).toFixed(2).replace('.', ',');
+          const valorFormatado = formatarCentavosParaBRL(gasto.valorTotalCentavos);
           const descricaoStr = gasto.isPrivate ? 'Gasto Pessoal' : `Gasto "${gasto.descricao}"`;
-          const detalhesLog = `${descricaoStr} de R$ ${valorReais} excluído do sistema (lote).`;
+          const detalhesLog = `${descricaoStr} de ${valorFormatado} excluído do sistema (lote).`;
 
           await this.auditLogService.registrar(tenantId, executorMembroId, 'EXCLUIR_GASTO', detalhesLog, tx);
 

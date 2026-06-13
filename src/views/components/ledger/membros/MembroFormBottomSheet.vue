@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import Button from '../../ui/Button.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
 import { ArrowLeft } from 'lucide-vue-next'
+import { aplicarMascaraBRLText } from '../../../../shared/utils/formatarMoeda'
 
 interface Props {
   activeTenantId: string | null
@@ -25,16 +26,7 @@ const resetForm = () => {
 
 const handleRendaInput = (e: Event) => {
   const target = e.target as HTMLInputElement
-  let value = target.value.replace(/\D/g, '')
-  if (value === '') {
-    novaRendaText.value = ''
-    return
-  }
-  const val = parseInt(value, 10) / 100
-  novaRendaText.value = val.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
+  novaRendaText.value = aplicarMascaraBRLText(target.value)
 }
 
 const handleAdicionar = () => {

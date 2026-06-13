@@ -11,7 +11,12 @@ export function obterPeriodoSelecionado(fallbackPeriodo?: Periodo): Periodo {
     try {
       const parsed = JSON.parse(salvo)
       if (parsed.mes && parsed.ano) {
-        return { mes: Number(parsed.mes), ano: Number(parsed.ano) }
+        const hoje = new Date()
+        const diffMeses = Math.abs((Number(parsed.ano) - hoje.getFullYear()) * 12 + (Number(parsed.mes) - (hoje.getMonth() + 1)))
+        // Ignora período salvo se estiver mais de 6 meses distante do atual (evita períodos espúrios)
+        if (diffMeses <= 6) {
+          return { mes: Number(parsed.mes), ano: Number(parsed.ano) }
+        }
       }
     } catch (_) {}
   }

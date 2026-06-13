@@ -6,6 +6,7 @@ import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
 import IllustrationMascot from '../ui/IllustrationMascot.vue'
+import { formatarCentavosParaBRL } from '../../../shared/utils/formatarMoeda'
 
 const props = defineProps<{
   gastos: Gasto[]
@@ -97,10 +98,10 @@ const sortedGastos = computed(() => {
             </div>
             <div class="text-right flex flex-col items-end">
               <span class="font-display text-lg text-charcoal">
-                R$ {{ ((g.totalInstallments > 1 ? (g.valorTotal.centavos / g.totalInstallments) : g.valorTotal.centavos) / 100).toFixed(2).replace('.', ',') }}
+                {{ formatarCentavosParaBRL(g.totalInstallments > 1 ? Math.round(g.valorTotal.centavos / g.totalInstallments) : g.valorTotal.centavos) }}
               </span>
               <span v-if="g.totalInstallments > 1" class="text-[10px] text-graphite font-semibold block">
-                Total: R$ {{ (g.valorTotal.centavos / 100).toFixed(2).replace('.', ',') }}
+                Total: {{ formatarCentavosParaBRL(g.valorTotal.centavos) }}
               </span>
             </div>
           </div>

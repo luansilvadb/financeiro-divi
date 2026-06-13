@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { Gasto } from '../../../models/entities/Gasto'
 import { Dinheiro } from '../../../models/entities/Dinheiro'
 import { DivisaoDeGasto } from '../../../models/entities/DivisaoDeGasto'
+import { formatarBRL, aplicarMascaraBRLText } from '../../../shared/utils/formatarMoeda'
 import Button from '../ui/Button.vue'
 import BottomSheet from '../ui/BottomSheet.vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
@@ -21,6 +22,7 @@ const emit = defineEmits(['cancel', 'save'])
 
 const descInput = ref('')
 const valorInput = ref(0)
+const valorFormatado = ref('')
 const quemPaga = ref('')
 const activeMethod = ref<'pix' | 'card'>('pix')
 const activeCardOwner = ref<string | null>(null)
@@ -30,7 +32,9 @@ const installmentsInput = ref(1)
 watch(() => props.gasto, (newG) => {
   if (newG) {
     descInput.value = newG.descricao || ''
-    valorInput.value = newG.valorTotal?.centavos ? newG.valorTotal.centavos / 100 : 0
+    const valorEmReais = newG.valorTotal?.centavos ? newG.valorTotal.centavos / 100 : 0
+    valorInput.value = valorEmReais
+    valorFormatado.value = valorEmReais > 0 ? formatarBRL(valorEmReais, false) : ''
     quemPaga.value = newG.compradorId || ''
     activeMethod.value = newG.method === 'card' ? 'card' : 'pix'
     
@@ -56,6 +60,18 @@ watch(() => props.gasto, (newG) => {
   }
 }, { immediate: true })
 
+const handleValorInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const mascarado = aplicarMascaraBRLText(target.value)
+  valorFormatado.value = mascarado
+  if (mascarado === '') {
+    valorInput.value = 0
+  } else {
+    const cleanValue = mascarado.replace(/\./g, '').replace(',', '.')
+    valorInput.value = parseFloat(cleanValue)
+  }
+}
+
 const selectMethod = (method: 'pix' | 'card', cardOwner: string | null) => {
   activeMethod.value = method
   activeCardOwner.value = cardOwner
@@ -78,8 +94,8 @@ const ajustarParcelas = (delta: number) => {
 const infoParcelamento = computed(() => {
   if (installmentsInput.value <= 1) return 'À vista'
   const val = Number(valorInput.value) || 0
-  const parcela = (val / installmentsInput.value).toFixed(2).replace('.', ',')
-  return `${installmentsInput.value}x de R$ ${parcela}`
+  const parcela = val / installmentsInput.value
+  return `${installmentsInput.value}x de ${formatarBRL(parcela)}`
 })
 
 const calculatedSharesDesc = computed(() => {
@@ -89,8 +105,8 @@ const calculatedSharesDesc = computed(() => {
   if (installmentsInput.value > 1) {
     const shareTotal = valorInput.value / n
     const shareParcela = shareTotal / installmentsInput.value
-    const formattedTotal = shareTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-    const formattedParcela = shareParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    const formattedTotal = formatarBRL(shareTotal)
+    const formattedParcela = formatarBRL(shareParcela)
     
     if (n === props.membros.length) {
       return `Dividido igualmente com todos. Cada um paga ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
@@ -104,7 +120,7 @@ const calculatedSharesDesc = computed(() => {
   }
 
   const share = valorInput.value / n
-  const formatted = share.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const formatted = formatarBRL(share)
   
   if (n === props.membros.length) {
     return `Dividido igualmente com todos. Cada um paga ${formatted}`
@@ -184,9 +200,10 @@ const handleConfirm = () => {
         <div class="relative">
           <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
           <input 
-            v-model.number="valorInput"
-            type="number"
-            step="0.01"
+            :value="valorFormatado"
+            @input="handleValorInput"
+            type="text"
+            inputmode="numeric"
             class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
             placeholder="0,00"
           />

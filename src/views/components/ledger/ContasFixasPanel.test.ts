@@ -59,7 +59,7 @@ describe('ContasFixasPanel', () => {
     expect(wrapper.text()).toContain('Recorrentes do mês')
     expect(wrapper.text()).not.toContain('Lancamentos recorrentes do mês')
     expect(wrapper.text()).toContain('Aluguel')
-    expect(wrapper.text()).toContain('R$ 1200,00 por Luan')
+    expect(wrapper.text().replace(/\s/g, ' ')).toContain('R$ 1.200,00 por Luan')
     expect(wrapper.text()).toContain('Energia')
     expect(wrapper.text()).not.toContain('Aguardando talão')
   })

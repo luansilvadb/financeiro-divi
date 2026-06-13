@@ -23,6 +23,7 @@ interface GastoDto {
   grupoParcelasId?: string | null
   isPrivate?: boolean
   splitMode?: 'EQUAL' | 'INCOME' | 'CUSTOM'
+  createdAt?: string
 }
 
 const toDomainSplitMode = (splitMode?: GastoDto['splitMode']): SplitMode => {
@@ -62,7 +63,8 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       cardOwner: item.cardOwnerId,
       grupoParcelasId: item.grupoParcelasId,
       isPrivate: item.isPrivate,
-      splitMode: toDomainSplitMode(item.splitMode)
+      splitMode: toDomainSplitMode(item.splitMode),
+      createdAt: item.createdAt
     })
   }
 
@@ -95,6 +97,7 @@ export class HttpGastoRepository extends HttpBaseRepository implements IGastoRep
       grupoParcelasId: gasto.grupoParcelasId,
       isPrivate: gasto.isPrivate,
       splitMode: toApiSplitMode(gasto.splitMode),
+      createdAt: gasto.createdAt ? gasto.createdAt.toISOString() : undefined,
       divisoes: gasto.divisoes.map(d => ({
         membroId: d.membroId,
         valorCentavos: d.valor.centavos

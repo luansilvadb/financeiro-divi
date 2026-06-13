@@ -27,9 +27,10 @@
           <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
           <input
             id="fixed-bill-value"
-            type="number"
-            step="0.01"
-            v-model.number="valorReal"
+            :value="valorFormatado"
+            @input="handleValorInput"
+            type="text"
+            inputmode="numeric"
             data-testid="valor-conta-fixa"
             class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
             placeholder="0,00"
@@ -85,10 +86,10 @@
         <div class="space-y-0.5">
           <p class="font-bold uppercase tracking-widest">Resumo do Rateio</p>
           <p class="font-semibold">
-            R$ {{ (valorReal || 0).toFixed(2).replace('.', ',') }} pagos por
+            {{ formatarBRL(valorReal || 0) }} pagos por
             <span class="text-charcoal">{{ obterNome(compradorId) }}</span>, dividido entre
             <span class="text-charcoal">{{ splitIds.length }}</span> pessoa{{ splitIds.length === 1 ? '' : 's' }}.
-            Cada uma assume <span class="font-bold text-charcoal">R$ {{ obterDivisao().replace('.', ',') }}</span>.
+            Cada uma assume <span class="font-bold text-charcoal">{{ obterDivisao() }}</span>.
           </p>
         </div>
       </div>
@@ -125,6 +126,7 @@ import BottomSheet from '../ui/BottomSheet.vue'
 import Button from '../ui/Button.vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
 import { Check, Info } from 'lucide-vue-next'
+import { formatarBRL, aplicarMascaraBRLText } from '../../../shared/utils/formatarMoeda'
 
 const props = defineProps<{
   visible: boolean
@@ -135,12 +137,15 @@ const props = defineProps<{
 const emit = defineEmits(['confirm', 'cancel'])
 
 const valorReal = ref(0)
+const valorFormatado = ref('')
 const compradorId = ref('')
 const splitIds = ref<string[]>([])
 
 watch(() => props.bill, (newBill) => {
   if (newBill) {
-    valorReal.value = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : 0
+    const v = newBill.fixedValueCentavos !== null && newBill.fixedValueCentavos !== undefined ? newBill.fixedValueCentavos / 100 : 0
+    valorReal.value = v
+    valorFormatado.value = v > 0 ? formatarBRL(v, false) : ''
     compradorId.value = props.membros[0]?.id || ''
     
     const validSplitIds = (newBill.defaultSplit || []).filter(id => 
@@ -155,6 +160,13 @@ watch(() => props.bill, (newBill) => {
   }
 }, { immediate: true })
 
+const handleValorInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const mascarado = aplicarMascaraBRLText(target.value)
+  valorFormatado.value = mascarado
+  valorReal.value = mascarado === '' ? 0 : parseFloat(mascarado.replace(/\./g, '').replace(',', '.'))
+}
+
 const toggleSplit = (id: string) => {
   if (splitIds.value.includes(id)) {
     if (splitIds.value.length > 1) {
@@ -168,8 +180,8 @@ const toggleSplit = (id: string) => {
 const obterNome = (id: string) => props.membros.find(m => m.id === id)?.nome || id
 
 const obterDivisao = () => {
-  if (splitIds.value.length === 0) return '0.00'
-  return ((valorReal.value || 0) / splitIds.value.length).toFixed(2)
+  if (splitIds.value.length === 0) return formatarBRL(0)
+  return formatarBRL((valorReal.value || 0) / splitIds.value.length)
 }
 
 const confirmar = () => {

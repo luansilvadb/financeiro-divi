@@ -4,6 +4,7 @@ import Card from '../../ui/Card.vue'
 import Button from '../../ui/Button.vue'
 import MembroAvatar from '../../ui/MembroAvatar.vue'
 import type { TransferenciaNetting } from '../../../../models/services/NettingService'
+import { formatarBRL } from '../../../../shared/utils/formatarMoeda'
 
 defineProps<{
   nettingTransferencias: TransferenciaNetting[]
@@ -45,7 +46,7 @@ defineProps<{
             
             <div class="flex flex-col items-center gap-1 shrink-0">
               <ArrowRight class="w-5 h-5 text-ember" />
-              <span class="text-[10px] font-bold text-ember uppercase tracking-widest">R$ {{ t.val.toFixed(2).replace('.', ',') }}</span>
+              <span class="text-[10px] font-bold text-ember uppercase tracking-widest">{{ formatarBRL(t.val) }}</span>
             </div>
 
             <div class="flex flex-col items-center gap-2 flex-1 min-w-0">

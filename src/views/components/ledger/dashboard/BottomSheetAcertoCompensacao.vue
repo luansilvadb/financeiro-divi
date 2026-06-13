@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import Button from '../../ui/Button.vue'
 import { Wallet, Banknote } from 'lucide-vue-next'
 import BottomSheet from '../../ui/BottomSheet.vue'
+import { formatarBRL, aplicarMascaraBRLText } from '../../../../shared/utils/formatarMoeda'
 
 interface Props {
   visible: boolean
@@ -18,6 +19,7 @@ const props = defineProps<Props>()
 const emit = defineEmits(['confirm', 'cancel'])
 
 const valorReal = ref(0)
+const valorFormatado = ref('')
 const method = ref<'pix' | 'cash'>('pix')
 const descricao = ref('')
 const metodos = [
@@ -28,10 +30,18 @@ const metodos = [
 watch(() => props.visible, (isVisible) => {
   if (isVisible) {
     valorReal.value = props.suggestedValue
+    valorFormatado.value = props.suggestedValue > 0 ? formatarBRL(props.suggestedValue, false) : ''
     method.value = 'pix'
     descricao.value = `Acerto: ${props.fromName} ➜ ${props.toName}`
   }
 }, { immediate: true })
+
+const handleValorInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const mascarado = aplicarMascaraBRLText(target.value)
+  valorFormatado.value = mascarado
+  valorReal.value = mascarado === '' ? 0 : parseFloat(mascarado.replace(/\./g, '').replace(',', '.'))
+}
 
 const handleConfirmar = () => {
   if (valorReal.value <= 0 || !props.fromId || !props.toId) return
@@ -67,9 +77,10 @@ defineExpose({
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-graphite text-sm font-bold">R$</span>
             <input 
-              v-model.number="valorReal"
-              type="number"
-              step="0.01"
+              :value="valorFormatado"
+              @input="handleValorInput"
+              type="text"
+              inputmode="numeric"
               class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-stone bg-canvas outline-none font-bold text-sm text-charcoal focus:border-ember transition-all"
               placeholder="0,00"
             />
