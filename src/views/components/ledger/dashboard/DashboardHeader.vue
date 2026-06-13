@@ -70,8 +70,7 @@ function applyStyles(): void {
   header.style.borderBottom = `1px solid rgba(242, 240, 237, ${Math.max(0, (t - 0.8) * 10)})`
 
   // Breakout edge-to-edge: expande sobre o padding do pai conforme t → 1
-  // --parent-pad é 1.5rem (24px) ≥640px, 1rem (16px) <640px
-  const padPx = pad // já em px via parseFloat
+  const padPx = pad
   header.style.marginLeft = `${-padPx * t}px`
   header.style.marginRight = `${-padPx * t}px`
   header.style.width = `calc(100% + ${2 * padPx * t}px)`
@@ -235,7 +234,6 @@ onUnmounted(() => {
         ref="centerRef"
         class="flex flex-col items-center justify-center select-none relative px-4"
       >
-        <!-- mascotRef para o estado não-autenticado -->
         <div
           ref="mascotRef"
           class="absolute z-0 opacity-80 pointer-events-none mascot-outer"
@@ -284,7 +282,7 @@ onUnmounted(() => {
 <style scoped>
 /*
  * REGRA CRÍTICA DE SEPARAÇÃO CSS/JS (Norm #5):
- * Propriedades listed abaixo são mutadas pelo RAF loop (applyStyles):
+ * Propriedades listadas abaixo são mutadas pelo RAF loop (applyStyles):
  *   transform, background-color, box-shadow, opacity
  * Elas NÃO devem ter `transition` aqui — causaria double-interpolation jitter.
  *
