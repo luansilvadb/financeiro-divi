@@ -7,7 +7,7 @@ defineProps<{
 
 <template>
   <header 
-    class="relative flex items-center justify-between transition-all duration-75 ease-out sticky top-0 z-50 overflow-hidden"
+    class="relative flex items-center justify-between sticky top-0 z-50 overflow-hidden"
     :style="{
       '--scroll-ratio': scrollRatio,
       height: `calc(6rem - (2.25rem * ${scrollRatio}))`, /* 96px to 60px */
