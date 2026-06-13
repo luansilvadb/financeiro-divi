@@ -12,6 +12,7 @@
 - **Simplify Dashboard Header**: Reduce visual noise in the header while maintaining essential information (period, tenant, branding).
 - **Maintain Brand Identity**: Preserve the presence of the mascot "ember" and the warm color palette (ember, sunburst) in a more integrated manner.
 - **SliverAppBar Dynamics**: Implement a scrolling behavior similar to Flutter's SliverAppBar, where the header collapses into a pinned state when scrolling down, transitioning from an expanded transparent layout to a compact solid-colored pinned bar.
+- **Zero-Jitter Scroll Architecture**: The header collapse must be 100% jitter-free. Any involuntary stutter, jump, or double-interpolation caused by CSS `transition` fighting JS-driven style mutations is unacceptable. All scroll-driven style mutations must bypass the CSS transition pipeline entirely — using direct DOM manipulation (`el.style.xxx`) instead of reactive Vue state that triggers re-renders.
 
 ## Entities
 ```mermaid
@@ -94,26 +95,39 @@ BottomTabBar -- MembroAvatar : uses for profile
      - **Symmetric Architecture**: Both side buttons share a fixed horizontal footprint and identical corner radius (`rounded-2xl`).
      - Minimalist Content: Maintain textual labels even in the compact state to ensure clarity and accessibility for all age groups. Align labels and icons in a high-density, integrated layout.
 
-8. **Sliver Scrolling Dynamics (Linear Interpolation)**:
-   - **Scroll Metrics**: Define `EXPANDED_HEIGHT` (96px) and `COLLAPSED_HEIGHT` (60px). `INTERPOLATION_RANGE = 36px`.
-   - **Linear Scroll Ratio (t)**: Calculate `t = clamp(scrollY / INTERPOLATION_RANGE, 0, 1)` — bilateral clamp (min 0, max 1) prevents both overshoot and undershoot.
+8. **Sliver Scrolling Dynamics (Linear Interpolation — Zero-Jitter Architecture)**:
+
+   > **Root Cause Analysis (Jitter Diagnosis)**: The previous implementation exhibited jitter from four compounding sources:
+   > 1. **CSS `transition-all` + JS `:style` conflict**: The `transition-all duration-75` Tailwind class on the `<header>` element causes the browser's CSS engine to interpolate from the *previous* computed value to each new JS-set value every ~16ms frame. This creates a perpetual "catching up" effect — a double-interpolation loop that manifests as stuttering and micro-jumps.
+   > 2. **Vue reactive `computed` triggers re-renders**: Using `scrollY` as a reactive `ref` and `scrollRatio` as a `computed` causes Vue's reactivity system to schedule a VDOM diff + patch on every RAF callback, adding framework overhead on the animation path. This is entirely unnecessary since no conditional rendering depends on `scrollRatio`.
+   > 3. **`animate-wobble` CSS animation conflicts with `:style` transform**: The mascot's `animate-wobble` class applies a CSS `@keyframes` that writes to `transform`. The parent `:style` binding also writes to `transform` on the same element. The two compete frame-by-frame, causing the mascot to jump erratically.
+   > 4. **`transition-all duration-300` on interior elements**: Buttons and text stacks inside the header have CSS transition applied to `transform`. Since their `transform` is recalculated on every RAF frame via `:style`, the CSS transition engine sees a new target every ~16ms and perpetually re-initiates interpolation rather than settling — creating the "fighting" sensation.
+
+   **Corrected Architecture (Direct DOM Mutation Pattern)**:
+   - **Scroll Metrics**: Define `EXPANDED_HEIGHT = 96`, `COLLAPSED_HEIGHT = 60`, `INTERPOLATION_RANGE = 36`.
+   - **Linear Scroll Ratio (t)**: `t = clamp(window.scrollY / INTERPOLATION_RANGE, 0, 1)`. Bilateral clamp prevents overshoot and undershoot.
+   - **No Reactive State for Scroll Ratio**: Do NOT store `scrollY` in a Vue `ref` and do NOT derive `scrollRatio` via `computed`. Instead, use `useTemplateRef` (Vue 3.5+) to obtain direct DOM references to the `<header>` element and every interpolated child element. Write `el.style.xxx = value` directly inside the RAF callback. This completely bypasses Vue's reactivity pipeline for scroll-driven mutations.
+   - **Remove All CSS Transitions from Scroll-Driven Elements**: Every element whose style is mutated on scroll MUST NOT have a CSS `transition` on the properties being mutated. Specifically:
+     - Remove `transition-all` (and any `transition`) from the `<header>` in `AppBar.vue`.
+     - Remove `transition-all` from the side buttons in `DashboardHeader.vue`.
+     - Remove `transition-all` from the inner label stacks of side buttons.
+     - CSS transitions are only permitted for interaction-state changes (`:hover`, `:active`, `:focus`) on properties that are NOT also driven by scroll.
+   - **Mascot Transform Isolation**: The mascot element that receives scroll-driven `transform` (position, scale, rotate) via direct DOM mutation must NOT simultaneously carry a CSS animation that also writes to `transform`. Remove the `animate-wobble` class from the scroll-interpolated mascot wrapper. The wobble effect, if desired in the fully expanded state (`t = 0`), must be implemented as a CSS animation applied to an inner child element that only transforms `rotate` and `scale` within a sub-wrapper — keeping the outer wrapper's `transform` exclusively owned by the scroll logic.
    - **FlexibleSpaceBar Integration**:
-    - **Branding Interpolation**:
-      - **Subtle Scaling**: Center branding scales from `1.05` to `0.90` (`scale(1.05 - 0.15 * t)`) centered.
-      - **Mascot Symbiosis**: The mascot translates vertically (`top: -14px + 18px * t`) and horizontally (`right: -12px + 12px * t`) while scaling (`0.95 - 0.2 * t`) and unrotating (`4deg - 4deg * t`) as the header collapses. Size is 24px, `mood="happy"`.
-      - **Tenant Name Fade**: The tenant name label fades out aggressively: `opacity = max(0, 1 - 2.8 * t)`. It becomes invisible before `t = 0.36`.
-      - **Color Fluidity**: Transition colors using progressive opacity.
-    - **Surface & Elevation Refinement**:
-      - **Background**: Transparent until `t > 0.05`; then `rgba(251, 250, 249, min(1.0, 0.98 * t))`.
-      - **Shadow Transition**: Interpolate shadow opacity for `t > 0.6` using `0 (6 * t²)px (24 * t)px -4px rgba(...)`. No shadow below `t = 0.6`.
-      - **Border Logic**: Bottom border `rgba(242, 240, 237, max(0, (t - 0.8) * 10))` — fades in starting at `t = 0.8`, fully visible at `t = 0.9`.
-    - **Breakout & Internal Rhythm (Edge-to-Edge)**:
-      - When `t` approaches 1, the header must expand to cover the parent's horizontal padding using negative margins: `marginLeft = -parent-pad * t`, `marginRight = -parent-pad * t`, `width = 100% + (2 * parent-pad * t)`.
-      - In parallel, header's own padding contracts: `paddingLeft = parent-pad * (1 - t)`, `paddingRight = parent-pad * (1 - t)`.
-      - The CSS variable `--parent-pad` is defined in the component's scoped style: `1.5rem` (24px) by default, `1rem` (16px) on screens narrower than `640px`.
-   - **Pinned Transition**: At `t = 1.0`, the header is fully solid (`bg-canvas`), edge-to-edge, and pinned (sticky top-0).
-   - **Parallax Background Layer**: The `flexible-background` slot is rendered in an `absolute inset-0` layer behind all content slots. Its opacity fades from `1` to `0` and it translates downward `translateY(t * 24px)` as the header collapses — creating a parallax separation effect.
-   - **Fluid Micro-interactions**: Wrap scroll handler in `requestAnimationFrame` for sub-pixel smoothness. Cancel pending `rafId` on each new scroll event before scheduling a new frame.
+     - **Branding Interpolation**: Center branding scales from `1.05` to `0.90` (`scale(1.05 - 0.15 * t)`) centered.
+     - **Mascot Symbiosis**: Mascot outer wrapper receives direct style mutation: `top = (-14 + 18 * t)px`, `right = (-12 + 12 * t)px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`. Size 24px, `mood="happy"`. No CSS animation on this wrapper.
+     - **Tenant Name Fade**: `opacity = max(0, 1 - 2.8 * t)`. Invisible before `t = 0.36`.
+   - **Surface & Elevation Refinement (via Direct DOM)**:
+     - **Background**: Transparent for `t ≤ 0.05`; `rgba(251, 250, 249, min(1.0, 0.98 * t))` for `t > 0.05`.
+     - **Shadow**: Appears for `t > 0.6`. Formula: `0 ${6 * t²}px ${24 * t}px -4px rgba(67,70,69,${0.08*t}), 0 0 1px rgba(18,18,18,${0.1*t})`.
+     - **Border**: `1px solid rgba(242, 240, 237, ${max(0, (t - 0.8) * 10)})`.
+   - **Breakout & Internal Rhythm (Edge-to-Edge)**:
+     - `marginLeft = calc(-1 * var(--parent-pad) * t)`, `marginRight = calc(-1 * var(--parent-pad) * t)`, `width = calc(100% + 2 * var(--parent-pad) * t)`.
+     - `paddingLeft = calc(var(--parent-pad) * (1 - t))`, `paddingRight = calc(var(--parent-pad) * (1 - t))`.
+     - `--parent-pad`: `1.5rem` (≥640px); `1rem` (<640px).
+   - **Pinned State**: At `t = 1.0`, header is fully solid, edge-to-edge, sticky `top-0`.
+   - **Parallax Background Layer**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`. Applied via direct DOM ref.
+   - **RAF Pattern**: Cancel pending `rafId` before each new `requestAnimationFrame`. Clean up listener and cancel `rafId` in `onUnmounted`.
 
 ## Structure
 
@@ -135,36 +149,50 @@ BottomTabBar -- MembroAvatar : uses for profile
 ## Operations
 
 ### Create Component - AppBar.vue
-1. **Responsibility**: Provide a consistent, scroll-reactive SliverAppBar layout for all headers, managing four slot zones and all interpolated visual transitions.
+1. **Responsibility**: Provide a consistent, scroll-reactive SliverAppBar layout for all headers, managing four slot zones and exposing DOM refs for zero-jitter direct style mutation.
 2. **Slots**:
-   - `flexible-background`: Absolute-positioned parallax backdrop layer (opacity and translateY driven by `scrollRatio`).
+   - `flexible-background`: Absolute-positioned parallax backdrop layer. Exposes a ref so the parent can drive `opacity` and `translateY` directly.
    - `left`: Left-aligned content column (`flex-1 basis-0 justify-start`).
    - `center`: Centered branding column (`flex-shrink-0 min-w-max`).
    - `right`: Right-aligned content column (`flex-1 basis-0 justify-end`).
 3. **Props**:
-   - `scrollRatio`: Number (0.0 to 1.0), provided by the parent (`DashboardHeader`).
-4. **CSS Custom Properties** (scoped):
-   - `--parent-pad: 1.5rem` (24px) on `≥640px` screens; `1rem` (16px) on `<640px` screens. Drives both breakout and padding interpolation.
+   - Remove `scrollRatio` prop. AppBar no longer accepts or reacts to a scroll ratio. All scroll-driven style mutations are applied externally via `expose`d DOM refs.
+4. **Expose (via `defineExpose`)**:
+   - `headerEl`: ref to the `<header>` root element.
+   - `parallaxEl`: ref to the `flexible-background` wrapper div.
+5. **CSS Custom Properties** (scoped):
+   - `--parent-pad: 1.5rem` (24px) on `≥640px` screens; `1rem` (16px) on `<640px` screens.
    - `will-change: height, padding, background-color, box-shadow, margin, width` for GPU compositing.
-5. **Styles**:
-   - **Height**: `calc(6rem - (2.25rem * scrollRatio))` — 96px collapsed to 60px.
-   - **Background**: Transparent for `t ≤ 0.05`; `rgba(251, 250, 249, min(1.0, 0.98 * t))` for `t > 0.05`.
-   - **Edge-to-Edge Breakout**: `marginLeft = calc(-1 * var(--parent-pad) * t)`, `marginRight = calc(-1 * var(--parent-pad) * t)`, `width = calc(100% + 2 * var(--parent-pad) * t)`. Simultaneously, `paddingLeft = calc(var(--parent-pad) * (1 - t))`, `paddingRight = calc(var(--parent-pad) * (1 - t))`.
-   - **Shadow**: Appears at `t > 0.6`. Formula: `0 (6 * t²)px (24 * t)px -4px rgba(67, 70, 69, 0.08 * t), 0 0 1px rgba(18, 18, 18, 0.1 * t)`.
-   - **Border**: `1px solid rgba(242, 240, 237, max(0, (t - 0.8) * 10))` — visible only from `t = 0.8` onward.
-   - **Parallax Layer** (`flexible-background` slot container): `opacity = 1 - t`, `transform = translateY(t * 24px)`.
+6. **Styles (baseline only — NO `transition` on scroll-driven properties)**:
+   - Remove `transition-all`, `transition`, or any CSS transition from the `<header>` element's scoped styles and from its Tailwind class list. No transition class may be present on the header or the parallax wrapper.
+   - Apply `position: sticky; top: 0; z-index: 50; overflow: hidden` via class.
+   - Base height `6rem` (96px), expressed as a CSS variable or inline style updated by the parent.
+   - CSS `transition` is only permitted on `:hover` / `:focus-visible` pseudo-classes that target non-scroll properties (e.g., ring, outline).
 
 ### Update Component - DashboardHeader.vue
-1. **Responsibility**: Provide a minimalist, brand-centric header that owns the scroll logic and delegates all visual interpolation to `AppBar`.
-2. **Logic Updates**:
-   - **Scroll Interpolation**: Use `EXPANDED_HEIGHT = 96`, `COLLAPSED_HEIGHT = 60`, `INTERPOLATION_RANGE = 36`. Compute `scrollRatio = clamp(scrollY / INTERPOLATION_RANGE, 0, 1)` (bilateral clamp). Listen to `window.scroll` with `{ passive: true }` and update via `requestAnimationFrame`, cancelling any pending `rafId` before scheduling a new frame. Clean up listener and cancel pending `rafId` in `onUnmounted`.
-   - **Identity & Density**:
-     - **Side Buttons (Left & Right)**: Both buttons have identical structure (`rounded-2xl`, `px-3 py-1.5`, `border border-stone/20`), scale subtly (`scale(1 - 0.05 * t)`, `origin-left`/`origin-right`), and transition warm background (`rgba(242, 240, 237, 0.4 + 0.1 * t)`). Add `shadow-subtle` for `t > 0.8`.
-     - **Inner Content Scale**: Label stacks inside each button scale independently (`scale(1 - 0.1 * t)`) with matching transform origins.
-     - **Text Label Retention**: Both buttons retain their text labels (`Junho`/month, `Atividade`) in all scroll states — labels scale with the button, never hidden.
-     - **Mascot Guardian**: `IllustrationMascot` (variant `ember`, size 24, mood `happy`) stays visible in all states, translating from its initial floating position (`top: -14px, right: -12px`) toward an integrated position (`top: 4px, right: 0px`) as `t → 1`, while scaling down (`0.95 - 0.2 * t`) and unrotating (`4deg → 0deg`).
-     - **Tenant Name Fade**: The tenant name label (`activeTenantObj.name`) fades out aggressively: `opacity = max(0, 1 - 2.8 * t)`, becoming invisible before the header is half-collapsed.
-   - **Vertical Alignment**: All slot contents (`items-center`) are vertically centered throughout the transition.
+1. **Responsibility**: Own all scroll logic and apply scroll-driven style mutations directly to DOM elements via `useTemplateRef`, bypassing Vue's reactivity pipeline and the CSS transition engine.
+2. **Scroll Engine (Direct DOM Mutation Pattern)**:
+   - Import `useTemplateRef` from Vue 3.5+.
+   - Declare template refs for every element that receives scroll-driven style changes: the AppBar component instance (`appBarRef`), the left button (`leftBtnRef`), the left label stack (`leftLabelRef`), the right button (`rightBtnRef`), the right label stack (`rightLabelRef`), the center branding wrapper (`centerRef`), the mascot outer wrapper (`mascotRef`), the tenant name element (`tenantNameRef`).
+   - Do NOT use `ref()`/`computed()` for `scrollY` or `scrollRatio`. Use plain `let` variables: `let t = 0`.
+   - In `onMounted`, add `window.addEventListener('scroll', handleScroll, { passive: true })` and call `applyStyles(0)` for initial render.
+   - The `handleScroll` function: cancel pending `rafId`, then schedule `requestAnimationFrame(applyStyles)`.
+   - The `applyStyles(timestamp?)` function (or called with no arg from RAF): read `window.scrollY`, compute `t = Math.min(Math.max(window.scrollY / 36, 0), 1)`, then imperatively mutate each DOM ref's `.style` property.
+   - In `onUnmounted`, remove scroll listener and cancel pending `rafId`.
+3. **Direct Style Mutations per element** (all applied inside `applyStyles`):
+   - **AppBar `<header>` (`headerEl`)**: `height`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — using the same formulas defined in Approach §8. NO CSS transition on these properties.
+   - **Parallax wrapper (`parallaxEl`)**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
+   - **Left button (`leftBtnRef`)**: `transform = scale(${1 - 0.05 * t})`, `backgroundColor = rgba(242, 240, 237, ${0.4 + 0.1 * t})`, `boxShadow` for `t > 0.8`. No `transition-all` class on this button.
+   - **Left label stack (`leftLabelRef`)**: `transform = scale(${1 - 0.1 * t})` with `transformOrigin: left`.
+   - **Right button (`rightBtnRef`)**: mirror of left button.
+   - **Right label stack (`rightLabelRef`)**: mirror of left label stack, `transformOrigin: right`.
+   - **Center branding (`centerRef`)**: `transform = scale(${1.05 - 0.15 * t})`.
+   - **Mascot outer wrapper (`mascotRef`)**: `top = ${-14 + 18 * t}px`, `right = ${-12 + 12 * t}px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`. This element must NOT carry `animate-wobble` or any CSS animation that writes to `transform`.
+   - **Tenant name (`tenantNameRef`)**: `opacity = ${Math.max(0, 1 - 2.8 * t)}`.
+4. **Mascot Wobble Preservation**: The playful wobble effect for the mascot is preserved by wrapping `IllustrationMascot` in two layers: an outer wrapper (the scroll-driven ref `mascotRef`) and an inner wrapper that carries the `animate-wobble` class. The inner wrapper only animates `rotate` and `scale(1±0.01)`, which are separate from the outer's scroll-driven transform. This way neither layer's CSS and JS transforms conflict.
+5. **Remove `:style` bindings from template**: All scroll-driven style changes are moved out of Vue's template `:style` syntax. Template only declares static classes and non-scroll-driven bindings (e.g., `v-if`, `aria-*`, `@click`).
+6. **Text Label Retention**: Both side buttons retain their text labels in all scroll states — only scaled, never hidden.
+7. **Vertical Alignment**: All slot contents (`items-center`) remain vertically centered throughout the transition.
 
 ### Update Component - BottomTabBar.vue
 1. **Responsibility**: Provide a floating, ergonomic navigation bar.
@@ -178,10 +206,15 @@ BottomTabBar -- MembroAvatar : uses for profile
 2. **Identity First**: Avoid generic "SaaS" aesthetics in favor of warm, tactile choices.
 3. **Consistency**: Side actions must have identical visual weight.
 4. **High Contrast**: WCAG AA standards.
+5. **CSS/JS Transition Separation**: CSS `transition` and JS-driven style mutations are mutually exclusive on the same property of the same element. Scroll-driven properties (height, transform, opacity, background, shadow, margin, padding, width, border) must have zero CSS transition — they are driven by RAF at 60fps. Interaction-only properties (ring, outline, cursor) may have CSS transitions. Violating this rule causes double-interpolation jitter.
+6. **Direct DOM for Animation-Critical Paths**: Use `useTemplateRef` + imperative `el.style.xxx` mutations (not Vue reactive state) for all scroll-driven visual updates. Reactive state (`ref`, `computed`) is forbidden on the hot path.
 
 ## Safeguards
 1. **Universal Mobile Design**: Intuitive for all ages.
 2. **Fluidity over Complexity**: Snappy and organic animations.
 3. **No Blur**: No glassmorphism.
 4. **Safe Area Resilience**: Handle `env(safe-area-inset-bottom)`.
-5. **No Breaking Changes**: Preserve prop and event interfaces.
+5. **No Breaking Changes**: Preserve event interfaces (`openHistorico`, `openAuditLogs`). The `scrollRatio` prop on `AppBar` is removed — any consumer that previously passed it must be updated to use the `expose` pattern.
+6. **Zero Jitter Contract**: Any implementation that produces visible stutter, frame-doubling, or jump during scroll is a regression and must not be merged. The test criterion is: drag-scroll at 60fps on a mid-range Android device (Pixel 6, Chrome) must produce a perfectly linear collapse with no visible jump between frames.
+7. **No `transition-all` on Scroll-Driven Elements**: The Tailwind class `transition-all` (and any shorthand `transition`) is forbidden on any element whose `transform`, `opacity`, `background-color`, `box-shadow`, `height`, `margin`, `padding`, or `width` is driven by the scroll RAF loop. Linters or code review must flag this pattern.
+8. **No CSS Animation on Scroll-Driven `transform` Wrapper**: A CSS `@keyframes` animation (e.g., `animate-wobble`, `animate-float`) must never be applied to an element that also receives `transform` mutations via JS. Use inner/outer wrapper isolation instead.
