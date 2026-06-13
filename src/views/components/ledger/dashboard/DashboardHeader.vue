@@ -21,8 +21,6 @@ const emit = defineEmits<{
 }>()
 
 // ─── DOM Refs (Direct DOM Mutation Pattern) ───────────────────────────────────
-// NÃO usar ref()/computed() para scrollY/scrollRatio.
-// Todos os refs abaixo são usados para mutação imperativa via el.style dentro do RAF.
 const appBarRef = useTemplateRef<InstanceType<typeof AppBar>>('appBarRef')
 const leftBtnRef = useTemplateRef<HTMLButtonElement>('leftBtnRef')
 const leftLabelRef = useTemplateRef<HTMLDivElement>('leftLabelRef')
@@ -32,35 +30,111 @@ const centerRef = useTemplateRef<HTMLDivElement>('centerRef')
 const mascotRef = useTemplateRef<HTMLDivElement>('mascotRef')
 const tenantNameRef = useTemplateRef<HTMLDivElement>('tenantNameRef')
 
-// ─── Scroll Engine ────────────────────────────────────────────────────────────
-// Métricas Flutter-like: expanded (96px) → collapsed (60px)
-const INTERPOLATION_RANGE = 36 // 96 - 60
+// ─── Direction-Aware State Machine ───────────────────────────────────────────
+// ARQUITETURA: t é uma variável JS auto-gerenciada, NUNCA derivada de window.scrollY.
+// A causa raiz do snap-back glitch era o mapeamento position-based:
+//   t = scrollY / RANGE  →  oscila infinitamente quando scrollY flutua no threshold.
+// Solução: t é atualizado por DELTA de scroll, com dead zone e snap decisivo.
 
-// Variável JS simples — NÃO reativa. Evita VDOM diff no hot path.
+const EXPANDED_HEIGHT = 52   // px — ~12mm físico em tela 96dpi
+const COLLAPSED_HEIGHT = 44  // px — estado colapsado (branding apenas)
+const INTERPOLATION_RANGE = EXPANDED_HEIGHT - COLLAPSED_HEIGHT  // 8px
+
+const DEAD_ZONE_PX = 8       // px acumulados antes de mover t (absorve micro-scrolls)
+const COLLAPSE_RATE = 1 / 40 // t avança X por px de delta descendo
+const EXPAND_RATE = 1 / 30   // t recua X por px de delta subindo (mais rápido)
+const SNAP_THRESHOLD = 0.35  // zona ambígua: snapa decisivamente para 0 ou 1
+
+// Variáveis de estado — plain let, NUNCA ref() reativo
+let t = 0               // [0=expandido, 1=colapsado]
+let lastScrollY = 0     // scrollY do frame anterior
+let deadZoneAccum = 0   // delta acumulado não processado (px)
 let rafId: number | null = null
+let snapTransitionPending = false
 
 /**
- * applyStyles — núcleo do loop de animação.
- * Chamada dentro de requestAnimationFrame; lê window.scrollY diretamente
- * e muta el.style em cada elemento interpolado.
- *
- * ZERO CSS TRANSITION nas propriedades mutadas aqui:
- * qualquer transition CSS nessas props criaria double-interpolation jitter.
+ * applyStyles — núcleo do estado machine.
+ * 
+ * Algoritmo (conforme spec SPDD §8):
+ * 1. Computa delta = scrollY - lastScrollY
+ * 2. Boundary: scrollY ≤ 0 → força t=0 (topo da página = sempre expandido)
+ * 3. Acumula delta na dead zone — micro-scrolls são absorvidos silenciosamente
+ * 4. Após cruzar DEAD_ZONE_PX, aplica delta efetivo à taxa collapse/expand
+ * 5. Snap decisivo: t em zona ambígua → snapa para 0 ou 1 com transição suave
+ * 6. Aplica estilos via el.style direto (zero Vue reactivity no hot path)
  */
 function applyStyles(): void {
-  // t ∈ [0, 1]: 0 = totalmente expandido, 1 = totalmente colapsado
-  const t = Math.min(Math.max(window.scrollY / INTERPOLATION_RANGE, 0), 1)
+  const currentScrollY = window.scrollY
+  const delta = currentScrollY - lastScrollY
+  lastScrollY = currentScrollY
 
+  // ── Boundary: topo da página ─────────────────────────────────────────────
+  if (currentScrollY <= 0) {
+    t = 0
+    deadZoneAccum = 0
+    commitStyles(false)
+    return
+  }
+
+  // ── Dead Zone ─────────────────────────────────────────────────────────────
+  deadZoneAccum += delta
+
+  let didSnap = false
+
+  if (Math.abs(deadZoneAccum) >= DEAD_ZONE_PX) {
+    // Extrai delta efetivo descontando a dead zone
+    const eff = deadZoneAccum - Math.sign(deadZoneAccum) * DEAD_ZONE_PX
+    deadZoneAccum = 0
+
+    if (eff > 0) {
+      // Scroll DOWN → colapsar
+      t = Math.min(1, t + eff * COLLAPSE_RATE)
+    } else {
+      // Scroll UP → expandir
+      t = Math.max(0, t + eff * EXPAND_RATE)
+    }
+
+    // ── Snap to stable state ────────────────────────────────────────────────
+    // Impede que t fique "preso" em zona ambígua (snap-back root cause)
+    if (t > SNAP_THRESHOLD && t < 1) {
+      t = 1
+      didSnap = true
+    } else if (t < (1 - SNAP_THRESHOLD) && t > 0) {
+      t = 0
+      didSnap = true
+    }
+  }
+
+  commitStyles(didSnap)
+}
+
+/**
+ * commitStyles — aplica o valor final de t diretamente em el.style.
+ * Separado de applyStyles para clareza e para controlar o snap transition.
+ *
+ * REGRA CRÍTICA (Norm #5 / Safeguard #7):
+ * Nenhuma propriedade mutada aqui pode ter CSS `transition` durante scroll contínuo.
+ * A única exceção é o one-shot snap transition (didSnap = true).
+ */
+function commitStyles(didSnap: boolean): void {
   const header = appBarRef.value?.headerEl
   const parallax = appBarRef.value?.parallaxEl
-
   if (!header) return
 
-  // ── AppBar <header> ────────────────────────────────────────────────────────
-  // Lê --parent-pad do elemento para compatibilidade com breakpoints CSS.
+  // Snap one-shot transition: suaviza apenas o salto discreto de snap
+  if (didSnap && !snapTransitionPending) {
+    snapTransitionPending = true
+    header.style.transition = 'height 180ms ease-out, background-color 180ms ease-out, box-shadow 180ms ease-out'
+    requestAnimationFrame(() => {
+      header.style.transition = ''
+      snapTransitionPending = false
+    })
+  }
+
   const pad = parseFloat(getComputedStyle(header).getPropertyValue('--parent-pad')) || 24
 
-  header.style.height = `${96 - 36 * t}px`
+  // ── AppBar <header> ────────────────────────────────────────────────────────
+  header.style.height = `${EXPANDED_HEIGHT - INTERPOLATION_RANGE * t}px`
   header.style.backgroundColor = t > 0.05
     ? `rgba(251, 250, 249, ${Math.min(1.0, 0.98 * t)})`
     : 'transparent'
@@ -68,14 +142,11 @@ function applyStyles(): void {
     ? `0 ${6 * t * t}px ${24 * t}px -4px rgba(67,70,69,${0.08 * t}), 0 0 1px rgba(18,18,18,${0.1 * t})`
     : 'none'
   header.style.borderBottom = `1px solid rgba(242, 240, 237, ${Math.max(0, (t - 0.8) * 10)})`
-
-  // Breakout edge-to-edge: expande sobre o padding do pai conforme t → 1
-  const padPx = pad
-  header.style.marginLeft = `${-padPx * t}px`
-  header.style.marginRight = `${-padPx * t}px`
-  header.style.width = `calc(100% + ${2 * padPx * t}px)`
-  header.style.paddingLeft = `${padPx * (1 - t)}px`
-  header.style.paddingRight = `${padPx * (1 - t)}px`
+  header.style.marginLeft = `${-pad * t}px`
+  header.style.marginRight = `${-pad * t}px`
+  header.style.width = `calc(100% + ${2 * pad * t}px)`
+  header.style.paddingLeft = `${pad * (1 - t)}px`
+  header.style.paddingRight = `${pad * (1 - t)}px`
 
   // ── Parallax Layer ─────────────────────────────────────────────────────────
   if (parallax) {
@@ -122,15 +193,14 @@ function applyStyles(): void {
 }
 
 function handleScroll(): void {
-  // Cancela frame pendente antes de agendar um novo — evita frame-doubling.
   if (rafId !== null) cancelAnimationFrame(rafId)
   rafId = requestAnimationFrame(applyStyles)
 }
 
 onMounted(() => {
+  lastScrollY = window.scrollY  // inicializa com posição atual (evita delta espúrio)
   window.addEventListener('scroll', handleScroll, { passive: true })
-  // Aplica estilos iniciais (t = 0 se page não está rolada)
-  applyStyles()
+  applyStyles()  // aplica estado inicial
 })
 
 onUnmounted(() => {
@@ -141,10 +211,11 @@ onUnmounted(() => {
 
 <template>
   <!--
-    DashboardHeader — Zero-Jitter SliverAppBar
-    Todos os estilos driven por scroll são aplicados via el.style dentro do RAF (applyStyles).
+    DashboardHeader — Zero-Jitter SliverAppBar (Direction-Aware State Machine)
+    
+    Todos os estilos driven por scroll são aplicados via el.style dentro do RAF (commitStyles).
     O template NÃO usa :style para propriedades interpoladas pelo scroll.
-    CSS transitions nessas propriedades estão removidas (causariam double-interpolation jitter).
+    CSS transitions nessas propriedades estão removidas — exceto one-shot snap transition.
   -->
   <AppBar ref="appBarRef" class="mb-4">
     <!-- Slot Esquerdo: Seletor de Mês -->
@@ -156,19 +227,9 @@ onUnmounted(() => {
         aria-label="Selecionar período"
         @click="$emit('openHistorico')"
       >
-        <!--
-          SEM transition-all: o transform e backgroundColor deste botão
-          são mutados por applyStyles() a cada frame — transition CSS aqui
-          causaria double-interpolation jitter.
-          Apenas hover/focus usam CSS transition (propriedades NÃO driven por scroll).
-        -->
         <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center group-hover:bg-ember/10 group-hover:text-ember order-first transition-colors duration-300">
           <Calendar class="w-4 h-4 group-hover:scale-110 transition-transform duration-500 ease-jelly" aria-hidden="true" />
         </div>
-        <!--
-          leftLabelRef: escalonado por applyStyles via transform.
-          transformOrigin: left é definido via CSS scoped abaixo.
-        -->
         <div ref="leftLabelRef" class="flex flex-col left-label-stack">
           <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 flex items-center gap-1 whitespace-nowrap text-ash/60 group-hover:text-ember transition-colors duration-300">
             {{ currentYear }}
@@ -183,10 +244,6 @@ onUnmounted(() => {
 
     <!-- Slot Central: Branding DIVI. + Mascote Guardião -->
     <template #center>
-      <!--
-        centerRef: escalonado por applyStyles via transform.
-        SEM :style aqui — valor vem do applyStyles via el.style.
-      -->
       <div
         v-if="isAuthed && activeTenantObj"
         ref="centerRef"
@@ -194,27 +251,20 @@ onUnmounted(() => {
       >
         <!--
           mascotRef (OUTER WRAPPER):
-          - Recebe top, right, transform via applyStyles (Direct DOM).
-          - NÃO carrega animate-wobble nem qualquer CSS animation que escreva em transform.
-          - O wobble está no INNER WRAPPER abaixo (isolamento de camadas).
+          Recebe top, right, transform via commitStyles — NUNCA via CSS animation.
+          O wobble está isolado no INNER WRAPPER abaixo (Safeguard #8).
         -->
         <div
           ref="mascotRef"
           class="absolute z-0 opacity-80 pointer-events-none mascot-outer"
           aria-hidden="true"
         >
-          <!--
-            INNER WRAPPER (wobble isolation):
-            Carrega animate-wobble, que anima rotate e scale em ±0.01.
-            Por estar em um elemento filho separado, NÃO conflita com o
-            transform do mascotRef que é owned pelo scroll RAF.
-          -->
+          <!-- INNER WRAPPER: animate-wobble isolado — não conflita com transform do outer -->
           <div class="animate-wobble">
             <IllustrationMascot variant="ember" :size="24" mood="happy" />
           </div>
         </div>
 
-        <!-- Tenant Name: opacity mutada por applyStyles via tenantNameRef.style -->
         <div
           ref="tenantNameRef"
           class="relative mb-1.5 text-[8.5px] font-bold uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 justify-center text-ember"
@@ -263,10 +313,6 @@ onUnmounted(() => {
         title="Ver atividade"
         @click="emit('openAuditLogs')"
       >
-        <!--
-          SEM transition-all: mesma lógica do leftBtnRef.
-          Apenas hover/focus usam CSS transition em propriedades não driven por scroll.
-        -->
         <div ref="rightLabelRef" class="flex flex-col text-right right-label-stack">
           <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember whitespace-nowrap transition-colors duration-300">Logs</span>
           <span class="text-xs font-bold text-charcoal leading-none whitespace-nowrap">Atividade</span>
@@ -281,16 +327,13 @@ onUnmounted(() => {
 
 <style scoped>
 /*
- * REGRA CRÍTICA DE SEPARAÇÃO CSS/JS (Norm #5):
- * Propriedades listadas abaixo são mutadas pelo RAF loop (applyStyles):
- *   transform, background-color, box-shadow, opacity
- * Elas NÃO devem ter `transition` aqui — causaria double-interpolation jitter.
- *
- * CSS `transition` é APENAS permitida em pseudo-classes de interação
- * (hover, focus) que targetam propriedades NÃO driven por scroll.
+ * Norm #5 — CSS/JS Transition Separation:
+ * Propriedades mutadas pelo RAF loop (transform, background-color, box-shadow,
+ * opacity, height, margin, padding, width, border) NÃO devem ter transition aqui.
+ * Exceção única: one-shot transition aplicada programaticamente no snap (commitStyles).
+ * CSS transition só é permitida em hover/focus em props NÃO driven por scroll.
  */
 
-/* transform-origin para os label stacks dos botões laterais */
 .left-label-stack {
   transform-origin: left center;
 }
@@ -300,15 +343,13 @@ onUnmounted(() => {
 }
 
 /*
- * mascot-outer: posicionamento absoluto base.
- * top e right são sobrescritos pelo applyStyles via el.style.
- * transform é exclusivamente owned pelo RAF loop — NUNCA adicionar
- * CSS animation em transform neste elemento (Safeguard #8).
+ * mascot-outer: outer wrapper com transform exclusivamente owned pelo RAF loop.
+ * Safeguard #8: NUNCA adicionar CSS animation em transform neste elemento.
+ * top e right são sobrescritos pelo commitStyles via el.style.
  */
 .mascot-outer {
   position: absolute;
-  /* Valores iniciais (t = 0): top = -14px, right = -12px */
-  top: -14px;
+  top: -14px;  /* valor inicial (t=0, expandido) */
   right: -12px;
 }
 </style>

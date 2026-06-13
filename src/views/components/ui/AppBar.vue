@@ -65,8 +65,9 @@ header {
      Lido pelo DashboardHeader via getComputedStyle para calcular os valores CSS. */
   --parent-pad: 1.5rem; /* 24px */
 
-  /* Altura base: 6rem (96px). Mutada diretamente via headerEl.style.height pelo pai. */
-  height: 6rem;
+  /* Altura base: 52px (~12mm físico — Physical Height Constraint, Safeguard #12).
+     Mutada diretamente via headerEl.style.height pelo pai no commitStyles(). */
+  height: 52px;
 }
 
 @media (max-width: 640px) {

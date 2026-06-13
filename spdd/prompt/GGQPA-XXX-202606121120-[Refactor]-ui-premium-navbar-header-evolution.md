@@ -13,6 +13,10 @@
 - **Maintain Brand Identity**: Preserve the presence of the mascot "ember" and the warm color palette (ember, sunburst) in a more integrated manner.
 - **SliverAppBar Dynamics**: Implement a scrolling behavior similar to Flutter's SliverAppBar, where the header collapses into a pinned state when scrolling down, transitioning from an expanded transparent layout to a compact solid-colored pinned bar.
 - **Zero-Jitter Scroll Architecture**: The header collapse must be 100% jitter-free. Any involuntary stutter, jump, or double-interpolation caused by CSS `transition` fighting JS-driven style mutations is unacceptable. All scroll-driven style mutations must bypass the CSS transition pipeline entirely — using direct DOM manipulation (`el.style.xxx`) instead of reactive Vue state that triggers re-renders.
+- **Snap-Back Elimination**: Eliminate the "snap-back glitch" — the involuntary rapid bounce between expanded and collapsed states that occurs when scrolling near the trigger threshold. The transition must be decisively one-directional per scroll gesture.
+- **Scroll-Direction-Aware State Machine**: The header must respond to the **direction** of scroll (up vs. down), not to the absolute `scrollY` position. Scroll **down** collapses the header; scroll **up** expands it. The system must internally track its own interpolation variable `t` independently of `scrollY`.
+- **Dead Zone Stability**: Implement a configurable dead zone (`DEAD_ZONE_PX`, default 8px) of accumulated scroll delta before triggering any state transition. Small involuntary micro-scrolls within this zone must be silently absorbed, preventing spurious expand/collapse cycles.
+- **Physical Height Constraint**: The fully expanded header must measure approximately **12 mm physical height** on the device screen, which translates to 48–56 logical pixels depending on screen density. Use `52px` as the canonical logical pixel target for the expanded state height.
 
 ## Entities
 ```mermaid
@@ -95,39 +99,69 @@ BottomTabBar -- MembroAvatar : uses for profile
      - **Symmetric Architecture**: Both side buttons share a fixed horizontal footprint and identical corner radius (`rounded-2xl`).
      - Minimalist Content: Maintain textual labels even in the compact state to ensure clarity and accessibility for all age groups. Align labels and icons in a high-density, integrated layout.
 
-8. **Sliver Scrolling Dynamics (Linear Interpolation — Zero-Jitter Architecture)**:
+8. **Sliver Scrolling Dynamics (Direction-Aware State Machine — Zero-Jitter Architecture)**:
 
-   > **Root Cause Analysis (Jitter Diagnosis)**: The previous implementation exhibited jitter from four compounding sources:
-   > 1. **CSS `transition-all` + JS `:style` conflict**: The `transition-all duration-75` Tailwind class on the `<header>` element causes the browser's CSS engine to interpolate from the *previous* computed value to each new JS-set value every ~16ms frame. This creates a perpetual "catching up" effect — a double-interpolation loop that manifests as stuttering and micro-jumps.
-   > 2. **Vue reactive `computed` triggers re-renders**: Using `scrollY` as a reactive `ref` and `scrollRatio` as a `computed` causes Vue's reactivity system to schedule a VDOM diff + patch on every RAF callback, adding framework overhead on the animation path. This is entirely unnecessary since no conditional rendering depends on `scrollRatio`.
-   > 3. **`animate-wobble` CSS animation conflicts with `:style` transform**: The mascot's `animate-wobble` class applies a CSS `@keyframes` that writes to `transform`. The parent `:style` binding also writes to `transform` on the same element. The two compete frame-by-frame, causing the mascot to jump erratically.
-   > 4. **`transition-all duration-300` on interior elements**: Buttons and text stacks inside the header have CSS transition applied to `transform`. Since their `transform` is recalculated on every RAF frame via `:style`, the CSS transition engine sees a new target every ~16ms and perpetually re-initiates interpolation rather than settling — creating the "fighting" sensation.
+   > **Root Cause Analysis (Jitter Diagnosis)**: Two generations of bugs were identified:
+   > - **Generation 1 (fixed)**: CSS `transition-all` + JS `:style` conflict; Vue `ref`/`computed` re-renders on the hot path; `animate-wobble` vs. `:style` transform conflict on the mascot; `transition-all duration-300` on interior elements.
+   > - **Generation 2 (current — snap-back glitch)**: The previous fix still used `t = clamp(window.scrollY / INTERPOLATION_RANGE, 0, 1)` — a **position-based** mapping. This means any scroll position between 0 and 36px produces a different `t` on every frame. When the user scrolls slowly near this range, the header perpetually oscillates between expanded and collapsed states with each small scroll delta, producing the "snap-back" bounce and rapid flickering.
 
-   **Corrected Architecture (Direct DOM Mutation Pattern)**:
-   - **Scroll Metrics**: Define `EXPANDED_HEIGHT = 96`, `COLLAPSED_HEIGHT = 60`, `INTERPOLATION_RANGE = 36`.
-   - **Linear Scroll Ratio (t)**: `t = clamp(window.scrollY / INTERPOLATION_RANGE, 0, 1)`. Bilateral clamp prevents overshoot and undershoot.
-   - **No Reactive State for Scroll Ratio**: Do NOT store `scrollY` in a Vue `ref` and do NOT derive `scrollRatio` via `computed`. Instead, use `useTemplateRef` (Vue 3.5+) to obtain direct DOM references to the `<header>` element and every interpolated child element. Write `el.style.xxx = value` directly inside the RAF callback. This completely bypasses Vue's reactivity pipeline for scroll-driven mutations.
-   - **Remove All CSS Transitions from Scroll-Driven Elements**: Every element whose style is mutated on scroll MUST NOT have a CSS `transition` on the properties being mutated. Specifically:
-     - Remove `transition-all` (and any `transition`) from the `<header>` in `AppBar.vue`.
-     - Remove `transition-all` from the side buttons in `DashboardHeader.vue`.
-     - Remove `transition-all` from the inner label stacks of side buttons.
-     - CSS transitions are only permitted for interaction-state changes (`:hover`, `:active`, `:focus`) on properties that are NOT also driven by scroll.
-   - **Mascot Transform Isolation**: The mascot element that receives scroll-driven `transform` (position, scale, rotate) via direct DOM mutation must NOT simultaneously carry a CSS animation that also writes to `transform`. Remove the `animate-wobble` class from the scroll-interpolated mascot wrapper. The wobble effect, if desired in the fully expanded state (`t = 0`), must be implemented as a CSS animation applied to an inner child element that only transforms `rotate` and `scale` within a sub-wrapper — keeping the outer wrapper's `transform` exclusively owned by the scroll logic.
-   - **FlexibleSpaceBar Integration**:
-     - **Branding Interpolation**: Center branding scales from `1.05` to `0.90` (`scale(1.05 - 0.15 * t)`) centered.
-     - **Mascot Symbiosis**: Mascot outer wrapper receives direct style mutation: `top = (-14 + 18 * t)px`, `right = (-12 + 12 * t)px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`. Size 24px, `mood="happy"`. No CSS animation on this wrapper.
-     - **Tenant Name Fade**: `opacity = max(0, 1 - 2.8 * t)`. Invisible before `t = 0.36`.
-   - **Surface & Elevation Refinement (via Direct DOM)**:
+   **Corrected Architecture (Direction-Aware State Machine)**:
+
+   The fundamental shift: `t` is no longer derived from `window.scrollY`. Instead, `t` is a **self-owned JS variable** that is updated based on the **direction and magnitude of scroll deltas**. The engine computes `delta = scrollY - lastScrollY` and drives `t` forward or backward, with a dead zone to absorb micro-oscillations.
+
+   - **Constants**:
+     - `EXPANDED_HEIGHT = 52` (px) — canonical logical pixel target for fully expanded state (~12mm physical on a 96dpi screen).
+     - `COLLAPSED_HEIGHT = 44` (px) — compact branding-only state.
+     - `INTERPOLATION_RANGE = EXPANDED_HEIGHT - COLLAPSED_HEIGHT = 8` (px).
+     - `DEAD_ZONE_PX = 8` — accumulated scroll delta in px that must be exceeded before `t` changes. Absorbs small involuntary micro-scrolls.
+     - `COLLAPSE_RATE = 1 / 40` — how much `t` advances per px of downward scroll delta (after dead zone).
+     - `EXPAND_RATE = 1 / 30` — how much `t` retreats per px of upward scroll delta (expand faster than collapse for responsiveness).
+     - `SNAP_THRESHOLD = 0.35` — if `t` crosses this threshold after a directional gesture, snap decisively to `t = 1` (collapsed) or `t = 0` (expanded) to eliminate the ambiguous mid-state.
+
+   - **State Variables** (plain JS `let`, never reactive `ref`):
+     - `let t = 0` — current interpolation ratio [0 = expanded, 1 = collapsed]. Initial value 0 (expanded).
+     - `let lastScrollY = 0` — previous frame's `window.scrollY`.
+     - `let deadZoneAccum = 0` — accumulated unprocessed delta (px). Reset to 0 after dead zone is crossed.
+     - `let rafId: number | null = null`.
+
+   - **`handleScroll()` function**: Called on `window.scroll` event (`{ passive: true }`). Cancels pending `rafId`, schedules `requestAnimationFrame(applyStyles)`.
+
+   - **`applyStyles()` function** — direction-aware `t` computation:
+     1. Read `const currentScrollY = window.scrollY`.
+     2. `const delta = currentScrollY - lastScrollY`.
+     3. `lastScrollY = currentScrollY`.
+     4. **Boundary clamp**: If `currentScrollY <= 0`, force `t = 0` and `deadZoneAccum = 0` (always fully expanded at page top). Skip remaining logic.
+     5. `deadZoneAccum += delta`.
+     6. If `Math.abs(deadZoneAccum) < DEAD_ZONE_PX`, do NOT change `t`. Proceed directly to DOM mutations with current `t`.
+     7. Otherwise: `const effectiveDelta = deadZoneAccum - Math.sign(deadZoneAccum) * DEAD_ZONE_PX`; `deadZoneAccum = 0`.
+     8. If `effectiveDelta > 0` (scrolling down → collapse): `t = Math.min(1, t + effectiveDelta * COLLAPSE_RATE)`.
+     9. If `effectiveDelta < 0` (scrolling up → expand): `t = Math.max(0, t + effectiveDelta * EXPAND_RATE)`.
+     10. **Snap to stable state**: If `t > SNAP_THRESHOLD && t < 1`, set `t = 1`; if `t < (1 - SNAP_THRESHOLD) && t > 0`, set `t = 0`. This prevents the header from stalling in an indeterminate mid-state.
+     11. Apply DOM mutations with final `t` value.
+
+   - **Mascot Transform Isolation**: The mascot outer wrapper (`mascotRef`) receives scroll-driven `top`, `right`, and `transform` mutations. It must NOT carry a CSS animation that writes to `transform`. Wobble animation is isolated to an inner child wrapper (Safeguard #8).
+
+   - **FlexibleSpaceBar Integration** (same formulas as before, now driven by direction-aware `t`):
+     - **Branding Interpolation**: Center branding `transform = scale(${1.05 - 0.15 * t})`.
+     - **Mascot Symbiosis**: `top = ${-14 + 18 * t}px`, `right = ${-12 + 12 * t}px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`.
+     - **Tenant Name Fade**: `opacity = max(0, 1 - 2.8 * t)`.
+
+   - **Surface & Elevation (via Direct DOM)**:
+     - **Height**: `${EXPANDED_HEIGHT - INTERPOLATION_RANGE * t}px` (52px → 44px).
      - **Background**: Transparent for `t ≤ 0.05`; `rgba(251, 250, 249, min(1.0, 0.98 * t))` for `t > 0.05`.
-     - **Shadow**: Appears for `t > 0.6`. Formula: `0 ${6 * t²}px ${24 * t}px -4px rgba(67,70,69,${0.08*t}), 0 0 1px rgba(18,18,18,${0.1*t})`.
+     - **Shadow**: For `t > 0.6` → `0 ${6 * t²}px ${24 * t}px -4px rgba(67,70,69,${0.08*t}), 0 0 1px rgba(18,18,18,${0.1*t})`.
      - **Border**: `1px solid rgba(242, 240, 237, ${max(0, (t - 0.8) * 10)})`.
-   - **Breakout & Internal Rhythm (Edge-to-Edge)**:
-     - `marginLeft = calc(-1 * var(--parent-pad) * t)`, `marginRight = calc(-1 * var(--parent-pad) * t)`, `width = calc(100% + 2 * var(--parent-pad) * t)`.
-     - `paddingLeft = calc(var(--parent-pad) * (1 - t))`, `paddingRight = calc(var(--parent-pad) * (1 - t))`.
+
+   - **Breakout & Padding (Edge-to-Edge)**:
+     - `marginLeft = ${-padPx * t}px`, `marginRight = ${-padPx * t}px`, `width = calc(100% + ${2 * padPx * t}px)`.
+     - `paddingLeft = ${padPx * (1 - t)}px`, `paddingRight = ${padPx * (1 - t)}px`.
      - `--parent-pad`: `1.5rem` (≥640px); `1rem` (<640px).
-   - **Pinned State**: At `t = 1.0`, header is fully solid, edge-to-edge, sticky `top-0`.
-   - **Parallax Background Layer**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`. Applied via direct DOM ref.
-   - **RAF Pattern**: Cancel pending `rafId` before each new `requestAnimationFrame`. Clean up listener and cancel `rafId` in `onUnmounted`.
+
+   - **Parallax Layer**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
+
+   - **CSS Transition for Final Snap Only**: When `t` snaps discretely from a mid-value to 0 or 1 (step 10 above), apply a one-shot CSS transition on the `<header>` to smooth the snap: `header.style.transition = 'height 180ms ease-out, background-color 180ms ease-out'`, immediately after set `header.style.transition = ''` on the next RAF tick. This is the ONLY permitted use of CSS transition on scroll-driven properties — exclusively for the discrete snap settlement, never for continuous scroll.
+
+   - **RAF Pattern**: Cancel pending `rafId` before each new `requestAnimationFrame`. Clean up in `onUnmounted`.
 
 ## Structure
 
@@ -170,29 +204,41 @@ BottomTabBar -- MembroAvatar : uses for profile
    - CSS `transition` is only permitted on `:hover` / `:focus-visible` pseudo-classes that target non-scroll properties (e.g., ring, outline).
 
 ### Update Component - DashboardHeader.vue
-1. **Responsibility**: Own all scroll logic and apply scroll-driven style mutations directly to DOM elements via `useTemplateRef`, bypassing Vue's reactivity pipeline and the CSS transition engine.
-2. **Scroll Engine (Direct DOM Mutation Pattern)**:
-   - Import `useTemplateRef` from Vue 3.5+.
-   - Declare template refs for every element that receives scroll-driven style changes: the AppBar component instance (`appBarRef`), the left button (`leftBtnRef`), the left label stack (`leftLabelRef`), the right button (`rightBtnRef`), the right label stack (`rightLabelRef`), the center branding wrapper (`centerRef`), the mascot outer wrapper (`mascotRef`), the tenant name element (`tenantNameRef`).
-   - Do NOT use `ref()`/`computed()` for `scrollY` or `scrollRatio`. Use plain `let` variables: `let t = 0`.
-   - In `onMounted`, add `window.addEventListener('scroll', handleScroll, { passive: true })` and call `applyStyles(0)` for initial render.
-   - The `handleScroll` function: cancel pending `rafId`, then schedule `requestAnimationFrame(applyStyles)`.
-   - The `applyStyles(timestamp?)` function (or called with no arg from RAF): read `window.scrollY`, compute `t = Math.min(Math.max(window.scrollY / 36, 0), 1)`, then imperatively mutate each DOM ref's `.style` property.
-   - In `onUnmounted`, remove scroll listener and cancel pending `rafId`.
-3. **Direct Style Mutations per element** (all applied inside `applyStyles`):
-   - **AppBar `<header>` (`headerEl`)**: `height`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — using the same formulas defined in Approach §8. NO CSS transition on these properties.
-   - **Parallax wrapper (`parallaxEl`)**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
-   - **Left button (`leftBtnRef`)**: `transform = scale(${1 - 0.05 * t})`, `backgroundColor = rgba(242, 240, 237, ${0.4 + 0.1 * t})`, `boxShadow` for `t > 0.8`. No `transition-all` class on this button.
-   - **Left label stack (`leftLabelRef`)**: `transform = scale(${1 - 0.1 * t})` with `transformOrigin: left`.
-   - **Right button (`rightBtnRef`)**: mirror of left button.
-   - **Right label stack (`rightLabelRef`)**: mirror of left label stack, `transformOrigin: right`.
-   - **Center branding (`centerRef`)**: `transform = scale(${1.05 - 0.15 * t})`.
-   - **Mascot outer wrapper (`mascotRef`)**: `top = ${-14 + 18 * t}px`, `right = ${-12 + 12 * t}px`, `transform = scale(${0.95 - 0.2 * t}) rotate(${4 - 4 * t}deg)`. This element must NOT carry `animate-wobble` or any CSS animation that writes to `transform`.
-   - **Tenant name (`tenantNameRef`)**: `opacity = ${Math.max(0, 1 - 2.8 * t)}`.
-4. **Mascot Wobble Preservation**: The playful wobble effect for the mascot is preserved by wrapping `IllustrationMascot` in two layers: an outer wrapper (the scroll-driven ref `mascotRef`) and an inner wrapper that carries the `animate-wobble` class. The inner wrapper only animates `rotate` and `scale(1±0.01)`, which are separate from the outer's scroll-driven transform. This way neither layer's CSS and JS transforms conflict.
-5. **Remove `:style` bindings from template**: All scroll-driven style changes are moved out of Vue's template `:style` syntax. Template only declares static classes and non-scroll-driven bindings (e.g., `v-if`, `aria-*`, `@click`).
-6. **Text Label Retention**: Both side buttons retain their text labels in all scroll states — only scaled, never hidden.
-7. **Vertical Alignment**: All slot contents (`items-center`) remain vertically centered throughout the transition.
+1. **Responsibility**: Own all scroll logic via a direction-aware state machine. Apply scroll-driven style mutations directly to DOM elements via `useTemplateRef`, bypassing Vue's reactivity pipeline and the CSS transition engine. Eliminate snap-back glitch through dead zone absorption and snap-to-stable-state logic.
+2. **State Machine Variables** (plain `let`, never Vue reactive):
+   - `let t = 0` — interpolation ratio [0 = expanded, 1 = collapsed]. Starts at 0.
+   - `let lastScrollY = 0` — previous `window.scrollY`, initialized to `window.scrollY` in `onMounted`.
+   - `let deadZoneAccum = 0` — accumulated unprocessed scroll delta in px.
+   - `let rafId: number | null = null`.
+   - Constants: `EXPANDED_HEIGHT = 52`, `COLLAPSED_HEIGHT = 44`, `INTERPOLATION_RANGE = 8`, `DEAD_ZONE_PX = 8`, `COLLAPSE_RATE = 1 / 40`, `EXPAND_RATE = 1 / 30`, `SNAP_THRESHOLD = 0.35`.
+3. **Template Refs**: Declare `useTemplateRef` for every scroll-interpolated element: `appBarRef`, `leftBtnRef`, `leftLabelRef`, `rightBtnRef`, `rightLabelRef`, `centerRef`, `mascotRef`, `tenantNameRef`.
+4. **`handleScroll()` function**: Cancel pending `rafId`, schedule `requestAnimationFrame(applyStyles)`. Registered with `{ passive: true }`.
+5. **`applyStyles()` function** — full direction-aware implementation:
+   a. `const currentScrollY = window.scrollY`.
+   b. `const delta = currentScrollY - lastScrollY`; `lastScrollY = currentScrollY`.
+   c. If `currentScrollY <= 0`: force `t = 0`, `deadZoneAccum = 0`, skip to DOM mutations.
+   d. `deadZoneAccum += delta`.
+   e. If `Math.abs(deadZoneAccum) < DEAD_ZONE_PX`: skip `t` update, proceed to DOM mutations with current `t`.
+   f. Else: `const eff = deadZoneAccum - Math.sign(deadZoneAccum) * DEAD_ZONE_PX`; `deadZoneAccum = 0`.
+      - If `eff > 0` (scroll down → collapse): `t = Math.min(1, t + eff * COLLAPSE_RATE)`.
+      - If `eff < 0` (scroll up → expand): `t = Math.max(0, t + eff * EXPAND_RATE)`.
+   g. **Snap to stable**: If `t > SNAP_THRESHOLD && t < 1` → `t = 1`; if `t < (1 - SNAP_THRESHOLD) && t > 0` → `t = 0`. Then apply a one-shot CSS transition for the snap only (see Approach §8).
+   h. Apply direct DOM mutations with final `t`.
+6. **Direct Style Mutations per element** (all inside `applyStyles`):
+   - **`headerEl`**: `height = ${52 - 8 * t}px`, `backgroundColor`, `boxShadow`, `borderBottom`, `marginLeft`, `marginRight`, `width`, `paddingLeft`, `paddingRight` — using formulas from Approach §8. Zero CSS `transition` on continuous scroll; one-shot transition only on snap.
+   - **`parallaxEl`**: `opacity = 1 - t`, `transform = translateY(${t * 24}px)`.
+   - **`leftBtnRef`**: `transform = scale(${1 - 0.05 * t})`, `backgroundColor = rgba(242,240,237,${0.4 + 0.1*t})`, `boxShadow` for `t > 0.8`.
+   - **`leftLabelRef`**: `transform = scale(${1 - 0.1 * t})`, `transformOrigin = left center`.
+   - **`rightBtnRef`**: mirror of left button.
+   - **`rightLabelRef`**: mirror of left label, `transformOrigin = right center`.
+   - **`centerRef`**: `transform = scale(${1.05 - 0.15 * t})`.
+   - **`mascotRef`**: `top = ${-14 + 18*t}px`, `right = ${-12 + 12*t}px`, `transform = scale(${0.95 - 0.2*t}) rotate(${4 - 4*t}deg)`. No CSS animation on this element.
+   - **`tenantNameRef`**: `opacity = ${Math.max(0, 1 - 2.8 * t)}`.
+7. **Mascot Wobble Preservation**: Two-layer wrapper isolation: outer = `mascotRef` (RAF-owned transform, no CSS animation); inner = `animate-wobble` class (rotate + scale ±0.01 only, does not conflict).
+8. **Template cleanup**: All scroll-driven style changes are removed from Vue template `:style` bindings. Template only contains static classes, `v-if`, `aria-*`, `@click`.
+9. **Text Label Retention**: Both buttons retain text labels in all scroll states — only scaled, never hidden.
+10. **Vertical Alignment**: All slot contents use `items-center` throughout the transition.
+11. **Lifecycle**: `onMounted` → set `lastScrollY = window.scrollY`, call `applyStyles()`, add scroll listener. `onUnmounted` → remove listener, cancel `rafId`.
 
 ### Update Component - BottomTabBar.vue
 1. **Responsibility**: Provide a floating, ergonomic navigation bar.
@@ -216,5 +262,9 @@ BottomTabBar -- MembroAvatar : uses for profile
 4. **Safe Area Resilience**: Handle `env(safe-area-inset-bottom)`.
 5. **No Breaking Changes**: Preserve event interfaces (`openHistorico`, `openAuditLogs`). The `scrollRatio` prop on `AppBar` is removed — any consumer that previously passed it must be updated to use the `expose` pattern.
 6. **Zero Jitter Contract**: Any implementation that produces visible stutter, frame-doubling, or jump during scroll is a regression and must not be merged. The test criterion is: drag-scroll at 60fps on a mid-range Android device (Pixel 6, Chrome) must produce a perfectly linear collapse with no visible jump between frames.
-7. **No `transition-all` on Scroll-Driven Elements**: The Tailwind class `transition-all` (and any shorthand `transition`) is forbidden on any element whose `transform`, `opacity`, `background-color`, `box-shadow`, `height`, `margin`, `padding`, or `width` is driven by the scroll RAF loop. Linters or code review must flag this pattern.
+7. **No `transition-all` on Scroll-Driven Elements**: The Tailwind class `transition-all` (and any shorthand `transition`) is forbidden on any element whose `transform`, `opacity`, `background-color`, `box-shadow`, `height`, `margin`, `padding`, or `width` is driven by the scroll RAF loop. Permitted exception: one-shot CSS transition applied programmatically on snap settlement only (Approach §8, final step).
 8. **No CSS Animation on Scroll-Driven `transform` Wrapper**: A CSS `@keyframes` animation (e.g., `animate-wobble`, `animate-float`) must never be applied to an element that also receives `transform` mutations via JS. Use inner/outer wrapper isolation instead.
+9. **No Position-Based `t` Mapping**: The interpolation variable `t` must NEVER be computed as `window.scrollY / constant`. It must be a self-owned JS variable driven by scroll **delta** and **direction**. Position-based mapping causes snap-back glitch when scrollY oscillates near the trigger threshold.
+10. **Dead Zone Mandatory**: The `DEAD_ZONE_PX` accumulator must be implemented. Removing or bypassing it reintroduces the rapid-flip oscillation bug at the transition boundary.
+11. **Snap-to-Stable Required**: After computing `t` from a directional delta, if `t` falls in the ambiguous middle band (`0 < t < SNAP_THRESHOLD` or `1 - SNAP_THRESHOLD < t < 1`), it must be snapped decisively to 0 or 1. Leaving `t` in a mid-state causes the header to appear frozen between states.
+12. **Physical Height Constraint**: The expanded header height must be 52px logical pixels. Do NOT use 96px or values above 60px, which exceed the 12mm physical target and reduce usable viewport area on mobile.
