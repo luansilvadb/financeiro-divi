@@ -60,7 +60,7 @@
           <div v-if="(title || $slots.header || $slots.title) && showDivider" class="h-px bg-stone/60 mx-6 shrink-0" />
 
           <!-- Content -->
-          <div ref="contentEl" :class="['overflow-y-auto flex-1 custom-scrollbar', contentClass]">
+          <div ref="contentEl" :class="['overflow-y-auto flex-1 custom-scrollbar', contentClass]" @scroll.passive="onContentScroll">
             <slot />
           </div>
 
@@ -148,8 +148,14 @@ let touchStartY = 0
 let currentTranslateY = 0
 let isDragging = false
 let ignoreGesture = false
+let lastScrollTop = 0
 let rafId: number | null = null
 let sheetHeight = 0
+
+// Atualiza o cache de scroll de forma passiva
+const onContentScroll = (e: Event) => {
+  lastScrollTop = (e.target as HTMLElement).scrollTop
+}
 
 // Função auxiliar para aplicar estilos diretamente acelerados por GPU
 const applyDragStyles = (delta: number) => {
@@ -265,8 +271,8 @@ const onTouchStart = (e: TouchEvent) => {
   touchStartY = e.touches[0].clientY
   sheetHeight = sheetEl.value?.clientHeight || 0
   
-  const scrollTop = contentEl.value?.scrollTop || 0
-  isDragging = scrollTop <= 0
+  lastScrollTop = contentEl.value?.scrollTop || 0
+  isDragging = lastScrollTop <= 0
   
   clearTransitions()
 }
@@ -276,7 +282,6 @@ const onTouchMove = (e: TouchEvent) => {
 
   const clientY = e.touches[0].clientY
   const delta = clientY - touchStartY
-  const scrollTop = contentEl.value?.scrollTop || 0
 
   if (isDragging) {
     if (delta > 0) {
@@ -290,7 +295,7 @@ const onTouchMove = (e: TouchEvent) => {
     }
   } else {
     // Transição contínua "scroll-to-drag"
-    if (delta > 0 && scrollTop <= 0) {
+    if (delta > 0 && lastScrollTop <= 0) {
       isDragging = true
       touchStartY = clientY // redefine para o ponto de toque atual para suavizar a transição
       currentTranslateY = 0
@@ -335,8 +340,8 @@ const onMouseDown = (e: MouseEvent) => {
   touchStartY = e.clientY
   sheetHeight = sheetEl.value?.clientHeight || 0
   
-  const scrollTop = contentEl.value?.scrollTop || 0
-  isDragging = scrollTop <= 0
+  lastScrollTop = contentEl.value?.scrollTop || 0
+  isDragging = lastScrollTop <= 0
   
   clearTransitions()
 
@@ -345,7 +350,6 @@ const onMouseDown = (e: MouseEvent) => {
 
     const clientY = ev.clientY
     const delta = clientY - touchStartY
-    const currentScrollTop = contentEl.value?.scrollTop || 0
 
     if (isDragging) {
       if (delta > 0) {
@@ -356,7 +360,7 @@ const onMouseDown = (e: MouseEvent) => {
         scheduleApplyStyles(0)
       }
     } else {
-      if (delta > 0 && currentScrollTop <= 0) {
+      if (delta > 0 && lastScrollTop <= 0) {
         isDragging = true
         touchStartY = clientY
         currentTranslateY = 0
