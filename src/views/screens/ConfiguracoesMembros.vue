@@ -6,13 +6,14 @@ import Button from '../components/ui/Button.vue'
 import PerfilUsuarioTab from '../components/settings/PerfilUsuarioTab.vue'
 import GestaoAcessoTab from '../components/settings/GestaoAcessoTab.vue'
 import ConfiguracoesCasaTab from '../components/settings/ConfiguracoesCasaTab.vue'
+import TenantSwitcherModal from '../components/ui/TenantSwitcherModal.vue'
 
 const emit = defineEmits(['voltar', 'logout'])
 
 const { carregar, currentMembro } = useMembros()
 const activeTenantId = useCasasMultitenant().activeTenantId
 
-const activeTab = ref<'perfil' | 'acesso' | 'casa'>('perfil')
+const activeTab = ref<'perfil' | 'acesso' | 'casa' | 'casas'>('perfil')
 const isModoFoco = ref(false)
 
 const isAdmin = computed(() => currentMembro.value?.role === 'ADMIN')
@@ -56,12 +57,19 @@ onMounted(async () => {
           Acessos
         </button>
         <button
+          @click="activeTab = 'casas'"
+          class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
+          :class="activeTab === 'casas' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
+        >
+          Casas
+        </button>
+        <button
           v-if="isAdmin"
           @click="activeTab = 'casa'"
           class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
           :class="activeTab === 'casa' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
         >
-          Casa
+          Permissões
         </button>
       </div>
     </div>
@@ -87,6 +95,11 @@ onMounted(async () => {
           v-else-if="activeTab === 'casa'"
           :active-tenant-id="activeTenantId"
           @focus-change="handleFocusChange"
+        />
+
+        <TenantSwitcherModal
+          v-else-if="activeTab === 'casas'"
+          @casa-selecionada="emit('voltar')"
         />
 
       </div>

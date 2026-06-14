@@ -8,7 +8,6 @@ import LoginScreen from './views/screens/LoginScreen.vue'
 import ForgotPasswordScreen from './views/screens/ForgotPasswordScreen.vue'
 import ResetPasswordScreen from './views/screens/ResetPasswordScreen.vue'
 import TenantSelectorScreen from './views/screens/TenantSelectorScreen.vue'
-import TenantSwitcherModal from './views/components/ui/TenantSwitcherModal.vue'
 import { useMembros } from './viewmodels/useMembros'
 import { useCartoesEFaturas } from './viewmodels/useCartoesEFaturas'
 import { useContasFixas } from './viewmodels/useContasFixas'
@@ -73,9 +72,7 @@ const handlePeriodoStatusChanged = (fechado: boolean) => {
 }
 
 const handleTabChange = (tab: Tab) => {
-  if (tab === 'casas') {
-    currentView.value = 'tenantSwitcher'
-  } else if (tab === 'perfil') {
+  if (tab === 'perfil') {
     currentView.value = 'settings'
   } else {
     activeTab.value = tab
@@ -282,19 +279,6 @@ const handleLogout = async () => {
             <ConfiguracoesMembros 
               @voltar="currentView = 'dashboard'" 
               @logout="handleLogout"
-            />
-          </BottomSheet>
-
-          <BottomSheet
-            :model-value="currentView === 'tenantSwitcher'"
-            @update:model-value="(val) => { if (!val) currentView = 'dashboard' }"
-            width-class="md:w-[440px]"
-            max-height="85dvh"
-            content-class="p-0 h-full"
-          >
-            <TenantSwitcherModal
-              v-if="currentView === 'tenantSwitcher'"
-              @casa-selecionada="currentView = 'dashboard'; handleCasaSelecionada()"
             />
           </BottomSheet>
 

@@ -1,10 +1,10 @@
 <!-- src/views/components/ui/BottomTabBar.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Building2, Home, Coins, User, Plus } from 'lucide-vue-next'
+import { Building2, Coins, User, Plus } from 'lucide-vue-next'
 import MembroAvatar from './MembroAvatar.vue'
 
-export type Tab = 'casas' | 'hoje' | 'faturas' | 'perfil'
+export type Tab = 'hoje' | 'faturas' | 'perfil'
 
 interface Props {
   modelValue: Tab
@@ -20,8 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const tabs = [
-  { id: 'casas', label: 'Minhas Casas', icon: Building2 },
-  { id: 'hoje', label: 'Início', icon: Home },
+  { id: 'hoje', label: 'Casa', icon: Building2 },
   { id: 'faturas', label: 'Acertos', icon: Coins },
   { id: 'perfil', label: 'Ajustes', icon: User },
 ] as const
@@ -36,10 +35,10 @@ onMounted(() => {
 <template>
   <div class="fixed left-4 right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-40 bg-white border border-stone/20 rounded-pill shadow-premium max-w-[500px] mx-auto pointer-events-auto">
     <nav class="w-full h-18 sm:h-20 flex items-center px-2">
-      <!-- Lado Esquerdo: Casas e Hoje -->
+      <!-- Lado Esquerdo: Minhas Casas -->
       <div class="flex-1 flex justify-around items-center h-full">
         <button
-          v-for="tab in tabs.slice(0, 2)"
+          v-for="tab in tabs.slice(0, 1)"
           :key="tab.id"
           @click="emit('update:modelValue', tab.id)"
           class="flex-1 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center relative group outline-none cursor-pointer border-none bg-transparent rounded-2xl transition-all duration-300 ease-jelly active:scale-92"
@@ -81,10 +80,10 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- Lado Direito: Faturas e Perfil -->
+      <!-- Lado Direito: Acertos e Ajustes -->
       <div class="flex-1 flex justify-around items-center h-full">
         <button
-          v-for="tab in tabs.slice(2, 4)"
+          v-for="tab in tabs.slice(1, 3)"
           :key="tab.id"
           @click="emit('update:modelValue', tab.id)"
           class="flex-1 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center relative group outline-none cursor-pointer border-none bg-transparent rounded-2xl transition-all duration-300 ease-jelly active:scale-92"
