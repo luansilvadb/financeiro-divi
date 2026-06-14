@@ -71,6 +71,7 @@ const inicializarGoogleSignIn = () => {
 }
 
 onMounted(async () => {
+  // Carrega SDK do Google
   if (!document.getElementById('google-jssdk')) {
     const script = document.createElement('script')
     script.id = 'google-jssdk'

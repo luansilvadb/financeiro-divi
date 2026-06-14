@@ -114,7 +114,7 @@ importers:
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.0.0
-        version: 10.4.9(lightningcss@1.32.0)
+        version: 10.4.9
       '@nestjs/schematics':
         specifier: ^10.0.0
         version: 10.2.3(chokidar@3.6.0)(typescript@5.9.3)
@@ -4670,7 +4670,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@nestjs/cli@10.4.9(lightningcss@1.32.0)':
+  '@nestjs/cli@10.4.9':
     dependencies:
       '@angular-devkit/core': 17.3.11(chokidar@3.6.0)
       '@angular-devkit/schematics': 17.3.11(chokidar@3.6.0)
@@ -4680,7 +4680,7 @@ snapshots:
       chokidar: 3.6.0
       cli-table3: 0.6.5
       commander: 4.1.1
-      fork-ts-checker-webpack-plugin: 9.0.2(typescript@5.7.2)(webpack@5.97.1(lightningcss@1.32.0))
+      fork-ts-checker-webpack-plugin: 9.0.2(typescript@5.7.2)(webpack@5.97.1)
       glob: 10.4.5
       inquirer: 8.2.6
       node-emoji: 1.11.0
@@ -4689,7 +4689,7 @@ snapshots:
       tsconfig-paths: 4.2.0
       tsconfig-paths-webpack-plugin: 4.2.0
       typescript: 5.7.2
-      webpack: 5.97.1(lightningcss@1.32.0)
+      webpack: 5.97.1
       webpack-node-externals: 3.0.0
     transitivePeerDependencies:
       - '@minify-html/node'
@@ -6277,7 +6277,7 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
-  fork-ts-checker-webpack-plugin@9.0.2(typescript@5.7.2)(webpack@5.97.1(lightningcss@1.32.0)):
+  fork-ts-checker-webpack-plugin@9.0.2(typescript@5.7.2)(webpack@5.97.1):
     dependencies:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
@@ -6292,7 +6292,7 @@ snapshots:
       semver: 7.8.4
       tapable: 2.3.3
       typescript: 5.7.2
-      webpack: 5.97.1(lightningcss@1.32.0)
+      webpack: 5.97.1
 
   form-data@4.0.5:
     dependencies:
@@ -7871,15 +7871,13 @@ snapshots:
 
   tapable@2.3.3: {}
 
-  terser-webpack-plugin@5.6.1(lightningcss@1.32.0)(webpack@5.97.1(lightningcss@1.32.0)):
+  terser-webpack-plugin@5.6.1(webpack@5.97.1):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       terser: 5.48.0
-      webpack: 5.97.1(lightningcss@1.32.0)
-    optionalDependencies:
-      lightningcss: 1.32.0
+      webpack: 5.97.1
 
   terser@5.48.0:
     dependencies:
@@ -8157,7 +8155,7 @@ snapshots:
 
   webpack-sources@3.5.0: {}
 
-  webpack@5.97.1(lightningcss@1.32.0):
+  webpack@5.97.1:
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.9
@@ -8179,7 +8177,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 3.3.0
       tapable: 2.3.3
-      terser-webpack-plugin: 5.6.1(lightningcss@1.32.0)(webpack@5.97.1(lightningcss@1.32.0))
+      terser-webpack-plugin: 5.6.1(webpack@5.97.1)
       watchpack: 2.5.1
       webpack-sources: 3.5.0
     transitivePeerDependencies:
