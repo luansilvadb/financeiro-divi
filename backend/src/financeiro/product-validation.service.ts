@@ -3,7 +3,7 @@ import { Prisma, ValidationEventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValidationStatusDto } from './dto/validation-status.dto';
 
-export interface ValidationMetadata {
+interface ValidationMetadata {
   splitMode?: string;
   paymentMethod?: string;
   participantCount?: number;

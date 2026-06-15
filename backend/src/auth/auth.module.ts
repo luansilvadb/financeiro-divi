@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { FinanceiroModule } from '../financeiro/financeiro.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { MailModule } from '../shared/mail/mail.module';
+import { EmailService } from '../shared/email.service';
 
 @Module({
   imports: [
@@ -17,10 +17,9 @@ import { MailModule } from '../shared/mail/mail.module';
     }),
     forwardRef(() => FinanceiroModule),
     PrismaModule,
-    MailModule,
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, EmailService],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, EmailService],
 })
 export class AuthModule {}

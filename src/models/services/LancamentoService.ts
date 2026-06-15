@@ -30,68 +30,91 @@ export class LancamentoService {
       : null
 
     if (dados.flow === 'settlement') {
-      if (!dados.settlementDetails) {
-        throw new Error('Dados do acerto são inválidos')
-      }
-
-      const involvesExternal = dados.settlementDetails.fromMemberId.startsWith('externo:') || dados.settlementDetails.toMemberId.startsWith('externo:')
-      const isPrivateInvalid = involvesExternal ? !dados.isPrivate : false
-
-      if (
-        dados.settlementDetails.fromMemberId === dados.settlementDetails.toMemberId ||
-        dados.valor <= 0 ||
-        dados.paymentMethod === 'card' ||
-        dados.installments !== 1 ||
-        isPrivateInvalid
-      ) {
-        throw new Error('Dados do acerto são inválidos')
-      }
-
-      await this.gastoRepo.salvar(new Gasto({
-        id: crypto.randomUUID(),
-        faturaId: null,
-        descricao: dados.descricao,
-        valorTotal: total,
-        compradorId: dados.settlementDetails.fromMemberId,
-        divisoes: dados.divisoes,
-        installments: 1,
-        totalInstallments: 1,
-        isLoan: false,
-        isSettlement: true,
-        settlementDetails: dados.settlementDetails,
-        method: dados.paymentMethod,
-        cardOwner: null,
-        grupoParcelasId: null,
-        isPrivate: dados.isPrivate || false,
-        splitMode: 'custom'
-      }))
+      await this.processarAcerto(dados, total)
       return
     }
     
     if (dados.paymentMethod === 'card' && dados.installments > 1) {
-      if (!faturaAtiva) throw new Error('Não foi possível obter fatura para compra parcelada em cartão')
-      const grupoParcelasId = crypto.randomUUID()
-      const faturasParaSalvar: Fatura[] = []
-      const gastosParaSalvar: Gasto[] = [
-        new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode })
-      ]
-
-      let { mes, ano } = faturaAtiva.periodo
-      const todasFaturas = await this.faturaRepo.listarTodas()
-
-      for (let i = 2; i <= dados.installments; i++) {
-        if (++mes > 12) { mes = 1; ano++ }
-        const faturaFutura = await this.obterOuCriarFaturaMemoria(faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas)
-        gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode }))
-      }
-
-      if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
-      await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+      await this.processarCompraParcelada(dados, total, resolvedCardOwner, faturaAtiva, responsavelFaturaId)
     } else {
-      await this.gastoRepo.salvar(new Gasto({
-        id: crypto.randomUUID(), faturaId: faturaAtiva?.id ?? null, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode
-      }))
+      await this.processarGastoSimples(dados, total, resolvedCardOwner, faturaAtiva)
     }
+  }
+
+  private async processarAcerto(dados: LancarGastoInput, total: Dinheiro): Promise<void> {
+    if (!dados.settlementDetails) {
+      throw new Error('Dados do acerto são inválidos')
+    }
+
+    const involvesExternal = dados.settlementDetails.fromMemberId.startsWith('externo:') || dados.settlementDetails.toMemberId.startsWith('externo:')
+    const isPrivateInvalid = involvesExternal ? !dados.isPrivate : false
+
+    if (
+      dados.settlementDetails.fromMemberId === dados.settlementDetails.toMemberId ||
+      dados.valor <= 0 ||
+      dados.paymentMethod === 'card' ||
+      dados.installments !== 1 ||
+      isPrivateInvalid
+    ) {
+      throw new Error('Dados do acerto são inválidos')
+    }
+
+    await this.gastoRepo.salvar(new Gasto({
+      id: crypto.randomUUID(),
+      faturaId: null,
+      descricao: dados.descricao,
+      valorTotal: total,
+      compradorId: dados.settlementDetails.fromMemberId,
+      divisoes: dados.divisoes,
+      installments: 1,
+      totalInstallments: 1,
+      isLoan: false,
+      isSettlement: true,
+      settlementDetails: dados.settlementDetails,
+      method: dados.paymentMethod,
+      cardOwner: null,
+      grupoParcelasId: null,
+      isPrivate: dados.isPrivate || false,
+      splitMode: 'custom'
+    }))
+  }
+
+  private async processarCompraParcelada(
+    dados: LancarGastoInput,
+    total: Dinheiro,
+    resolvedCardOwner: string | null,
+    faturaAtiva: Fatura | null,
+    responsavelFaturaId: string
+  ): Promise<void> {
+    if (!faturaAtiva) throw new Error('Não foi possível obter fatura para compra parcelada em cartão')
+    const grupoParcelasId = crypto.randomUUID()
+    const faturasParaSalvar: Fatura[] = []
+    const gastosParaSalvar: Gasto[] = [
+      new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode })
+    ]
+
+    let { mes, ano } = faturaAtiva.periodo
+    const todasFaturas = await this.faturaRepo.listarTodas()
+
+    for (let i = 2; i <= dados.installments; i++) {
+      if (++mes > 12) { mes = 1; ano++ }
+      const faturaFutura = await this.obterOuCriarFaturaMemoria(faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas)
+      gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode }))
+    }
+
+    if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
+    await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+  }
+
+  private async processarGastoSimples(
+    dados: LancarGastoInput,
+    total: Dinheiro,
+    resolvedCardOwner: string | null,
+    faturaAtiva: Fatura | null
+  ): Promise<void> {
+    await this.gastoRepo.salvar(new Gasto({
+      id: crypto.randomUUID(), faturaId: faturaAtiva?.id ?? null, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode
+    }))
   }
 
   async obterOuCriarFaturaMemoria(cartaoId: string, mes: number, ano: number, responsavelId: string, acumuladorMemoria: Fatura[], todasFaturasPersistidas: Fatura[]): Promise<Fatura> {

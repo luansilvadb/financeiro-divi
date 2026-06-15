@@ -1,48 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
-  @ApiProperty({
-    description: 'E-mail do usuário (único e case-insensitive)',
-    example: 'luan@example.com',
-  })
-  @IsNotEmpty()
-  @IsString()
-  email!: string;
+  @ApiProperty({ example: 'joao@example.com', description: 'E-mail do usuário' })
+  @IsEmail({}, { message: 'E-mail inválido' })
+  @IsNotEmpty({ message: 'E-mail é obrigatório' })
+  email: string;
 
-  @ApiProperty({
-    description: 'Nome de exibição global',
-    example: 'Luan Silva',
-  })
-  @IsNotEmpty()
-  @IsString()
-  nome!: string;
+  @ApiProperty({ example: 'João', description: 'Nome do usuário' })
+  @IsString({ message: 'Nome deve ser texto' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  nome: string;
 
-  @ApiProperty({
-    description: 'Senha de acesso (mínimo de 6 caracteres)',
-    example: 'senhaSegura123',
-    minLength: 6,
-  })
-  @IsNotEmpty()
+  @ApiProperty({ example: 'senha123', description: 'Senha do usuário' })
   @IsString()
-  @MinLength(6)
-  password!: string;
+  @IsNotEmpty({ message: 'Senha é obrigatória' })
+  @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
+  password: string;
 
-  @ApiProperty({
-    description: 'Código de convite da casa (opcional para vínculo automático no registro)',
-    example: 'CASA-XYZ12',
-    required: false
-  })
-  @IsString()
+  @ApiProperty({ required: false, description: 'Código de convite opcional' })
   @IsOptional()
+  @IsString()
   inviteCode?: string;
 
-  @ApiProperty({
-    description: 'ID do membro da casa para vincular ao novo usuário (opcional)',
-    example: 'membro-123',
-    required: false
-  })
-  @IsString()
+  @ApiProperty({ required: false, description: 'ID do membro opcional' })
   @IsOptional()
+  @IsString()
   membroId?: string;
 }

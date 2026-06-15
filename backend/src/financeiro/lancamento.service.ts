@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { AuditLogService } from './audit-log.service';
@@ -8,6 +8,8 @@ import { Prisma, SplitMode, ValidationEventType } from '@prisma/client';
 import { GastoDto } from './dto/gasto.dto';
 import { ContaFixaDto } from './dto/conta-fixa.dto';
 import { ProductValidationService } from './product-validation.service';
+import { GastoMapper } from './gasto.mapper';
+import { PermissaoService } from './permissao.service';
 
 @Injectable()
 export class LancamentoService {
@@ -16,6 +18,7 @@ export class LancamentoService {
     private gateway: FinanceiroGateway,
     private auditLogService: AuditLogService,
     private productValidationService: ProductValidationService,
+    private permissaoService: PermissaoService,
   ) {}
 
   private async obterMembroIdPorUserId(tx: Prisma.TransactionClient, tenantId: string, userId?: string): Promise<string> {
@@ -26,72 +29,112 @@ export class LancamentoService {
     return membro ? membro.id : 'sistema';
   }
 
-  async listarGastos(tenantId: string) {
+  async listarGastosVisiveis(tenantId: string, userId: string) {
+    const membroId = await this.obterMembroIdPorUserId(this.prisma, tenantId, userId);
+    
     const gastos = await this.prisma.gasto.findMany({
       where: { tenantId },
       include: {
         divisoes: true,
       },
     });
-    return serializeBigInt(gastos);
+
+    if (membroId === 'sistema') {
+      return serializeBigInt(gastos);
+    }
+
+    const gastosFiltrados = gastos.filter((g: any) => this.podeVerGasto(g, membroId));
+
+    return serializeBigInt(gastosFiltrados);
+  }
+
+  private podeVerGasto(g: any, membroId: string): boolean {
+    if (!g.isPrivate) return true;
+    
+    const envolvidoNaDivisao = Array.isArray(g.divisoes) && g.divisoes.some((d: any) => d.membroId === membroId);
+    return (
+      g.compradorId === membroId ||
+      g.cardOwnerId === membroId ||
+      g.borrowerId === membroId ||
+      envolvidoNaDivisao
+    );
   }
 
   async salvarGasto(tenantId: string, gastoData: GastoDto, executorUserId?: string) {
-    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
+    await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     const result = await this.prisma.$transaction(async (tx) => {
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
-
-      // Verificar se é criação ou edição
-      const gastoExistente = await tx.gasto.findUnique({
-        where: { id_tenantId: { id: gastoData.id, tenantId } }
-      });
-      const isNovo = !gastoExistente;
-
-      let resultGasto;
-      if (gastoData.isSettlement) {
-        resultGasto = await this.registrarAcertoTx(tx, tenantId, gastoData);
-      } else if (gastoData.isLoan) {
-        resultGasto = await this.salvarEmprestimoTx(tx, tenantId, gastoData);
-      } else {
-        resultGasto = await this.salvarDespesaComumTx(tx, tenantId, gastoData);
-      }
-
-      if (isNovo && gastoData.isSettlement) {
-        await this.productValidationService.registrarMarco(
-          tenantId,
-          ValidationEventType.FIRST_SETTLEMENT_RECORDED,
-          'first',
-          { metadata: { paymentMethod: gastoData.method } },
-          tx,
-        );
-      }
-
-      if (isNovo && !gastoData.isSettlement && !gastoData.isLoan) {
-        await this.registrarPrimeiraDespesaTx(tx, tenantId, gastoData);
-      }
-
-      // Registrar no Log de Auditoria
-      const acao = isNovo ? 'CRIAR_GASTO' : 'EDITAR_GASTO';
-
-      const comprador = await tx.membroCasa.findUnique({
-        where: { id_tenantId: { id: gastoData.compradorId, tenantId } }
-      });
-      const compradorNome = comprador ? comprador.nome : 'Membro';
-      const valorFormatado = formatarCentavosParaBRL(gastoData.valorTotalCentavos || 0);
-
-      let detalhesLog = '';
-      if (gastoData.isPrivate) {
-        detalhesLog = `Gasto Pessoal de ${valorFormatado} lançado por ${compradorNome}.`;
-      } else {
-        detalhesLog = `Gasto "${gastoData.descricao}" de ${valorFormatado} lançado por ${compradorNome}.`;
-      }
-
-      await this.auditLogService.registrar(tenantId, executorMembroId, acao, detalhesLog, tx);
-
-      return resultGasto;
+      return this.processarGastoIndividual(tx, tenantId, gastoData, executorMembroId);
     });
     this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
     return serializeBigInt(result);
+  }
+
+  async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[], executorUserId?: string) {
+    await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
+    const result = await this.prisma.$transaction(async (tx) => {
+      const saved = [];
+      const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
+      for (const g of gastosList) {
+        const resultGasto = await this.processarGastoIndividual(tx, tenantId, g, executorMembroId);
+        saved.push(resultGasto);
+      }
+      return saved;
+    });
+    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
+    return serializeBigInt(result);
+  }
+
+  private async processarGastoIndividual(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto, executorMembroId: string) {
+    const gastoExistente = await tx.gasto.findUnique({
+      where: { id_tenantId: { id: g.id, tenantId } }
+    });
+    const isNovo = !gastoExistente;
+
+    const resultGasto = await this.rotearSalvamentoGastoTx(tx, tenantId, g);
+
+    if (isNovo) {
+      await this.registrarMarcosValidacaoTx(tx, tenantId, g);
+    }
+
+    await this.registrarAuditoriaGastoTx(tx, tenantId, g, executorMembroId, isNovo);
+
+    return resultGasto;
+  }
+
+  private async rotearSalvamentoGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    if (g.isSettlement) return this.registrarAcertoTx(tx, tenantId, g);
+    if (g.isLoan) return this.salvarEmprestimoTx(tx, tenantId, g);
+    return this.salvarDespesaComumTx(tx, tenantId, g);
+  }
+
+  private async registrarMarcosValidacaoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    if (g.isSettlement) {
+      await this.productValidationService.registrarMarco(
+        tenantId,
+        ValidationEventType.FIRST_SETTLEMENT_RECORDED,
+        'first',
+        { metadata: { paymentMethod: g.method } },
+        tx,
+      );
+    } else if (!g.isLoan) {
+      await this.registrarPrimeiraDespesaTx(tx, tenantId, g);
+    }
+  }
+
+  private async registrarAuditoriaGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto, executorMembroId: string, isNovo: boolean) {
+    const acao = isNovo ? 'CRIAR_GASTO' : 'EDITAR_GASTO';
+    const comprador = await tx.membroCasa.findUnique({
+      where: { id_tenantId: { id: g.compradorId, tenantId } }
+    });
+    const compradorNome = comprador ? comprador.nome : 'Membro';
+    const valorFormatado = formatarCentavosParaBRL(g.valorTotalCentavos || 0);
+
+    const detalhesLog = g.isPrivate
+      ? `Gasto Pessoal de ${valorFormatado} lançado por ${compradorNome}.`
+      : `Gasto "${g.descricao}" de ${valorFormatado} lançado por ${compradorNome}.`;
+
+    await this.auditLogService.registrar(tenantId, executorMembroId, acao, detalhesLog, tx);
   }
 
   private async salvarDespesaComumTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
@@ -109,16 +152,16 @@ export class LancamentoService {
 
   private async validarAcertoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
     const details = g.settlementDetails;
+    if (!details) throw new BadRequestException('Dados do acerto são inválidos.');
+
+    this.checarFormatoAcerto(g, details);
+    await this.checarPrivacidadeEMembrosAcerto(tx, tenantId, g, details);
+  }
+
+  private checarFormatoAcerto(g: GastoDto, details: any) {
     const divisao = g.divisoes?.[0];
     const valorTotal = Number(g.valorTotalCentavos || 0);
 
-    if (!details) {
-      throw new BadRequestException('Dados do acerto são inválidos.');
-    }
-
-    const involvesExternal = details.fromMemberId.startsWith('externo:') || details.toMemberId.startsWith('externo:');
-
-    // Validações básicas de formato
     const formatChecks = {
       valorTotal: valorTotal <= 0,
       sameMember: details.fromMemberId === details.toMemberId,
@@ -136,22 +179,19 @@ export class LancamentoService {
     };
 
     if (Object.values(formatChecks).some(Boolean)) {
-      console.error('Acerto validation failed:', formatChecks, 'gastoDto:', g);
       throw new BadRequestException('Dados do acerto são inválidos.');
     }
+  }
 
-    // Regras de privacidade
+  private async checarPrivacidadeEMembrosAcerto(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto, details: any) {
+    const involvesExternal = details.fromMemberId.startsWith('externo:') || details.toMemberId.startsWith('externo:');
     if (involvesExternal && !g.isPrivate) {
       throw new BadRequestException('Acertos com externos devem ser obrigatoriamente privados.');
     }
 
-    // Validação de membros que pertencem à casa
     const internalMembers = [details.fromMemberId, details.toMemberId].filter(id => !id.startsWith('externo:'));
     const memberCount = await tx.membroCasa.count({
-      where: {
-        tenantId,
-        id: { in: internalMembers },
-      },
+      where: { tenantId, id: { in: internalMembers } },
     });
     if (memberCount !== internalMembers.length) {
       throw new BadRequestException('Os membros do acerto não pertencem a esta casa.');
@@ -159,51 +199,10 @@ export class LancamentoService {
   }
 
   private async upsertGastoCompletoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
-    const totalDivisoes = (g.divisoes || []).reduce(
-      (total, divisao) => total + Number(divisao.valorCentavos || 0),
-      0,
-    );
-    if (!g.divisoes?.length || totalDivisoes !== Number(g.valorTotalCentavos || 0)) {
-      throw new BadRequestException('A soma das divisões deve ser igual ao valor total do gasto.');
-    }
-
+    this.validarDivisoesGasto(g);
     await tx.divisaoGasto.deleteMany({ where: { gastoId: g.id, tenantId } });
-
-    const data = {
-      faturaId: g.faturaId,
-      descricao: g.descricao,
-      valorTotalCentavos: BigInt(g.valorTotalCentavos || 0),
-      compradorId: g.compradorId,
-      installments: g.installments,
-      totalInstallments: g.totalInstallments,
-      isLoan: g.isLoan,
-      borrowerId: g.borrowerId,
-      recurringBillId: g.recurringBillId,
-      isSettlement: g.isSettlement,
-      settlementDetails: g.settlementDetails as Prisma.InputJsonValue,
-      method: g.method,
-      cardOwnerId: g.cardOwnerId,
-      grupoParcelasId: g.grupoParcelasId,
-      isPrivate: g.isPrivate !== undefined ? g.isPrivate : false,
-      splitMode: g.splitMode || SplitMode.CUSTOM,
-    };
-
-    await tx.gasto.upsert({
-      where: { id_tenantId: { id: g.id, tenantId } },
-      create: { id: g.id, tenantId, ...data },
-      update: data,
-    });
-
-    if (g.divisoes?.length) {
-      await tx.divisaoGasto.createMany({
-        data: g.divisoes.map(d => ({
-          tenantId,
-          gastoId: g.id,
-          membroId: d.membroId,
-          valorCentavos: BigInt(d.valorCentavos || 0),
-        })),
-      });
-    }
+    await this.persistirGastoTx(tx, tenantId, g);
+    await this.persistirDivisoesTx(tx, tenantId, g);
 
     return tx.gasto.findUnique({
       where: { id_tenantId: { id: g.id, tenantId } },
@@ -211,64 +210,29 @@ export class LancamentoService {
     });
   }
 
-  async salvarMuitosGastos(tenantId: string, gastosList: GastoDto[], executorUserId?: string) {
-    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
-    const result = await this.prisma.$transaction(async (tx) => {
-      const saved = [];
-      const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
-
-      for (const g of gastosList) {
-        // Verificar se é criação ou edição
-        const gastoExistente = await tx.gasto.findUnique({
-          where: { id_tenantId: { id: g.id, tenantId } }
-        });
-        const isNovo = !gastoExistente;
-
-        let resultGasto;
-        if (g.isSettlement) {
-          resultGasto = await this.registrarAcertoTx(tx, tenantId, g);
-        } else if (g.isLoan) {
-          resultGasto = await this.salvarEmprestimoTx(tx, tenantId, g);
-        } else {
-          resultGasto = await this.salvarDespesaComumTx(tx, tenantId, g);
-        }
-
-        if (isNovo && g.isSettlement) {
-          await this.productValidationService.registrarMarco(
-            tenantId,
-            ValidationEventType.FIRST_SETTLEMENT_RECORDED,
-            'first',
-            { metadata: { paymentMethod: g.method } },
-            tx,
-          );
-        }
-
-        if (isNovo && !g.isSettlement && !g.isLoan) {
-          await this.registrarPrimeiraDespesaTx(tx, tenantId, g);
-        }
-
-        const acao = isNovo ? 'CRIAR_GASTO' : 'EDITAR_GASTO';
-        const comprador = await tx.membroCasa.findUnique({
-          where: { id_tenantId: { id: g.compradorId, tenantId } }
-        });
-        const compradorNome = comprador ? comprador.nome : 'Membro';
-        const valorFormatado = formatarCentavosParaBRL(g.valorTotalCentavos || 0);
-
-        let detalhesLog = '';
-        if (g.isPrivate) {
-          detalhesLog = `Gasto Pessoal de ${valorFormatado} lançado por ${compradorNome}.`;
-        } else {
-          detalhesLog = `Gasto "${g.descricao}" de ${valorFormatado} lançado por ${compradorNome}.`;
-        }
-
-        await this.auditLogService.registrar(tenantId, executorMembroId, acao, detalhesLog, tx);
-        saved.push(resultGasto);
-      }
-      return saved;
-    });
-    this.gateway.notificarAlteracao(tenantId, 'gastos_alterados');
-    return serializeBigInt(result);
+  private validarDivisoesGasto(g: GastoDto) {
+    const totalDivisoes = (g.divisoes || []).reduce((total, d) => total + Number(d.valorCentavos || 0), 0);
+    if (!g.divisoes?.length || totalDivisoes !== Number(g.valorTotalCentavos || 0)) {
+      throw new BadRequestException('A soma das divisões deve ser igual ao valor total do gasto.');
+    }
   }
+
+  private async persistirGastoTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    const data = GastoMapper.paraUpsert(g);
+    await tx.gasto.upsert({
+      where: { id_tenantId: { id: g.id, tenantId } },
+      create: { id: g.id, tenantId, ...data },
+      update: data,
+    });
+  }
+
+  private async persistirDivisoesTx(tx: Prisma.TransactionClient, tenantId: string, g: GastoDto) {
+    if (g.divisoes?.length) {
+      const data = GastoMapper.mapearDivisoes(tenantId, g.id, g.divisoes);
+      await tx.divisaoGasto.createMany({ data });
+    }
+  }
+
 
   private async registrarPrimeiraDespesaTx(
     tx: Prisma.TransactionClient,
@@ -292,8 +256,14 @@ export class LancamentoService {
     );
   }
 
+  private montarLogExclusaoGasto(gasto: any, emLote: boolean = false): string {
+    const valorFormatado = formatarCentavosParaBRL(gasto.valorTotalCentavos);
+    const descricaoStr = gasto.isPrivate ? 'Gasto Pessoal' : `Gasto "${gasto.descricao}"`;
+    return `${descricaoStr} de ${valorFormatado} excluído do sistema${emLote ? ' (lote)' : ''}.`;
+  }
+
   async excluirGasto(tenantId: string, id: string, executorUserId?: string) {
-    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
+    await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     await this.prisma.$transaction(async (tx) => {
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
       const gasto = await tx.gasto.findUnique({
@@ -301,10 +271,7 @@ export class LancamentoService {
       });
 
       if (gasto) {
-        const valorFormatado = formatarCentavosParaBRL(gasto.valorTotalCentavos);
-        const descricaoStr = gasto.isPrivate ? 'Gasto Pessoal' : `Gasto "${gasto.descricao}"`;
-        const detalhesLog = `${descricaoStr} de ${valorFormatado} excluído do sistema.`;
-
+        const detalhesLog = this.montarLogExclusaoGasto(gasto, false);
         await this.auditLogService.registrar(tenantId, executorMembroId, 'EXCLUIR_GASTO', detalhesLog, tx);
 
         await tx.gasto.delete({
@@ -317,7 +284,7 @@ export class LancamentoService {
   }
 
   async excluirMuitosGastos(tenantId: string, ids: string[], executorUserId?: string) {
-    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
+    await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_LANCAR_GASTO');
     await this.prisma.$transaction(async (tx) => {
       const executorMembroId = await this.obterMembroIdPorUserId(tx, tenantId, executorUserId);
 
@@ -327,10 +294,7 @@ export class LancamentoService {
         });
 
         if (gasto) {
-          const valorFormatado = formatarCentavosParaBRL(gasto.valorTotalCentavos);
-          const descricaoStr = gasto.isPrivate ? 'Gasto Pessoal' : `Gasto "${gasto.descricao}"`;
-          const detalhesLog = `${descricaoStr} de ${valorFormatado} excluído do sistema (lote).`;
-
+          const detalhesLog = this.montarLogExclusaoGasto(gasto, true);
           await this.auditLogService.registrar(tenantId, executorMembroId, 'EXCLUIR_GASTO', detalhesLog, tx);
 
           await tx.gasto.delete({
@@ -351,7 +315,7 @@ export class LancamentoService {
   }
 
   async salvarContaFixa(tenantId: string, contaData: ContaFixaDto, executorUserId?: string) {
-    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_GERENCIAR_CONTAS_FIXAS');
+    await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_GERENCIAR_CONTAS_FIXAS');
     const { id, name, icon, fixedValueCentavos, defaultSplit } = contaData;
     const upserted = await this.prisma.contaFixa.upsert({
       where: {
@@ -377,7 +341,7 @@ export class LancamentoService {
   }
 
   async excluirContaFixa(tenantId: string, id: string, executorUserId?: string) {
-    await this.validarFeatureFlag(this.prisma, tenantId, executorUserId, 'ALLOW_GERENCIAR_CONTAS_FIXAS');
+    await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_GERENCIAR_CONTAS_FIXAS');
     await this.prisma.contaFixa.delete({
       where: {
         id_tenantId: { id, tenantId },
@@ -385,38 +349,5 @@ export class LancamentoService {
     });
     this.gateway.notificarAlteracao(tenantId, 'contas_fixas_alteradas');
     return { success: true };
-  }
-
-  private async validarFeatureFlag(tx: Prisma.TransactionClient | any, tenantId: string, executorUserId: string | undefined, flagName: string) {
-    if (!executorUserId) return;
-    
-    const executor = await tx.membroCasa.findFirst({
-      where: { tenantId, userId: executorUserId }
-    });
-
-    if (executor && executor.role !== 'ADMIN') {
-      const tenant = await tx.tenant.findUnique({
-        where: { id: tenantId },
-        select: { permissions: true }
-      });
-      const permissions = (tenant?.permissions as Record<string, any>) || {};
-      const rolePermissions = permissions[executor.role] || {};
-
-      const moradorLegacyFlagMap: Record<string, string> = {
-        'ALLOW_LANCAR_GASTO': 'ALLOW_MORADOR_LANCAR_GASTO',
-        'ALLOW_GERENCIAR_CARTOES': 'ALLOW_MORADOR_GERENCIAR_CARTOES',
-        'ALLOW_GERENCIAR_CONTAS_FIXAS': 'ALLOW_MORADOR_GERENCIAR_CONTAS_FIXAS',
-        'ALLOW_REGISTRAR_NETTING': 'ALLOW_MORADOR_REGISTRAR_NETTING',
-        'ALLOW_VER_AUDIT_LOGS': 'ALLOW_MORADOR_VER_AUDIT_LOGS'
-      };
-      const legacyFlagName = moradorLegacyFlagMap[flagName] || flagName;
-
-      const isBlocked = rolePermissions[flagName] === false ||
-                        (executor.role === 'MORADOR' && permissions[legacyFlagName] === false);
-
-      if (isBlocked) {
-        throw new ForbiddenException('O administrador da moradia desativou esta permissão para o seu papel.');
-      }
-    }
   }
 }

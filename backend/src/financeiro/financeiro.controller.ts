@@ -19,6 +19,7 @@ import { Role } from '@prisma/client';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { ProductValidationService } from './product-validation.service';
 import { ValidationStatusDto } from './dto/validation-status.dto';
+import { AtualizarPermissoesDto } from './dto/atualizar-permissoes.dto';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth('JWT-auth')
@@ -169,25 +170,7 @@ export class FinanceiroController {
     @Headers('x-tenant-id') tenantId: string,
     @Request() req: AuthenticatedRequest
   ) {
-    const gastos = await this.lancamentoService.listarGastos(tenantId);
-    const membro = await this.membroService.obterMembroPorUsuario(tenantId, req.user.userId);
-
-    if (!membro || !Array.isArray(gastos)) {
-      return gastos;
-    }
-
-    return gastos.filter((g: any) => {
-      if (g.isPrivate) {
-        const envolvidoNaDivisao = Array.isArray(g.divisoes) && g.divisoes.some((d: any) => d.membroId === membro.id);
-        return (
-          g.compradorId === membro.id ||
-          g.cardOwnerId === membro.id ||
-          g.borrowerId === membro.id ||
-          envolvidoNaDivisao
-        );
-      }
-      return true;
-    });
+    return this.lancamentoService.listarGastosVisiveis(tenantId, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Salvar/atualizar um gasto no tenant', description: 'Cria ou updates as informações de um gasto (incluindo seu rateio de divisão) no tenant ativo.' })
@@ -304,7 +287,7 @@ export class FinanceiroController {
   async atualizarTenantPermissions(
     @Headers('x-tenant-id') tenantId: string,
     @Param('role') role: string,
-    @Body() permissionsDto: any,
+    @Body() permissionsDto: AtualizarPermissoesDto,
     @Request() req: AuthenticatedRequest
   ) {
     return this.membroService.atualizarTenantPermissions(tenantId, role, permissionsDto, req.user.userId);

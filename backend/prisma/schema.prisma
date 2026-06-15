@@ -37,17 +37,7 @@ model Usuario {
   @@map("usuarios")
 }
 
-model PasswordResetToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
 
-  usuario   Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("password_reset_tokens")
-}
 
 enum Role {
   ADMIN
@@ -84,6 +74,7 @@ model MembroCasa {
   
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usuario   Usuario? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cartoesResponsavel Cartao[]
 
   @@id([id, tenantId])
   @@index([tenantId])
@@ -101,6 +92,7 @@ model Cartao {
   createdAt           DateTime @default(now()) @map("created_at")
 
   tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  responsavelPadrao   MembroCasa @relation(fields: [responsavelPadraoId, tenantId], references: [id, tenantId], onDelete: Restrict)
 
   @@id([id, tenantId])
   @@index([tenantId])
@@ -217,4 +209,15 @@ model ProductValidationEvent {
   @@map("product_validation_events")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  userId    String   @map("user_id") @db.Uuid
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
+  usuario   Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_reset_tokens")
+}

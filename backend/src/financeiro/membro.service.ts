@@ -9,6 +9,7 @@ import { Role } from '@prisma/client';
 import { MembroDto } from './dto/membro.dto';
 import { ProductValidationService } from './product-validation.service';
 import { ValidationEventType } from '@prisma/client';
+import { DEFAULT_PERMISSIONS } from '../shared/constants/permissions.constants';
 
 @Injectable()
 export class MembroService {
@@ -46,33 +47,11 @@ export class MembroService {
   async criarTenant(name: string, userId: string) {
     const inviteCode = `CASA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     const tenant = await this.prisma.$transaction(async (tx) => {
-      const defaultPermissions = {
-        MORADOR: {
-          ALLOW_LANCAR_GASTO: true,
-          ALLOW_GERENCIAR_CARTOES: true,
-          ALLOW_GERENCIAR_CONTAS_FIXAS: true,
-          ALLOW_REGISTRAR_NETTING: true,
-          ALLOW_VER_AUDIT_LOGS: true,
-          ALLOW_ALTERAR_RENDA: true,
-          ALLOW_ALTERAR_NOME: true,
-          ALLOW_FECHAR_PERIODO: true,
-        },
-        VISUALIZADOR: {
-          ALLOW_LANCAR_GASTO: false,
-          ALLOW_GERENCIAR_CARTOES: false,
-          ALLOW_GERENCIAR_CONTAS_FIXAS: false,
-          ALLOW_REGISTRAR_NETTING: false,
-          ALLOW_VER_AUDIT_LOGS: false,
-          ALLOW_ALTERAR_RENDA: false,
-          ALLOW_ALTERAR_NOME: false,
-          ALLOW_FECHAR_PERIODO: false,
-        }
-      };
       const createdTenant = await tx.tenant.create({
         data: {
           name,
           inviteCode,
-          permissions: defaultPermissions,
+          permissions: DEFAULT_PERMISSIONS,
         },
       });
 
@@ -149,51 +128,12 @@ export class MembroService {
     });
 
     if (executorUserId) {
-      const executorMembro = await this.prisma.membroCasa.findFirst({
-        where: { tenantId, userId: executorUserId }
-      });
-
-      if (executorMembro && executorMembro.role !== Role.ADMIN) {
-        if (id !== executorMembro.id) {
-          throw new ForbiddenException('Você só pode editar os seus próprios dados.');
-        }
-        if (membroAtual) {
-          if (role && role !== membroAtual.role) {
-            throw new BadRequestException('Você não pode alterar o seu próprio papel.');
-          }
-          if (ativo !== undefined && ativo !== membroAtual.ativo) {
-            throw new BadRequestException('Você não pode alterar o seu próprio status de atividade.');
-          }
-
-          // Validar alteração de nome/renda contra as feature flags da role do executor
-          const permissions = await this.obterTenantPermissions(tenantId);
-          const rolePermissions = permissions[executorMembro.role] || {};
-
-          if (nome !== undefined && nome !== membroAtual.nome) {
-            const allowed = rolePermissions.ALLOW_ALTERAR_NOME !== false;
-            if (!allowed) {
-              throw new ForbiddenException('O administrador da moradia desativou a permissão de alterar o nome para o seu papel.');
-            }
-          }
-
-          const rendaAtual = membroAtual.rendaCentavos !== null ? Number(membroAtual.rendaCentavos) : null;
-          const rendaNova = (rendaCentavos !== undefined && rendaCentavos !== null) ? Number(rendaCentavos) : null;
-          if (rendaNova !== rendaAtual) {
-            const allowed = rolePermissions.ALLOW_ALTERAR_RENDA !== false;
-            if (!allowed) {
-              throw new ForbiddenException('O administrador da moradia desativou a permissão de alterar a renda para o seu papel.');
-            }
-          }
-        }
-      }
+      await this.validarPermissoesExecutor(tenantId, executorUserId, id, membroAtual, role, ativo, nome, rendaCentavos);
     }
 
     await this.validarRegrasSalvarMembro(tenantId, id, finalEmail, password, memberRole, isActive);
 
-    if (!userId && finalEmail && password) {
-      const newUser = await this.authService.register(finalEmail, nome, password);
-      userId = newUser.userId;
-    }
+    userId = await this.resolverUserId(userId, finalEmail, nome, password);
 
     const upserted = await this.persistirMembro(tenantId, {
       ...membroData,
@@ -207,30 +147,81 @@ export class MembroService {
     }
 
     if (membroAtual) {
-      const rendaAtual = membroAtual.rendaCentavos !== null ? Number(membroAtual.rendaCentavos) : null;
-      const rendaNova = (rendaCentavos !== undefined && rendaCentavos !== null) ? Number(rendaCentavos) : null;
-      if (rendaAtual !== rendaNova) {
-        let executorMembroId = id; // fallback
-        if (executorUserId) {
-          const executor = await this.prisma.membroCasa.findFirst({
-            where: { tenantId, userId: executorUserId }
-          });
-          if (executor) executorMembroId = executor.id;
-        }
-
-        const valorAntigoStr = rendaAtual !== null ? `R$ ${(rendaAtual / 100).toFixed(2)}` : 'não informada';
-        const valorNovoStr = rendaNova !== null ? `R$ ${(rendaNova / 100).toFixed(2)}` : 'não informada';
-        await this.auditLogService.registrar(
-          tenantId,
-          executorMembroId,
-          'ALTERAR_RENDA',
-          `Renda de ${membroAtual.nome} alterada de ${valorAntigoStr} para ${valorNovoStr}.`
-        );
-      }
+      await this.registrarAuditoriaRenda(tenantId, id, membroAtual, rendaCentavos, executorUserId);
     }
 
     this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
     return serializeBigInt(upserted);
+  }
+
+  private async validarPermissoesExecutor(tenantId: string, executorUserId: string, id: string, membroAtual: any, role: any, ativo: any, nome: any, rendaCentavos: any) {
+    const executorMembro = await this.prisma.membroCasa.findFirst({
+      where: { tenantId, userId: executorUserId }
+    });
+
+    if (executorMembro && executorMembro.role !== Role.ADMIN) {
+      if (id !== executorMembro.id) {
+        throw new ForbiddenException('Você só pode editar os seus próprios dados.');
+      }
+      if (membroAtual) {
+        if (role && role !== membroAtual.role) {
+          throw new BadRequestException('Você não pode alterar o seu próprio papel.');
+        }
+        if (ativo !== undefined && ativo !== membroAtual.ativo) {
+          throw new BadRequestException('Você não pode alterar o seu próprio status de atividade.');
+        }
+
+        const permissions = await this.obterTenantPermissions(tenantId);
+        const rolePermissions = permissions[executorMembro.role] || {};
+
+        if (nome !== undefined && nome !== membroAtual.nome) {
+          const allowed = rolePermissions.ALLOW_ALTERAR_NOME !== false;
+          if (!allowed) {
+            throw new ForbiddenException('O administrador da moradia desativou a permissão de alterar o nome para o seu papel.');
+          }
+        }
+
+        const rendaAtual = membroAtual.rendaCentavos !== null ? Number(membroAtual.rendaCentavos) : null;
+        const rendaNova = (rendaCentavos !== undefined && rendaCentavos !== null) ? Number(rendaCentavos) : null;
+        if (rendaNova !== rendaAtual) {
+          const allowed = rolePermissions.ALLOW_ALTERAR_RENDA !== false;
+          if (!allowed) {
+            throw new ForbiddenException('O administrador da moradia desativou a permissão de alterar a renda para o seu papel.');
+          }
+        }
+      }
+    }
+  }
+
+  private async resolverUserId(userId: string | undefined, finalEmail: string | undefined, nome: string, password?: string) {
+    if (!userId && finalEmail && password) {
+      const newUser = await this.authService.register(finalEmail, nome, password);
+      return newUser.userId;
+    }
+    return userId;
+  }
+
+  private async registrarAuditoriaRenda(tenantId: string, id: string, membroAtual: any, rendaCentavos: any, executorUserId?: string) {
+    const rendaAtual = membroAtual.rendaCentavos !== null ? Number(membroAtual.rendaCentavos) : null;
+    const rendaNova = (rendaCentavos !== undefined && rendaCentavos !== null) ? Number(rendaCentavos) : null;
+    if (rendaAtual !== rendaNova) {
+      let executorMembroId = id; 
+      if (executorUserId) {
+        const executor = await this.prisma.membroCasa.findFirst({
+          where: { tenantId, userId: executorUserId }
+        });
+        if (executor) executorMembroId = executor.id;
+      }
+
+      const valorAntigoStr = rendaAtual !== null ? `R$ ${(rendaAtual / 100).toFixed(2)}` : 'não informada';
+      const valorNovoStr = rendaNova !== null ? `R$ ${(rendaNova / 100).toFixed(2)}` : 'não informada';
+      await this.auditLogService.registrar(
+        tenantId,
+        executorMembroId,
+        'ALTERAR_RENDA',
+        `Renda de ${membroAtual.nome} alterada de ${valorAntigoStr} para ${valorNovoStr}.`
+      );
+    }
   }
 
   private async persistirMembro(tenantId: string, data: MembroDto) {
@@ -345,31 +336,8 @@ export class MembroService {
       select: { permissions: true }
     });
 
-    const defaultPermissions = {
-      MORADOR: {
-        ALLOW_LANCAR_GASTO: true,
-        ALLOW_GERENCIAR_CARTOES: true,
-        ALLOW_GERENCIAR_CONTAS_FIXAS: true,
-        ALLOW_REGISTRAR_NETTING: true,
-        ALLOW_VER_AUDIT_LOGS: true,
-        ALLOW_ALTERAR_RENDA: true,
-        ALLOW_ALTERAR_NOME: true,
-        ALLOW_FECHAR_PERIODO: true,
-      },
-      VISUALIZADOR: {
-        ALLOW_LANCAR_GASTO: false,
-        ALLOW_GERENCIAR_CARTOES: false,
-        ALLOW_GERENCIAR_CONTAS_FIXAS: false,
-        ALLOW_REGISTRAR_NETTING: false,
-        ALLOW_VER_AUDIT_LOGS: false,
-        ALLOW_ALTERAR_RENDA: false,
-        ALLOW_ALTERAR_NOME: false,
-        ALLOW_FECHAR_PERIODO: false,
-      }
-    };
-
     if (!tenant || !tenant.permissions) {
-      return defaultPermissions;
+      return DEFAULT_PERMISSIONS;
     }
 
     const currentPermissions = (tenant.permissions as Record<string, any>) || {};
@@ -402,10 +370,10 @@ export class MembroService {
 
     // Garantir que as roles padrão estejam presentes
     if (!merged.MORADOR) {
-      merged.MORADOR = defaultPermissions.MORADOR;
+      merged.MORADOR = DEFAULT_PERMISSIONS.MORADOR;
     }
     if (!merged.VISUALIZADOR) {
-      merged.VISUALIZADOR = defaultPermissions.VISUALIZADOR;
+      merged.VISUALIZADOR = DEFAULT_PERMISSIONS.VISUALIZADOR;
     }
 
     return merged;
@@ -421,24 +389,13 @@ export class MembroService {
     }
 
     const currentPermissions = await this.obterTenantPermissions(tenantId);
-    const currentRolePermissions = currentPermissions[roleName] || {
-      ALLOW_LANCAR_GASTO: true,
-      ALLOW_GERENCIAR_CARTOES: true,
-      ALLOW_GERENCIAR_CONTAS_FIXAS: true,
-      ALLOW_REGISTRAR_NETTING: true,
-      ALLOW_VER_AUDIT_LOGS: true,
-    };
+    const currentRolePermissions = currentPermissions[roleName] || DEFAULT_PERMISSIONS.MORADOR;
 
-    const updatedRolePermissions = {
-      ALLOW_LANCAR_GASTO: permissionsData.ALLOW_LANCAR_GASTO !== undefined ? !!permissionsData.ALLOW_LANCAR_GASTO : currentRolePermissions.ALLOW_LANCAR_GASTO,
-      ALLOW_GERENCIAR_CARTOES: permissionsData.ALLOW_GERENCIAR_CARTOES !== undefined ? !!permissionsData.ALLOW_GERENCIAR_CARTOES : currentRolePermissions.ALLOW_GERENCIAR_CARTOES,
-      ALLOW_GERENCIAR_CONTAS_FIXAS: permissionsData.ALLOW_GERENCIAR_CONTAS_FIXAS !== undefined ? !!permissionsData.ALLOW_GERENCIAR_CONTAS_FIXAS : currentRolePermissions.ALLOW_GERENCIAR_CONTAS_FIXAS,
-      ALLOW_REGISTRAR_NETTING: permissionsData.ALLOW_REGISTRAR_NETTING !== undefined ? !!permissionsData.ALLOW_REGISTRAR_NETTING : currentRolePermissions.ALLOW_REGISTRAR_NETTING,
-      ALLOW_VER_AUDIT_LOGS: permissionsData.ALLOW_VER_AUDIT_LOGS !== undefined ? !!permissionsData.ALLOW_VER_AUDIT_LOGS : currentRolePermissions.ALLOW_VER_AUDIT_LOGS,
-      ALLOW_ALTERAR_RENDA: permissionsData.ALLOW_ALTERAR_RENDA !== undefined ? !!permissionsData.ALLOW_ALTERAR_RENDA : currentRolePermissions.ALLOW_ALTERAR_RENDA,
-      ALLOW_ALTERAR_NOME: permissionsData.ALLOW_ALTERAR_NOME !== undefined ? !!permissionsData.ALLOW_ALTERAR_NOME : currentRolePermissions.ALLOW_ALTERAR_NOME,
-      ALLOW_FECHAR_PERIODO: permissionsData.ALLOW_FECHAR_PERIODO !== undefined ? !!permissionsData.ALLOW_FECHAR_PERIODO : currentRolePermissions.ALLOW_FECHAR_PERIODO,
-    };
+    const updatedRolePermissions: any = {};
+    const keys = Object.keys(DEFAULT_PERMISSIONS.MORADOR);
+    for (const key of keys) {
+      updatedRolePermissions[key] = permissionsData[key] !== undefined ? !!permissionsData[key] : currentRolePermissions[key];
+    }
 
     const newPermissions = {
       ...currentPermissions,
@@ -453,7 +410,7 @@ export class MembroService {
     await this.auditLogService.registrar(
       tenantId,
       executor.id,
-      'ALTERAR_RENDA',
+      'ALTERAR_PERMISSOES',
       `Permissões do papel ${roleName} da moradia foram atualizadas pelo administrador.`
     );
 

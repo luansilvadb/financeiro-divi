@@ -5,10 +5,10 @@ import * as bcrypt from 'bcryptjs';
 import { FinanceiroGateway } from '../financeiro/financeiro.gateway';
 import type { JwtPayload } from './auth.types';
 import { randomUUID, randomBytes } from 'crypto';
-import { MailService } from '../shared/mail/mail.service';
-import { Prisma } from '@prisma/client';
-import { OAuth2Client } from 'google-auth-library';
+import { Prisma, Usuario } from '@prisma/client';
+import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { GoogleAuthDto } from './dto/google-auth.dto';
+import { EmailService } from '../shared/email.service';
 
 @Injectable()
 export class AuthService {
@@ -17,10 +17,12 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private mailService: MailService,
     @Inject(forwardRef(() => FinanceiroGateway))
     private gateway: FinanceiroGateway,
+    private emailService: EmailService,
   ) {}
+
+
 
   async register(email: string, nome: string, passwordSecret: string, inviteCode?: string, membroId?: string) {
     const cleanedEmail = email.trim().toLowerCase();
@@ -68,7 +70,7 @@ export class AuthService {
 
   private async associarUsuarioAoTenantTx(
     tx: Prisma.TransactionClient,
-    user: any,
+    user: Usuario,
     inviteCode?: string,
     membroId?: string
   ): Promise<{ tenantId: string | null; membroId: string | null }> {
@@ -201,50 +203,146 @@ export class AuthService {
     };
   }
 
-  async forgotPassword(email: string) {
-    const cleanedEmail = email.trim().toLowerCase();
-    
-    const user = await this.prisma.usuario.findUnique({
-      where: { email: cleanedEmail },
+
+
+  async loginComGoogle(googleAuthDto: GoogleAuthDto) {
+    const { credential, inviteCode, membroId } = googleAuthDto;
+
+    const googlePayload = await this.decodificarTokenGoogle(credential);
+    this.validarClaimsGoogle(googlePayload);
+
+    const { email, nome, googleId } = this.extrairDadosDoPayload(googlePayload);
+    const { user, tenantId } = await this.resolverUsuarioGoogle(email, nome, googleId, inviteCode, membroId);
+
+    if (tenantId) {
+      this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
+    }
+
+    return this.gerarRespostaLogin(user);
+  }
+
+  private async decodificarTokenGoogle(credential: string) {
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      return ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Credencial do Google inválida.');
+    }
+  }
+
+  private validarClaimsGoogle(payload: TokenPayload | undefined) {
+    if (!payload || !payload.email) {
+      throw new UnauthorizedException('Não foi possível obter o e-mail do Google.');
+    }
+    if (!payload.email_verified) {
+      throw new UnauthorizedException('O e-mail do Google não está verificado.');
+    }
+  }
+
+  private extrairDadosDoPayload(payload: TokenPayload) {
+    return {
+      email: payload.email!.trim().toLowerCase(),
+      nome: payload.name || 'Usuário Google',
+      googleId: payload.sub,
+    };
+  }
+
+  private gerarRespostaLogin(user: Usuario) {
+    const jwtPayload = { sub: user.id, email: user.email };
+    return {
+      access_token: this.jwtService.sign(jwtPayload),
+      userId: user.id,
+      email: user.email,
+      nome: user.nome,
+    };
+  }
+
+  private async resolverUsuarioGoogle(email: string, nome: string, googleId: string, inviteCode?: string, membroId?: string) {
+    let user = await this.prisma.usuario.findFirst({
+      where: { OR: [{ googleId }, { email }] }
     });
 
+    let tenantId: string | null = null;
+
     if (!user) {
-      // Simular sucesso para não expor se o e-mail existe
-      return { message: 'Se o e-mail existir, um link de recuperação foi enviado.' };
+      const result = await this.criarNovoUsuarioGoogle(email, nome, googleId, inviteCode, membroId);
+      user = result.user;
+      tenantId = result.tenantId;
+    } else {
+      const result = await this.atualizarUsuarioGoogleExistente(user, googleId, inviteCode, membroId);
+      user = result.user;
+      tenantId = result.tenantId;
+    }
+
+    return { user, tenantId };
+  }
+
+  private async criarNovoUsuarioGoogle(email: string, nome: string, googleId: string, inviteCode?: string, membroId?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const novoUser = await tx.usuario.create({
+        data: { email, nome, googleId, passwordHash: null },
+      });
+      const { tenantId: tId } = await this.associarUsuarioAoTenantTx(tx, novoUser, inviteCode, membroId);
+      return { user: novoUser, tenantId: tId };
+    });
+  }
+
+  private async atualizarUsuarioGoogleExistente(user: Usuario, googleId: string, inviteCode?: string, membroId?: string) {
+    if (!user.googleId) {
+      user = await this.prisma.usuario.update({
+        where: { id: user.id },
+        data: { googleId }
+      });
+    }
+
+    let tenantId: string | null = null;
+    if (inviteCode) {
+      const result = await this.prisma.$transaction(async (tx) => {
+        return this.associarUsuarioAoTenantTx(tx, user, inviteCode, membroId);
+      });
+      tenantId = result.tenantId;
+    }
+    return { user, tenantId };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.prisma.usuario.findUnique({ where: { email } });
+    if (!user) {
+      // Retornar sucesso silencioso por segurança, ou lançar erro se preferir
+      // Vamos apenas não fazer nada
+      return;
     }
 
     const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // Expira em 1 hora
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hora a partir de agora
 
     await this.prisma.passwordResetToken.create({
       data: {
-        userId: user.id,
         token,
+        userId: user.id,
         expiresAt,
-      },
+      }
     });
 
-    // Enviar e-mail sem travar a thread principal (ou aguardar)
-    this.mailService.sendPasswordResetEmail(user.email, token).catch(e => {
-      console.error('Falha ao enviar email:', e);
-    });
-
-    return { message: 'Se o e-mail existir, um link de recuperação foi enviado.' };
+    await this.emailService.enviarEmailRecuperacao(user.email, user.nome, token);
   }
 
-  async resetPassword(token: string, newPasswordSecret: string) {
+  async resetPassword(token: string, newPasswordSecret: string): Promise<void> {
     const resetToken = await this.prisma.passwordResetToken.findUnique({
       where: { token },
       include: { usuario: true },
     });
 
     if (!resetToken) {
-      throw new BadRequestException('Token inválido ou expirado.');
+      throw new BadRequestException('Token inválido ou expirado');
     }
 
     if (resetToken.expiresAt < new Date()) {
-      throw new BadRequestException('Token expirado.');
+      await this.prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+      throw new BadRequestException('Token inválido ou expirado');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -256,103 +354,8 @@ export class AuthService {
         data: { passwordHash },
       }),
       this.prisma.passwordResetToken.deleteMany({
-        where: { userId: resetToken.userId }, // Deleta todos os tokens do usuário por segurança
+        where: { userId: resetToken.userId }, // Apaga todos os tokens deste usuário após uso
       }),
     ]);
-
-    return { message: 'Senha redefinida com sucesso.' };
-  }
-
-  async loginComGoogle(googleAuthDto: GoogleAuthDto) {
-    const { credential, inviteCode, membroId } = googleAuthDto;
-
-    let payload;
-    try {
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } catch (error) {
-      throw new UnauthorizedException('Credencial do Google inválida.');
-    }
-
-    if (!payload || !payload.email) {
-      throw new UnauthorizedException('Não foi possível obter o e-mail do Google.');
-    }
-
-    if (!payload.email_verified) {
-      throw new UnauthorizedException('O e-mail do Google não está verificado.');
-    }
-
-    const email = payload.email.trim().toLowerCase();
-    const nome = payload.name || 'Usuário Google';
-    const googleId = payload.sub; // Identificador exclusivo do Google
-
-    // Busca usuário pelo googleId ou pelo email
-    let user = await this.prisma.usuario.findFirst({
-      where: {
-        OR: [
-          { googleId },
-          { email }
-        ]
-      }
-    });
-
-    let tenantId: string | null = null;
-
-    if (!user) {
-      // Cria novo usuário
-      const result = await this.prisma.$transaction(async (tx) => {
-        const novoUser = await tx.usuario.create({
-          data: {
-            email,
-            nome,
-            googleId,
-            passwordHash: null, // Login social não tem senha inicial
-          },
-        });
-
-        const { tenantId: tId } = await this.associarUsuarioAoTenantTx(
-          tx,
-          novoUser,
-          inviteCode,
-          membroId
-        );
-
-        return { user: novoUser, tenantId: tId };
-      });
-
-      user = result.user;
-      tenantId = result.tenantId;
-    } else {
-      // Se o usuário existe mas não tem googleId associado, vincula agora
-      if (!user.googleId) {
-        user = await this.prisma.usuario.update({
-          where: { id: user.id },
-          data: { googleId }
-        });
-      }
-
-      // Se houver um convite, associa o usuário existente à casa
-      if (inviteCode) {
-        const result = await this.prisma.$transaction(async (tx) => {
-          return this.associarUsuarioAoTenantTx(tx, user, inviteCode, membroId);
-        });
-        tenantId = result.tenantId;
-      }
-    }
-
-    if (tenantId) {
-      this.gateway.notificarAlteracao(tenantId, 'membros_alterados');
-    }
-
-    const jwtPayload = { sub: user.id, email: user.email };
-    return {
-      access_token: this.jwtService.sign(jwtPayload),
-      userId: user.id,
-      email: user.email,
-      nome: user.nome,
-    };
   }
 }

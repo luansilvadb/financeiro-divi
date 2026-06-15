@@ -243,7 +243,12 @@ export class GastoService {
     const gastosAssociados = (await this.gastoRepo.listarTodos()).filter(g => g.recurringBillId === contaFixaId)
     if (gastosAssociados.length === 0) return
 
-    const gastosParaSalvar = gastosAssociados.map(g => new Gasto({
+    const gastosParaSalvar = gastosAssociados.map(g => this.desassociarContaFixa(g))
+    await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+  }
+
+  private desassociarContaFixa(g: Gasto): Gasto {
+    return new Gasto({
       id: g.id,
       faturaId: g.faturaId,
       descricao: g.descricao,
@@ -262,8 +267,6 @@ export class GastoService {
       grupoParcelasId: g.grupoParcelasId,
       isPrivate: g.isPrivate,
       splitMode: g.splitMode
-    }))
-
-    await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+    })
   }
 }

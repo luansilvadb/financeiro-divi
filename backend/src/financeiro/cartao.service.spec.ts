@@ -15,7 +15,10 @@ describe('CartaoService validation milestones', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new CartaoService(prisma as any, gateway as any, validation as any);
+    const permissaoService = {
+      validarFeatureFlag: jest.fn(),
+    };
+    service = new CartaoService(prisma as any, gateway as any, validation as any, permissaoService as any);
   });
 
   it('verifica consolidação depois de fechar uma fatura', async () => {

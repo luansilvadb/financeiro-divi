@@ -1,11 +1,15 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { serializeBigInt } from '../shared/utils/serialization';
+import { PermissaoService } from './permissao.service';
 
 @Injectable()
 export class AuditLogService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private permissaoService: PermissaoService
+  ) {}
 
   async registrar(
     tenantId: string,
@@ -28,22 +32,7 @@ export class AuditLogService {
 
   async listar(tenantId: string, executorUserId?: string) {
     if (executorUserId) {
-      const executor = await this.prisma.membroCasa.findFirst({
-        where: { tenantId, userId: executorUserId }
-      });
-      if (executor && executor.role !== 'ADMIN') {
-        const tenant = await this.prisma.tenant.findUnique({
-          where: { id: tenantId },
-          select: { permissions: true }
-        });
-        const permissions = (tenant?.permissions as Record<string, any>) || {};
-        const rolePermissions = permissions[executor.role] || {};
-        const isBlocked = rolePermissions.ALLOW_VER_AUDIT_LOGS === false || 
-                          (executor.role === 'MORADOR' && permissions.ALLOW_MORADOR_VER_AUDIT_LOGS === false);
-        if (isBlocked) {
-          throw new ForbiddenException('O administrador da moradia desativou esta permissão para o seu papel.');
-        }
-      }
+      await this.permissaoService.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_VER_AUDIT_LOGS');
     }
 
     const logs = await this.prisma.auditLog.findMany({

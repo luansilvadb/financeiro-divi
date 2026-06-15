@@ -45,9 +45,7 @@ describe('NovoLancamentoWizard', () => {
       },
     })
 
-    wrapper.getComponent({ name: 'StepFlowSelection' }).vm.$emit('select', {
-      flow: 'expense', isPrivate: false,
-    })
+    wrapper.getComponent({ name: 'StepFlowSelection' }).vm.$emit('select', 'expense')
     await nextTick()
     wrapper.getComponent({ name: 'StepPaymentMethodSelection' }).vm.$emit('select', {
       payment: 'pix', cardOwner: null,

@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceiroGateway } from './financeiro.gateway';
 import { serializeBigInt } from '../shared/utils/serialization';
 import { CartaoDto } from './dto/cartao.dto';
 import { FaturaDto } from './dto/fatura.dto';
 import { ProductValidationService } from './product-validation.service';
+import { PermissaoService } from './permissao.service';
 
 @Injectable()
 export class CartaoService {
@@ -12,6 +13,7 @@ export class CartaoService {
     private prisma: PrismaService,
     private gateway: FinanceiroGateway,
     private productValidationService: ProductValidationService,
+    private permissaoService: PermissaoService,
   ) {}
 
   async listarCartoes(tenantId: string) {
@@ -22,50 +24,46 @@ export class CartaoService {
   }
 
   async salvarCartao(tenantId: string, cartaoData: CartaoDto, userId: string) {
-    await this.validarFeatureFlag(tenantId, userId, 'ALLOW_GERENCIAR_CARTOES');
-    const { id, nome, diaFechamento, responsavelPadraoId } = cartaoData;
+    await this.permissaoService.validarFeatureFlag(tenantId, userId, 'ALLOW_GERENCIAR_CARTOES');
+    await this.assegurarMembroDaMoradia(tenantId, userId);
 
-    const membro = await this.prisma.membroCasa.findFirst({
-      where: {
-        tenantId,
-        userId,
-      },
-    });
-
-    if (!membro) {
-      throw new BadRequestException('Você não é membro desta moradia.');
-    }
-
-    const upserted = await this.prisma.cartao.upsert({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
-      create: {
-        id,
-        tenantId,
-        nome,
-        diaFechamento,
-        responsavelPadraoId,
-      },
-      update: {
-        nome,
-        diaFechamento,
-        responsavelPadraoId,
-      },
-    });
+    const upserted = await this.executarUpsertCartao(tenantId, cartaoData);
+    
     this.gateway.notificarAlteracao(tenantId, 'cartoes_alterados');
     return serializeBigInt(upserted);
   }
 
   async excluirCartao(tenantId: string, id: string, userId?: string) {
-    await this.validarFeatureFlag(tenantId, userId, 'ALLOW_GERENCIAR_CARTOES');
-    await this.prisma.cartao.delete({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
-    });
+    await this.permissaoService.validarFeatureFlag(tenantId, userId, 'ALLOW_GERENCIAR_CARTOES');
+    await this.executarExclusaoCartao(tenantId, id);
+    
     this.gateway.notificarAlteracao(tenantId, 'cartoes_alterados');
     return { success: true };
+  }
+
+  private async assegurarMembroDaMoradia(tenantId: string, userId: string) {
+    const membro = await this.prisma.membroCasa.findFirst({
+      where: { tenantId, userId },
+    });
+
+    if (!membro) {
+      throw new BadRequestException('Você não é membro desta moradia.');
+    }
+  }
+
+  private executarUpsertCartao(tenantId: string, cartaoData: CartaoDto) {
+    const { id, nome, diaFechamento, responsavelPadraoId } = cartaoData;
+    return this.prisma.cartao.upsert({
+      where: { id_tenantId: { id, tenantId } },
+      create: { id, tenantId, nome, diaFechamento, responsavelPadraoId },
+      update: { nome, diaFechamento, responsavelPadraoId },
+    });
+  }
+
+  private executarExclusaoCartao(tenantId: string, id: string) {
+    return this.prisma.cartao.delete({
+      where: { id_tenantId: { id, tenantId } },
+    });
   }
 
   async listarFaturas(tenantId: string) {
@@ -76,102 +74,90 @@ export class CartaoService {
   }
 
   async salvarFatura(tenantId: string, faturaData: FaturaDto, executorUserId?: string) {
-    const { id, cartaoId, mes, ano, responsavelId, status, dataPagamentoBanco } = faturaData;
+    await this.validarAlteracaoStatusFatura(tenantId, faturaData, executorUserId);
+    
+    const upserted = await this.executarUpsertFatura(tenantId, faturaData);
 
-    // Detectar se está fechando ou reabrindo faturas existentes
-    const faturaExistente = await this.prisma.fatura.findUnique({
-      where: { id_tenantId: { id, tenantId } }
-    });
-    const isFechando = status === 'FECHADA';
-    const isReabrindo = faturaExistente?.status === 'FECHADA' && status !== 'FECHADA';
-
-    if (isFechando || isReabrindo) {
-      await this.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_FECHAR_PERIODO');
+    if (faturaData.status === 'FECHADA') {
+      await this.productValidationService.registrarPeriodoFechadoSeConsolidado(tenantId, faturaData.mes, faturaData.ano);
     }
-
-    const upserted = await this.prisma.fatura.upsert({
-      where: {
-        id_tenantId: { id, tenantId },
-      },
-      create: {
-        id,
-        tenantId,
-        cartaoId,
-        mes,
-        ano,
-        responsavelId,
-        status,
-        dataPagamentoBanco: dataPagamentoBanco ? new Date(dataPagamentoBanco) : null,
-      },
-      update: {
-        status,
-        responsavelId,
-        dataPagamentoBanco: dataPagamentoBanco ? new Date(dataPagamentoBanco) : null,
-      },
-    });
-    if (status === 'FECHADA') {
-      await this.productValidationService.registrarPeriodoFechadoSeConsolidado(tenantId, mes, ano);
-    }
+    
     this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
     return serializeBigInt(upserted);
   }
 
   async salvarMuitasFaturas(tenantId: string, faturasList: FaturaDto[], executorUserId?: string) {
-    // Validar flag se houver qualquer fechamento ou reabertura na lista
-    const ids = faturasList.map(f => f.id);
-    const faturasExistentes = await this.prisma.fatura.findMany({
-      where: {
-        tenantId,
-        id: { in: ids }
-      }
-    });
+    await this.validarAlteracaoStatusFaturasEmMassa(tenantId, faturasList, executorUserId);
+    
+    const result = await this.executarUpsertFaturasEmMassa(tenantId, faturasList);
+    
+    await this.registrarPeriodosFechadosEmMassa(tenantId, faturasList);
+    
+    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
+    return serializeBigInt(result);
+  }
 
-    const statusExistentes = new Map(faturasExistentes.map(f => [f.id, f.status]));
+  private async validarAlteracaoStatusFatura(tenantId: string, faturaData: FaturaDto, executorUserId?: string) {
+    const faturaExistente = await this.buscarFaturaExistente(tenantId, faturaData.id);
 
-    let precisaValidar = false;
-    for (const f of faturasList) {
-      const isFechando = f.status === 'FECHADA';
-      const statusAnterior = statusExistentes.get(f.id);
-      const isReabrindo = statusAnterior === 'FECHADA' && f.status !== 'FECHADA';
-
-      if (isFechando || isReabrindo) {
-        precisaValidar = true;
-        break;
-      }
+    if (this.avaliaFechamentoOuReabertura(faturaExistente?.status, faturaData.status)) {
+      await this.permissaoService.validarFeatureFlag(
+        tenantId, 
+        executorUserId, 
+        'ALLOW_FECHAR_PERIODO',
+        'O administrador da moradia desativou a permissão de fechar ou reabrir o período para o seu papel.'
+      );
     }
+  }
+
+  private async validarAlteracaoStatusFaturasEmMassa(tenantId: string, faturasList: FaturaDto[], executorUserId?: string) {
+    const ids = faturasList.map(f => f.id);
+    const faturasExistentes = await this.buscarMuitasFaturasExistentes(tenantId, ids);
+    
+    const statusExistentes = new Map(faturasExistentes.map(f => [f.id, f.status]));
+    const precisaValidar = faturasList.some(f => 
+      this.avaliaFechamentoOuReabertura(statusExistentes.get(f.id), f.status)
+    );
 
     if (precisaValidar) {
-      await this.validarFeatureFlag(tenantId, executorUserId, 'ALLOW_FECHAR_PERIODO');
+      await this.permissaoService.validarFeatureFlag(
+        tenantId, 
+        executorUserId, 
+        'ALLOW_FECHAR_PERIODO',
+        'O administrador da moradia desativou a permissão de fechar ou reabrir o período para o seu papel.'
+      );
     }
+  }
 
-    const operations = faturasList.map(f => {
-      const { id, cartaoId, mes, ano, responsavelId, status, dataPagamentoBanco } = f;
-      return this.prisma.fatura.upsert({
-        where: { id_tenantId: { id, tenantId } },
-        create: {
-          id,
-          tenantId,
-          cartaoId,
-          mes,
-          ano,
-          responsavelId,
-          status,
-          dataPagamentoBanco: dataPagamentoBanco ? new Date(dataPagamentoBanco) : null,
-        },
-        update: {
-          status,
-          responsavelId,
-          dataPagamentoBanco: dataPagamentoBanco ? new Date(dataPagamentoBanco) : null,
-        },
-      });
+  private async executarUpsertFatura(tenantId: string, faturaData: FaturaDto) {
+    return this.prisma.fatura.upsert(this.mapearFaturaUpsert(tenantId, faturaData));
+  }
+
+  private async executarUpsertFaturasEmMassa(tenantId: string, faturasList: FaturaDto[]) {
+    const operations = faturasList.map(f => this.prisma.fatura.upsert(this.mapearFaturaUpsert(tenantId, f)));
+    return this.prisma.$transaction(operations);
+  }
+
+  private buscarFaturaExistente(tenantId: string, id: string) {
+    return this.prisma.fatura.findUnique({
+      where: { id_tenantId: { id, tenantId } }
     });
-    const result = await this.prisma.$transaction(operations);
+  }
+
+  private buscarMuitasFaturasExistentes(tenantId: string, ids: string[]) {
+    return this.prisma.fatura.findMany({
+      where: { tenantId, id: { in: ids } }
+    });
+  }
+
+  private async registrarPeriodosFechadosEmMassa(tenantId: string, faturasList: FaturaDto[]) {
     const periodosFechados = new Map<string, { mes: number; ano: number }>();
     for (const fatura of faturasList) {
       if (fatura.status === 'FECHADA') {
         periodosFechados.set(`${fatura.ano}-${fatura.mes}`, { mes: fatura.mes, ano: fatura.ano });
       }
     }
+
     for (const periodo of periodosFechados.values()) {
       await this.productValidationService.registrarPeriodoFechadoSeConsolidado(
         tenantId,
@@ -179,43 +165,33 @@ export class CartaoService {
         periodo.ano,
       );
     }
-    this.gateway.notificarAlteracao(tenantId, 'faturas_alteradas');
-    return serializeBigInt(result);
   }
 
-  private async validarFeatureFlag(tenantId: string, userId: string | undefined, flagName: string) {
-    if (!userId) return;
-    
-    const executor = await this.prisma.membroCasa.findFirst({
-      where: { tenantId, userId }
-    });
+  private avaliaFechamentoOuReabertura(statusAtual: string | undefined, statusNovo: string): boolean {
+    const isFechando = statusNovo === 'FECHADA';
+    const isReabrindo = statusAtual === 'FECHADA' && statusNovo !== 'FECHADA';
+    return isFechando || isReabrindo;
+  }
 
-    if (executor && executor.role !== 'ADMIN') {
-      const tenant = await this.prisma.tenant.findUnique({
-        where: { id: tenantId },
-        select: { permissions: true }
-      });
-      const permissions = (tenant?.permissions as Record<string, any>) || {};
-      const rolePermissions = permissions[executor.role] || {};
-
-      const moradorLegacyFlagMap: Record<string, string> = {
-        'ALLOW_LANCAR_GASTO': 'ALLOW_MORADOR_LANCAR_GASTO',
-        'ALLOW_GERENCIAR_CARTOES': 'ALLOW_MORADOR_GERENCIAR_CARTOES',
-        'ALLOW_GERENCIAR_CONTAS_FIXAS': 'ALLOW_MORADOR_GERENCIAR_CONTAS_FIXAS',
-        'ALLOW_REGISTRAR_NETTING': 'ALLOW_MORADOR_REGISTRAR_NETTING',
-        'ALLOW_VER_AUDIT_LOGS': 'ALLOW_MORADOR_VER_AUDIT_LOGS'
-      };
-      const legacyFlagName = moradorLegacyFlagMap[flagName] || flagName;
-
-      const isBlocked = rolePermissions[flagName] === false ||
-                        (executor.role === 'MORADOR' && permissions[legacyFlagName] === false);
-
-      if (isBlocked) {
-        if (flagName === 'ALLOW_FECHAR_PERIODO') {
-          throw new ForbiddenException('O administrador da moradia desativou a permissão de fechar ou reabrir o período para o seu papel.');
-        }
-        throw new ForbiddenException('O administrador da moradia desativou esta permissão para o seu papel.');
-      }
-    }
+  private mapearFaturaUpsert(tenantId: string, faturaData: FaturaDto) {
+    const dataPagamento = faturaData.dataPagamentoBanco ? new Date(faturaData.dataPagamentoBanco) : null;
+    return {
+      where: { id_tenantId: { id: faturaData.id, tenantId } },
+      create: {
+        id: faturaData.id,
+        tenantId,
+        cartaoId: faturaData.cartaoId,
+        mes: faturaData.mes,
+        ano: faturaData.ano,
+        responsavelId: faturaData.responsavelId,
+        status: faturaData.status,
+        dataPagamentoBanco: dataPagamento,
+      },
+      update: {
+        status: faturaData.status,
+        responsavelId: faturaData.responsavelId,
+        dataPagamentoBanco: dataPagamento,
+      },
+    };
   }
 }

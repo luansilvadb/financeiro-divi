@@ -3,16 +3,16 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class ResetPasswordDto {
   @ApiProperty({
-    description: 'Token de recuperação enviado por e-mail',
-    example: 'abcdef1234567890abcdef1234567890',
+    description: 'Token de recuperação recebido por e-mail',
+    example: 'd8c4b12...',
   })
   @IsNotEmpty()
   @IsString()
   token!: string;
 
   @ApiProperty({
-    description: 'Nova senha (mínimo de 6 caracteres)',
-    example: 'novaSenha123',
+    description: 'Nova senha do usuário',
+    example: 'senhaForte123',
     minLength: 6,
   })
   @IsNotEmpty()
