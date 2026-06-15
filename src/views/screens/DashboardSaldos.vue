@@ -55,7 +55,6 @@ const {
   estornarContaFixa,
   totalLancamentosPeriodoSelecionado,
   reabrirPeriodoSelecionado,
-  todosGastos,
   gastosPrivadosFiltrados
 } = vm
 
