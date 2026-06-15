@@ -19,6 +19,7 @@ import DashboardModalsManager from './DashboardModalsManager.vue'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 import SkeletonMimic from '../components/ui/SkeletonMimic.vue'
 import { CheckCircle2 } from 'lucide-vue-next'
+import PersonalBalancePanel from '../components/ledger/dashboard/PersonalBalancePanel.vue'
 
 interface Props {
   membros: { id: string; nome: string; ativo?: boolean }[]
@@ -53,7 +54,9 @@ const {
   abrirNovoPeriodoBottomSheet,
   estornarContaFixa,
   totalLancamentosPeriodoSelecionado,
-  reabrirPeriodoSelecionado
+  reabrirPeriodoSelecionado,
+  todosGastos,
+  gastosPrivadosFiltrados
 } = vm
 
 const {
@@ -96,11 +99,12 @@ const abrirAuditLogs = () => {
 }
 
 const isHoje = computed(() => !props.activeTab || props.activeTab === 'hoje')
-const isFaturas = computed(() => !props.activeTab || props.activeTab === 'faturas')
+const isPessoal = computed(() => props.activeTab === 'pessoal')
+const isFaturas = computed(() => props.activeTab === 'faturas')
 const membrosAtivos = computed(() => props.membros.filter(m => m.ativo !== false))
 
 const transitionName = ref('tab-slide-right')
-const tabOrder: Tab[] = ['hoje', 'faturas']
+const tabOrder: Tab[] = ['hoje', 'pessoal', 'faturas']
 
 watch(() => props.activeTab, (newTab, oldTab) => {
   const newIndex = tabOrder.indexOf(newTab || 'hoje')
@@ -197,6 +201,13 @@ defineExpose({
                 @ajustar="abrirAjustarGasto"
               />
             </section>
+          </div>
+
+          <div v-else-if="isPessoal" key="pessoal" class="space-y-12 pb-2">
+            <PersonalBalancePanel
+              :membros="props.membros"
+              :gastos="gastosPrivadosFiltrados"
+            />
           </div>
 
           <div v-else-if="isFaturas" key="faturas" class="space-y-12 pb-2">

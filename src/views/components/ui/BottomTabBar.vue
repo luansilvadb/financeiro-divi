@@ -1,10 +1,10 @@
 <!-- src/views/components/ui/BottomTabBar.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Building2, Coins, User, Plus } from 'lucide-vue-next'
+import { Building2, Coins, User, Plus, Wallet } from 'lucide-vue-next'
 import MembroAvatar from './MembroAvatar.vue'
 
-export type Tab = 'hoje' | 'faturas' | 'perfil'
+export type Tab = 'hoje' | 'pessoal' | 'faturas' | 'perfil'
 
 interface Props {
   modelValue: Tab
@@ -21,6 +21,7 @@ const emit = defineEmits<{
 
 const tabs = [
   { id: 'hoje', label: 'Casa', icon: Building2 },
+  { id: 'pessoal', label: 'Pessoal', icon: Wallet },
   { id: 'faturas', label: 'Acertos', icon: Coins },
   { id: 'perfil', label: 'Ajustes', icon: User },
 ] as const
@@ -38,7 +39,7 @@ onMounted(() => {
       <!-- Lado Esquerdo: Minhas Casas -->
       <div class="flex-1 flex justify-around items-center h-full">
         <button
-          v-for="tab in tabs.slice(0, 1)"
+          v-for="tab in tabs.slice(0, 2)"
           :key="tab.id"
           @click="emit('update:modelValue', tab.id)"
           class="flex-1 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center relative group outline-none cursor-pointer border-none bg-transparent rounded-2xl transition-all duration-300 ease-jelly active:scale-92"
@@ -83,7 +84,7 @@ onMounted(() => {
       <!-- Lado Direito: Acertos e Ajustes -->
       <div class="flex-1 flex justify-around items-center h-full">
         <button
-          v-for="tab in tabs.slice(1, 3)"
+          v-for="tab in tabs.slice(2, 4)"
           :key="tab.id"
           @click="emit('update:modelValue', tab.id)"
           class="flex-1 min-w-[48px] min-h-[48px] flex flex-col items-center justify-center relative group outline-none cursor-pointer border-none bg-transparent rounded-2xl transition-all duration-300 ease-jelly active:scale-92"

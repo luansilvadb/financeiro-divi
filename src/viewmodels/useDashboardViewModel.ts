@@ -52,7 +52,8 @@ export const useDashboardViewModel = (
   const periodoSelecionado = periodosState.periodoSelecionado
   const todosGastos = cartoesEFaturas.gastos
 
-  const gastosFiltrados = computed(() => todosGastos.value.filter(gasto => gastoPertenceAoPeriodo(gasto, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
+  const gastosFiltrados = computed(() => todosGastos.value.filter(gasto => !gasto.isPrivate && gastoPertenceAoPeriodo(gasto, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
+  const gastosPrivadosFiltrados = computed(() => todosGastos.value.filter(gasto => gasto.isPrivate && gastoPertenceAoPeriodo(gasto, periodoSelecionado.value.mes, periodoSelecionado.value.ano, cartoesEFaturas.faturas.value)))
   
   return {
     ...periodosState, 
@@ -60,6 +61,8 @@ export const useDashboardViewModel = (
     ...ui, 
     contasFixas: contasFixas.contasFixas, 
     gastosFaturaSelecionada: gastosFiltrados, 
+    gastosPrivadosFiltrados,
+    todosGastos,
     
     totalPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoComum).reduce((soma, gasto) => soma + valorParcelaAtual(gasto.valorTotal, gasto.installments, gasto.totalInstallments).centavos, 0)),
     totalLancamentosPeriodoSelecionado: computed(() => gastosFiltrados.value.filter(isGastoValidoParaSoma).length),

@@ -264,6 +264,7 @@ const handleLogout = async () => {
             <NovoLancamentoWizard
               v-if="currentView === 'wizard'"
               :membros="ativos"
+              :is-private="activeTab === 'pessoal'"
               @salvar="handleSalvarTransacao"
               @cancelar="currentView = 'dashboard'"
             />

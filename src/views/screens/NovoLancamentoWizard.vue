@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCartoesEFaturas } from '../../viewmodels/useCartoesEFaturas'
+import { useMembros } from '../../viewmodels/useMembros'
 import { obterPeriodoSelecionado } from '../../shared/utils/periodoStorage'
 import { DivisaoDeGasto } from '../../models/entities/DivisaoDeGasto'
 import { Dinheiro } from '../../models/entities/Dinheiro'
@@ -13,6 +14,7 @@ import { calcularRateioProporcionalCentavos, obterMembrosSelecionadosSemRenda } 
 
 // Componentes de Etapa
 import StepFlowSelection from '../components/wizard/StepFlowSelection.vue'
+import StepPaymentMethodSelection from '../components/wizard/StepPaymentMethodSelection.vue'
 import StepMemberSelection from '../components/wizard/StepMemberSelection.vue'
 import StepValueInput from '../components/wizard/StepValueInput.vue'
 import StepDescriptionInput from '../components/wizard/StepDescriptionInput.vue'
@@ -20,17 +22,25 @@ import StepSplitSelector from '../components/wizard/StepSplitSelector.vue'
 
 interface Props {
   membros: { id: string; nome: string; rendaCentavos?: number }[]
+  isPrivate?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isPrivate: false
+})
+
 const emit = defineEmits(['salvar', 'cancelar'])
 
 const { cartoes, faturasFechadas, inicializar: inicializarCartoes } = useCartoesEFaturas()
+const { currentMembro } = useMembros()
 const toast = useToast()
 
 const isSubmitting = ref(false)
 
 onMounted(async () => {
+  if (props.isPrivate && currentMembro.value && !compradorSelecionadoId.value) {
+    compradorSelecionadoId.value = currentMembro.value.id
+  }
   await inicializarCartoes()
 })
 
@@ -43,16 +53,35 @@ const isCartaoTrancado = (cartaoId: string) => {
   )
 }
 
-type WizardState = 'FLOW_SELECTION' | 'LENDER_SELECTION' | 'BORROWER_SELECTION' | 'BUYER_SELECTION' | 'VALUE' | 'DESCRIPTION' | 'SPLIT'
+type WizardState = 'FLOW_SELECTION' | 'PAYMENT_METHOD_SELECTION' | 'LENDER_SELECTION' | 'BORROWER_SELECTION' | 'BUYER_SELECTION' | 'VALUE' | 'DESCRIPTION' | 'SPLIT'
 
-const wizFlow = ref<'expense' | 'loan' | null>(null)
+const wizFlow = ref<'expense' | 'loan' | 'loan_given' | 'loan_taken' | null>(null)
 const wizPayment = ref<'pix' | 'card' | null>(null)
 const wizCardOwner = ref<string | null>(null)
 
 const steps = computed<WizardState[]>(() => {
-  if (!wizFlow.value) return ['FLOW_SELECTION']
-  if (wizFlow.value === 'loan') return ['FLOW_SELECTION', 'LENDER_SELECTION', 'BORROWER_SELECTION', 'VALUE', 'DESCRIPTION']
-  return ['FLOW_SELECTION', 'BUYER_SELECTION', 'VALUE', 'DESCRIPTION', 'SPLIT']
+  const stepList: WizardState[] = ['FLOW_SELECTION']
+  
+  if (!wizFlow.value) return stepList
+  
+  if (wizFlow.value === 'expense') {
+    stepList.push('PAYMENT_METHOD_SELECTION')
+    if (wizPayment.value === 'pix' && !props.isPrivate) {
+      stepList.push('BUYER_SELECTION')
+    }
+    stepList.push('VALUE', 'DESCRIPTION')
+    if (!props.isPrivate) {
+      stepList.push('SPLIT')
+    }
+  } else if (wizFlow.value === 'loan') {
+    stepList.push('LENDER_SELECTION', 'BORROWER_SELECTION', 'VALUE', 'DESCRIPTION')
+  } else if (wizFlow.value === 'loan_given') {
+    stepList.push('BORROWER_SELECTION', 'VALUE', 'DESCRIPTION')
+  } else if (wizFlow.value === 'loan_taken') {
+    stepList.push('LENDER_SELECTION', 'VALUE', 'DESCRIPTION')
+  }
+  
+  return stepList
 })
 
 const stepIndex = ref(0)
@@ -64,21 +93,23 @@ const prev = () => stepIndex.value--
 
 const valor = ref(0)
 const descricao = ref('')
-const compradorSelecionadoId = ref('')
+const compradorSelecionadoId = ref(props.isPrivate && currentMembro.value ? currentMembro.value.id : '')
 const borrowerId = ref<string | null>(null)
 const installments = ref(1)
-const participantesDivisao = ref<string[]>(props.membros.map(m => m.id))
-const isPrivate = ref(false)
+
+const membrosLocais = ref([...props.membros])
+const participantesDivisao = ref<string[]>(membrosLocais.value.map(m => m.id))
 const splitType = ref<'equal' | 'proportional'>('equal')
 
 const membrosSelecionadosSemRenda = computed(() =>
-  obterMembrosSelecionadosSemRenda(props.membros, participantesDivisao.value)
+  obterMembrosSelecionadosSemRenda(membrosLocais.value, participantesDivisao.value)
 )
 
 const proporcionalDisponivel = computed(() => membrosSelecionadosSemRenda.value.length === 0)
 
 const canAdvance = computed(() => {
   switch (currentState.value) {
+    case 'PAYMENT_METHOD_SELECTION': return !!wizPayment.value
     case 'BUYER_SELECTION':
     case 'LENDER_SELECTION': return !!compradorSelecionadoId.value
     case 'BORROWER_SELECTION': return !!borrowerId.value
@@ -89,11 +120,45 @@ const canAdvance = computed(() => {
   }
 })
 
-const selecionarFluxo = ({ flow, payment, cardOwner }: any) => {
+const selecionarFluxo = (flow: 'expense' | 'loan' | 'loan_given' | 'loan_taken') => {
   wizFlow.value = flow
+  
+  if (flow !== 'expense') {
+    wizPayment.value = 'pix'
+    wizCardOwner.value = null
+  } else {
+    wizPayment.value = null
+    wizCardOwner.value = null
+  }
+  
+  next()
+}
+
+const selecionarMetodoPagamento = ({ payment, cardOwner }: { payment: 'pix' | 'card', cardOwner: string | null }) => {
   wizPayment.value = payment
   wizCardOwner.value = cardOwner
   next()
+}
+
+const handleAdicionarExterno = (nome: string) => {
+  const idFicticio = `externo:${nome}`
+  if (!membrosLocais.value.some(m => m.id === idFicticio)) {
+    membrosLocais.value.push({
+      id: idFicticio,
+      nome: `${nome} (Externo)`
+    })
+  }
+  if (currentState.value === 'BORROWER_SELECTION') {
+    borrowerId.value = idFicticio
+    next()
+  } else if (currentState.value === 'BUYER_SELECTION' || currentState.value === 'LENDER_SELECTION') {
+    compradorSelecionadoId.value = idFicticio
+    next()
+  } else if (currentState.value === 'SPLIT') {
+    if (!participantesDivisao.value.includes(idFicticio)) {
+      participantesDivisao.value.push(idFicticio)
+    }
+  }
 }
 
 const handleGravar = async () => {
@@ -102,8 +167,12 @@ const handleGravar = async () => {
     const dValor = Dinheiro.deReais(Number(valor.value))
     let divisoes: DivisaoDeGasto[] = []
     
-    if (wizFlow.value === 'loan') {
-      divisoes = [new DivisaoDeGasto(borrowerId.value!, dValor)]
+    const backendFlow = (wizFlow.value === 'loan_given' || wizFlow.value === 'loan_taken') ? 'loan' : wizFlow.value!
+    const isLoanLike = backendFlow === 'loan'
+
+    if (isLoanLike) {
+      const finalBorrower = wizFlow.value === 'loan_taken' ? currentMembro.value!.id : borrowerId.value!
+      divisoes = [new DivisaoDeGasto(finalBorrower, dValor)]
     } else if (splitType.value === 'proportional') {
       if (!proporcionalDisponivel.value) {
         toast.show('Informe a renda de todos os participantes ou escolha a divisão igual.', 'error')
@@ -111,8 +180,8 @@ const handleGravar = async () => {
       }
 
       const participantesComRenda = participantesDivisao.value.map(id => {
-        const m = props.membros.find(memb => memb.id === id)
-        const renda = Number(m!.rendaCentavos)
+        const m = membrosLocais.value.find(memb => memb.id === id)
+        const renda = Number(m!.rendaCentavos || 0)
         return { id, renda }
       })
 
@@ -125,23 +194,32 @@ const handleGravar = async () => {
       )
 
       divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deCentavos(valoresDivisoes[id])))
+    } else if (props.isPrivate) {
+      divisoes = [new DivisaoDeGasto(currentMembro.value!.id, dValor)]
     } else {
       divisoes = participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
     }
 
+    const finalCompradorId = wizFlow.value === 'loan_given' ? currentMembro.value!.id :
+                             (props.isPrivate && wizFlow.value === 'expense') ? currentMembro.value!.id :
+                             (wizPayment.value === 'card' && wizCardOwner.value) ? cartoes.value.find(c => c.id === wizCardOwner.value)!.responsavelPadraoId :
+                             compradorSelecionadoId.value
+
+    const finalBorrowerId = wizFlow.value === 'loan_taken' ? currentMembro.value!.id : borrowerId.value
+
     await gastoService.lancarGastoOuEmprestimo({
-      flow: wizFlow.value!,
+      flow: backendFlow,
       paymentMethod: wizPayment.value!,
-      compradorId: compradorSelecionadoId.value,
+      compradorId: finalCompradorId,
       valor: Number(valor.value),
       descricao: descricao.value,
       divisoes,
       installments: installments.value,
       cardOwnerId: wizCardOwner.value,
-      borrowerId: borrowerId.value,
+      borrowerId: finalBorrowerId,
       periodo: obterPeriodoSelecionado(),
-      isPrivate: isPrivate.value,
-      splitMode: wizFlow.value === 'loan' ? 'custom' : splitType.value === 'proportional' ? 'income' : 'equal'
+      isPrivate: props.isPrivate,
+      splitMode: isLoanLike ? 'custom' : (props.isPrivate ? 'custom' : (splitType.value === 'proportional' ? 'income' : 'equal'))
     })
     emit('salvar')
   } catch (error: unknown) {
@@ -165,10 +243,11 @@ const handleGravar = async () => {
             Passo {{ stepIndex + 1 }} de {{ steps.length }}
           </p>
           <h2 class="mt-3 text-3xl font-display text-charcoal leading-tight tracking-tight">
-            <template v-if="currentState === 'FLOW_SELECTION'">Como você pagou?</template>
-            <template v-else-if="currentState === 'LENDER_SELECTION'">Quem está emprestando?</template>
+            <template v-if="currentState === 'FLOW_SELECTION'">O que deseja fazer?</template>
+            <template v-else-if="currentState === 'PAYMENT_METHOD_SELECTION'">Como você pagou?</template>
+            <template v-else-if="currentState === 'LENDER_SELECTION'">{{ wizFlow === 'loan_taken' ? 'Para quem você deve?' : 'Quem está emprestando?' }}</template>
             <template v-else-if="currentState === 'BUYER_SELECTION'">{{ wizPayment === 'card' ? 'Quem usou o cartão?' : 'Quem foi que pagou?' }}</template>
-            <template v-else-if="currentState === 'BORROWER_SELECTION'">Quem pegou emprestado?</template>
+            <template v-else-if="currentState === 'BORROWER_SELECTION'">{{ wizFlow === 'loan_given' ? 'Quem está te devendo?' : 'Quem pegou emprestado?' }}</template>
             <template v-else-if="currentState === 'VALUE'">Qual foi o valor total?</template>
             <template v-else-if="currentState === 'DESCRIPTION'">Qual a descrição?</template>
             <template v-else-if="currentState === 'SPLIT'">Com quem dividir?</template>
@@ -181,7 +260,7 @@ const handleGravar = async () => {
         <p class="text-[11px] font-semibold text-sky leading-tight">
           O crédito de reembolso será atribuído ao dono do cartão: 
           <strong>
-            {{ props.membros.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)!.responsavelPadraoId)!.nome }}
+            {{ membrosLocais.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)!.responsavelPadraoId)!.nome }}
           </strong>
         </p>
       </div>
@@ -205,69 +284,65 @@ const handleGravar = async () => {
       <div :key="currentState" class="w-full">
         <StepFlowSelection
           v-if="currentState === 'FLOW_SELECTION'"
+          :wiz-flow="wizFlow"
+          :is-private="props.isPrivate"
+          @select="selecionarFluxo"
+        />
+
+        <StepPaymentMethodSelection
+          v-else-if="currentState === 'PAYMENT_METHOD_SELECTION'"
           :cartoes="cartoes"
           :is-cartao-trancado="isCartaoTrancado"
-          :wiz-flow="wizFlow"
-          :wiz-payment="wizPayment"
-          :wiz-card-owner="wizCardOwner"
-          @select="selecionarFluxo"
+          :selected-card-owner-id="wizCardOwner"
+          :selected-payment-method="wizPayment"
+          @select="selecionarMetodoPagamento"
         />
 
         <StepMemberSelection
           v-else-if="currentState === 'BUYER_SELECTION' || currentState === 'LENDER_SELECTION'"
-          :membros="props.membros"
+          :membros="membrosLocais"
           :current-state="currentState"
           :selected-id="compradorSelecionadoId"
+          :is-private="props.isPrivate"
           @select="(id) => { compradorSelecionadoId = id; next() }"
+          @adicionar-externo="handleAdicionarExterno"
         />
 
         <StepMemberSelection
           v-else-if="currentState === 'BORROWER_SELECTION'"
-          :membros="props.membros"
+          :membros="membrosLocais"
           :current-state="currentState"
           :selected-id="borrowerId"
           :comprador-selecionado-id="compradorSelecionadoId"
+          :is-private="props.isPrivate"
           @select="(id) => { borrowerId = id; next() }"
+          @adicionar-externo="handleAdicionarExterno"
         />
 
         <StepValueInput
           v-else-if="currentState === 'VALUE'"
           v-model:valor="valor"
           v-model:installments="installments"
-          :wiz-flow="wizFlow"
+          :wiz-flow="(wizFlow === 'loan_given' || wizFlow === 'loan_taken') ? 'loan' : wizFlow"
           :wiz-payment="wizPayment"
         />
 
         <div v-else-if="currentState === 'DESCRIPTION'" class="space-y-6 animate-in fade-in duration-300">
           <StepDescriptionInput
             v-model:descricao="descricao"
-            :wiz-flow="wizFlow"
+            :wiz-flow="(wizFlow === 'loan_given' || wizFlow === 'loan_taken') ? 'loan' : wizFlow"
           />
-          <div class="flex items-center justify-between p-3.5 bg-stone/20 border border-stone/60 rounded-2xl transition-all duration-300">
-            <div class="space-y-0.5 text-left">
-              <span class="text-xs font-bold text-charcoal block">Gasto Privado</span>
-              <p class="text-[10px] text-graphite font-medium leading-normal max-w-[320px]">
-                Oculta somente a descrição para moradores não autorizados. Valor e impacto no saldo continuam compartilhados; o dono do cartão vê a descrição para conciliar a fatura.
-              </p>
-            </div>
-            <button 
-              type="button"
-              @click="isPrivate = !isPrivate" 
-              class="w-11 h-6 rounded-full p-0.5 border-none cursor-pointer transition-colors shrink-0" 
-              :class="isPrivate ? 'bg-meadow' : 'bg-stone'"
-            >
-              <div class="bg-white w-5 h-5 rounded-full shadow-subtle transform transition-transform" :class="isPrivate ? 'translate-x-5' : 'translate-x-0'" />
-            </button>
-          </div>
         </div>
 
         <StepSplitSelector
           v-else-if="currentState === 'SPLIT'"
           v-model:participantes-divisao="participantesDivisao"
           v-model:splitType="splitType"
-          :membros="props.membros"
+          :membros="membrosLocais"
           :comprador-selecionado-id="compradorSelecionadoId"
           :valor-total="Number(valor)"
+          :is-private="props.isPrivate"
+          @adicionar-externo="handleAdicionarExterno"
         />
       </div>
     </div>
@@ -282,7 +357,7 @@ const handleGravar = async () => {
         {{ stepIndex === 0 ? 'Cancelar' : 'Voltar' }}
       </Button>
       <Button
-        v-if="currentState !== 'FLOW_SELECTION' && currentState !== 'BUYER_SELECTION' && currentState !== 'LENDER_SELECTION' && currentState !== 'BORROWER_SELECTION'"
+        v-if="currentState !== 'FLOW_SELECTION' && currentState !== 'PAYMENT_METHOD_SELECTION' && currentState !== 'BUYER_SELECTION' && currentState !== 'LENDER_SELECTION' && currentState !== 'BORROWER_SELECTION'"
         class="flex-[2]"
         :disabled="!canAdvance || isSubmitting"
         :loading="isSubmitting"

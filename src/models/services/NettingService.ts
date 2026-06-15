@@ -20,6 +20,7 @@ export function calcularSaldosUnificados(
 
 
   gastos.forEach(g => {
+    if (g.isPrivate) return
     if (g.isLoan) {
       const valorParcela = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments)
       if (valorParcela.centavos > 0) {

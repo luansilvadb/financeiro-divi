@@ -112,33 +112,48 @@ export class LancamentoService {
     const divisao = g.divisoes?.[0];
     const valorTotal = Number(g.valorTotalCentavos || 0);
 
-    if (
-      valorTotal <= 0 ||
-      !details ||
-      details.fromMemberId === details.toMemberId ||
-      g.compradorId !== details.fromMemberId ||
-      !['pix', 'cash'].includes(details.method) ||
-      g.method !== details.method ||
-      g.isPrivate === true ||
-      g.installments !== 1 ||
-      g.totalInstallments !== 1 ||
-      Boolean(g.cardOwnerId) ||
-      Boolean(g.faturaId) ||
-      (g.splitMode !== undefined && g.splitMode !== SplitMode.CUSTOM) ||
-      g.divisoes?.length !== 1 ||
-      divisao?.membroId !== details.toMemberId ||
-      Number(divisao?.valorCentavos) !== valorTotal
-    ) {
+    if (!details) {
       throw new BadRequestException('Dados do acerto são inválidos.');
     }
 
+    const involvesExternal = details.fromMemberId.startsWith('externo:') || details.toMemberId.startsWith('externo:');
+
+    // Validações básicas de formato
+    const formatChecks = {
+      valorTotal: valorTotal <= 0,
+      sameMember: details.fromMemberId === details.toMemberId,
+      compradorId: g.compradorId !== details.fromMemberId,
+      methodPixCash: !['pix', 'cash'].includes(details.method),
+      methodMismatch: g.method !== details.method,
+      installments: g.installments !== 1,
+      totalInstallments: g.totalInstallments !== 1,
+      cardOwnerId: Boolean(g.cardOwnerId),
+      faturaId: Boolean(g.faturaId),
+      splitMode: g.splitMode !== undefined && g.splitMode !== SplitMode.CUSTOM,
+      divisoesLength: g.divisoes?.length !== 1,
+      divisaoMembroId: divisao?.membroId !== details.toMemberId,
+      divisaoValor: Number(divisao?.valorCentavos) !== valorTotal
+    };
+
+    if (Object.values(formatChecks).some(Boolean)) {
+      console.error('Acerto validation failed:', formatChecks, 'gastoDto:', g);
+      throw new BadRequestException('Dados do acerto são inválidos.');
+    }
+
+    // Regras de privacidade
+    if (involvesExternal && !g.isPrivate) {
+      throw new BadRequestException('Acertos com externos devem ser obrigatoriamente privados.');
+    }
+
+    // Validação de membros que pertencem à casa
+    const internalMembers = [details.fromMemberId, details.toMemberId].filter(id => !id.startsWith('externo:'));
     const memberCount = await tx.membroCasa.count({
       where: {
         tenantId,
-        id: { in: [details.fromMemberId, details.toMemberId] },
+        id: { in: internalMembers },
       },
     });
-    if (memberCount !== 2) {
+    if (memberCount !== internalMembers.length) {
       throw new BadRequestException('Os membros do acerto não pertencem a esta casa.');
     }
   }

@@ -13,9 +13,12 @@ interface Props {
   toName?: string
   suggestedValue: number
   loading?: boolean
+  subtitle?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  subtitle: 'Confirmar a transferência entre moradores para equilibrar os saldos da casa.'
+})
 const emit = defineEmits(['confirm', 'cancel'])
 
 const valorReal = ref(0)
@@ -63,7 +66,7 @@ defineExpose({
   <BottomSheet 
     :model-value="visible" 
     @update:model-value="val => { if (!val) emit('cancel') }"
-    subtitle="Confirmar a transferência entre moradores para equilibrar os saldos da casa."
+    :subtitle="props.subtitle"
   >
     <template #title>
       <h3 class="text-3xl font-display text-charcoal leading-tight">Registrar <span class="text-ember">Acerto</span></h3>

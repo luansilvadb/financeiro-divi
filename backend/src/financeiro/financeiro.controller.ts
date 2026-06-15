@@ -176,14 +176,17 @@ export class FinanceiroController {
       return gastos;
     }
 
-    return gastos.map((g: any) => {
-      if (g.isPrivate && g.compradorId !== membro.id && g.cardOwnerId !== membro.id) {
-        return {
-          ...g,
-          descricao: 'Gasto Pessoal',
-        };
+    return gastos.filter((g: any) => {
+      if (g.isPrivate) {
+        const envolvidoNaDivisao = Array.isArray(g.divisoes) && g.divisoes.some((d: any) => d.membroId === membro.id);
+        return (
+          g.compradorId === membro.id ||
+          g.cardOwnerId === membro.id ||
+          g.borrowerId === membro.id ||
+          envolvidoNaDivisao
+        );
       }
-      return g;
+      return true;
     });
   }
 

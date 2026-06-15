@@ -35,6 +35,7 @@ describe('NovoLancamentoWizard', () => {
       global: {
         stubs: {
           StepFlowSelection: componentStub('StepFlowSelection'),
+          StepPaymentMethodSelection: componentStub('StepPaymentMethodSelection'),
           StepMemberSelection: componentStub('StepMemberSelection'),
           StepValueInput: componentStub('StepValueInput'),
           StepDescriptionInput: componentStub('StepDescriptionInput'),
@@ -45,7 +46,11 @@ describe('NovoLancamentoWizard', () => {
     })
 
     wrapper.getComponent({ name: 'StepFlowSelection' }).vm.$emit('select', {
-      flow: 'expense', payment: 'pix', cardOwner: null,
+      flow: 'expense', isPrivate: false,
+    })
+    await nextTick()
+    wrapper.getComponent({ name: 'StepPaymentMethodSelection' }).vm.$emit('select', {
+      payment: 'pix', cardOwner: null,
     })
     await nextTick()
     wrapper.getComponent({ name: 'StepMemberSelection' }).vm.$emit('select', 'm1')

@@ -30,16 +30,23 @@ export class LancamentoService {
       : null
 
     if (dados.flow === 'settlement') {
+      if (!dados.settlementDetails) {
+        throw new Error('Dados do acerto são inválidos')
+      }
+
+      const involvesExternal = dados.settlementDetails.fromMemberId.startsWith('externo:') || dados.settlementDetails.toMemberId.startsWith('externo:')
+      const isPrivateInvalid = involvesExternal ? !dados.isPrivate : false
+
       if (
-        !dados.settlementDetails ||
         dados.settlementDetails.fromMemberId === dados.settlementDetails.toMemberId ||
         dados.valor <= 0 ||
         dados.paymentMethod === 'card' ||
         dados.installments !== 1 ||
-        dados.isPrivate === true
+        isPrivateInvalid
       ) {
         throw new Error('Dados do acerto são inválidos')
       }
+
       await this.gastoRepo.salvar(new Gasto({
         id: crypto.randomUUID(),
         faturaId: null,
@@ -55,7 +62,7 @@ export class LancamentoService {
         method: dados.paymentMethod,
         cardOwner: null,
         grupoParcelasId: null,
-        isPrivate: false,
+        isPrivate: dados.isPrivate || false,
         splitMode: 'custom'
       }))
       return

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import MembroAvatar from '../ui/MembroAvatar.vue'
-import { Check } from 'lucide-vue-next'
+import { Check, Plus } from 'lucide-vue-next'
 import { obterMembrosSelecionadosSemRenda } from '../../../shared/utils/rateio'
 import { formatarBRL } from '../../../shared/utils/formatarMoeda'
 
@@ -17,10 +17,11 @@ interface Props {
   compradorSelecionadoId: string
   splitType: 'equal' | 'proportional'
   valorTotal?: number
+  isPrivate?: boolean
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['update:participantesDivisao', 'update:splitType'])
+const emit = defineEmits(['update:participantesDivisao', 'update:splitType', 'adicionar-externo'])
 
 const internalParticipantes = computed({
   get: () => props.participantesDivisao,
@@ -80,6 +81,17 @@ const proporcoesMembros = computed(() => {
 
   return resultado
 })
+
+const mostrarInputExterno = ref(false)
+const nomeExterno = ref('')
+
+const handleAdicionarExterno = () => {
+  if (nomeExterno.value.trim()) {
+    emit('adicionar-externo', nomeExterno.value.trim())
+    nomeExterno.value = ''
+    mostrarInputExterno.value = false
+  }
+}
 </script>
 
 <template>
@@ -143,7 +155,7 @@ const proporcoesMembros = computed(() => {
         :class="[internalParticipantes.includes(m.id) ? 'bg-white shadow-subtle scale-[1.02]' : 'bg-parchment opacity-80']"
       >
         <MembroAvatar 
-          :nome="m.nome" 
+          :nome="m.nome.replace(' (Externo)', '')" 
           size="md" 
           :variant="internalParticipantes.includes(m.id) ? 'meadow' : 'sky'" 
         />
@@ -159,6 +171,43 @@ const proporcoesMembros = computed(() => {
         </span>
         <Check v-if="internalParticipantes.includes(m.id)" class="absolute top-2 right-2 w-3.5 h-3.5 text-meadow animate-in zoom-in-50 duration-300" aria-hidden="true" />
       </button>
+    </div>
+
+    <!-- Botão/Input para Adicionar Externo -->
+    <div v-if="isPrivate" class="pt-4 border-t border-stone/50">
+      <div v-if="!mostrarInputExterno">
+        <button 
+          type="button"
+          @click="mostrarInputExterno = true"
+          class="w-full py-3.5 rounded-xl border-2 border-dashed border-stone hover:border-ember/40 text-xs font-bold text-ash hover:text-ember transition-colors flex items-center justify-center gap-2 cursor-pointer bg-transparent"
+        >
+          <Plus class="w-4 h-4" />
+          Dividir com Pessoa Externa
+        </button>
+      </div>
+      <div v-else class="flex gap-2 items-center animate-in fade-in duration-200">
+        <input 
+          v-model="nomeExterno"
+          type="text" 
+          placeholder="Nome da pessoa externa"
+          class="flex-1 px-4 py-3.5 rounded-xl border border-stone bg-canvas text-xs font-bold text-charcoal focus:outline-none focus:border-ember"
+          @keyup.enter="handleAdicionarExterno"
+        />
+        <button 
+          type="button"
+          class="h-[46px] px-4 rounded-xl bg-midnight text-white text-[10px] uppercase font-bold tracking-wider cursor-pointer border-none"
+          @click="handleAdicionarExterno"
+        >
+          Adicionar
+        </button>
+        <button 
+          type="button"
+          class="h-[46px] px-3 rounded-xl bg-stone text-charcoal text-[10px] uppercase font-bold tracking-wider cursor-pointer border-none"
+          @click="mostrarInputExterno = false"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
   </div>
 </template>

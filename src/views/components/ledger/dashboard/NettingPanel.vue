@@ -6,12 +6,21 @@ import MembroAvatar from '../../ui/MembroAvatar.vue'
 import type { TransferenciaNetting } from '../../../../models/services/NettingService'
 import { formatarBRL } from '../../../../shared/utils/formatarMoeda'
 
-defineProps<{
+interface Props {
   nettingTransferencias: TransferenciaNetting[]
   faturaSelecionadaFechada: boolean
   getMembroNome: (id: string) => string
   isReadOnly?: boolean
-}>()
+  title?: string
+  subtitle?: string
+  iconVariant?: 'sunburst' | 'sky' | 'meadow' | 'ember' | 'midnight'
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  title: 'Pendências',
+  subtitle: 'Acertos de contas',
+  iconVariant: 'sunburst'
+})
 </script>
 
 <template>
@@ -19,13 +28,18 @@ defineProps<{
     <!-- Cabeçalho Padronizado -->
     <div class="py-5 px-5 sm:py-7 sm:px-6 border-b border-stone bg-parchment flex justify-between items-center">
       <div class="flex items-center gap-5">
-        <div class="w-11 h-11 rounded-xl bg-sunburst text-white flex items-center justify-center shadow-sm">
-          <Sparkles class="w-5 h-5" aria-hidden="true" />
+        <div :class="[
+          'w-11 h-11 rounded-xl text-white flex items-center justify-center shadow-sm',
+          `bg-${props.iconVariant}`
+        ]">
+          <slot name="icon">
+            <Sparkles class="w-5 h-5" aria-hidden="true" />
+          </slot>
         </div>
         <div>
-          <h2 class="font-bold text-lg leading-tight text-charcoal tracking-tight">Acertos Inteligentes</h2>
+          <h2 class="font-bold text-lg leading-tight text-charcoal tracking-tight">{{ props.title }}</h2>
           <p class="text-[11px] text-graphite uppercase tracking-widest mt-0.5 font-semibold">
-            Compensação otimizada de saldos
+            {{ props.subtitle }}
           </p>
         </div>
       </div>
