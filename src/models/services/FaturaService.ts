@@ -6,8 +6,31 @@ export class FaturaService {
   ) {}
 
   async fecharFatura(faturaId: string, responsavelId?: string, dataPagamentoBanco: Date = new Date()): Promise<void> {
-    const fatura = await this.faturaRepo.buscarPorId(faturaId)
-    await this.faturaRepo.salvar(fatura!.fechar({ responsavelId, dataPagamentoBanco }))
+    let fatura = await this.faturaRepo.buscarPorId(faturaId)
+    if (!fatura) {
+      const partes = faturaId.split('-')
+      if (partes.length >= 3) {
+        const ano = parseInt(partes.pop()!, 10)
+        const mes = parseInt(partes.pop()!, 10)
+        const cartaoId = partes.join('-')
+        fatura = new Fatura({
+          id: faturaId,
+          cartaoId,
+          periodo: { mes, ano },
+          responsavelId: responsavelId || 'virtual-member',
+          status: 'ABERTA'
+        })
+      } else {
+        fatura = new Fatura({
+          id: faturaId,
+          cartaoId: 'UNKNOWN',
+          periodo: { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() },
+          responsavelId: responsavelId || 'virtual-member',
+          status: 'ABERTA'
+        })
+      }
+    }
+    await this.faturaRepo.salvar(fatura.fechar({ responsavelId, dataPagamentoBanco }))
   }
 
   async reabrirFatura(faturaId: string): Promise<void> {

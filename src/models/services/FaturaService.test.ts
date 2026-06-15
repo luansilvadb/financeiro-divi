@@ -25,6 +25,21 @@ describe('FaturaService', () => {
     expect(faturaFechada.responsavelId).toBe('m2')
   })
 
+  it('deve fechar a fatura mesmo se ela nao existir no repositorio (fatura virtual)', async () => {
+    const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(null), salvar: vi.fn() }
+    const service = new FaturaService(faturaRepo as any)
+    
+    await service.fecharFatura('c1-5-2026', 'm2', new Date())
+
+    expect(faturaRepo.salvar).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'c1-5-2026',
+      cartaoId: 'c1',
+      periodo: { mes: 5, ano: 2026 },
+      responsavelId: 'm2',
+      status: 'FECHADA'
+    }))
+  })
+
   it('deve reabrir a fatura', async () => {
     const fatura = new Fatura({ id: 'f1', cartaoId: 'c1', periodo: { mes: 5, ano: 2026 }, responsavelId: 'm1', status: 'FECHADA', dataPagamentoBanco: new Date() })
     const faturaRepo = { buscarPorId: vi.fn().mockResolvedValue(fatura), salvar: vi.fn() }
