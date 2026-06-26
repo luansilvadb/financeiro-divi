@@ -142,6 +142,10 @@ Usuario --> LoginResponseDto : returns session
    - Apresentar o botão na tela de forma visualmente harmoniosa com o layout existente, utilizando estilos que casem com a identidade premium (usar classe de divisor "OU").
    - Configurar o callback do botão do Google para extrair a credencial e acionar `handleGoogleLogin` no viewmodel. Em caso de sucesso, emitir o evento `auth-success`.
 
+### Update Vite Configuration - Frontend
+1. Modificar `vite.config.ts`:
+   - Adicionar a propriedade `server.headers` configurando `'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'` para permitir a comunicação via `window.postMessage` do popup do Google OAuth.
+
 ## Norms
 1. **Mensagens amigáveis**: Retornar sempre exceções do NestJS (`UnauthorizedException`, `BadRequestException`) com mensagens claras e em português para que o usuário final entenda o erro (ex: e-mail duplicado, token expirado).
 2. **Uso de Transações**: Todas as ações que alteram o estado do usuário e sua vinculação à casa devem ser transacionadas via Prisma transaction (`$transaction`) para evitar dados parciais em caso de falha.
@@ -153,3 +157,4 @@ Usuario --> LoginResponseDto : returns session
 3. **Segurança de Login Local**: Impedir que logins clássicos passem se o `passwordHash` for nulo, garantindo que contas federadas fiquem protegidas de ataques de força bruta no fluxo de senhas comuns.
 4. **Isolamento de Erros**: O SDK do Google Identity Services no frontend deve ser carregado de forma assíncrona (`async defer`) para não atrasar a renderização da tela principal caso os servidores do Google estejam lentos.
 5. **Configuração de Origens Autorizadas**: Garantir que as origens cliente (ex: `http://localhost:5173` no desenvolvimento e o domínio principal em produção) estejam registradas no painel "Origens autorizadas do JavaScript" da credencial de Client ID no Google Cloud Console para evitar rejeição de chamadas com erro de origem não autorizada (HTTP 403).APPLE_CLIENT_ID` no frontend e `APPLE_CLIENT_ID` no backend estejam configurados com o mesmo Service ID correspondente no painel do Apple Developer Console para evitar erros de login do tipo `invalid_client`.
+6. **Cross-Origin Opener Policy**: O servidor do frontend (Vite) deve enviar o cabeçalho `Cross-Origin-Opener-Policy: same-origin-allow-popups`. Caso contrário, a comunicação `window.postMessage` do popup do Google será bloqueada pelo navegador, causando falha silenciosa no login.
