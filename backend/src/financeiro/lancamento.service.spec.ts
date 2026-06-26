@@ -5,6 +5,7 @@ import { FinanceiroGateway } from './financeiro.gateway';
 import { AuditLogService } from './audit-log.service';
 import { ProductValidationService } from './product-validation.service';
 import { SplitMode, ValidationEventType } from '@prisma/client';
+import { PermissaoService } from './permissao.service';
 
 describe('LancamentoService', () => {
   let service: LancamentoService;
@@ -43,6 +44,9 @@ describe('LancamentoService', () => {
   const mockProductValidation = {
     registrarMarco: jest.fn().mockResolvedValue(undefined),
   };
+  const mockPermissao = {
+    validarFeatureFlag: jest.fn().mockResolvedValue(true),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +56,7 @@ describe('LancamentoService', () => {
         { provide: FinanceiroGateway, useValue: mockGateway },
         { provide: AuditLogService, useValue: mockAuditLog },
         { provide: ProductValidationService, useValue: mockProductValidation },
+        { provide: PermissaoService, useValue: mockPermissao },
       ],
     }).compile();
 
