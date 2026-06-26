@@ -46,6 +46,17 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+
+  // Redireciona os assets estáticos do Swagger para CDN (corrige 404 no Vercel)
+  const cdnUrl = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5';
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/api-docs/swagger-ui-bundle.js', (_req: any, res: any) => res.redirect(`${cdnUrl}/swagger-ui-bundle.js`));
+  httpAdapter.get('/api-docs/swagger-ui-standalone-preset.js', (_req: any, res: any) => res.redirect(`${cdnUrl}/swagger-ui-standalone-preset.js`));
+  httpAdapter.get('/api-docs/swagger-ui.css', (_req: any, res: any) => res.redirect(`${cdnUrl}/swagger-ui.css`));
+  httpAdapter.get('/api-docs/favicon-32x32.png', (_req: any, res: any) => res.redirect(`${cdnUrl}/favicon-32x32.png`));
+  httpAdapter.get('/api-docs/favicon-16x16.png', (_req: any, res: any) => res.redirect(`${cdnUrl}/favicon-16x16.png`));
+
+
   SwaggerModule.setup('api-docs', app, document, {
     customCssUrl:
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
