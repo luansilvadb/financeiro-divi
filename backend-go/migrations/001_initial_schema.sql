@@ -1,16 +1,27 @@
 -- Migration 001: Initial Schema (PostgreSQL)
 -- Equivalent to Prisma schema: backend/prisma/schema.prisma
+--
+-- All statements are written to be idempotent so this migration can safely run
+-- after GORM AutoMigrate (which creates the same tables).  This allows
+-- migration 002 (which adds the faturas UNIQUE constraint needed for ON CONFLICT
+-- upserts) to execute without being blocked by a failed migration 001.
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE tenants (
+-- Enum types: CREATE TYPE lacks IF NOT EXISTS, so we use DO blocks.
+DO $$ BEGIN CREATE TYPE role AS ENUM ('ADMIN', 'MORADOR', 'VISUALIZADOR'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE split_mode AS ENUM ('EQUAL', 'INCOME', 'CUSTOM'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE validation_event_type AS ENUM ('TENANT_CREATED','SECOND_LINKED_MEMBER_JOINED','FIRST_EXPENSE_CREATED','PERIOD_CLOSED','FIRST_SETTLEMENT_RECORDED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Tables (IF NOT EXISTS keeps them idempotent)
+CREATE TABLE IF NOT EXISTS tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     invite_code TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT NOT NULL UNIQUE,
     nome TEXT NOT NULL,
@@ -19,9 +30,7 @@ CREATE TABLE usuarios (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TYPE role AS ENUM ('ADMIN', 'MORADOR', 'VISUALIZADOR');
-
-CREATE TABLE membros_casa (
+CREATE TABLE IF NOT EXISTS membros_casa (
     id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     nome TEXT NOT NULL,
@@ -34,10 +43,10 @@ CREATE TABLE membros_casa (
     PRIMARY KEY (id, tenant_id)
 );
 
-CREATE INDEX idx_membros_tenant ON membros_casa(tenant_id);
-CREATE INDEX idx_membros_user ON membros_casa(user_id);
+CREATE INDEX IF NOT EXISTS idx_membros_tenant ON membros_casa(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_membros_user ON membros_casa(user_id);
 
-CREATE TABLE cartoes (
+CREATE TABLE IF NOT EXISTS cartoes (
     id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     nome TEXT NOT NULL,
@@ -48,9 +57,9 @@ CREATE TABLE cartoes (
     FOREIGN KEY (responsavel_padrao_id, tenant_id) REFERENCES membros_casa(id, tenant_id) ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_cartoes_tenant ON cartoes(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_cartoes_tenant ON cartoes(tenant_id);
 
-CREATE TABLE faturas (
+CREATE TABLE IF NOT EXISTS faturas (
     id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     cartao_id UUID NOT NULL,
@@ -63,12 +72,10 @@ CREATE TABLE faturas (
     PRIMARY KEY (id, tenant_id)
 );
 
-CREATE INDEX idx_faturas_tenant ON faturas(tenant_id);
-CREATE INDEX idx_faturas_cartao ON faturas(cartao_id);
+CREATE INDEX IF NOT EXISTS idx_faturas_tenant ON faturas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_faturas_cartao ON faturas(cartao_id);
 
-CREATE TYPE split_mode AS ENUM ('EQUAL', 'INCOME', 'CUSTOM');
-
-CREATE TABLE gastos (
+CREATE TABLE IF NOT EXISTS gastos (
     id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     fatura_id UUID,
@@ -91,10 +98,10 @@ CREATE TABLE gastos (
     PRIMARY KEY (id, tenant_id)
 );
 
-CREATE INDEX idx_gastos_tenant ON gastos(tenant_id);
-CREATE INDEX idx_gastos_fatura ON gastos(fatura_id);
+CREATE INDEX IF NOT EXISTS idx_gastos_tenant ON gastos(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_gastos_fatura ON gastos(fatura_id);
 
-CREATE TABLE divisoes_gasto (
+CREATE TABLE IF NOT EXISTS divisoes_gasto (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     gasto_id UUID NOT NULL,
@@ -103,9 +110,9 @@ CREATE TABLE divisoes_gasto (
     FOREIGN KEY (gasto_id, tenant_id) REFERENCES gastos(id, tenant_id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_divisoes_tenant ON divisoes_gasto(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_divisoes_tenant ON divisoes_gasto(tenant_id);
 
-CREATE TABLE contas_fixas (
+CREATE TABLE IF NOT EXISTS contas_fixas (
     id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -116,9 +123,9 @@ CREATE TABLE contas_fixas (
     PRIMARY KEY (id, tenant_id)
 );
 
-CREATE INDEX idx_contas_fixas_tenant ON contas_fixas(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_contas_fixas_tenant ON contas_fixas(tenant_id);
 
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     membro_id UUID NOT NULL,
@@ -127,17 +134,9 @@ CREATE TABLE audit_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_audit_logs_tenant ON audit_logs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant ON audit_logs(tenant_id);
 
-CREATE TYPE validation_event_type AS ENUM (
-    'TENANT_CREATED',
-    'SECOND_LINKED_MEMBER_JOINED',
-    'FIRST_EXPENSE_CREATED',
-    'PERIOD_CLOSED',
-    'FIRST_SETTLEMENT_RECORDED'
-);
-
-CREATE TABLE product_validation_events (
+CREATE TABLE IF NOT EXISTS product_validation_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     type validation_event_type NOT NULL,
@@ -148,9 +147,9 @@ CREATE TABLE product_validation_events (
     UNIQUE (tenant_id, type, dedupe_key)
 );
 
-CREATE INDEX idx_validation_tenant ON product_validation_events(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_validation_tenant ON product_validation_events(tenant_id);
 
-CREATE TABLE password_reset_tokens (
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     token TEXT NOT NULL UNIQUE,
     user_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -158,4 +157,4 @@ CREATE TABLE password_reset_tokens (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token);

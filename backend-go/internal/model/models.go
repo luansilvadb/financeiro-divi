@@ -76,9 +76,9 @@ func (Cartao) TableName() string { return "cartoes" }
 type Fatura struct {
 	ID                 string     `gorm:"type:uuid;primaryKey" json:"id"`
 	TenantID           string     `gorm:"column:tenant_id;type:uuid;primaryKey" json:"tenantId"`
-	CartaoID           string     `gorm:"column:cartao_id;not null;uniqueIndex:idx_fatura_unica" json:"cartaoId"`
-	Mes                int        `gorm:"not null;uniqueIndex:idx_fatura_unica" json:"mes"`
-	Ano                int        `gorm:"not null;uniqueIndex:idx_fatura_unica" json:"ano"`
+	CartaoID           string     `gorm:"column:cartao_id;not null" json:"cartaoId"`
+	Mes                int        `gorm:"not null" json:"mes"`
+	Ano                int        `gorm:"not null" json:"ano"`
 	ResponsavelID      string     `gorm:"column:responsavel_id;not null" json:"responsavelId"`
 	Status             string     `gorm:"not null" json:"status"`
 	DataPagamentoBanco *time.Time `gorm:"column:data_pagamento_banco" json:"dataPagamentoBanco,omitempty"`

@@ -1,7 +1,7 @@
 import type { IGastoRepository } from '../repositories/IGastoRepository'
 import type { IFaturaRepository } from '../repositories/IFaturaRepository'
 import type { ICartaoRepository } from '../repositories/ICartaoRepository'
-import { Gasto, type PaymentMethod, type SplitMode } from '../entities/Gasto'
+import { Gasto, type GastoProps, type PaymentMethod, type SplitMode } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import type { Fatura } from '../entities/Fatura'
@@ -111,10 +111,7 @@ export class GastoService {
   }
 
   private async relancarGasto(original: Gasto, idsParaExcluir: string[], dados: AtualizarGastoDados): Promise<void> {
-    const periodo = original.faturaId
-      ? (await this.faturaRepo.buscarPorId(original.faturaId))?.periodo
-      : { mes: original.createdAt.getMonth() + 1, ano: original.createdAt.getFullYear() }
-
+    const periodo = await this.resolverPeriodoDoGasto(original)
     if (!periodo) throw new Error(`Fatura ou período original não encontrado para o gasto ${original.id}`)
 
     // Create replacement gasto(s) FIRST. If this fails, nothing is lost.
@@ -148,7 +145,8 @@ export class GastoService {
     } catch (deleteErr) {
       throw new Error(
         `Gasto recriado com sucesso, mas falha ao excluir ${idsParaExcluir.length} gasto(s) original(is): ${(deleteErr as Error).message}. ` +
-        `Recarregue a página para evitar duplicatas. IDs: ${idsParaExcluir.join(', ')}`
+        `Recarregue a página para evitar duplicatas. IDs: ${idsParaExcluir.join(', ')}`,
+        { cause: deleteErr }
       )
     }
   }
@@ -186,42 +184,16 @@ export class GastoService {
       ))
     }
 
-    if (faturasParaSalvar.length > 0) await this.faturaRepo.salvarMuitas(faturasParaSalvar)
+    if (faturasParaSalvar.length > 0) {
+      await this.faturaRepo.salvarMuitas(faturasParaSalvar)
 
-    // Resolve any composite fatura IDs (cartaoId-mes-ano) to real backend-generated
-    // UUIDs. Build the lookup map from already-loaded faturas plus newly-saved ones
-    // to avoid a redundant full listarTodas() call.
-    const todasFaturas = faturasPersistidas.concat(faturasParaSalvar)
-    const idRealPorComposto = new Map<string, string>()
-    for (const f of todasFaturas) {
-      const chave = `${f.cartaoId}-${f.periodo.mes}-${f.periodo.ano}`
-      idRealPorComposto.set(chave, f.id)
-    }
-    // Composite IDs have the format: <cartao-uuid>-<mes>-<ano> (3 segments, last two are numbers).
-    const compositoPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{1,2}-\d{4}$/
-    for (const g of gastosParaSalvar) {
-      if (g.faturaId && compositoPattern.test(g.faturaId)) {
-        const realId = idRealPorComposto.get(g.faturaId)
-        if (realId) {
-          ;(g as { faturaId: string | null }).faturaId = realId
-        }
-      }
+      // Re-fetch faturas after saving to resolve composite IDs (cartaoId-mes-ano) to
+      // real backend-generated UUIDs. Using in-memory objects from faturasParaSalvar
+      // would keep frontend-generated composite IDs that don't match the DB rows.
+      await this.remapearIdsCompostosDeFatura(gastosParaSalvar)
     }
 
-    if (gastosParaSalvar.length > 0) {
-      const erros: { id: string; message: string }[] = []
-      for (const g of gastosParaSalvar) {
-        try {
-          await this.gastoRepo.atualizar(g.id, g)
-        } catch (e) {
-          erros.push({ id: g.id, message: (e as Error).message })
-        }
-      }
-      if (erros.length > 0) {
-        const detalhes = erros.map(e => `${e.id}: ${e.message}`).join('; ')
-        throw new Error(`Falha ao atualizar ${erros.length} de ${gastosParaSalvar.length} parcelas: ${detalhes}`)
-      }
-    }
+    await this.atualizarGastosEmLote(gastosParaSalvar)
   }
 
   private async atualizarGastoIndividual(
@@ -232,9 +204,7 @@ export class GastoService {
     let faturaId: string | null = original.faturaId
 
     if (cartaoResolvido.cartaoId) {
-      const periodo = original.faturaId
-        ? (await this.faturaRepo.buscarPorId(original.faturaId))?.periodo
-        : { mes: original.createdAt.getMonth() + 1, ano: original.createdAt.getFullYear() }
+      const periodo = await this.resolverPeriodoDoGasto(original)
 
       if (periodo) {
         const novaFatura = await this.faturaRepo.assegurarObterOuCriarFatura(
@@ -260,6 +230,18 @@ export class GastoService {
     await this.gastoRepo.atualizar(atualizado.id, atualizado)
   }
 
+  private gastoToProps(g: Gasto): GastoProps {
+    return {
+      id: g.id, faturaId: g.faturaId, descricao: g.descricao,
+      valorTotal: g.valorTotal, compradorId: g.compradorId, divisoes: g.divisoes,
+      installments: g.installments, totalInstallments: g.totalInstallments,
+      isLoan: g.isLoan, borrowerId: g.borrowerId, recurringBillId: g.recurringBillId,
+      isSettlement: g.isSettlement, settlementDetails: g.settlementDetails,
+      method: g.method, cardOwner: g.cardOwner, grupoParcelasId: g.grupoParcelasId,
+      isPrivate: g.isPrivate, splitMode: g.splitMode,
+    }
+  }
+
   private criarGastoAtualizado(
     original: Gasto,
     dados: AtualizarGastoDados,
@@ -269,7 +251,7 @@ export class GastoService {
     totalInstallments: number
   ): Gasto {
     return new Gasto({
-      id: original.id,
+      ...this.gastoToProps(original),
       faturaId,
       descricao: dados.descricao,
       valorTotal: dados.valorTotal,
@@ -279,14 +261,6 @@ export class GastoService {
       cardOwner,
       installments,
       totalInstallments,
-      grupoParcelasId: original.grupoParcelasId,
-      isLoan: original.isLoan,
-      borrowerId: original.borrowerId,
-      recurringBillId: original.recurringBillId,
-      isSettlement: original.isSettlement,
-      settlementDetails: original.settlementDetails,
-      isPrivate: original.isPrivate,
-      splitMode: original.splitMode
     })
   }
 
@@ -301,26 +275,61 @@ export class GastoService {
     ))
   }
 
+  // ── Helpers extraídos ──────────────────────────────────────────
+
+  /**
+   * Resolve o período (mês/ano) de um gasto a partir da fatura associada,
+   * ou pela data de criação como fallback.
+   */
+  private async resolverPeriodoDoGasto(original: Gasto): Promise<{ mes: number; ano: number } | undefined> {
+    if (original.faturaId) {
+      const fatura = await this.faturaRepo.buscarPorId(original.faturaId)
+      return fatura?.periodo
+    }
+    return { mes: original.createdAt.getMonth() + 1, ano: original.createdAt.getFullYear() }
+  }
+
+  /**
+   * Substitui IDs compostos de fatura (cartaoId-mes-ano) pelos UUIDs reais
+   * gerados pelo backend após a persistência.
+   */
+  private async remapearIdsCompostosDeFatura(gastos: Gasto[]): Promise<void> {
+    const faturasReais = await this.faturaRepo.listarTodas()
+    const idRealPorComposto = new Map<string, string>()
+    for (const f of faturasReais) {
+      const chave = `${f.cartaoId}-${f.periodo.mes}-${f.periodo.ano}`
+      idRealPorComposto.set(chave, f.id)
+    }
+    // Composite IDs have the format: <cartao-uuid>-<mes>-<ano> (3 segments, last two are numbers).
+    const compositoPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{1,2}-\d{4}$/
+    for (const g of gastos) {
+      if (g.faturaId && compositoPattern.test(g.faturaId)) {
+        const realId = idRealPorComposto.get(g.faturaId)
+        if (realId) {
+          ;(g as { faturaId: string | null }).faturaId = realId
+        }
+      }
+    }
+  }
+
+  /** Atualiza múltiplos gastos individualmente, acumulando erros. */
+  private async atualizarGastosEmLote(gastos: Gasto[]): Promise<void> {
+    if (gastos.length === 0) return
+    const erros: { id: string; message: string }[] = []
+    for (const g of gastos) {
+      try {
+        await this.gastoRepo.atualizar(g.id, g)
+      } catch (e) {
+        erros.push({ id: g.id, message: (e as Error).message })
+      }
+    }
+    if (erros.length > 0) {
+      const detalhes = erros.map(e => `${e.id}: ${e.message}`).join('; ')
+      throw new Error(`Falha ao atualizar ${erros.length} de ${gastos.length} parcelas: ${detalhes}`)
+    }
+  }
+
   private desassociarContaFixa(g: Gasto): Gasto {
-    return new Gasto({
-      id: g.id,
-      faturaId: g.faturaId,
-      descricao: g.descricao,
-      valorTotal: g.valorTotal,
-      compradorId: g.compradorId,
-      divisoes: g.divisoes,
-      installments: g.installments,
-      totalInstallments: g.totalInstallments,
-      isLoan: g.isLoan,
-      borrowerId: g.borrowerId,
-      recurringBillId: null,
-      isSettlement: g.isSettlement,
-      settlementDetails: g.settlementDetails,
-      method: g.method,
-      cardOwner: g.cardOwner,
-      grupoParcelasId: g.grupoParcelasId,
-      isPrivate: g.isPrivate,
-      splitMode: g.splitMode
-    })
+    return new Gasto({ ...this.gastoToProps(g), recurringBillId: null })
   }
 }

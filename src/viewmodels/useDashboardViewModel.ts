@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 import { Fatura } from '../models/entities/Fatura'
 import { Cartao } from '../models/entities/Cartao'
-import { HttpAuditLogRepository } from '../models/repositories/http/HttpAuditLogRepository'
 import { useCartoesEFaturas } from './useCartoesEFaturas'
 import { useContasFixas } from './useContasFixas'
 import { useDashboardUIState } from './useDashboardUIState'
@@ -11,7 +10,7 @@ import { valorParcelaAtual } from '../models/entities/ParcelaCalculator'
 import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
 import { useToast } from '../composables/useToast'
 import { gastoPertenceAoPeriodo } from '../shared/utils/gastoPeriodo'
-import { gastoService, faturaService } from '../shared/container'
+import { gastoService, faturaService, auditLogRepository } from '../shared/container'
 import { Dinheiro } from '../models/entities/Dinheiro'
 import { DivisaoDeGasto } from '../models/entities/DivisaoDeGasto'
 import type { Gasto } from '../models/entities/Gasto'
@@ -38,16 +37,51 @@ export interface DashboardProps { membros: { id: string; nome: string }[]; fatur
 const isGastoValidoParaSoma = (gasto: Gasto) => !gasto.id.startsWith('audit-settlement-') && (!gasto.isSettlement || gasto.descricao.includes('Saldo Inicial'));
 const isGastoComum = (gasto: Gasto) => !gasto.isSettlement;
 
+/** Retorna o mês/ano seguinte para abertura de novas faturas. */
+const proximoPeriodo = (mes: number, ano: number): { mes: number; ano: number } =>
+  mes === 12 ? { mes: 1, ano: ano + 1 } : { mes: mes + 1, ano };
+
+/**
+ * Estorna um lançamento, tratando separadamente acertos (settlements)
+ * que precisam de reabertura de fatura em vez de exclusão direta.
+ */
+async function estornarLancamento(
+  item: Gasto,
+  toast: ReturnType<typeof useToast>,
+  gastoSvc: typeof gastoService,
+  cartoesEFaturas: ReturnType<typeof useCartoesEFaturas>,
+): Promise<void> {
+  // Settlements não podem ser excluídos diretamente — reabre a fatura.
+  if (item.id.startsWith('audit-settlement-')) {
+    if (item.faturaId) {
+      await cartoesEFaturas.reabrirFatura(item.faturaId)
+      toast.show('Período reaberto para estorno do acerto.', 'success')
+      return
+    }
+    toast.show('Acertos não possuem fatura associada. Exclua o lançamento diretamente ou reabra o período manualmente.', 'error')
+    return
+  }
+
+  await gastoSvc.excluirGasto(item.id)
+  await cartoesEFaturas.inicializar()
+  toast.show('Estornado', 'success')
+}
+
 export const useDashboardViewModel = (
   props: DashboardProps,
   emit: (event: 'periodoStatusChanged', isLocked: boolean) => void
 ) => {
   const ui = useDashboardUIState()
-  const auditLogRepo = new HttpAuditLogRepository()
   const toast = useToast()
   const cartoesEFaturas = useCartoesEFaturas()
   const contasFixas = useContasFixas()
   const periodosState = useDashboardPeriodos(() => props.faturasAbertas, () => props.faturasFechadas, () => props.cartoes, () => props.membros, emit)
+
+  const reinicializarAposErro = async (contexto: string) => {
+    try { await cartoesEFaturas.inicializar() } catch {
+      console.error(`Falha ao reinicializar após ${contexto}`)
+    }
+  }
   
   const periodoSelecionado = periodosState.periodoSelecionado
   const todosGastos = cartoesEFaturas.gastos
@@ -135,44 +169,34 @@ export const useDashboardViewModel = (
     
     confirmarNovoPeriodo: async () => {
       const { mes, ano } = periodoSelecionado.value
+      const faturasAbertas = periodosState.faturasPeriodoSelecionado.value.filter(f => f.status === 'ABERTA')
       try {
-        await Promise.all(periodosState.faturasPeriodoSelecionado.value.filter(f => f.status === 'ABERTA').map(f => faturaService.fecharFatura(f.id, f.responsavelId, new Date())))
-        await faturaService.assegurarFaturasAbertas(cartoesEFaturas.cartoes.value, mes === 12 ? 1 : mes + 1, mes === 12 ? ano + 1 : ano)
+        await Promise.all(faturasAbertas.map(f => faturaService.fecharFatura(f.id, f.responsavelId, new Date())))
+        const prox = proximoPeriodo(mes, ano)
+        await faturaService.assegurarFaturasAbertas(cartoesEFaturas.cartoes.value, prox.mes, prox.ano)
         await cartoesEFaturas.inicializar()
         ui.fecharModal('novo-periodo')
         toast.show(`Mês de ${NOMES_MESES[mes - 1]} encerrado!`, 'success')
       } catch (e) {
         console.error('Erro ao fechar período:', e)
-        try { await cartoesEFaturas.inicializar() } catch { console.error('Falha ao reinicializar após erro de fechamento de período') }
+        await reinicializarAposErro('erro de fechamento de período')
         toast.show('Erro ao encerrar o mês. Algumas faturas podem não ter sido fechadas. Tente novamente.', 'error')
       }
     },
     
-    confirmarEstorno: async () => { 
+    confirmarEstorno: async () => {
       const i = ui.itemParaEstornar.value!
       const t = ui.itemTypeParaEstornar.value
       ui.fecharModal('confirmacao-estorno')
       ui.itemParaEstornar.value = null
-      
+
       if (t === 'Lançamento') {
-        if (i.id.startsWith('audit-settlement-')) {
-          const fid = (i as Gasto).faturaId
-          if (fid) {
-              await cartoesEFaturas.reabrirFatura(fid)
-              toast.show('Período reaberto para estorno do acerto.', 'success')
-              return
-          }
-          toast.show('Acertos não possuem fatura associada. Exclua o lançamento diretamente ou reabra o período manualmente.', 'error')
-          return
-        }
-        await gastoService.excluirGasto(i.id)
-        await cartoesEFaturas.inicializar()
-        toast.show('Estornado', 'success')
-      } else { 
+        await estornarLancamento(i as Gasto, toast, gastoService, cartoesEFaturas)
+      } else {
         await contasFixas.excluirContaFixa(i.id)
         ui.fecharModal('configurar-conta-fixa')
-        toast.show('Conta removida', 'success') 
-      } 
+        toast.show('Conta removida', 'success')
+      }
     },
     
     estornarContaFixa: (b: ContaFixa) => {
@@ -186,7 +210,7 @@ export const useDashboardViewModel = (
     
 
     reabrirPeriodoSelecionado: async () => {
-        const { mes, ano } = periodoSelecionado.value
+        const { mes } = periodoSelecionado.value
         try {
             await Promise.all(
                 periodosState.faturasPeriodoSelecionado.value
@@ -197,7 +221,7 @@ export const useDashboardViewModel = (
             toast.show(`Mês de ${NOMES_MESES[mes - 1]} reaberto!`, 'success')
         } catch (e) {
             console.error('Erro ao reabrir período:', e)
-            try { await cartoesEFaturas.inicializar() } catch { console.error('Falha ao reinicializar após erro de fechamento de período') }
+            await reinicializarAposErro('erro de reabertura de período')
             toast.show('Erro ao reabrir o mês. Algumas faturas podem não ter sido reabertas.', 'error')
         }
     },
@@ -209,8 +233,8 @@ export const useDashboardViewModel = (
       ui.abrirModal('audit-logs')
       
       try {
-        ui.auditLogs.value = await auditLogRepo.listarTodos()
-      } catch (error) {
+        ui.auditLogs.value = await auditLogRepository.listarTodos()
+      } catch {
         toast.show('Erro ao carregar histórico de atividades.', 'error')
         ui.auditLogs.value = []
       } finally {

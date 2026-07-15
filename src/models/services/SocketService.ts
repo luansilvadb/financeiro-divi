@@ -15,7 +15,7 @@ interface WSMessage {
 }
 
 /** Tipos de mensagens WebSocket emitidas pelo backend. */
-export type WSEventType =
+type WSEventType =
   | 'EXPENSE_CREATED'
   | 'EXPENSE_UPDATED'
   | 'EXPENSE_DELETED'
@@ -31,7 +31,7 @@ export type WSEventType =
   | 'PERMISSIONS_UPDATED'
 
 /** Tipos de eventos internos do frontend disparados pelo SocketService. */
-export type AppEventType =
+type AppEventType =
   | 'gastos_alterados'
   | 'cartoes_alterados'
   | 'faturas_alteradas'
@@ -267,16 +267,7 @@ export class SocketService {
         logger.info('[SocketService] Conexão fechada')
         this.ws = null
         if (this.shouldReconnect) {
-          if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
-            logger.error(
-              `[SocketService] Limite de ${this.MAX_RECONNECT_ATTEMPTS} tentativas de reconexão atingido. Parando.`,
-            )
-            this.shouldReconnect = false
-            return
-          }
-          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), this.MAX_RECONNECT_DELAY)
-          this.reconnectAttempts++
-          this.reconnectTimer = setTimeout(() => this.conectarWebSocket(), delay)
+          this.scheduleReconnect()
         }
       }
 
@@ -286,6 +277,20 @@ export class SocketService {
     } catch (err) {
       logger.error('[SocketService] Falha ao conectar:', err)
     }
+  }
+
+  /** Agenda reconexão com backoff exponencial até o limite de tentativas. */
+  private scheduleReconnect(): void {
+    if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
+      logger.error(
+        `[SocketService] Limite de ${this.MAX_RECONNECT_ATTEMPTS} tentativas de reconexão atingido. Parando.`,
+      )
+      this.shouldReconnect = false
+      return
+    }
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), this.MAX_RECONNECT_DELAY)
+    this.reconnectAttempts++
+    this.reconnectTimer = setTimeout(() => this.conectarWebSocket(), delay)
   }
 
   /**

@@ -35,3 +35,22 @@ coverage.*
 # Superpowers Brainstorming
 .superpowers/
 .worktrees/
+
+# Internal tooling
+.goal-complete
+.gocache/
+
+# Agent / analysis outputs
+findings.json
+cross-file-trace-findings.json
+skills-lock.json
+
+# Playwright MCP (browser automation logs)
+.playwright-mcp/
+
+# Editor / agent local config
+.claude/
+.agents/
+**/.codewhale/*
+!**/.codewhale/constitution.json
+.deepseek/

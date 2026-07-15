@@ -217,8 +217,8 @@ func (r *GormFaturaRepo) CreateOrUpdate(ctx context.Context, tx *gorm.DB, f *mod
 		tx = r.db
 	}
 	return tx.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "cartao_id"}, {Name: "mes"}, {Name: "ano"}},
-		DoUpdates: clause.AssignmentColumns([]string{"status", "responsavel_id", "data_pagamento_banco"}),
+		OnConstraint: "faturas_tenant_cartao_mes_ano_key",
+		DoUpdates:  clause.AssignmentColumns([]string{"status", "responsavel_id", "data_pagamento_banco"}),
 	}).Create(f).Error
 }
 

@@ -6,8 +6,8 @@
 // constraints, creating indexes). RunSQLMigrations is available for manual or
 // CI-driven execution of those raw SQL files.
 //
-// Known limitation: splitSQL does not handle PostgreSQL dollar-quoting ($$).
-// Avoid using dollar-quoted strings in migration SQL files.
+// splitSQL handles PostgreSQL dollar-quoting ($$) so DO blocks and function
+// bodies in migration SQL files are kept intact as single statements.
 package database
 
 import (
@@ -60,14 +60,20 @@ func splitSQL(sql string) []string {
 	var result []string
 	var current strings.Builder
 	inString := false
+	inDollar := false
 
-	for _, ch := range sql {
-		switch ch {
-		case '\'':
-			inString = !inString
+	for i, ch := range sql {
+		switch {
+		case ch == '$' && !inString && i+1 < len(sql) && sql[i+1] == '$':
+			inDollar = !inDollar
 			current.WriteRune(ch)
-		case ';':
-			if !inString {
+		case ch == '\'':
+			if !inDollar {
+				inString = !inString
+			}
+			current.WriteRune(ch)
+		case ch == ';':
+			if !inString && !inDollar {
 				result = append(result, current.String())
 				current.Reset()
 			} else {

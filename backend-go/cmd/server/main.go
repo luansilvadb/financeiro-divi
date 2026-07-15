@@ -138,6 +138,41 @@ func main() {
 		log.Fatalf("failed to migrate: %v", err)
 	}
 
+	// Ensure the unique constraint required for fatura ON CONFLICT upserts
+	// exists as a named constraint. GORM's uniqueIndex tag previously created
+	// idx_fatura_unica as a unique index (not a constraint), which cannot be
+	// targeted by ON CONFLICT ON CONSTRAINT. We now use a proper PostgreSQL
+	// constraint and drop the legacy index to avoid duplicate-key ambiguity.
+	if err := db.Exec(`
+		DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM pg_constraint
+				WHERE conname = 'faturas_tenant_cartao_mes_ano_key'
+				AND conrelid = 'faturas'::regclass
+			) THEN
+				ALTER TABLE faturas ADD CONSTRAINT faturas_tenant_cartao_mes_ano_key
+				UNIQUE (tenant_id, cartao_id, mes, ano);
+			END IF;
+		END $$;
+	`).Error; err != nil {
+		log.Fatalf("failed to ensure fatura unique constraint: %v", err)
+	}
+
+	// Drop the legacy unique index created by GORM's old uniqueIndex tag.
+	// We now rely exclusively on faturas_tenant_cartao_mes_ano_key (above)
+	// for ON CONFLICT upserts. Keeping both causes ambiguity that breaks
+	// ON CONFLICT resolution.
+	if err := db.Exec(`DROP INDEX IF EXISTS idx_fatura_unica`).Error; err != nil {
+		log.Printf("warning: failed to drop legacy index idx_fatura_unica: %v", err)
+	}
+
+	// Run raw SQL migrations for operations GORM AutoMigrate can't express.
+	// Path is relative to the working directory; use an absolute path or
+	// embed the files for production deployments.
+	if err := database.RunSQLMigrations(db, "migrations"); err != nil {
+		log.Printf("warning: raw SQL migrations failed: %v", err)
+	}
 	tenantRepo := repository.NewGormTenantRepo(db)
 	usuarioRepo := repository.NewGormUsuarioRepo(db)
 	membroRepo := repository.NewGormMembroRepo(db)
@@ -258,7 +293,7 @@ func main() {
 					write.POST("/validation-events", financeiroHandler.RecordValidationEvent)
 				}
 
-				// Permission management is restricted to ADMIN only —
+				// Permission management is restricted to ADMIN only â€”
 				// MORADOR should not be able to escalate privileges.
 				admin := tenant.Group("")
 				admin.Use(middleware.RoleRequired(model.RoleAdmin))
@@ -310,7 +345,7 @@ func main() {
 		userID, err := middleware.ValidateToken(cfg.JWTSecret, tokenStr)
 		if err != nil {
 			log.Printf("websocket: invalid token (source=%s, tenant=%s): %v", tokenSource, tenantID, err)
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "token inválido"})
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "token invÃ¡lido"})
 			return
 		}
 
@@ -324,15 +359,15 @@ func main() {
 		if membro == nil {
 			log.Printf("websocket: membership denied (user=%s, tenant=%s, source=%s): not a member",
 				userID, tenantID, tokenSource)
-			c.JSON(http.StatusForbidden, gin.H{"message": "acesso negado a este núcleo"})
+			c.JSON(http.StatusForbidden, gin.H{"message": "acesso negado a este nÃºcleo"})
 			return
 		}
 
 		log.Printf("websocket: auth OK (user=%s, tenant=%s, source=%s, origin=%s)",
 			userID, tenantID, tokenSource, c.GetHeader("Origin"))
 
-		// Se não for uma requisição de handshake de WebSocket (como a chamada preflight do frontend),
-		// respondemos com 200 OK para evitar um erro 400 Bad Request estético no console do navegador.
+		// Se nÃ£o for uma requisiÃ§Ã£o de handshake de WebSocket (como a chamada preflight do frontend),
+		// respondemos com 200 OK para evitar um erro 400 Bad Request estÃ©tico no console do navegador.
 		if !strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
 			c.Status(http.StatusOK)
 			return

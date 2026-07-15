@@ -27,7 +27,7 @@ describe('TenantSessionService', () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        tenants: [{ id: 'tenant-123', name: 'Casa Feliz' }]
+        tenants: [{ id: 'tenant-123', name: 'Casa Feliz', inviteCode: 'INV123' }]
       })
     })
 
@@ -191,22 +191,22 @@ describe('TenantSessionService', () => {
     })
 
     it('inicializarSessao deve lidar com erro 500 de /auth/me sem deslogar', async () => {
-      localStorage.setItem('divi_jwt_token', 'token-valido')
+      localStorage.setItem('divi_jwt_token', 'header.e30=.signature')
       service = new TenantSessionService()
       fetchMock.mockResolvedValueOnce({ ok: false, status: 500 })
 
       await service.inicializarSessao()
 
       expect(service.isAuthenticated()).toBe(true)
-      expect(localStorage.getItem('divi_jwt_token')).toBe('token-valido')
+      expect(localStorage.getItem('divi_jwt_token')).toBe('header.e30=.signature')
     })
 
     it('inicializarSessao deve lidar com falha de conexão em /auth/me', async () => {
-      localStorage.setItem('divi_jwt_token', 'token-valido')
+      localStorage.setItem('divi_jwt_token', 'header.e30=.signature')
       service = new TenantSessionService()
       fetchMock.mockRejectedValueOnce(new Error('Network error'))
 
-      await service.inicializarSessao()
+      await expect(service.inicializarSessao()).rejects.toThrow('Network error')
 
       expect(service.isAuthenticated()).toBe(true)
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Falha ao carregar sessão do usuário:'), expect.any(Error))

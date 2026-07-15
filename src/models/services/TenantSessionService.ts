@@ -31,10 +31,6 @@ interface LoginResponse {
   }
 }
 
-interface SessionResponse {
-  tenants?: TenantSummary[]
-}
-
 const lerMensagemErro = async (response: Response, fallback: string): Promise<string> => {
   const body = await response.json().catch(() => null) as { message?: string } | null
   return body?.message || fallback
@@ -42,8 +38,8 @@ const lerMensagemErro = async (response: Response, fallback: string): Promise<st
 
 /**
  * Valida a resposta de um endpoint de auth contra o schema Zod esperado.
- * Em desenvolvimento/teste, lança erro se o contrato for quebrado.
- * Em produção, apenas loga e retorna os dados brutos.
+ * Lança erro se o contrato for quebrado, independente do ambiente.
+ * Em produção, o log detalhado é registrado para diagnóstico.
  */
 function validateResponse<T>(schema: z.ZodType<T>, data: unknown, endpoint: string): T {
   const result = schema.safeParse(data)
@@ -53,11 +49,8 @@ function validateResponse<T>(schema: z.ZodType<T>, data: unknown, endpoint: stri
     logger.error(errorMessage)
     if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
       console.error(errorMessage, { raw: data, issues: result.error.issues })
-      throw new Error(`Falha na validação da resposta da API. Entre em contato com o suporte.`)
     }
-    // In production, return raw data rather than crashing — the API contract
-    // may have evolved and the app should degrade gracefully.
-    return data as T
+    throw new Error(`Falha na validação da resposta da API. Entre em contato com o suporte.`)
   }
   return data as T
 }
@@ -82,96 +75,51 @@ export class TenantSessionService {
     return `${base}/`
   }
 
-  async login(email: string, passwordSecret: string): Promise<boolean> {
+  private async authenticate(endpoint: string, body: Record<string, unknown>, errorLabel: string, catchLabel: string): Promise<boolean> {
     try {
-      try {
-        LoginRequestSchema.parse({ email, password: passwordSecret })
-      } catch (validationErr) {
-        logger.error('Erro de validação no login:', validationErr)
-        return false
-      }
-
-      const response = await fetch(`${this.baseUrl}auth/login`, {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: passwordSecret })
+        body: JSON.stringify(body)
       })
 
       if (!response.ok) {
-        logger.error('Erro de login:', await lerMensagemErro(response, response.statusText))
+        logger.error(`Erro de ${errorLabel}:`, await lerMensagemErro(response, response.statusText))
         return false
       }
 
-      const data = validateResponse(AuthResponseSchema, await response.json(), 'auth/login')
+      const data = validateResponse(AuthResponseSchema, await response.json(), endpoint)
       this.persistSession(data)
       await this.carregarSessaoUsuario()
-
       return true
     } catch (err) {
-      logger.error('Falha de conexão ao fazer login:', err)
+      logger.error(`Falha de conexão ${catchLabel}:`, err)
       return false
     }
   }
 
-  async loginComGoogle(credential: string, inviteCode?: string, membroId?: string): Promise<boolean> {
+  async login(email: string, passwordSecret: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential, inviteCode, membroId })
-      })
-
-      if (!response.ok) {
-        logger.error('Erro de login com Google:', await lerMensagemErro(response, response.statusText))
-        return false
-      }
-
-      const data = validateResponse(AuthResponseSchema, await response.json(), 'auth/google')
-      this.persistSession(data)
-      await this.carregarSessaoUsuario()
-
-      return true
-    } catch (err) {
-      logger.error('Falha de conexão ao fazer login com Google:', err)
+      LoginRequestSchema.parse({ email, password: passwordSecret })
+    } catch (validationErr) {
+      logger.error('Erro de validação no login:', validationErr)
       return false
     }
+    return this.authenticate('auth/login', { email, password: passwordSecret }, 'login', 'ao fazer login')
+  }
+
+  async loginComGoogle(credential: string, inviteCode?: string, membroId?: string): Promise<boolean> {
+    return this.authenticate('auth/google', { credential, inviteCode, membroId }, 'login com Google', 'ao fazer login com Google')
   }
 
   async register(email: string, nome: string, passwordSecret: string, inviteCode?: string, membroId?: string): Promise<boolean> {
     try {
-      try {
-        RegisterRequestSchema.parse({ email, nome, password: passwordSecret, inviteCode, membroId })
-      } catch (validationErr) {
-        logger.error('Erro de validação no registro:', validationErr)
-        return false
-      }
-
-      const response = await fetch(`${this.baseUrl}auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          nome,
-          password: passwordSecret,
-          inviteCode,
-          membroId
-        })
-      })
-
-      if (!response.ok) {
-        logger.error('Erro de cadastro:', await lerMensagemErro(response, response.statusText))
-        return false
-      }
-
-      const data = validateResponse(AuthResponseSchema, await response.json(), 'auth/register')
-      this.persistSession(data)
-      await this.carregarSessaoUsuario()
-
-      return true
-    } catch (err) {
-      logger.error('Falha de conexão ao registrar:', err)
+      RegisterRequestSchema.parse({ email, nome, password: passwordSecret, inviteCode, membroId })
+    } catch (validationErr) {
+      logger.error('Erro de validação no registro:', validationErr)
       return false
     }
+    return this.authenticate('auth/register', { email, nome, password: passwordSecret, inviteCode, membroId }, 'cadastro', 'ao registrar')
   }
 
   private persistSession(data: LoginResponse): void {
@@ -368,6 +316,7 @@ export class TenantSessionService {
       }
     } catch (err) {
       logger.error('Falha ao carregar sessão do usuário:', err)
+      throw err
     }
   }
 }

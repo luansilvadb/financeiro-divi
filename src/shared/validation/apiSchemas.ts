@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // --- Split Item ---
-export const SplitItemSchema = z.object({
+const SplitItemSchema = z.object({
   membroId: z.string(),
   valorCentavos: z.number().int(),
 })
@@ -69,7 +69,7 @@ export const GastoResponseSchema = z.object({
 export const GastoListResponseSchema = z.array(GastoResponseSchema)
 
 // --- Conta Fixa ---
-export const ContaFixaSplitItemSchema = z.object({
+const ContaFixaSplitItemSchema = z.object({
   membroId: z.string(),
   valorCentavos: z.number().int(),
 })
@@ -104,7 +104,7 @@ export const SessionResponseSchema = z.object({
 })
 
 // --- Paginated ---
-export const PaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+const PaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
   z.object({
     data: z.array(itemSchema),
     total: z.number().int(),
@@ -157,11 +157,10 @@ export const AuditLogResponseSchema = z.object({
   createdAt: z.string(),
 })
 
-export const AuditLogListResponseSchema = z.array(AuditLogResponseSchema)
 export const AuditLogFlexibleListResponseSchema = FlexibleListResponseSchema(AuditLogResponseSchema)
 
 // --- Invite Preview ---
-export const InvitePreviewMembroSchema = z.object({
+const InvitePreviewMembroSchema = z.object({
   id: z.string(),
   nome: z.string(),
   avatar: z.string(),
