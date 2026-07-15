@@ -1,0 +1,87 @@
+- generic [ref=f102e1]:
+  - generic [ref=f102e5]:
+    - main [ref=f102e7]:
+      - generic [ref=f102e9]:
+        - generic [ref=f102e10]:
+          - button "Selecionar período" [ref=f102e12] [cursor=pointer]:
+            - generic [ref=f102e16]:
+              - generic [ref=f102e17]: "2026"
+              - generic [ref=f102e18]: Julho
+          - generic [ref=f102e21]:
+            - generic [ref=f102e22]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f102e27]
+          - button "Ver atividade" [ref=f102e29] [cursor=pointer]:
+            - generic [ref=f102e30]:
+              - generic [ref=f102e31]: Logs
+              - generic [ref=f102e32]: Atividade
+        - generic [ref=f102e38]:
+          - generic [ref=f102e39]:
+            - generic [ref=f102e40]:
+              - generic:
+                - img "Mascote Divi sleeping"
+            - generic [ref=f102e41]:
+              - heading "Comece pelas Despesas" [level=3] [ref=f102e42]: Comece pelasDespesas
+              - paragraph [ref=f102e43]: Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
+          - generic [ref=f102e45]:
+            - generic [ref=f102e52]:
+              - heading "Saldos Unificados" [level=2] [ref=f102e53]
+              - paragraph [ref=f102e54]: Créditos e débitos da casa
+            - generic [ref=f102e56]:
+              - generic [ref=f102e57]:
+                - generic [ref=f102e58]: T
+                - generic [ref=f102e61]:
+                  - generic [ref=f102e62]: Test User
+                  - generic [ref=f102e63]: Tudo em dia
+              - generic [ref=f102e64]: R$ 0,00
+          - generic [ref=f102e67]:
+            - generic [ref=f102e76]:
+              - heading "Contas Fixas" [level=2] [ref=f102e77]
+              - paragraph [ref=f102e78]: Recorrentes do mês
+            - generic [ref=f102e79]:
+              - generic [ref=f102e80]:
+                - generic [ref=f102e81]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f102e82]:
+                  - paragraph [ref=f102e83]: Nenhuma conta agendada
+                  - paragraph [ref=f102e84]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f102e86] [cursor=pointer]
+          - generic [ref=f102e90]:
+            - generic [ref=f102e96]:
+              - heading "Atividades" [level=2] [ref=f102e97]
+              - paragraph [ref=f102e98]: Últimos registros da casa
+            - generic [ref=f102e99]:
+              - generic [ref=f102e100]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f102e101]:
+                - paragraph [ref=f102e102]: Tudo limpo por aqui
+                - paragraph [ref=f102e103]: Nenhum gasto registrado. Clique no botão de + para começar!
+    - navigation [ref=f102e105]:
+      - generic [ref=f102e106]:
+        - button "Casa" [ref=f102e107] [cursor=pointer]
+        - button "Pessoal" [ref=f102e115] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f102e122] [cursor=pointer]
+      - generic [ref=f102e124]:
+        - button "Acertos" [ref=f102e125] [cursor=pointer]
+        - button "Ajustes" [ref=f102e133] [cursor=pointer]:
+          - generic [ref=f102e134]:
+            - generic [ref=f102e135]: T
+            - generic [ref=f102e138]: Ajustes
+  - generic [ref=f102e144]:
+    - banner [ref=f102e145]:
+      - generic [ref=f102e147]:
+        - paragraph [ref=f102e148]: Passo 1 de 1
+        - heading "O que deseja fazer?" [level=2] [ref=f102e149]
+      - 'progressbar "Progresso do lançamento: 100%" [ref=f102e150]'
+    - listbox "Opções de fluxo" [ref=f102e154]:
+      - option [ref=f102e155] [cursor=pointer]:
+        - generic [ref=f102e161]:
+          - strong [ref=f102e162]: Despesa Compartilhada
+          - text: Conta ou compra que será dividida com a casa
+      - option [ref=f102e163] [cursor=pointer]:
+        - generic [ref=f102e170]:
+          - strong [ref=f102e171]: Repasse Direto
+          - text: Transferência de dinheiro apenas entre moradores
+    - contentinfo [ref=f102e172]:
+      - button "Cancelar" [active] [ref=f102e173] [cursor=pointer]

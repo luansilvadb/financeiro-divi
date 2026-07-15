@@ -1,0 +1,70 @@
+- generic [ref=f100e12]:
+  - main [ref=f100e14]:
+    - generic [ref=f100e16]:
+      - generic [ref=f100e17]:
+        - button "Selecionar período" [ref=f100e19] [cursor=pointer]:
+          - generic [ref=f100e23]:
+            - generic [ref=f100e24]: "2026"
+            - generic [ref=f100e25]: Julho
+        - generic [ref=f100e28]:
+          - generic [ref=f100e29]: Casa Teste
+          - heading "DIVI." [level=1] [ref=f100e34]
+        - button "Ver atividade" [ref=f100e36] [cursor=pointer]:
+          - generic [ref=f100e37]:
+            - generic [ref=f100e38]: Logs
+            - generic [ref=f100e39]: Atividade
+      - generic [ref=f100e45]:
+        - generic [ref=f100e47]:
+          - generic [ref=f100e54]:
+            - heading "Saldos Unificados" [level=2] [ref=f100e55]
+            - paragraph [ref=f100e56]: Créditos e débitos da casa
+          - generic [ref=f100e58]:
+            - generic [ref=f100e59]:
+              - generic [ref=f100e60]: T
+              - generic [ref=f100e63]:
+                - generic [ref=f100e64]: Test User
+                - generic [ref=f100e65]: Crédito acumulado
+            - generic [ref=f100e66]: +R$ 323,23
+        - generic [ref=f100e69]:
+          - generic [ref=f100e78]:
+            - heading "Contas Fixas" [level=2] [ref=f100e79]
+            - paragraph [ref=f100e80]: Recorrentes do mês
+          - generic [ref=f100e81]:
+            - generic [ref=f100e82]:
+              - generic [ref=f100e83]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f100e84]:
+                - paragraph [ref=f100e85]: Nenhuma conta agendada
+                - paragraph [ref=f100e86]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+            - button "Adicionar Nova Conta" [ref=f100e88] [cursor=pointer]
+        - generic [ref=f100e92]:
+          - generic [ref=f100e98]:
+            - heading "Atividades" [level=2] [ref=f100e99]
+            - paragraph [ref=f100e100]: Últimos registros da casa
+          - generic [ref=f100e103]:
+            - generic [ref=f100e104]:
+              - generic [ref=f100e105]:
+                - generic [ref=f100e106]: Empréstimo
+                - generic [ref=f100e108]:
+                  - generic [ref=f100e109]: Empréstimo
+                  - generic [ref=f100e110]:
+                    - generic [ref=f100e111]: T
+                    - generic [ref=f100e114]:
+                      - text: Pago por
+                      - strong [ref=f100e115]: Test User
+              - generic [ref=f100e116]: R$ 323,23
+            - generic [ref=f100e119]:
+              - button "Ajustar Empréstimo" [ref=f100e120] [cursor=pointer]: Ajustar
+              - button "Estornar Empréstimo" [ref=f100e123] [cursor=pointer]: Estornar
+  - navigation [ref=f100e128]:
+    - generic [ref=f100e129]:
+      - button "Casa" [ref=f100e130] [cursor=pointer]
+      - button "Pessoal" [ref=f100e138] [cursor=pointer]
+    - button "Adicionar novo gasto" [ref=f100e145] [cursor=pointer]
+    - generic [ref=f100e147]:
+      - button "Acertos" [ref=f100e148] [cursor=pointer]
+      - button "Ajustes" [ref=f100e156] [cursor=pointer]:
+        - generic [ref=f100e157]:
+          - generic [ref=f100e158]: T
+          - generic [ref=f100e161]: Ajustes

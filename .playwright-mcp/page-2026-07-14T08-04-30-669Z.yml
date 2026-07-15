@@ -1,0 +1,24 @@
+- generic [ref=f5e64]:
+  - generic [ref=f5e65]:
+    - generic:
+      - generic:
+        - img "Mascote Divi happy"
+    - heading "Olá, Test User 👋" [level=1] [ref=f5e66]
+    - paragraph [ref=f5e67]:
+      - text: Crie ou entre em uma
+      - strong [ref=f5e68]: casa
+      - text: para organizar despesas e acertos
+  - generic [ref=f5e167]:
+    - banner [ref=f5e168]:
+      - button [ref=f5e169] [cursor=pointer]
+      - generic [ref=f5e172]:
+        - heading "Cartões de Crédito" [level=2] [ref=f5e173]
+        - paragraph [ref=f5e174]: "Passo 3 de 3: Cartões"
+    - generic [ref=f5e175]:
+      - paragraph [ref=f5e176]: Cadastre os cartões coletivos que a casa usa para compras. Eles ficarão em seu nome para segurança, mas todos poderão lançar neles.
+      - paragraph [ref=f5e181]: Nenhum cartão cadastrado
+      - button "Adicionar Cartão" [ref=f5e183] [cursor=pointer]
+      - alert [ref=f5e188]:
+        - generic [ref=f5e189]: ⚠️
+        - generic [ref=f5e190]: Erro ao salvar as configurações iniciais da casa.
+      - button "Finalizar e Criar Casa" [ref=f5e185] [cursor=pointer]

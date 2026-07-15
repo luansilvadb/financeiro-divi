@@ -1,0 +1,33 @@
+import { Dinheiro } from './Dinheiro'
+
+/**
+ * Calcula o divisor e o índice da parcela atual para um gasto parcelado.
+ * Encapsula a lógica: divisor = totalInstallments || installments || 1,
+ * index = Math.max(0, divisor - installments).
+ *
+ * Função pura, sem efeitos colaterais.
+ */
+export function calcularContextoParcela(
+  installments: number,
+  totalInstallments: number
+): { divisor: number; index: number } {
+  // Guard against zero, negative, or NaN values
+  const safeTotal = Number.isFinite(totalInstallments) && totalInstallments > 0 ? totalInstallments : 1
+  const safeCurrent = Number.isFinite(installments) && installments > 0 ? installments : 1
+  const divisor = safeTotal
+  const index = Math.max(0, divisor - safeCurrent)
+  return { divisor, index }
+}
+
+/**
+ * Distribui um valor monetário em parcelas e retorna o valor da parcela no índice atual.
+ * Retorna 0 centavos se o índice estiver fora do range de parcelas.
+ */
+export function valorParcelaAtual(
+  valor: Dinheiro,
+  installments: number,
+  totalInstallments: number
+): Dinheiro {
+  const { divisor, index } = calcularContextoParcela(installments, totalInstallments)
+  return valor.valorNoIndice(divisor, index)
+}

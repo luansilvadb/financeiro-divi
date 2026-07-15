@@ -1,0 +1,214 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e6]:
+    - img "Swagger UI" [ref=f1e8]
+    - generic [ref=f1e9]:
+      - textbox [ref=f1e10]: doc.json
+      - button "Explore" [ref=f1e11] [cursor=pointer]
+  - generic [ref=f1e13]:
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]:
+        - heading "Divi API 1.0" [level=2] [ref=f1e19]:
+          - text: Divi API
+          - generic [ref=f1e20]: "1.0"
+        - generic [ref=f1e22]: "[ Base URL: localhost:3000/ ]"
+        - link "doc.json" [ref=f1e23] [cursor=pointer]:
+          - /url: doc.json
+      - paragraph [ref=f1e27]: API de controle financeiro do Divi
+    - button "Authorize" [ref=f1e31] [cursor=pointer]
+    - generic [ref=f1e37]:
+      - generic [ref=f1e39]:
+        - heading [level=3] [ref=f1e40] [cursor=pointer]:
+          - link "Auditoria" [ref=f1e41]:
+            - /url: "#/Auditoria"
+          - button "Collapse operation" [expanded] [ref=f1e42]
+        - generic [ref=f1e49] [cursor=pointer]:
+          - button "get /api/audit-logs" [ref=f1e50]:
+            - generic [ref=f1e51]: GET
+            - link [ref=f1e53]:
+              - /url: "#/Auditoria/get_api_audit_logs"
+            - generic [ref=f1e55]: Get audit logs
+          - button "authorization button unlocked" [ref=f1e58]
+          - generic "Copy to clipboard"
+      - generic [ref=f1e63]:
+        - heading [level=3] [ref=f1e64] [cursor=pointer]:
+          - link "Auth" [ref=f1e65]:
+            - /url: "#/Auth"
+          - button "Collapse operation" [expanded] [ref=f1e66]
+        - generic [ref=f1e70]:
+          - generic [ref=f1e73] [cursor=pointer]:
+            - button "post /api/auth/forgot-password" [ref=f1e74]:
+              - generic [ref=f1e75]: POST
+              - link [ref=f1e77]:
+                - /url: "#/Auth/post_api_auth_forgot_password"
+              - generic [ref=f1e79]: Forgot password
+            - generic "Copy to clipboard"
+          - generic [ref=f1e85] [cursor=pointer]:
+            - button "post /api/auth/google" [ref=f1e86]:
+              - generic [ref=f1e87]: POST
+              - link [ref=f1e89]:
+                - /url: "#/Auth/post_api_auth_google"
+              - generic [ref=f1e91]: Google OAuth login
+            - generic "Copy to clipboard"
+          - generic [ref=f1e97] [cursor=pointer]:
+            - button "post /api/auth/login" [ref=f1e98]:
+              - generic [ref=f1e99]: POST
+              - link [ref=f1e101]:
+                - /url: "#/Auth/post_api_auth_login"
+              - generic [ref=f1e103]: Login
+            - generic "Copy to clipboard"
+          - generic [ref=f1e109] [cursor=pointer]:
+            - button "post /api/auth/register" [ref=f1e110]:
+              - generic [ref=f1e111]: POST
+              - link [ref=f1e113]:
+                - /url: "#/Auth/post_api_auth_register"
+              - generic [ref=f1e115]: Register a new user
+            - generic "Copy to clipboard"
+          - generic [ref=f1e121] [cursor=pointer]:
+            - button "post /api/auth/reset-password" [ref=f1e122]:
+              - generic [ref=f1e123]: POST
+              - link [ref=f1e125]:
+                - /url: "#/Auth/post_api_auth_reset_password"
+              - generic [ref=f1e127]: Reset password
+            - generic "Copy to clipboard"
+      - generic [ref=f1e132]:
+        - heading [level=3] [ref=f1e133] [cursor=pointer]:
+          - link "Cartões" [ref=f1e134]:
+            - /url: "#/Cartões"
+          - button "Collapse operation" [expanded] [ref=f1e135]
+        - generic [ref=f1e142] [cursor=pointer]:
+          - button "post /api/cartoes" [ref=f1e143]:
+            - generic [ref=f1e144]: POST
+            - link [ref=f1e146]:
+              - /url: "#/Cartões/post_api_cartoes"
+            - generic [ref=f1e148]: Create cartão
+          - button "authorization button unlocked" [ref=f1e151]
+          - generic "Copy to clipboard"
+      - generic [ref=f1e156]:
+        - heading [level=3] [ref=f1e157] [cursor=pointer]:
+          - link "Contas Fixas" [ref=f1e158]:
+            - /url: "#/Contas%20Fixas"
+          - button "Collapse operation" [expanded] [ref=f1e159]
+        - generic [ref=f1e166] [cursor=pointer]:
+          - button "post /api/contas-fixas" [ref=f1e167]:
+            - generic [ref=f1e168]: POST
+            - link [ref=f1e170]:
+              - /url: "#/Contas%20Fixas/post_api_contas_fixas"
+            - generic [ref=f1e172]: Create conta fixa
+          - button "authorization button unlocked" [ref=f1e175]
+          - generic "Copy to clipboard"
+      - generic [ref=f1e180]:
+        - heading [level=3] [ref=f1e181] [cursor=pointer]:
+          - link "Gastos" [ref=f1e182]:
+            - /url: "#/Gastos"
+          - button "Collapse operation" [expanded] [ref=f1e183]
+        - generic [ref=f1e187]:
+          - generic [ref=f1e190] [cursor=pointer]:
+            - button "get /api/gastos" [ref=f1e191]:
+              - generic [ref=f1e192]: GET
+              - link [ref=f1e194]:
+                - /url: "#/Gastos/get_api_gastos"
+              - generic [ref=f1e196]: List gastos
+            - button "authorization button unlocked" [ref=f1e199]
+            - generic "Copy to clipboard"
+          - generic [ref=f1e205] [cursor=pointer]:
+            - button "post /api/gastos" [ref=f1e206]:
+              - generic [ref=f1e207]: POST
+              - link [ref=f1e209]:
+                - /url: "#/Gastos/post_api_gastos"
+              - generic [ref=f1e211]: Create gasto
+            - button "authorization button unlocked" [ref=f1e214]
+            - generic "Copy to clipboard"
+      - generic [ref=f1e219]:
+        - heading [level=3] [ref=f1e220] [cursor=pointer]:
+          - link "Membros" [ref=f1e221]:
+            - /url: "#/Membros"
+          - button "Collapse operation" [expanded] [ref=f1e222]
+        - generic [ref=f1e226]:
+          - generic [ref=f1e229] [cursor=pointer]:
+            - button "get /api/membros" [ref=f1e230]:
+              - generic [ref=f1e231]: GET
+              - link [ref=f1e233]:
+                - /url: "#/Membros/get_api_membros"
+              - generic [ref=f1e235]: List membros
+            - button "authorization button unlocked" [ref=f1e238]
+            - generic "Copy to clipboard"
+          - generic [ref=f1e244] [cursor=pointer]:
+            - button "post /api/membros" [ref=f1e245]:
+              - generic [ref=f1e246]: POST
+              - link [ref=f1e248]:
+                - /url: "#/Membros/post_api_membros"
+              - generic [ref=f1e250]: Create membro
+            - button "authorization button unlocked" [ref=f1e253]
+            - generic "Copy to clipboard"
+      - generic [ref=f1e258]:
+        - heading [level=3] [ref=f1e259] [cursor=pointer]:
+          - link "Tenant" [ref=f1e260]:
+            - /url: "#/Tenant"
+          - button "Collapse operation" [expanded] [ref=f1e261]
+        - generic [ref=f1e265]:
+          - generic [ref=f1e268] [cursor=pointer]:
+            - button "post /api/tenants" [ref=f1e269]:
+              - generic [ref=f1e270]: POST
+              - link [ref=f1e272]:
+                - /url: "#/Tenant/post_api_tenants"
+              - generic [ref=f1e274]: Create tenant
+            - button "authorization button unlocked" [ref=f1e277]
+            - generic "Copy to clipboard"
+          - generic [ref=f1e283] [cursor=pointer]:
+            - button "post /api/tenants/join" [ref=f1e284]:
+              - generic [ref=f1e285]: POST
+              - link [ref=f1e287]:
+                - /url: "#/Tenant/post_api_tenants_join"
+              - generic [ref=f1e289]: Join tenant
+            - button "authorization button unlocked" [ref=f1e292]
+            - generic "Copy to clipboard"
+      - generic [ref=f1e297]:
+        - heading [level=3] [ref=f1e298] [cursor=pointer]:
+          - link "Validação" [ref=f1e299]:
+            - /url: "#/Validação"
+          - button "Collapse operation" [expanded] [ref=f1e300]
+        - generic [ref=f1e307] [cursor=pointer]:
+          - button "post /api/validation-events" [ref=f1e308]:
+            - generic [ref=f1e309]: POST
+            - link [ref=f1e311]:
+              - /url: "#/Validação/post_api_validation_events"
+            - generic [ref=f1e313]: Record validation event
+          - button "authorization button unlocked" [ref=f1e316]
+          - generic "Copy to clipboard"
+      - generic [ref=f1e321]:
+        - heading [level=3] [ref=f1e322] [cursor=pointer]:
+          - link "Health" [ref=f1e323]:
+            - /url: "#/Health"
+          - button "Collapse operation" [expanded] [ref=f1e324]
+        - generic [ref=f1e331] [cursor=pointer]:
+          - button "get /health" [ref=f1e332]:
+            - generic [ref=f1e333]: GET
+            - link "/health" [ref=f1e335]:
+              - /url: "#/Health/get_health"
+            - generic [ref=f1e336]: Health check
+          - generic "Copy to clipboard"
+    - generic [ref=f1e342]:
+      - heading [level=4] [ref=f1e343] [cursor=pointer]:
+        - button "Models" [expanded] [ref=f1e344]
+      - generic [ref=f1e348]:
+        - button "dto.AuthResponse" [ref=f1e351] [cursor=pointer]
+        - button "dto.CreateCartaoRequest" [ref=f1e357] [cursor=pointer]
+        - button "dto.CreateContaFixaRequest" [ref=f1e363] [cursor=pointer]
+        - button "dto.CreateGastoRequest" [ref=f1e369] [cursor=pointer]
+        - button "dto.CreateMembroRequest" [ref=f1e375] [cursor=pointer]
+        - button "dto.CreateTenantRequest" [ref=f1e381] [cursor=pointer]
+        - button "dto.ForgotPasswordRequest" [ref=f1e387] [cursor=pointer]
+        - button "dto.GastoResponse" [ref=f1e393] [cursor=pointer]
+        - button "dto.GoogleLoginRequest" [ref=f1e399] [cursor=pointer]
+        - button "dto.JoinTenantRequest" [ref=f1e405] [cursor=pointer]
+        - button "dto.LoginRequest" [ref=f1e411] [cursor=pointer]
+        - button "dto.MembroResponse" [ref=f1e417] [cursor=pointer]
+        - button "dto.RegisterRequest" [ref=f1e423] [cursor=pointer]
+        - button "dto.ResetPasswordRequest" [ref=f1e429] [cursor=pointer]
+        - button "dto.SplitItem" [ref=f1e435] [cursor=pointer]
+        - button "dto.TenantResponse" [ref=f1e441] [cursor=pointer]
+        - button "dto.UserProfile" [ref=f1e447] [cursor=pointer]
+        - button "dto.ValidateEventRequest" [ref=f1e453] [cursor=pointer]
+        - button "model.AuditLog" [ref=f1e459] [cursor=pointer]
+        - button "model.Cartao" [ref=f1e465] [cursor=pointer]
+        - button "model.ContaFixa" [ref=f1e471] [cursor=pointer]

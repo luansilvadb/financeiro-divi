@@ -1,0 +1,102 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e50]:
+    - main [ref=f20e52]:
+      - generic [ref=f20e54]:
+        - generic [ref=f20e55]:
+          - button "Selecionar período" [ref=f20e57] [cursor=pointer]:
+            - generic [ref=f20e61]:
+              - generic [ref=f20e62]: "2026"
+              - generic [ref=f20e63]: Julho
+          - generic [ref=f20e66]:
+            - generic [ref=f20e67]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f20e72]
+          - button "Ver atividade" [ref=f20e74] [cursor=pointer]:
+            - generic [ref=f20e75]:
+              - generic [ref=f20e76]: Logs
+              - generic [ref=f20e77]: Atividade
+        - generic [ref=f20e83]:
+          - generic [ref=f20e84]:
+            - generic [ref=f20e85]:
+              - generic:
+                - img "Mascote Divi sleeping"
+            - generic [ref=f20e86]:
+              - heading "Comece pelas Despesas" [level=3] [ref=f20e87]: Comece pelasDespesas
+              - paragraph [ref=f20e88]: Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
+          - generic [ref=f20e90]:
+            - generic [ref=f20e97]:
+              - heading "Saldos Unificados" [level=2] [ref=f20e98]
+              - paragraph [ref=f20e99]: Créditos e débitos da casa
+            - generic [ref=f20e101]:
+              - generic [ref=f20e102]:
+                - generic [ref=f20e103]: T
+                - generic [ref=f20e106]:
+                  - generic [ref=f20e107]: Test User
+                  - generic [ref=f20e108]: Tudo em dia
+              - generic [ref=f20e109]: R$ 0,00
+          - generic [ref=f20e112]:
+            - generic [ref=f20e121]:
+              - heading "Contas Fixas" [level=2] [ref=f20e122]
+              - paragraph [ref=f20e123]: Recorrentes do mês
+            - generic [ref=f20e124]:
+              - generic [ref=f20e125]:
+                - generic [ref=f20e126]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f20e127]:
+                  - paragraph [ref=f20e128]: Nenhuma conta agendada
+                  - paragraph [ref=f20e129]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f20e131] [cursor=pointer]
+          - generic [ref=f20e135]:
+            - generic [ref=f20e141]:
+              - heading "Atividades" [level=2] [ref=f20e142]
+              - paragraph [ref=f20e143]: Últimos registros da casa
+            - generic [ref=f20e144]:
+              - generic [ref=f20e145]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f20e146]:
+                - paragraph [ref=f20e147]: Tudo limpo por aqui
+                - paragraph [ref=f20e148]: Nenhum gasto registrado. Clique no botão de + para começar!
+    - navigation [ref=f20e150]:
+      - generic [ref=f20e151]:
+        - button "Casa" [ref=f20e152] [cursor=pointer]
+        - button "Pessoal" [ref=f20e160] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f20e167] [cursor=pointer]
+      - generic [ref=f20e169]:
+        - button "Acertos" [ref=f20e170] [cursor=pointer]
+        - button "Ajustes" [active] [ref=f20e178] [cursor=pointer]:
+          - generic [ref=f20e179]:
+            - generic [ref=f20e180]: T
+            - generic [ref=f20e183]: Ajustes
+  - generic [ref=f20e189]:
+    - generic [ref=f20e190]:
+      - heading "Perfil dos Usuários" [level=2] [ref=f20e191]
+      - paragraph [ref=f20e192]: Configure quem mora aqui e como cada um contribui
+    - generic [ref=f20e194]:
+      - button "Meu Perfil" [ref=f20e195] [cursor=pointer]
+      - button "Acessos" [ref=f20e196] [cursor=pointer]
+      - button "Casas" [ref=f20e197] [cursor=pointer]
+    - generic [ref=f20e200]:
+      - generic [ref=f20e201]:
+        - generic [ref=f20e203]:
+          - generic [ref=f20e204]:
+            - generic [ref=f20e205]:
+              - heading [level=3]
+              - button "Editar nome" [ref=f20e206] [cursor=pointer]
+            - paragraph [ref=f20e209]: "@"
+          - generic [ref=f20e210]:
+            - generic [ref=f20e211]: "Renda:"
+            - generic [ref=f20e212]: Não informada
+            - button "Editar renda" [ref=f20e213] [cursor=pointer]
+        - button "Sair da Conta" [ref=f20e216] [cursor=pointer]
+      - generic [ref=f20e219]:
+        - generic [ref=f20e220]:
+          - heading "Meus Cartões" [level=3] [ref=f20e221]
+          - paragraph [ref=f20e224]: Gestão de cartões pessoais
+        - generic [ref=f20e225]:
+          - button "Novo Cartão" [ref=f20e227] [cursor=pointer]
+          - generic [ref=f20e230]:
+            - generic:
+              - img "Mascote Divi happy"
+            - paragraph [ref=f20e231]: Você ainda não cadastrou nenhum cartão próprio.
+    - button "Fechar" [ref=f20e233] [cursor=pointer]

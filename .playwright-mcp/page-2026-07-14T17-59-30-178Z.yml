@@ -1,0 +1,31 @@
+- generic [ref=f4e13]:
+  - generic [ref=f4e14]:
+    - generic:
+      - generic:
+        - img "Mascote Divi happy"
+    - heading "DIVI." [level=1] [ref=f4e15]
+    - paragraph [ref=f4e16]: Organize despesas compartilhadas, feche o mês e entenda os acertos da casa
+  - generic [ref=f4e17]:
+    - generic [ref=f4e18]:
+      - generic [ref=f4e19]: E-mail
+      - textbox "E-mail" [ref=f4e20]:
+        - /placeholder: seu@email.com
+        - text: csrftest@test.com
+    - generic [ref=f4e21]:
+      - generic [ref=f4e22]:
+        - generic [ref=f4e23]: Senha
+        - button "Esqueci a senha" [ref=f4e24] [cursor=pointer]
+      - generic [ref=f4e25]:
+        - textbox "Senha" [ref=f4e26]:
+          - /placeholder: ••••••••
+          - text: Test123!@
+        - button "Mostrar senha" [ref=f4e27] [cursor=pointer]
+    - button "Entrar" [ref=f4e31] [cursor=pointer]
+    - generic [ref=f4e33]: Ou
+    - generic [ref=f4e39]:
+      - button "Continuar com o Google. Abre em uma nova guia" [ref=f4e41] [cursor=pointer]:
+        - generic [ref=f4e43]: Continuar com o Google
+      - iframe
+  - paragraph [ref=f4e54]:
+    - text: Novo no DIVI?
+    - button "Crie sua conta" [ref=f4e55] [cursor=pointer]

@@ -1,0 +1,70 @@
+- generic [ref=f113e12]:
+  - main [ref=f113e14]:
+    - generic [ref=f113e16]:
+      - generic [ref=f113e17]:
+        - button "Selecionar período" [ref=f113e19] [cursor=pointer]:
+          - generic [ref=f113e23]:
+            - generic [ref=f113e24]: "2026"
+            - generic [ref=f113e25]: Julho
+        - generic [ref=f113e28]:
+          - generic [ref=f113e29]: Casa Teste
+          - heading "DIVI." [level=1] [ref=f113e34]
+        - button "Ver atividade" [ref=f113e36] [cursor=pointer]:
+          - generic [ref=f113e37]:
+            - generic [ref=f113e38]: Logs
+            - generic [ref=f113e39]: Atividade
+      - generic [ref=f113e45]:
+        - generic [ref=f113e47]:
+          - generic [ref=f113e54]:
+            - heading "Saldos Unificados" [level=2] [ref=f113e55]
+            - paragraph [ref=f113e56]: Créditos e débitos da casa
+          - generic [ref=f113e58]:
+            - generic [ref=f113e59]:
+              - generic [ref=f113e60]: T
+              - generic [ref=f113e63]:
+                - generic [ref=f113e64]: Test User
+                - generic [ref=f113e65]: Tudo em dia
+            - generic [ref=f113e66]: R$ 0,00
+        - generic [ref=f113e69]:
+          - generic [ref=f113e78]:
+            - heading "Contas Fixas" [level=2] [ref=f113e79]
+            - paragraph [ref=f113e80]: Recorrentes do mês
+          - generic [ref=f113e81]:
+            - generic [ref=f113e82]:
+              - generic [ref=f113e83]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f113e84]:
+                - paragraph [ref=f113e85]: Nenhuma conta agendada
+                - paragraph [ref=f113e86]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+            - button "Adicionar Nova Conta" [ref=f113e88] [cursor=pointer]
+        - generic [ref=f113e92]:
+          - generic [ref=f113e98]:
+            - heading "Atividades" [level=2] [ref=f113e99]
+            - paragraph [ref=f113e100]: Últimos registros da casa
+          - generic [ref=f113e103]:
+            - generic [ref=f113e104]:
+              - generic [ref=f113e105]:
+                - generic [ref=f113e106]: Internet
+                - generic [ref=f113e108]:
+                  - generic [ref=f113e109]: Pix
+                  - generic [ref=f113e110]:
+                    - generic [ref=f113e111]: T
+                    - generic [ref=f113e114]:
+                      - text: Pago por
+                      - strong [ref=f113e115]: Test User
+              - generic [ref=f113e116]: R$ 100,00
+            - generic [ref=f113e119]:
+              - button "Ajustar Internet" [ref=f113e120] [cursor=pointer]: Ajustar
+              - button "Estornar Internet" [ref=f113e123] [cursor=pointer]: Estornar
+  - navigation [ref=f113e128]:
+    - generic [ref=f113e129]:
+      - button "Casa" [ref=f113e130] [cursor=pointer]
+      - button "Pessoal" [ref=f113e138] [cursor=pointer]
+    - button "Adicionar novo gasto" [ref=f113e145] [cursor=pointer]
+    - generic [ref=f113e147]:
+      - button "Acertos" [ref=f113e148] [cursor=pointer]
+      - button "Ajustes" [ref=f113e156] [cursor=pointer]:
+        - generic [ref=f113e157]:
+          - generic [ref=f113e158]: T
+          - generic [ref=f113e161]: Ajustes

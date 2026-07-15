@@ -1,0 +1,144 @@
+- generic [ref=f106e1]:
+  - generic [ref=f106e12]:
+    - main [ref=f106e14]:
+      - generic [ref=f106e16]:
+        - generic [ref=f106e17]:
+          - button "Selecionar período" [ref=f106e19] [cursor=pointer]:
+            - generic [ref=f106e23]:
+              - generic [ref=f106e24]: "2026"
+              - generic [ref=f106e25]: Julho
+          - generic [ref=f106e28]:
+            - generic [ref=f106e29]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f106e34]
+          - button "Ver atividade" [ref=f106e36] [cursor=pointer]:
+            - generic [ref=f106e37]:
+              - generic [ref=f106e38]: Logs
+              - generic [ref=f106e39]: Atividade
+        - generic [ref=f106e147]:
+          - generic [ref=f106e149]:
+            - generic:
+              - img "Mascote Divi happy"
+            - generic [ref=f106e150]:
+              - heading "Controle Pessoal" [level=2] [ref=f106e151]
+              - paragraph [ref=f106e152]: Minhas pendências isoladas e acertos diretos
+          - generic [ref=f106e153]:
+            - generic [ref=f106e155]:
+              - text: A Receber
+              - paragraph [ref=f106e156]: +R$ 324,48
+            - generic [ref=f106e162]:
+              - text: A Pagar
+              - paragraph [ref=f106e163]: R$ 0,00
+          - generic [ref=f106e168]:
+            - generic [ref=f106e170]:
+              - generic [ref=f106e178]:
+                - heading "Pendências" [level=2] [ref=f106e179]
+                - paragraph [ref=f106e180]: Acertos de contas
+              - generic [ref=f106e181]:
+                - generic [ref=f106e183]:
+                  - generic [ref=f106e184]:
+                    - generic [ref=f106e185]:
+                      - generic [ref=f106e186]: M
+                      - generic [ref=f106e189]: Maria Souza
+                    - generic [ref=f106e190]: R$ 0,75
+                    - generic [ref=f106e194]:
+                      - generic [ref=f106e195]: T
+                      - generic [ref=f106e198]: Test User
+                  - button "Registrar Pagamento" [ref=f106e200] [cursor=pointer]
+                - generic [ref=f106e202]:
+                  - generic [ref=f106e203]:
+                    - generic [ref=f106e204]:
+                      - generic [ref=f106e205]: J
+                      - generic [ref=f106e208]: João Silva
+                    - generic [ref=f106e209]: R$ 0,50
+                    - generic [ref=f106e213]:
+                      - generic [ref=f106e214]: T
+                      - generic [ref=f106e217]: Test User
+                  - button "Registrar Pagamento" [ref=f106e219] [cursor=pointer]
+                - generic [ref=f106e221]:
+                  - generic [ref=f106e222]:
+                    - generic [ref=f106e223]:
+                      - generic [ref=f106e224]: d
+                      - generic [ref=f106e227]: dsd
+                    - generic [ref=f106e228]: R$ 323,23
+                    - generic [ref=f106e232]:
+                      - generic [ref=f106e233]: T
+                      - generic [ref=f106e236]: Test User
+                  - button "Registrar Pagamento" [ref=f106e238] [cursor=pointer]
+            - generic [ref=f106e240]:
+              - generic [ref=f106e246]:
+                - heading "Atividades" [level=2] [ref=f106e247]
+                - paragraph [ref=f106e248]: Últimos registros da casa
+              - generic [ref=f106e250]:
+                - generic [ref=f106e251]:
+                  - generic [ref=f106e252]:
+                    - generic [ref=f106e253]:
+                      - generic [ref=f106e254]: Emprestimo Maria
+                      - generic [ref=f106e256]:
+                        - generic [ref=f106e257]: Empréstimo
+                        - generic [ref=f106e258]:
+                          - generic [ref=f106e259]: T
+                          - generic [ref=f106e262]:
+                            - text: Pago por
+                            - strong [ref=f106e263]: Test User
+                    - generic [ref=f106e264]: R$ 0,75
+                  - generic [ref=f106e267]:
+                    - button "Ajustar Emprestimo Maria" [ref=f106e268] [cursor=pointer]: Ajustar
+                    - button "Estornar Emprestimo Maria" [ref=f106e271] [cursor=pointer]: Estornar
+                - generic [ref=f106e275]:
+                  - generic [ref=f106e276]:
+                    - generic [ref=f106e277]:
+                      - generic [ref=f106e278]: Emprestimo teste João
+                      - generic [ref=f106e280]:
+                        - generic [ref=f106e281]: Empréstimo
+                        - generic [ref=f106e282]:
+                          - generic [ref=f106e283]: T
+                          - generic [ref=f106e286]:
+                            - text: Pago por
+                            - strong [ref=f106e287]: Test User
+                    - generic [ref=f106e288]: R$ 0,50
+                  - generic [ref=f106e291]:
+                    - button "Ajustar Emprestimo teste João" [ref=f106e292] [cursor=pointer]: Ajustar
+                    - button "Estornar Emprestimo teste João" [ref=f106e295] [cursor=pointer]: Estornar
+                - generic [ref=f106e299]:
+                  - generic [ref=f106e300]:
+                    - generic [ref=f106e301]:
+                      - generic [ref=f106e302]: Empréstimo
+                      - generic [ref=f106e304]:
+                        - generic [ref=f106e305]: Empréstimo
+                        - generic [ref=f106e306]:
+                          - generic [ref=f106e307]: T
+                          - generic [ref=f106e310]:
+                            - text: Pago por
+                            - strong [ref=f106e311]: Test User
+                    - generic [ref=f106e312]: R$ 323,23
+                  - generic [ref=f106e315]:
+                    - button "Ajustar Empréstimo" [ref=f106e316] [cursor=pointer]: Ajustar
+                    - button "Estornar Empréstimo" [ref=f106e319] [cursor=pointer]: Estornar
+    - navigation [ref=f106e112]:
+      - generic [ref=f106e113]:
+        - button "Casa" [ref=f106e114] [cursor=pointer]
+        - button "Pessoal" [ref=f106e122] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f106e129] [cursor=pointer]
+      - generic [ref=f106e131]:
+        - button "Acertos" [ref=f106e132] [cursor=pointer]
+        - button "Ajustes" [ref=f106e140] [cursor=pointer]:
+          - generic [ref=f106e141]:
+            - generic [ref=f106e142]: T
+            - generic [ref=f106e145]: Ajustes
+  - generic [ref=f106e329]:
+    - banner [ref=f106e330]:
+      - generic [ref=f106e332]:
+        - paragraph [ref=f106e333]: Passo 1 de 1
+        - heading "O que deseja fazer?" [level=2] [ref=f106e334]
+      - 'progressbar "Progresso do lançamento: 100%" [ref=f106e335]'
+    - listbox "Opções de fluxo" [ref=f106e339]:
+      - option [ref=f106e340] [cursor=pointer]:
+        - generic [ref=f106e344]:
+          - strong [ref=f106e345]: A Receber
+          - text: "Alguém lhe deve dinheiro (ex: emprestei, vendi algo)"
+      - option [ref=f106e346] [cursor=pointer]:
+        - generic [ref=f106e350]:
+          - strong [ref=f106e351]: A Pagar
+          - text: "Você deve dinheiro a alguém (ex: prestação, peguei)"
+    - contentinfo [ref=f106e352]:
+      - button "Cancelar" [active] [ref=f106e353] [cursor=pointer]

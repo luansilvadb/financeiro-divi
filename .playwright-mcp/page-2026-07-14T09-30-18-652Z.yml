@@ -1,0 +1,174 @@
+- generic [ref=f107e1]:
+  - generic [ref=f107e12]:
+    - main [ref=f107e14]:
+      - generic [ref=f107e16]:
+        - generic [ref=f107e17]:
+          - button "Selecionar período" [ref=f107e19] [cursor=pointer]:
+            - generic [ref=f107e23]:
+              - generic [ref=f107e24]: "2026"
+              - generic [ref=f107e25]: Julho
+          - generic [ref=f107e28]:
+            - generic [ref=f107e29]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f107e34]
+          - button "Ver atividade" [active] [ref=f107e36] [cursor=pointer]:
+            - generic [ref=f107e37]:
+              - generic [ref=f107e38]: Logs
+              - generic [ref=f107e39]: Atividade
+        - generic [ref=f107e45]:
+          - generic [ref=f107e47]:
+            - generic [ref=f107e54]:
+              - heading "Saldos Unificados" [level=2] [ref=f107e55]
+              - paragraph [ref=f107e56]: Créditos e débitos da casa
+            - generic [ref=f107e58]:
+              - generic [ref=f107e59]:
+                - generic [ref=f107e60]: T
+                - generic [ref=f107e63]:
+                  - generic [ref=f107e64]: Test User
+                  - generic [ref=f107e65]: Tudo em dia
+              - generic [ref=f107e66]: R$ 0,00
+          - generic [ref=f107e69]:
+            - generic [ref=f107e78]:
+              - heading "Contas Fixas" [level=2] [ref=f107e79]
+              - paragraph [ref=f107e80]: Recorrentes do mês
+            - generic [ref=f107e81]:
+              - generic [ref=f107e82]:
+                - generic [ref=f107e83]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f107e84]:
+                  - paragraph [ref=f107e85]: Nenhuma conta agendada
+                  - paragraph [ref=f107e86]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f107e88] [cursor=pointer]
+          - generic [ref=f107e92]:
+            - generic [ref=f107e98]:
+              - heading "Atividades" [level=2] [ref=f107e99]
+              - paragraph [ref=f107e100]: Últimos registros da casa
+            - generic [ref=f107e103]:
+              - generic [ref=f107e104]:
+                - generic [ref=f107e105]:
+                  - generic [ref=f107e106]: Internet
+                  - generic [ref=f107e108]:
+                    - generic [ref=f107e109]: Pix
+                    - generic [ref=f107e110]:
+                      - generic [ref=f107e111]: T
+                      - generic [ref=f107e114]:
+                        - text: Pago por
+                        - strong [ref=f107e115]: Test User
+                - generic [ref=f107e116]: R$ 100,00
+              - generic [ref=f107e119]:
+                - button "Ajustar Internet" [ref=f107e120] [cursor=pointer]: Ajustar
+                - button "Estornar Internet" [ref=f107e123] [cursor=pointer]: Estornar
+    - navigation [ref=f107e128]:
+      - generic [ref=f107e129]:
+        - button "Casa" [ref=f107e130] [cursor=pointer]
+        - button "Pessoal" [ref=f107e138] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f107e145] [cursor=pointer]
+      - generic [ref=f107e147]:
+        - button "Acertos" [ref=f107e148] [cursor=pointer]
+        - button "Ajustes" [ref=f107e156] [cursor=pointer]:
+          - generic [ref=f107e157]:
+            - generic [ref=f107e158]: T
+            - generic [ref=f107e161]: Ajustes
+  - generic [ref=f107e163]:
+    - generic [ref=f107e166]:
+      - generic [ref=f107e167]:
+        - heading "Atividades da Casa" [level=3] [ref=f107e168]
+        - paragraph [ref=f107e169]: Histórico de auditoria contábil
+      - button "Fechar" [ref=f107e170] [cursor=pointer]
+    - generic [ref=f107e176]:
+      - generic [ref=f107e179]:
+        - paragraph [ref=f107e180]: Gasto Internet criado
+        - generic [ref=f107e181]:
+          - generic [ref=f107e182]: Desconhecido
+          - generic [ref=f107e183]: •
+          - generic [ref=f107e184]: Invalid Date
+      - generic [ref=f107e187]:
+        - paragraph [ref=f107e188]: Gasto Empréstimo criado
+        - generic [ref=f107e189]:
+          - generic [ref=f107e190]: Desconhecido
+          - generic [ref=f107e191]: •
+          - generic [ref=f107e192]: Invalid Date
+      - generic [ref=f107e195]:
+        - paragraph [ref=f107e196]: Gasto Emprestimo Maria criado
+        - generic [ref=f107e197]:
+          - generic [ref=f107e198]: Desconhecido
+          - generic [ref=f107e199]: •
+          - generic [ref=f107e200]: Invalid Date
+      - generic [ref=f107e203]:
+        - paragraph [ref=f107e204]: Gasto Emprestimo teste João criado
+        - generic [ref=f107e205]:
+          - generic [ref=f107e206]: Desconhecido
+          - generic [ref=f107e207]: •
+          - generic [ref=f107e208]: Invalid Date
+      - generic [ref=f107e211]:
+        - paragraph [ref=f107e212]: Gasto Empréstimo criado
+        - generic [ref=f107e213]:
+          - generic [ref=f107e214]: Desconhecido
+          - generic [ref=f107e215]: •
+          - generic [ref=f107e216]: Invalid Date
+      - generic [ref=f107e219]:
+        - paragraph [ref=f107e220]: Gasto Uber compartilhado criado
+        - generic [ref=f107e221]:
+          - generic [ref=f107e222]: Desconhecido
+          - generic [ref=f107e223]: •
+          - generic [ref=f107e224]: Invalid Date
+      - generic [ref=f107e227]:
+        - paragraph [ref=f107e228]: Gasto Empréstimo criado
+        - generic [ref=f107e229]:
+          - generic [ref=f107e230]: Desconhecido
+          - generic [ref=f107e231]: •
+          - generic [ref=f107e232]: Invalid Date
+      - generic [ref=f107e235]:
+        - paragraph [ref=f107e236]: Gasto Luz dele criado
+        - generic [ref=f107e237]:
+          - generic [ref=f107e238]: Desconhecido
+          - generic [ref=f107e239]: •
+          - generic [ref=f107e240]: Invalid Date
+      - generic [ref=f107e243]:
+        - paragraph [ref=f107e244]: Gasto Empréstimo criado
+        - generic [ref=f107e245]:
+          - generic [ref=f107e246]: Desconhecido
+          - generic [ref=f107e247]: •
+          - generic [ref=f107e248]: Invalid Date
+      - generic [ref=f107e251]:
+        - paragraph [ref=f107e252]: Gasto Luz dele criado
+        - generic [ref=f107e253]:
+          - generic [ref=f107e254]: Desconhecido
+          - generic [ref=f107e255]: •
+          - generic [ref=f107e256]: Invalid Date
+      - generic [ref=f107e259]:
+        - paragraph [ref=f107e260]: Gasto Compra Teste criado
+        - generic [ref=f107e261]:
+          - generic [ref=f107e262]: Desconhecido
+          - generic [ref=f107e263]: •
+          - generic [ref=f107e264]: Invalid Date
+      - generic [ref=f107e267]:
+        - paragraph [ref=f107e268]: Gasto Internet criado
+        - generic [ref=f107e269]:
+          - generic [ref=f107e270]: Desconhecido
+          - generic [ref=f107e271]: •
+          - generic [ref=f107e272]: Invalid Date
+      - generic [ref=f107e275]:
+        - paragraph [ref=f107e276]: Gasto Internet criado
+        - generic [ref=f107e277]:
+          - generic [ref=f107e278]: Desconhecido
+          - generic [ref=f107e279]: •
+          - generic [ref=f107e280]: Invalid Date
+      - generic [ref=f107e283]:
+        - paragraph [ref=f107e284]: Cartão C6 Teste criado
+        - generic [ref=f107e285]:
+          - generic [ref=f107e286]: Desconhecido
+          - generic [ref=f107e287]: •
+          - generic [ref=f107e288]: Invalid Date
+      - generic [ref=f107e291]:
+        - paragraph [ref=f107e292]: Cartão C6 Teste criado
+        - generic [ref=f107e293]:
+          - generic [ref=f107e294]: Desconhecido
+          - generic [ref=f107e295]: •
+          - generic [ref=f107e296]: Invalid Date
+      - generic [ref=f107e299]:
+        - paragraph [ref=f107e300]: Cartão Nubank Teste criado
+        - generic [ref=f107e301]:
+          - generic [ref=f107e302]: Desconhecido
+          - generic [ref=f107e303]: •
+          - generic [ref=f107e304]: Invalid Date

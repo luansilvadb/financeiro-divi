@@ -1,0 +1,85 @@
+- generic [ref=f100e1]:
+  - generic [ref=f100e12]:
+    - main [ref=f100e14]:
+      - generic [ref=f100e16]:
+        - generic [ref=f100e17]:
+          - button "Selecionar período" [ref=f100e19] [cursor=pointer]:
+            - generic [ref=f100e23]:
+              - generic [ref=f100e24]: "2026"
+              - generic [ref=f100e25]: Julho
+          - generic [ref=f100e28]:
+            - generic [ref=f100e29]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f100e34]
+          - button "Ver atividade" [ref=f100e36] [cursor=pointer]:
+            - generic [ref=f100e37]:
+              - generic [ref=f100e38]: Logs
+              - generic [ref=f100e39]: Atividade
+        - generic [ref=f100e163]:
+          - generic [ref=f100e165]:
+            - generic:
+              - img "Mascote Divi happy"
+            - generic [ref=f100e166]:
+              - heading "Controle Pessoal" [level=2] [ref=f100e167]
+              - paragraph [ref=f100e168]: Minhas pendências isoladas e acertos diretos
+          - generic [ref=f100e169]:
+            - generic [ref=f100e171]:
+              - text: A Receber
+              - paragraph [ref=f100e172]: R$ 0,00
+            - generic [ref=f100e178]:
+              - text: A Pagar
+              - paragraph [ref=f100e179]: R$ 0,00
+          - generic [ref=f100e184]:
+            - generic [ref=f100e186]:
+              - generic [ref=f100e194]:
+                - heading "Pendências" [level=3] [ref=f100e195]
+                - paragraph [ref=f100e196]: Acertos de contas
+              - generic [ref=f100e197]:
+                - generic:
+                  - img "Mascote Divi sleeping"
+                - paragraph [ref=f100e198]: Nenhum saldo pendente na sua área pessoal neste período.
+            - generic [ref=f100e200]:
+              - generic [ref=f100e206]:
+                - heading "Atividades" [level=2] [ref=f100e207]
+                - paragraph [ref=f100e208]: Últimos registros da casa
+              - generic [ref=f100e209]:
+                - generic [ref=f100e210]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f100e211]:
+                  - paragraph [ref=f100e212]: Tudo limpo por aqui
+                  - paragraph [ref=f100e213]: Nenhum gasto registrado. Clique no botão de + para começar!
+    - navigation [ref=f100e128]:
+      - generic [ref=f100e129]:
+        - button "Casa" [ref=f100e130] [cursor=pointer]
+        - button "Pessoal" [ref=f100e138] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f100e145] [cursor=pointer]
+      - generic [ref=f100e147]:
+        - button "Acertos" [ref=f100e148] [cursor=pointer]
+        - button "Ajustes" [ref=f100e156] [cursor=pointer]:
+          - generic [ref=f100e157]:
+            - generic [ref=f100e158]: T
+            - generic [ref=f100e161]: Ajustes
+  - generic [ref=f100e220]:
+    - banner [ref=f100e221]:
+      - generic [ref=f100e223]:
+        - paragraph [ref=f100e224]: Passo 3 de 4
+        - heading "Qual foi o valor total?" [level=2] [ref=f100e258]
+      - 'progressbar "Progresso do lançamento: 75%" [ref=f100e259]'
+    - generic [ref=f100e261]:
+      - generic [ref=f100e262]:
+        - generic [ref=f100e263]: Valor total do lançamento
+        - generic [ref=f100e264]:
+          - generic [ref=f100e265]: R$
+          - textbox "Valor total do lançamento" [active] [ref=f100e266]:
+            - /placeholder: 0,00
+      - generic [ref=f100e267]:
+        - generic [ref=f100e268]: Opções de Parcelamento
+        - generic [ref=f100e269]:
+          - button "Diminuir parcelas" [ref=f100e270] [cursor=pointer]
+          - generic [ref=f100e272]:
+            - text: 1x
+            - paragraph [ref=f100e273]: À vista
+          - button "Aumentar parcelas" [ref=f100e274] [cursor=pointer]
+    - contentinfo [ref=f100e243]:
+      - button "Voltar" [ref=f100e253] [cursor=pointer]
+      - button "Avançar" [disabled]

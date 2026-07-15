@@ -1,0 +1,22 @@
+- generic [ref=f5e64]:
+  - generic [ref=f5e65]:
+    - generic:
+      - generic:
+        - img "Mascote Divi happy"
+    - heading "Olá, Test User 👋" [level=1] [ref=f5e66]
+    - paragraph [ref=f5e67]:
+      - text: Crie ou entre em uma
+      - strong [ref=f5e68]: casa
+      - text: para organizar despesas e acertos
+  - generic [ref=f5e97]:
+    - banner [ref=f5e98]:
+      - button [ref=f5e99] [cursor=pointer]
+      - generic [ref=f5e102]:
+        - heading "Criar Nova Casa" [level=2] [ref=f5e103]
+        - paragraph [ref=f5e104]: "Passo 1 de 3: Identidade"
+    - generic [ref=f5e105]:
+      - generic [ref=f5e106]:
+        - generic [ref=f5e107]: Nome da Casa
+        - textbox "Nome da Casa" [active] [ref=f5e109]:
+          - /placeholder: "Ex: República Central, Casa Luan..."
+      - button "Continuar" [disabled] [ref=f5e110] [cursor=pointer]

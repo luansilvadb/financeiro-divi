@@ -1,0 +1,6 @@
+- generic [ref=f4e4]:
+  - generic [ref=f4e5]:
+    - generic:
+      - img "Mascote Divi happy"
+    - heading "DIVI." [level=1] [ref=f4e6]
+  - paragraph [ref=f4e10]: Iniciando aventura

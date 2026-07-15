@@ -1,0 +1,57 @@
+- generic [ref=f5e64]:
+  - generic [ref=f5e65]:
+    - generic:
+      - generic:
+        - img "Mascote Divi happy"
+    - heading "Olá, Test User 👋" [level=1] [ref=f5e66]
+    - paragraph [ref=f5e67]:
+      - text: Crie ou entre em uma
+      - strong [ref=f5e68]: casa
+      - text: para organizar despesas e acertos
+  - generic [ref=f5e114]:
+    - banner [ref=f5e115]:
+      - button [ref=f5e116] [cursor=pointer]
+      - generic [ref=f5e119]:
+        - heading "Contas da Casa" [level=2] [ref=f5e120]
+        - paragraph [ref=f5e121]: "Passo 2 de 3: Contas Fixas"
+    - generic [ref=f5e122]:
+      - paragraph [ref=f5e123]: Selecione as despesas fixas recorrentes da moradia. Deixe o valor em branco caso ele mude todo mês.
+      - generic [ref=f5e124]:
+        - generic [ref=f5e125] [cursor=pointer]:
+          - checkbox [checked] [ref=f5e126]
+          - generic [ref=f5e127]: 🔑
+          - generic [ref=f5e128]: Aluguel
+          - generic [ref=f5e129]:
+            - generic [ref=f5e130]: R$
+            - textbox "Variável" [ref=f5e131]: 1500,00
+        - generic [ref=f5e132] [cursor=pointer]:
+          - checkbox [checked] [ref=f5e133]
+          - generic [ref=f5e134]: 💡
+          - generic [ref=f5e135]: Energia (Luz)
+          - generic [ref=f5e136]:
+            - generic [ref=f5e137]: R$
+            - textbox "Variável" [ref=f5e138]
+        - generic [ref=f5e139] [cursor=pointer]:
+          - checkbox [checked] [ref=f5e140]
+          - generic [ref=f5e141]: 💧
+          - generic [ref=f5e142]: Água
+          - generic [ref=f5e143]:
+            - generic [ref=f5e144]: R$
+            - textbox "Variável" [ref=f5e145]
+        - generic [ref=f5e146] [cursor=pointer]:
+          - checkbox [checked] [ref=f5e147]
+          - generic [ref=f5e148]: 🌐
+          - generic [ref=f5e149]: Internet / Wi-Fi
+          - generic [ref=f5e150]:
+            - generic [ref=f5e151]: R$
+            - textbox "Variável" [ref=f5e152]: 120,00
+        - generic [ref=f5e153] [cursor=pointer]:
+          - checkbox [ref=f5e154]
+          - generic [ref=f5e155]: 🐶
+          - generic [ref=f5e156]: Cuidados Pet
+        - generic [ref=f5e157] [cursor=pointer]:
+          - checkbox [ref=f5e158]
+          - generic [ref=f5e159]: 🧹
+          - generic [ref=f5e160]: Faxina / Limpeza
+      - button "Adicionar Outra Despesa" [ref=f5e162] [cursor=pointer]
+      - button "Continuar" [ref=f5e164] [cursor=pointer]

@@ -1,0 +1,30 @@
+linters:
+  enable:
+    - gofmt
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - revive
+    - misspell
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+  misspell:
+    locale: US
+    ignore-words:
+      - operacional
+      - momento
+
+run:
+  timeout: 5m
+  tests: true

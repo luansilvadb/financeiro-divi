@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors - Semantic from DESIGN.md */
+  --color-canvas: #fbfaf9;
+  --color-stone: #f2f0ed;
+  --color-card: #ffffff;
+  --color-graphite: #474645;
+  --color-charcoal: #343433;
+  --color-midnight: #121212;
+  --color-obsidian: #000000;
+  --color-ash: #848281;
+  --color-ember: #ff3e00;
+  --color-meadow: #00a83d;
+  --color-sky: #0090ff;
+  --color-parchment: #f8f7f4;
+  --color-flamingo: #ff58ae;
+  --color-sunburst: #ffbb26;
+  --color-coral: #ff2b3a;
+
+  /* Fonts */
+  --font-display: "Fraunces", "Georgia", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* Radii */
+  --radius-pill: 32px;
+  --radius-card: 10px;
+  --radius-card-lg: 24px;
+  --radius-icon: 40px;
+
+  /* Shadows */
+  --shadow-subtle: var(--color-stone) 0px 0px 0px 1px inset;
+  --shadow-lg: rgba(0, 0, 0, 0.15) 0px 0px 24px 0px;
+  --shadow-sm: rgba(0, 0, 0, 0.04) 0px 1px 6px 0px, rgba(0, 0, 0, 0.05) 0px 0px 24px 0px;
+  --shadow-premium: 0 10px 40px -6px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1);
+
+  /* Easings */
+  --ease-spring: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-jelly: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+@layer components {
+  .text-display {
+    font-family: var(--font-display);
+    font-size: 68px;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+  .text-heading-lg {
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1.09;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .text-heading {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .text-heading-sm {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.38;
+    letter-spacing: -0.01em;
+  }
+  .text-body {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+  }
+  .text-caption {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+}
+
+@layer base {
+  ::selection {
+    background-color: rgba(255, 62, 0, 0.15);
+    color: var(--color-charcoal);
+  }
+
+  :root {
+    --scrollbar-compensate: 0px;
+  }
+
+  body {
+    @apply bg-canvas text-graphite font-sans antialiased;
+    padding-right: var(--scrollbar-compensate);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    touch-action: pan-x pan-y;
+    text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+  }
+
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.015;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Compensação automática para QUALQUER elemento fixo de largura total na aplicação */
+  .fixed.left-0.right-0 {
+    margin-right: var(--scrollbar-compensate) !important;
+  }
+
+  /* Custom Scrollbar Global integrada ao Design System do DIVI */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-stone);
+    border: 2px solid var(--color-canvas);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-ash);
+  }
+
+  /* Custom Scrollbar para conteiners menores */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--color-stone);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-ash);
+  }
+
+  /* Suporte para Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-stone) transparent;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-3px) rotate(0.2deg); }
+  }
+
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-0.8deg) scale(1); }
+    50% { transform: rotate(0.8deg) scale(1.01); }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-wobble {
+    animation: wobble 8s ease-in-out infinite;
+  }
+
+  /* Dashboard Tab Transitions */
+  .tab-slide-right-enter-active,
+  .tab-slide-right-leave-active,
+  .tab-slide-left-enter-active,
+  .tab-slide-left-leave-active {
+    transition: all 0.18s ease-out;
+  }
+
+  /* Navigating Right: Transition to the right */
+  .tab-slide-right-enter-from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  .tab-slide-right-leave-to {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+
+  /* Navigating Left: Transition to the left */
+  .tab-slide-left-enter-from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+  .tab-slide-left-leave-to {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,122 @@
+- generic [ref=f40e1]:
+  - generic [ref=f40e12]:
+    - alert [ref=f40e231]:
+      - generic [ref=f40e235]: "Erro HTTP: 404 Not Found"
+      - button "Fechar notificação" [ref=f40e236] [cursor=pointer]
+    - main [ref=f40e14]:
+      - generic [ref=f40e16]:
+        - generic [ref=f40e17]:
+          - button "Selecionar período" [ref=f40e19] [cursor=pointer]:
+            - generic [ref=f40e23]:
+              - generic [ref=f40e24]: "2026"
+              - generic [ref=f40e25]: Julho
+          - generic [ref=f40e28]:
+            - generic [ref=f40e29]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f40e34]
+          - button "Ver atividade" [ref=f40e36] [cursor=pointer]:
+            - generic [ref=f40e37]:
+              - generic [ref=f40e38]: Logs
+              - generic [ref=f40e39]: Atividade
+        - generic [ref=f40e45]:
+          - generic [ref=f40e46]:
+            - generic [ref=f40e47]:
+              - generic:
+                - img "Mascote Divi sleeping"
+            - generic [ref=f40e48]:
+              - heading "Comece pelas Despesas" [level=3] [ref=f40e49]: Comece pelasDespesas
+              - paragraph [ref=f40e50]: Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
+          - generic [ref=f40e52]:
+            - generic [ref=f40e59]:
+              - heading "Saldos Unificados" [level=2] [ref=f40e60]
+              - paragraph [ref=f40e61]: Créditos e débitos da casa
+            - generic [ref=f40e63]:
+              - generic [ref=f40e64]:
+                - generic [ref=f40e65]: T
+                - generic [ref=f40e68]:
+                  - generic [ref=f40e69]: Test User
+                  - generic [ref=f40e70]: Tudo em dia
+              - generic [ref=f40e71]: R$ 0,00
+          - generic [ref=f40e74]:
+            - generic [ref=f40e83]:
+              - heading "Contas Fixas" [level=2] [ref=f40e84]
+              - paragraph [ref=f40e85]: Recorrentes do mês
+            - generic [ref=f40e86]:
+              - generic [ref=f40e87]:
+                - generic [ref=f40e88]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f40e89]:
+                  - paragraph [ref=f40e90]: Nenhuma conta agendada
+                  - paragraph [ref=f40e91]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f40e93] [cursor=pointer]
+          - generic [ref=f40e97]:
+            - generic [ref=f40e103]:
+              - heading "Atividades" [level=2] [ref=f40e104]
+              - paragraph [ref=f40e105]: Últimos registros da casa
+            - generic [ref=f40e106]:
+              - generic [ref=f40e107]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f40e108]:
+                - paragraph [ref=f40e109]: Tudo limpo por aqui
+                - paragraph [ref=f40e110]: Nenhum gasto registrado. Clique no botão de + para começar!
+    - navigation [ref=f40e112]:
+      - generic [ref=f40e113]:
+        - button "Casa" [ref=f40e114] [cursor=pointer]
+        - button "Pessoal" [ref=f40e122] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f40e129] [cursor=pointer]
+      - generic [ref=f40e131]:
+        - button "Acertos" [ref=f40e132] [cursor=pointer]
+        - button "Ajustes" [ref=f40e140] [cursor=pointer]:
+          - generic [ref=f40e141]:
+            - generic [ref=f40e142]: T
+            - generic [ref=f40e145]: Ajustes
+  - generic [ref=f40e211]:
+    - generic [ref=f40e212]:
+      - button [ref=f40e213] [cursor=pointer]
+      - generic [ref=f40e216]:
+        - heading "Novo Cartão" [level=3] [ref=f40e217]:
+          - text: Novo
+          - generic [ref=f40e218]: Cartão
+        - paragraph [ref=f40e219]: Adicione um novo cartão de crédito
+    - generic [ref=f40e220]:
+      - generic [ref=f40e221]:
+        - generic [ref=f40e222]: Nome do Cartão
+        - 'textbox "Ex: Nubank, C6, etc." [ref=f40e223]': C6 Teste
+      - generic [ref=f40e224]:
+        - generic [ref=f40e225]: Dia de Fechamento
+        - combobox [ref=f40e227] [cursor=pointer]:
+          - option "Dia 1"
+          - option "Dia 2"
+          - option "Dia 3"
+          - option "Dia 4"
+          - option "Dia 5"
+          - option "Dia 6"
+          - option "Dia 7"
+          - option "Dia 8"
+          - option "Dia 9"
+          - option "Dia 10"
+          - option "Dia 11"
+          - option "Dia 12"
+          - option "Dia 13"
+          - option "Dia 14"
+          - option "Dia 15"
+          - option "Dia 16"
+          - option "Dia 17"
+          - option "Dia 18"
+          - option "Dia 19"
+          - option "Dia 20" [selected]
+          - option "Dia 21"
+          - option "Dia 22"
+          - option "Dia 23"
+          - option "Dia 24"
+          - option "Dia 25"
+          - option "Dia 26"
+          - option "Dia 27"
+          - option "Dia 28"
+          - option "Dia 29"
+          - option "Dia 30"
+          - option "Dia 31"
+      - generic [ref=f40e228]:
+        - button "Cancelar" [ref=f40e229] [cursor=pointer]
+        - button "Cadastrar" [active] [ref=f40e230] [cursor=pointer]

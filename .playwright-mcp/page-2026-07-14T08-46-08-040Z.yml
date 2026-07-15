@@ -1,0 +1,92 @@
+- generic [ref=f58e5]:
+  - alert [ref=f58e205]:
+    - generic [ref=f58e210]: Mês de Julho encerrado!
+    - button "Fechar notificação" [ref=f58e211] [cursor=pointer]
+  - main [ref=f58e7]:
+    - generic [ref=f58e9]:
+      - generic [ref=f58e10]:
+        - button "Selecionar período" [ref=f58e12] [cursor=pointer]:
+          - generic [ref=f58e16]:
+            - generic [ref=f58e17]: "2026"
+            - generic [ref=f58e18]:
+              - generic [ref=f58e19]: Julho
+              - img "Mês encerrado" [ref=f58e215]
+        - generic [ref=f58e21]:
+          - generic [ref=f58e22]: Casa Teste
+          - heading "DIVI." [level=1] [ref=f58e27]
+        - button "Ver atividade" [ref=f58e29] [cursor=pointer]:
+          - generic [ref=f58e30]:
+            - generic [ref=f58e31]: Logs
+            - generic [ref=f58e32]: Atividade
+      - generic [ref=f58e38]:
+        - generic [ref=f58e39]:
+          - generic [ref=f58e45]:
+            - heading "Status do Período" [level=3] [ref=f58e46]
+            - paragraph [ref=f58e47]: Este mês está oficialmente arquivado. O histórico está protegido para auditoria.
+          - button "Reabrir Período" [ref=f58e222] [cursor=pointer]
+        - generic [ref=f58e51]:
+          - generic [ref=f58e52]:
+            - generic [ref=f58e58]:
+              - heading "Análise Detalhada" [level=2] [ref=f58e59]
+              - paragraph [ref=f58e60]: Fluxos de PIX, Cartão e Empréstimos
+            - button "Como funciona a divisão dos saldos?" [ref=f58e61] [cursor=pointer]
+          - generic [ref=f58e66]:
+            - generic [ref=f58e67]:
+              - generic [ref=f58e68]:
+                - generic [ref=f58e69]: T
+                - generic [ref=f58e72]:
+                  - generic [ref=f58e73]: Test User
+                  - paragraph [ref=f58e74]: Você está com as contas em dia no grupo!
+              - generic [ref=f58e75]: Saldo Equilibrado
+            - generic [ref=f58e76]:
+              - generic [ref=f58e77]:
+                - generic [ref=f58e78]: PIX / Dinheiro
+                - generic [ref=f58e84]:
+                  - generic [ref=f58e85]:
+                    - generic [ref=f58e86]:
+                      - generic [ref=f58e87]: Pagou para o grupo (+)
+                      - generic [ref=f58e88]: Compras pagas por você
+                    - generic [ref=f58e89]: R$ 0,00
+                  - generic [ref=f58e91]:
+                    - generic [ref=f58e92]:
+                      - generic [ref=f58e93]: Sua parte consumida (-)
+                      - generic [ref=f58e94]: O que você usou destas compras
+                    - generic [ref=f58e95]: R$ 0,00
+              - generic [ref=f58e96]:
+                - generic [ref=f58e97]: Faturas
+                - generic [ref=f58e102]:
+                  - generic [ref=f58e103]:
+                    - generic [ref=f58e104]:
+                      - generic [ref=f58e105]: Fez no seu cartão (+)
+                      - generic [ref=f58e106]: Contas do grupo no seu cartão
+                    - generic [ref=f58e107]: R$ 0,00
+                  - generic [ref=f58e109]:
+                    - generic [ref=f58e110]:
+                      - generic [ref=f58e111]: Sua parte na fatura (-)
+                      - generic [ref=f58e112]: O que gastou no cartão de outros
+                    - generic [ref=f58e113]: R$ 0,00
+              - generic [ref=f58e114]:
+                - generic [ref=f58e115]: Empréstimos
+                - generic [ref=f58e123]:
+                  - generic [ref=f58e124]:
+                    - generic [ref=f58e125]:
+                      - generic [ref=f58e126]: Você emprestou (+)
+                      - generic [ref=f58e127]: Dinheiro enviado para outros
+                    - generic [ref=f58e128]: R$ 0,00
+                  - generic [ref=f58e130]:
+                    - generic [ref=f58e131]:
+                      - generic [ref=f58e132]: Pegou emprestado (-)
+                      - generic [ref=f58e133]: Dinheiro recebido de outros
+                    - generic [ref=f58e134]: R$ 0,00
+            - button "Ver Extrato do Membro" [ref=f58e136] [cursor=pointer]
+  - navigation [ref=f58e144]:
+    - generic [ref=f58e145]:
+      - button "Casa" [ref=f58e146] [cursor=pointer]
+      - button "Pessoal" [ref=f58e153] [cursor=pointer]
+    - button "Adicionar novo gasto" [disabled] [ref=f58e160]
+    - generic [ref=f58e162]:
+      - button "Acertos" [ref=f58e163] [cursor=pointer]
+      - button "Ajustes" [ref=f58e172] [cursor=pointer]:
+        - generic [ref=f58e173]:
+          - generic [ref=f58e174]: T
+          - generic [ref=f58e177]: Ajustes

@@ -1,0 +1,112 @@
+- generic [ref=f47e1]:
+  - generic [ref=f47e12]:
+    - main [ref=f47e14]:
+      - generic [ref=f47e16]:
+        - generic [ref=f47e17]:
+          - button "Selecionar período" [ref=f47e19] [cursor=pointer]:
+            - generic [ref=f47e23]:
+              - generic [ref=f47e24]: "2026"
+              - generic [ref=f47e25]: Julho
+          - generic [ref=f47e28]:
+            - generic [ref=f47e29]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f47e34]
+          - button "Ver atividade" [ref=f47e36] [cursor=pointer]:
+            - generic [ref=f47e37]:
+              - generic [ref=f47e38]: Logs
+              - generic [ref=f47e39]: Atividade
+        - generic [ref=f47e45]:
+          - generic [ref=f47e46]:
+            - generic [ref=f47e47]:
+              - generic:
+                - img "Mascote Divi sleeping"
+            - generic [ref=f47e48]:
+              - heading "Comece pelas Despesas" [level=3] [ref=f47e49]: Comece pelasDespesas
+              - paragraph [ref=f47e50]: Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
+          - generic [ref=f47e52]:
+            - generic [ref=f47e59]:
+              - heading "Saldos Unificados" [level=2] [ref=f47e60]
+              - paragraph [ref=f47e61]: Créditos e débitos da casa
+            - generic [ref=f47e63]:
+              - generic [ref=f47e64]:
+                - generic [ref=f47e65]: T
+                - generic [ref=f47e68]:
+                  - generic [ref=f47e69]: Test User
+                  - generic [ref=f47e70]: Tudo em dia
+              - generic [ref=f47e71]: R$ 0,00
+          - generic [ref=f47e74]:
+            - generic [ref=f47e83]:
+              - heading "Contas Fixas" [level=2] [ref=f47e84]
+              - paragraph [ref=f47e85]: Recorrentes do mês
+            - generic [ref=f47e86]:
+              - generic [ref=f47e87]:
+                - generic [ref=f47e88]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f47e89]:
+                  - paragraph [ref=f47e90]: Nenhuma conta agendada
+                  - paragraph [ref=f47e91]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f47e93] [cursor=pointer]
+          - generic [ref=f47e97]:
+            - generic [ref=f47e103]:
+              - heading "Atividades" [level=2] [ref=f47e104]
+              - paragraph [ref=f47e105]: Últimos registros da casa
+            - generic [ref=f47e106]:
+              - generic [ref=f47e107]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f47e108]:
+                - paragraph [ref=f47e109]: Tudo limpo por aqui
+                - paragraph [ref=f47e110]: Nenhum gasto registrado. Clique no botão de + para começar!
+    - navigation [ref=f47e112]:
+      - generic [ref=f47e113]:
+        - button "Casa" [ref=f47e114] [cursor=pointer]
+        - button "Pessoal" [ref=f47e122] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f47e129] [cursor=pointer]
+      - generic [ref=f47e131]:
+        - button "Acertos" [ref=f47e132] [cursor=pointer]
+        - button "Ajustes" [active] [ref=f47e140] [cursor=pointer]:
+          - generic [ref=f47e141]:
+            - generic [ref=f47e142]: T
+            - generic [ref=f47e145]: Ajustes
+  - generic [ref=f47e151]:
+    - generic [ref=f47e152]:
+      - heading "Perfil dos Usuários" [level=2] [ref=f47e153]
+      - paragraph [ref=f47e154]: Configure quem mora aqui e como cada um contribui
+    - generic [ref=f47e156]:
+      - button "Meu Perfil" [ref=f47e157] [cursor=pointer]
+      - button "Acessos" [ref=f47e158] [cursor=pointer]
+      - button "Casas" [ref=f47e159] [cursor=pointer]
+      - button "Permissões" [ref=f47e160] [cursor=pointer]
+    - generic [ref=f47e163]:
+      - generic [ref=f47e164]:
+        - generic [ref=f47e165]:
+          - generic [ref=f47e166]: T
+          - generic [ref=f47e169]:
+            - generic [ref=f47e170]:
+              - generic [ref=f47e171]:
+                - heading "Test User" [level=3] [ref=f47e172]
+                - button "Editar nome" [ref=f47e173] [cursor=pointer]
+              - paragraph [ref=f47e176]: "@test user"
+            - generic [ref=f47e177]:
+              - generic [ref=f47e178]: "Renda:"
+              - generic [ref=f47e179]: Não informada
+              - button "Editar renda" [ref=f47e180] [cursor=pointer]
+        - button "Sair da Conta" [ref=f47e183] [cursor=pointer]
+      - generic [ref=f47e186]:
+        - generic [ref=f47e187]:
+          - heading "Meus Cartões" [level=3] [ref=f47e188]
+          - paragraph [ref=f47e191]: Gestão de cartões pessoais
+        - generic [ref=f47e192]:
+          - button "Novo Cartão" [ref=f47e194] [cursor=pointer]
+          - generic [ref=f47e196]:
+            - generic [ref=f47e197]:
+              - generic [ref=f47e202]:
+                - generic [ref=f47e203]: Nubank Teste
+                - paragraph [ref=f47e204]: Fecha dia 15
+              - button "Excluir cartão" [ref=f47e205] [cursor=pointer]
+            - generic [ref=f47e209]:
+              - generic [ref=f47e215]:
+                - generic [ref=f47e216]: C6 Teste
+                - paragraph [ref=f47e217]: Fecha dia 20
+              - button "Excluir cartão" [ref=f47e218] [cursor=pointer]
+    - button "Fechar" [ref=f47e223] [cursor=pointer]

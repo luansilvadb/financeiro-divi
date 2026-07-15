@@ -1,0 +1,99 @@
+- generic [ref=f102e5]:
+  - main [ref=f102e7]:
+    - generic [ref=f102e9]:
+      - generic [ref=f102e10]:
+        - button "Selecionar período" [ref=f102e12] [cursor=pointer]:
+          - generic [ref=f102e16]:
+            - generic [ref=f102e17]: "2026"
+            - generic [ref=f102e18]: Julho
+        - generic [ref=f102e21]:
+          - generic [ref=f102e22]: Casa Teste
+          - heading "DIVI." [level=1] [ref=f102e27]
+        - button "Ver atividade" [ref=f102e29] [cursor=pointer]:
+          - generic [ref=f102e30]:
+            - generic [ref=f102e31]: Logs
+            - generic [ref=f102e32]: Atividade
+      - generic [ref=f102e177]:
+        - generic [ref=f102e179]:
+          - generic:
+            - img "Mascote Divi happy"
+          - generic [ref=f102e180]:
+            - heading "Controle Pessoal" [level=2] [ref=f102e181]
+            - paragraph [ref=f102e182]: Minhas pendências isoladas e acertos diretos
+        - generic [ref=f102e183]:
+          - generic [ref=f102e185]:
+            - text: A Receber
+            - paragraph [ref=f102e186]: R$ 0,00
+          - generic [ref=f102e192]:
+            - text: A Pagar
+            - paragraph [ref=f102e193]: R$ 0,00
+        - generic [ref=f102e198]:
+          - generic [ref=f102e200]:
+            - generic [ref=f102e208]:
+              - heading "Pendências" [level=3] [ref=f102e209]
+              - paragraph [ref=f102e210]: Acertos de contas
+            - generic [ref=f102e211]:
+              - generic:
+                - img "Mascote Divi sleeping"
+              - paragraph [ref=f102e212]: Nenhum saldo pendente na sua área pessoal neste período.
+          - generic [ref=f102e214]:
+            - generic [ref=f102e220]:
+              - heading "Atividades" [level=2] [ref=f102e221]
+              - paragraph [ref=f102e222]: Últimos registros da casa
+            - generic [ref=f102e224]:
+              - generic [ref=f102e350]:
+                - generic [ref=f102e351]:
+                  - generic [ref=f102e352]:
+                    - generic [ref=f102e353]: Emprestimo Maria
+                    - generic [ref=f102e355]:
+                      - generic [ref=f102e356]: Empréstimo
+                      - generic [ref=f102e357]:
+                        - generic [ref=f102e358]: T
+                        - generic [ref=f102e361]:
+                          - text: Pago por
+                          - strong [ref=f102e362]: Test User
+                  - generic [ref=f102e363]: R$ 0,75
+                - generic [ref=f102e366]:
+                  - button "Ajustar Emprestimo Maria" [ref=f102e367] [cursor=pointer]: Ajustar
+                  - button "Estornar Emprestimo Maria" [ref=f102e370] [cursor=pointer]: Estornar
+              - generic [ref=f102e225]:
+                - generic [ref=f102e226]:
+                  - generic [ref=f102e227]:
+                    - generic [ref=f102e228]: Emprestimo teste João
+                    - generic [ref=f102e230]:
+                      - generic [ref=f102e231]: Empréstimo
+                      - generic [ref=f102e232]:
+                        - generic [ref=f102e233]: T
+                        - generic [ref=f102e236]:
+                          - text: Pago por
+                          - strong [ref=f102e237]: Test User
+                  - generic [ref=f102e238]: R$ 0,50
+                - generic [ref=f102e241]:
+                  - button "Ajustar Emprestimo teste João" [ref=f102e242] [cursor=pointer]: Ajustar
+                  - button "Estornar Emprestimo teste João" [ref=f102e245] [cursor=pointer]: Estornar
+              - generic [ref=f102e249]:
+                - generic [ref=f102e250]:
+                  - generic [ref=f102e251]:
+                    - generic [ref=f102e252]: Empréstimo
+                    - generic [ref=f102e254]:
+                      - generic [ref=f102e255]: Empréstimo
+                      - generic [ref=f102e256]:
+                        - generic [ref=f102e257]: T
+                        - generic [ref=f102e260]:
+                          - text: Pago por
+                          - strong [ref=f102e261]: Test User
+                  - generic [ref=f102e262]: R$ 323,23
+                - generic [ref=f102e265]:
+                  - button "Ajustar Empréstimo" [ref=f102e266] [cursor=pointer]: Ajustar
+                  - button "Estornar Empréstimo" [ref=f102e269] [cursor=pointer]: Estornar
+  - navigation [ref=f102e105]:
+    - generic [ref=f102e106]:
+      - button "Casa" [ref=f102e107] [cursor=pointer]
+      - button "Pessoal" [ref=f102e115] [cursor=pointer]
+    - button "Adicionar novo gasto" [ref=f102e122] [cursor=pointer]
+    - generic [ref=f102e124]:
+      - button "Acertos" [ref=f102e125] [cursor=pointer]
+      - button "Ajustes" [ref=f102e133] [cursor=pointer]:
+        - generic [ref=f102e134]:
+          - generic [ref=f102e135]: T
+          - generic [ref=f102e138]: Ajustes

@@ -1,0 +1,31 @@
+- generic [ref=f5e14]:
+  - generic [ref=f5e15]:
+    - generic:
+      - generic:
+        - img "Mascote Divi excited"
+    - heading "DIVI." [level=1] [ref=f5e16]
+    - paragraph [ref=f5e17]: Organize despesas compartilhadas, feche o mês e entenda os acertos da casa
+  - generic [ref=f5e18]:
+    - generic [ref=f5e57]:
+      - generic [ref=f5e58]: Nome de Exibição
+      - textbox "Nome de Exibição" [active] [ref=f5e59]:
+        - /placeholder: Como quer ser chamado
+    - generic [ref=f5e19]:
+      - generic [ref=f5e20]: E-mail
+      - textbox "E-mail" [ref=f5e21]:
+        - /placeholder: seu@email.com
+    - generic [ref=f5e22]:
+      - generic [ref=f5e23]: Senha
+      - generic [ref=f5e26]:
+        - textbox "Senha" [ref=f5e27]:
+          - /placeholder: ••••••••
+        - button "Mostrar senha" [ref=f5e28] [cursor=pointer]
+    - button "Criar Conta e Entrar" [ref=f5e60] [cursor=pointer]
+    - generic [ref=f5e34]: Ou
+    - generic [ref=f5e40]:
+      - button "Continuar com o Google. Abre em uma nova guia" [ref=f5e42] [cursor=pointer]:
+        - generic [ref=f5e44]: Continuar com o Google
+      - iframe
+  - paragraph [ref=f5e55]:
+    - text: Já possui uma conta?
+    - button "Faça login" [ref=f5e61] [cursor=pointer]

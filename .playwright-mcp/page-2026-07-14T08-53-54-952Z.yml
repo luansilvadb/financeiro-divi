@@ -1,0 +1,69 @@
+- generic [ref=f66e12]:
+  - main [ref=f66e14]:
+    - generic [ref=f66e16]:
+      - generic [ref=f66e17]:
+        - button "Selecionar período" [ref=f66e19] [cursor=pointer]:
+          - generic [ref=f66e23]:
+            - generic [ref=f66e24]: "2026"
+            - generic [ref=f66e25]: Julho
+        - generic [ref=f66e28]:
+          - generic [ref=f66e29]: Casa Teste
+          - heading "DIVI." [level=1] [ref=f66e34]
+        - button "Ver atividade" [ref=f66e36] [cursor=pointer]:
+          - generic [ref=f66e37]:
+            - generic [ref=f66e38]: Logs
+            - generic [ref=f66e39]: Atividade
+      - generic [ref=f66e45]:
+        - generic [ref=f66e46]:
+          - generic [ref=f66e47]:
+            - generic:
+              - img "Mascote Divi sleeping"
+          - generic [ref=f66e48]:
+            - heading "Comece pelas Despesas" [level=3] [ref=f66e49]: Comece pelasDespesas
+            - paragraph [ref=f66e50]: Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
+        - generic [ref=f66e52]:
+          - generic [ref=f66e59]:
+            - heading "Saldos Unificados" [level=2] [ref=f66e60]
+            - paragraph [ref=f66e61]: Créditos e débitos da casa
+          - generic [ref=f66e63]:
+            - generic [ref=f66e64]:
+              - generic [ref=f66e65]: T
+              - generic [ref=f66e68]:
+                - generic [ref=f66e69]: Test User
+                - generic [ref=f66e70]: Tudo em dia
+            - generic [ref=f66e71]: R$ 0,00
+        - generic [ref=f66e74]:
+          - generic [ref=f66e83]:
+            - heading "Contas Fixas" [level=2] [ref=f66e84]
+            - paragraph [ref=f66e85]: Recorrentes do mês
+          - generic [ref=f66e86]:
+            - generic [ref=f66e87]:
+              - generic [ref=f66e88]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f66e89]:
+                - paragraph [ref=f66e90]: Nenhuma conta agendada
+                - paragraph [ref=f66e91]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+            - button "Adicionar Nova Conta" [ref=f66e93] [cursor=pointer]
+        - generic [ref=f66e97]:
+          - generic [ref=f66e103]:
+            - heading "Atividades" [level=2] [ref=f66e104]
+            - paragraph [ref=f66e105]: Últimos registros da casa
+          - generic [ref=f66e106]:
+            - generic [ref=f66e107]:
+              - generic:
+                - img "Mascote Divi happy"
+            - generic [ref=f66e108]:
+              - paragraph [ref=f66e109]: Tudo limpo por aqui
+              - paragraph [ref=f66e110]: Nenhum gasto registrado. Clique no botão de + para começar!
+  - navigation [ref=f66e112]:
+    - generic [ref=f66e113]:
+      - button "Casa" [ref=f66e114] [cursor=pointer]
+      - button "Pessoal" [ref=f66e122] [cursor=pointer]
+    - button "Adicionar novo gasto" [ref=f66e129] [cursor=pointer]
+    - generic [ref=f66e131]:
+      - button "Acertos" [ref=f66e132] [cursor=pointer]
+      - button "Ajustes" [ref=f66e140] [cursor=pointer]:
+        - generic [ref=f66e141]:
+          - generic [ref=f66e142]: T
+          - generic [ref=f66e145]: Ajustes

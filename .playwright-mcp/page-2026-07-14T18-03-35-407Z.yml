@@ -1,0 +1,103 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e11]:
+    - main [ref=f4e57]:
+      - generic [ref=f4e59]:
+        - generic [ref=f4e60]:
+          - button "Selecionar período" [ref=f4e62] [cursor=pointer]:
+            - generic [ref=f4e66]:
+              - generic [ref=f4e67]: "2026"
+              - generic [ref=f4e68]: Julho
+          - generic [ref=f4e71]:
+            - generic [ref=f4e72]: Casa Teste CSRF
+            - heading "DIVI." [level=1] [ref=f4e77]
+          - button "Ver atividade" [ref=f4e79] [cursor=pointer]:
+            - generic [ref=f4e80]:
+              - generic [ref=f4e81]: Logs
+              - generic [ref=f4e82]: Atividade
+        - generic [ref=f4e88]:
+          - generic [ref=f4e95]:
+            - generic [ref=f4e102]:
+              - heading "Saldos Unificados" [level=2] [ref=f4e103]
+              - paragraph [ref=f4e104]: Créditos e débitos da casa
+            - generic [ref=f4e106]:
+              - generic [ref=f4e107]:
+                - generic [ref=f4e108]: C
+                - generic [ref=f4e111]:
+                  - generic [ref=f4e112]: CSRF Test
+                  - generic [ref=f4e113]: Tudo em dia
+              - generic [ref=f4e114]: R$ 0,00
+          - generic [ref=f4e117]:
+            - generic [ref=f4e126]:
+              - heading "Contas Fixas" [level=2] [ref=f4e127]
+              - paragraph [ref=f4e128]: Recorrentes do mês
+            - generic [ref=f4e129]:
+              - generic [ref=f4e130]:
+                - generic [ref=f4e131]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f4e132]:
+                  - paragraph [ref=f4e133]: Nenhuma conta agendada
+                  - paragraph [ref=f4e134]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f4e136] [cursor=pointer]
+          - generic [ref=f4e140]:
+            - generic [ref=f4e146]:
+              - heading "Atividades" [level=2] [ref=f4e147]
+              - paragraph [ref=f4e148]: Últimos registros da casa
+            - generic [ref=f4e190]:
+              - generic [ref=f4e281]:
+                - generic [ref=f4e282]:
+                  - generic [ref=f4e283]:
+                    - generic [ref=f4e284]: Luz
+                    - generic [ref=f4e286]:
+                      - generic [ref=f4e287]: Cartão
+                      - generic [ref=f4e288]:
+                        - generic [ref=f4e289]: C
+                        - generic [ref=f4e292]:
+                          - text: Pago por
+                          - strong [ref=f4e293]: CSRF Test
+                  - generic [ref=f4e294]: R$ 100,00
+                - generic [ref=f4e297]:
+                  - button "Ajustar Luz" [ref=f4e298] [cursor=pointer]: Ajustar
+                  - button "Estornar Luz" [ref=f4e301] [cursor=pointer]: Estornar
+              - generic [ref=f4e191]:
+                - generic [ref=f4e192]:
+                  - generic [ref=f4e193]:
+                    - generic [ref=f4e194]: Luz
+                    - generic [ref=f4e196]:
+                      - generic [ref=f4e197]: Pix
+                      - generic [ref=f4e198]:
+                        - generic [ref=f4e199]: C
+                        - generic [ref=f4e202]:
+                          - text: Pago por
+                          - strong [ref=f4e203]: CSRF Test
+                  - generic [ref=f4e204]: R$ 4,34
+                - generic [ref=f4e207]:
+                  - button "Ajustar Luz" [ref=f4e208] [cursor=pointer]: Ajustar
+                  - button "Estornar Luz" [ref=f4e211] [cursor=pointer]: Estornar
+    - navigation [ref=f4e155]:
+      - generic [ref=f4e156]:
+        - button "Casa" [ref=f4e157] [cursor=pointer]
+        - button "Pessoal" [ref=f4e165] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f4e172] [cursor=pointer]
+      - generic [ref=f4e174]:
+        - button "Acertos" [ref=f4e175] [cursor=pointer]
+        - button "Ajustes" [ref=f4e183] [cursor=pointer]:
+          - generic [ref=f4e184]:
+            - generic [ref=f4e185]: C
+            - generic [ref=f4e188]: Ajustes
+  - dialog "Diálogo" [ref=f4e306]:
+    - generic [ref=f4e310]:
+      - banner [ref=f4e311]:
+        - generic [ref=f4e313]:
+          - paragraph [ref=f4e314]: Passo 4 de 6
+          - heading "Qual foi o valor total?" [level=2] [ref=f4e369]
+        - 'progressbar "Progresso do lançamento: 67%" [ref=f4e370]'
+      - generic [ref=f4e373]:
+        - generic [ref=f4e374]: Valor total do lançamento
+        - generic [ref=f4e375]:
+          - generic [ref=f4e376]: R$
+          - textbox "Valor total do lançamento" [ref=f4e377]:
+            - /placeholder: 0,00
+      - contentinfo [ref=f4e338]:
+        - button "Voltar" [ref=f4e358] [cursor=pointer]
+        - button "Avançar" [disabled]

@@ -1,0 +1,119 @@
+- generic [active] [ref=f20e1]:
+  - generic [ref=f20e50]:
+    - main [ref=f20e52]:
+      - generic [ref=f20e54]:
+        - generic [ref=f20e55]:
+          - button "Selecionar período" [ref=f20e57] [cursor=pointer]:
+            - generic [ref=f20e61]:
+              - generic [ref=f20e62]: "2026"
+              - generic [ref=f20e63]: Julho
+          - generic [ref=f20e66]:
+            - generic [ref=f20e67]: Casa Teste
+            - heading "DIVI." [level=1] [ref=f20e72]
+          - button "Ver atividade" [ref=f20e74] [cursor=pointer]:
+            - generic [ref=f20e75]:
+              - generic [ref=f20e76]: Logs
+              - generic [ref=f20e77]: Atividade
+        - generic [ref=f20e83]:
+          - generic [ref=f20e84]:
+            - generic [ref=f20e85]:
+              - generic:
+                - img "Mascote Divi sleeping"
+            - generic [ref=f20e86]:
+              - heading "Comece pelas Despesas" [level=3] [ref=f20e87]: Comece pelasDespesas
+              - paragraph [ref=f20e88]: Registre a primeira despesa compartilhada para acompanhar os saldos e preparar o fechamento do mês.
+          - generic [ref=f20e90]:
+            - generic [ref=f20e97]:
+              - heading "Saldos Unificados" [level=2] [ref=f20e98]
+              - paragraph [ref=f20e99]: Créditos e débitos da casa
+            - generic [ref=f20e101]:
+              - generic [ref=f20e102]:
+                - generic [ref=f20e103]: T
+                - generic [ref=f20e106]:
+                  - generic [ref=f20e107]: Test User
+                  - generic [ref=f20e108]: Tudo em dia
+              - generic [ref=f20e109]: R$ 0,00
+          - generic [ref=f20e112]:
+            - generic [ref=f20e121]:
+              - heading "Contas Fixas" [level=2] [ref=f20e122]
+              - paragraph [ref=f20e123]: Recorrentes do mês
+            - generic [ref=f20e124]:
+              - generic [ref=f20e125]:
+                - generic [ref=f20e126]:
+                  - generic:
+                    - img "Mascote Divi happy"
+                - generic [ref=f20e127]:
+                  - paragraph [ref=f20e128]: Nenhuma conta agendada
+                  - paragraph [ref=f20e129]: Cadastre aluguel, luz ou internet para fazer lançamentos recorrentes ultra rápidos.
+              - button "Adicionar Nova Conta" [ref=f20e131] [cursor=pointer]
+          - generic [ref=f20e135]:
+            - generic [ref=f20e141]:
+              - heading "Atividades" [level=2] [ref=f20e142]
+              - paragraph [ref=f20e143]: Últimos registros da casa
+            - generic [ref=f20e144]:
+              - generic [ref=f20e145]:
+                - generic:
+                  - img "Mascote Divi happy"
+              - generic [ref=f20e146]:
+                - paragraph [ref=f20e147]: Tudo limpo por aqui
+                - paragraph [ref=f20e148]: Nenhum gasto registrado. Clique no botão de + para começar!
+    - navigation [ref=f20e150]:
+      - generic [ref=f20e151]:
+        - button "Casa" [ref=f20e152] [cursor=pointer]
+        - button "Pessoal" [ref=f20e160] [cursor=pointer]
+      - button "Adicionar novo gasto" [ref=f20e167] [cursor=pointer]
+      - generic [ref=f20e169]:
+        - button "Acertos" [ref=f20e170] [cursor=pointer]
+        - button "Ajustes" [ref=f20e178] [cursor=pointer]:
+          - generic [ref=f20e179]:
+            - generic [ref=f20e180]: T
+            - generic [ref=f20e183]: Ajustes
+  - generic [ref=f20e234]:
+    - generic [ref=f20e235]:
+      - button [ref=f20e236] [cursor=pointer]
+      - generic [ref=f20e239]:
+        - heading "Novo Cartão" [level=3] [ref=f20e240]:
+          - text: Novo
+          - generic [ref=f20e241]: Cartão
+        - paragraph [ref=f20e242]: Adicione um novo cartão de crédito
+    - generic [ref=f20e243]:
+      - generic [ref=f20e244]:
+        - generic [ref=f20e245]: Nome do Cartão
+        - 'textbox "Ex: Nubank, C6, etc." [ref=f20e246]'
+      - generic [ref=f20e247]:
+        - generic [ref=f20e248]: Dia de Fechamento
+        - combobox [ref=f20e250] [cursor=pointer]:
+          - option "Dia 1"
+          - option "Dia 2"
+          - option "Dia 3"
+          - option "Dia 4"
+          - option "Dia 5"
+          - option "Dia 6"
+          - option "Dia 7"
+          - option "Dia 8"
+          - option "Dia 9"
+          - option "Dia 10" [selected]
+          - option "Dia 11"
+          - option "Dia 12"
+          - option "Dia 13"
+          - option "Dia 14"
+          - option "Dia 15"
+          - option "Dia 16"
+          - option "Dia 17"
+          - option "Dia 18"
+          - option "Dia 19"
+          - option "Dia 20"
+          - option "Dia 21"
+          - option "Dia 22"
+          - option "Dia 23"
+          - option "Dia 24"
+          - option "Dia 25"
+          - option "Dia 26"
+          - option "Dia 27"
+          - option "Dia 28"
+          - option "Dia 29"
+          - option "Dia 30"
+          - option "Dia 31"
+      - generic [ref=f20e251]:
+        - button "Cancelar" [ref=f20e252] [cursor=pointer]
+        - button "Cadastrar" [disabled]

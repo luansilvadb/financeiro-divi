@@ -1,0 +1,793 @@
+basePath: /
+definitions:
+  dto.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserProfile'
+    type: object
+  dto.CreateCartaoRequest:
+    properties:
+      dia_fechamento:
+        maximum: 31
+        minimum: 1
+        type: integer
+      nome:
+        type: string
+      responsavel_padrao_id:
+        type: string
+    required:
+    - dia_fechamento
+    - nome
+    - responsavel_padrao_id
+    type: object
+  dto.CreateContaFixaRequest:
+    properties:
+      default_split:
+        items:
+          $ref: '#/definitions/dto.SplitItem'
+        type: array
+      fixed_value_centavos:
+        type: integer
+      icon:
+        type: string
+      name:
+        type: string
+    required:
+    - icon
+    - name
+    type: object
+  dto.CreateGastoRequest:
+    properties:
+      borrower_id:
+        type: string
+      card_owner_id:
+        type: string
+      comprador_id:
+        type: string
+      descricao:
+        type: string
+      divisoes:
+        items:
+          $ref: '#/definitions/dto.SplitItem'
+        type: array
+      fatura_id:
+        type: string
+      installments:
+        type: integer
+      is_loan:
+        type: boolean
+      is_private:
+        type: boolean
+      method:
+        type: string
+      split_mode:
+        type: string
+      total_installments:
+        type: integer
+      valor_total_centavos:
+        minimum: 1
+        type: integer
+    required:
+    - comprador_id
+    - descricao
+    - valor_total_centavos
+    type: object
+  dto.CreateMembroRequest:
+    properties:
+      avatar:
+        type: string
+      nome:
+        type: string
+    required:
+    - avatar
+    - nome
+    type: object
+  dto.CreateTenantRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  dto.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.GastoResponse:
+    properties:
+      comprador_id:
+        type: string
+      created_at:
+        type: string
+      descricao:
+        type: string
+      divisoes:
+        items:
+          $ref: '#/definitions/dto.SplitItem'
+        type: array
+      fatura_id:
+        type: string
+      id:
+        type: string
+      installments:
+        type: integer
+      is_loan:
+        type: boolean
+      split_mode:
+        type: string
+      total_installments:
+        type: integer
+      valor_total_centavos:
+        type: integer
+    type: object
+  dto.GoogleLoginRequest:
+    properties:
+      credential:
+        type: string
+    required:
+    - credential
+    type: object
+  dto.JoinTenantRequest:
+    properties:
+      invite_code:
+        type: string
+    required:
+    - invite_code
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.MembroResponse:
+    properties:
+      ativo:
+        type: boolean
+      avatar:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+      renda_centavos:
+        type: integer
+      role:
+        type: string
+      user_id:
+        type: string
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      nome:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - nome
+    - password
+    type: object
+  dto.ResetPasswordRequest:
+    properties:
+      password:
+        minLength: 6
+        type: string
+      token:
+        type: string
+    required:
+    - password
+    - token
+    type: object
+  dto.SplitItem:
+    properties:
+      membro_id:
+        type: string
+      valor_centavos:
+        type: integer
+    required:
+    - membro_id
+    - valor_centavos
+    type: object
+  dto.TenantResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      invite_code:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UserProfile:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+    type: object
+  dto.ValidateEventRequest:
+    properties:
+      dedupe_key:
+        type: string
+      period_key:
+        type: string
+      type:
+        type: string
+    required:
+    - dedupe_key
+    - type
+    type: object
+  model.AuditLog:
+    properties:
+      acao:
+        type: string
+      created_at:
+        type: string
+      detalhes:
+        type: string
+      id:
+        type: string
+      membro_id:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  model.Cartao:
+    properties:
+      created_at:
+        type: string
+      dia_fechamento:
+        type: integer
+      id:
+        type: string
+      nome:
+        type: string
+      responsavel_padrao_id:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  model.ContaFixa:
+    properties:
+      created_at:
+        type: string
+      default_split:
+        type: string
+      fixed_value_centavos:
+        type: integer
+      icon:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: API de controle financeiro do Divi
+  title: Divi API
+  version: "1.0"
+paths:
+  /api/audit-logs:
+    get:
+      description: Obtém logs de auditoria do núcleo
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.AuditLog'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get audit logs
+      tags:
+      - Auditoria
+  /api/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Solicita link de recuperação de senha
+      parameters:
+      - description: Email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Forgot password
+      tags:
+      - Auth
+  /api/auth/google:
+    post:
+      consumes:
+      - application/json
+      description: Autentica ou registra usuário via Google
+      parameters:
+      - description: Credencial Google
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GoogleLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Google OAuth login
+      tags:
+      - Auth
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica um usuário existente
+      parameters:
+      - description: Credenciais
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - Auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova conta de usuário
+      parameters:
+      - description: Dados de registro
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+  /api/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Redefine a senha usando token recebido por email
+      parameters:
+      - description: Token e nova senha
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reset password
+      tags:
+      - Auth
+  /api/cartoes:
+    post:
+      consumes:
+      - application/json
+      description: Adiciona um cartão de crédito ao núcleo
+      parameters:
+      - description: Dados do cartão
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCartaoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Cartao'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create cartão
+      tags:
+      - Cartões
+  /api/contas-fixas:
+    post:
+      consumes:
+      - application/json
+      description: Registra uma conta fixa/recorrente
+      parameters:
+      - description: Dados da conta fixa
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateContaFixaRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.ContaFixa'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create conta fixa
+      tags:
+      - Contas Fixas
+  /api/gastos:
+    get:
+      description: Lista despesas do núcleo familiar
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.GastoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List gastos
+      tags:
+      - Gastos
+    post:
+      consumes:
+      - application/json
+      description: Registra uma despesa no núcleo
+      parameters:
+      - description: Dados do gasto
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateGastoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.GastoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create gasto
+      tags:
+      - Gastos
+  /api/membros:
+    get:
+      description: Lista todos os membros do núcleo familiar
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.MembroResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List membros
+      tags:
+      - Membros
+    post:
+      consumes:
+      - application/json
+      description: Adiciona um membro ao núcleo familiar
+      parameters:
+      - description: Dados do membro
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMembroRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.MembroResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create membro
+      tags:
+      - Membros
+  /api/tenants:
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo núcleo familiar (tenant)
+      parameters:
+      - description: Nome do tenant
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create tenant
+      tags:
+      - Tenant
+  /api/tenants/join:
+    post:
+      consumes:
+      - application/json
+      description: Entra em um núcleo familiar via código de convite
+      parameters:
+      - description: Código de convite
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.JoinTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Join tenant
+      tags:
+      - Tenant
+  /api/validation-events:
+    post:
+      consumes:
+      - application/json
+      description: Registra um evento de validação de produto
+      parameters:
+      - description: Dados do evento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ValidateEventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Record validation event
+      tags:
+      - Validação
+  /health:
+    get:
+      description: Verifica se a API está operacional
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - Health
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
