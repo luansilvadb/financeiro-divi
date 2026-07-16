@@ -15,6 +15,7 @@ interface Props {
   membros: { id: string; nome: string }[]
   cartoes: { id: string; nome: string; responsavelPadraoId: string }[]
   faturas?: { id: string; cartaoId: string }[]
+  loading?: boolean
 }
 
 const props = defineProps<Props>()
@@ -299,7 +300,7 @@ const handleConfirm = () => {
     <template #footer>
       <div class="grid grid-cols-2 gap-3">
         <Button variant="secondary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('cancel')">Voltar</Button>
-        <Button variant="primary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0">Salvar Alterações</Button>
+        <Button variant="primary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="handleConfirm" :disabled="!descInput.trim() || valorInput <= 0 || props.loading" :loading="props.loading">Salvar Alterações</Button>
       </div>
     </template>
   </BottomSheet>

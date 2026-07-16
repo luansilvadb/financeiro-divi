@@ -211,7 +211,7 @@ const cancelarNovoMembro = () => {
 
         <div class="flex gap-2.5 pt-2">
           <Button variant="secondary" @click="cancelarEdicao" class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12">Cancelar</Button>
-          <Button variant="primary" @click="handleSalvarEdicao" :disabled="salvando" class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12">{{ salvando ? 'Salvando...' : 'Salvar' }}</Button>
+          <Button variant="primary" @click="handleSalvarEdicao" :disabled="salvando" :loading="salvando" class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12">Salvar</Button>
         </div>
       </div>
     </div>

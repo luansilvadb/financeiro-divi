@@ -17,6 +17,10 @@ export function useDashboardUIState() {
   const nomeNovoPeriodo = ref('')
   const isDropdownAbertosOpen = ref(false)
   const isSubmittingPix = ref(false)
+  const isSubmittingAjusteGasto = ref(false)
+  const isSubmittingLancarBill = ref(false)
+  const isSubmittingSalvarTemplate = ref(false)
+  const isSubmittingEstorno = ref(false)
   const itemParaEstornar = ref<Gasto | ContaFixa | null>(null)
   const itemTypeParaEstornar = ref('')
   const nettingTarget = ref<TransferenciaNetting | null>(null)
@@ -27,7 +31,7 @@ export function useDashboardUIState() {
   return {
     modalStack, abrirModal, fecharModal, isModalNoTopo,
     gastoParaAjustar, billSelecionada, nomeNovoPeriodo,
-    isDropdownAbertosOpen, isSubmittingPix, itemParaEstornar, itemTypeParaEstornar,
+    isDropdownAbertosOpen, isSubmittingPix, isSubmittingAjusteGasto, isSubmittingLancarBill, isSubmittingSalvarTemplate, isSubmittingEstorno, itemParaEstornar, itemTypeParaEstornar,
     nettingTarget,
     auditLogs, isLogsLoading,
     abrirConfirmacaoEstornoGasto: (g: Gasto) => { itemParaEstornar.value = g; itemTypeParaEstornar.value = 'Lançamento'; abrirModal('confirmacao-estorno') },

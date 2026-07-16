@@ -41,9 +41,12 @@ const meusCartoes = computed(() => {
   return cartoes.value.filter(c => c.responsavelPadraoId === currentMembro.value?.id)
 })
 
+const isSubmitting = ref(false)
+
 const adicionarCard = async () => {
   const ownerId = currentMembro.value?.id
   if (!nome.value || !ownerId) return
+  isSubmitting.value = true
   try {
     await adicionarCartao(nome.value, diaFechamento.value, ownerId)
     nome.value = ''
@@ -51,6 +54,8 @@ const adicionarCard = async () => {
     formularioAberto.value = false
   } catch (error: unknown) {
     toast.show(mensagemErro(error, 'Erro ao cadastrar cartão'), 'error')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -84,7 +89,7 @@ const handleExcluir = async (id: string) => {
               variant="secondary"
               class="w-full"
             >
-              <Plus class="w-5 h-5 mr-2" />
+              <Plus class="w-5 h-5" />
               Novo Cartão
             </Button>
           </div>
@@ -195,6 +200,7 @@ const handleExcluir = async (id: string) => {
               variant="secondary"
               @click="formularioAberto = false"
               class="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest"
+              :disabled="isSubmitting"
             >
               Cancelar
             </Button>
@@ -202,7 +208,8 @@ const handleExcluir = async (id: string) => {
               variant="primary"
               @click="adicionarCard"
               class="flex-1 h-12 text-[10px] font-bold uppercase tracking-widest"
-              :disabled="!nome || !currentMembro || !activeTenantId"
+              :disabled="!nome || !currentMembro || !activeTenantId || isSubmitting"
+              :loading="isSubmitting"
             >
               Cadastrar
             </Button>

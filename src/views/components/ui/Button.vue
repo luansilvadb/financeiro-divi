@@ -19,8 +19,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const classes = computed(() => {
   return [
-    'inline-flex items-center justify-center whitespace-nowrap transition-all duration-300 ease-spring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-90 cursor-pointer border-none select-none',
-    props.loading && 'relative !text-transparent transition-none',
+    'relative inline-flex items-center justify-center whitespace-nowrap transition-all duration-300 ease-spring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 active:scale-90 cursor-pointer border-none select-none',
+    props.loading && 'transition-none',
     props.size === 'default' && 'h-12 px-6 text-sm font-bold uppercase tracking-widest',
     props.size === 'sm' && 'h-9 px-4 text-[10px] font-bold uppercase tracking-wider',
     props.size === 'lg' && 'h-16 px-10 text-base font-bold uppercase tracking-[0.15em]',
@@ -37,9 +37,9 @@ const classes = computed(() => {
 
 <template>
   <button type="button" :class="classes" :disabled="disabled || loading" :aria-busy="loading">
-    <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-current">
-      <Loader2 class="w-5 h-5 animate-spin" />
-    </div>
-    <slot />
+    <Loader2 v-if="loading" class="absolute w-5 h-5 animate-spin text-current" />
+    <span class="inline-flex items-center gap-1.5" :class="{ 'invisible': loading }">
+      <slot />
+    </span>
   </button>
 </template>

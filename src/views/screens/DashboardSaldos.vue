@@ -13,12 +13,12 @@ import DetalhamentoSaldosCard from '../components/ledger/dashboard/DetalhamentoS
 import DashboardHeader from '../components/ledger/dashboard/DashboardHeader.vue'
 import UnifiedBalancePanel from '../components/ledger/dashboard/UnifiedBalancePanel.vue'
 import NettingPanel from '../components/ledger/dashboard/NettingPanel.vue'
-import Card from '../components/ui/Card.vue'
-import Button from '../components/ui/Button.vue'
+
+
 import DashboardModalsManager from './DashboardModalsManager.vue'
 import IllustrationMascot from '../components/ui/IllustrationMascot.vue'
 import SkeletonMimic from '../components/ui/SkeletonMimic.vue'
-import { CheckCircle2 } from 'lucide-vue-next'
+
 import PersonalBalancePanel from '../components/ledger/dashboard/PersonalBalancePanel.vue'
 
 interface Props {
@@ -51,10 +51,8 @@ const {
   abrirNovoBill,
   abrirAjustarGasto,
   abrirConfirmacaoEstornoGasto,
-  abrirNovoPeriodoBottomSheet,
   estornarContaFixa,
   totalLancamentosPeriodoSelecionado,
-  reabrirPeriodoSelecionado,
   gastosPrivadosFiltrados
 } = vm
 
@@ -210,43 +208,6 @@ defineExpose({
           </div>
 
           <div v-else-if="isFaturas" key="faturas" class="space-y-12 pb-2">
-            <Card class="mt-6 p-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-canvas border-2 border-stone shadow-subtle rounded-2xl transition-all duration-500">
-              <div class="flex items-center gap-5">
-                <div v-if="faturaSelecionadaFechada" class="w-12 h-12 rounded-xl bg-meadow/10 flex items-center justify-center shrink-0 border border-meadow/20">
-                  <CheckCircle2 class="w-6 h-6 text-meadow" stroke-width="3" />
-                </div>
-                <div v-else class="w-12 h-12 rounded-xl bg-ember/10 flex items-center justify-center shrink-0 border border-ember/20">
-                  <CheckCircle2 class="w-6 h-6 text-ember opacity-30" stroke-width="3" />
-                </div>
-                <div>
-                  <h3 class="font-bold text-xl leading-tight text-charcoal tracking-tight">Status do Período</h3>
-                  <p class="text-[13px] text-graphite mt-1.5 font-medium leading-relaxed max-w-[400px]">
-                    {{ faturaSelecionadaFechada ? 'Este mês está oficialmente arquivado. O histórico está protegido para auditoria.' : 'Finalize o mês atual para gerar os acertos finais e preparar o próximo ciclo da casa.' }}
-                  </p>
-                </div>
-              </div>
-              <div class="w-full md:w-auto">
-                <Button
-                  v-if="faturaSelecionadaFechada"
-                  variant="secondary"
-                  class="w-full md:w-auto bg-white border-stone text-charcoal font-bold uppercase tracking-widest text-[10px] h-12 px-8 shadow-sm"
-                  :disabled="isFecharPeriodoBloqueado"
-                  @click="reabrirPeriodoSelecionado"
-                >
-                  Reabrir Período
-                </Button>
-                <Button
-                  v-else
-                  variant="primary"
-                  class="w-full md:w-auto !bg-midnight hover:!bg-charcoal text-white font-bold uppercase tracking-widest text-[10px] h-12 px-8 shadow-md"
-                  :disabled="isFecharPeriodoBloqueado"
-                  @click="abrirNovoPeriodoBottomSheet"
-                >
-                  Encerrar Mês
-                </Button>
-              </div>
-            </Card>
-
             <div class="space-y-4">
               <DetalhamentoSaldosCard
                 :membros="membrosVisiveis"
@@ -266,6 +227,7 @@ defineExpose({
       :faturasAbertas="props.faturasAbertas"
       :faturasFechadas="props.faturasFechadas"
       :casasMultitenant="{ activeTenantId, casas, form, copiedCode, isCreating, isEntering, selecionarCasa, criarNovaCasa, entrarPorCodigo, copyInviteCode, handleLogoutClick }"
+      :isFecharPeriodoBloqueado="isFecharPeriodoBloqueado"
     />
   </div>
 </template>

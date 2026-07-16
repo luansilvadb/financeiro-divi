@@ -11,6 +11,7 @@ const props = defineProps<{
   visible: boolean
   bill: ContaFixa | null
   membros: { id: string; nome: string }[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits(['save', 'delete', 'cancel'])
@@ -271,10 +272,10 @@ const salvar = () => {
       <div class="flex flex-col gap-3">
         <div class="flex gap-3">
           <Button variant="secondary" class="flex-1 font-bold uppercase tracking-widest text-[10px] h-12" @click="$emit('cancel')">Cancelar</Button>
-          <Button variant="primary" class="flex-[2] font-bold uppercase tracking-widest text-[10px] h-12" @click="salvar" :disabled="!name">Salvar Configuração</Button>
+          <Button variant="primary" class="flex-[2] font-bold uppercase tracking-widest text-[10px] h-12" @click="salvar" :disabled="!name || props.loading" :loading="props.loading">Salvar Configuração</Button>
         </div>
         <button 
-          v-if="bill" 
+          v-if="bill"
           @click="$emit('delete', bill)" 
           class="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-coral hover:bg-coral/5 rounded-lg transition-all border-none bg-transparent cursor-pointer"
         >

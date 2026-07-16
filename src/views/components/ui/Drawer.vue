@@ -129,7 +129,6 @@ const onTransitionLeave = () => {
 // Refs
 const drawerEl = useTemplateRef<HTMLElement>('drawerEl')
 const backdropEl = useTemplateRef<HTMLElement>('backdropEl')
-const contentEl = useTemplateRef<HTMLElement>('contentEl')
 
 // Swipe-to-dismiss (touch horizontal)
 let touchStartX = 0

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { AlertTriangle } from 'lucide-vue-next'
 import type { ContaFixa } from '../../../../models/entities/ContaFixa'
 import type { DashboardViewModel } from '../../../../viewmodels/useDashboardViewModel'
@@ -34,6 +34,8 @@ const temContaFixaPendente = computed(() => contasFixas.value.some(
 ))
 
 const emit = defineEmits(['close', 'confirm'])
+
+const isSubmitting = ref(false)
 </script>
 
 <template>
@@ -74,8 +76,8 @@ const emit = defineEmits(['close', 'confirm'])
 
     <template #footer>
       <div class="grid grid-cols-2 gap-3">
-        <Button variant="secondary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('close')">Cancelar</Button>
-        <Button variant="primary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('confirm')">Arquivar Mês</Button>
+        <Button variant="secondary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('close')" :disabled="isSubmitting">Cancelar</Button>
+        <Button variant="primary" class="font-bold uppercase tracking-widest text-[10px] h-12" @click="emit('confirm')" :loading="isSubmitting">Arquivar Mês</Button>
       </div>
     </template>
   </BottomSheet>
