@@ -30,35 +30,62 @@ const activeCardOwner = ref<string | null>(null)
 const selectedSplit = ref<string[]>([])
 const installmentsInput = ref(1)
 
-watch(() => props.gasto, (newG) => {
-  if (newG) {
-    descInput.value = newG.descricao || ''
-    const valorEmReais = newG.valorTotal?.centavos ? newG.valorTotal.centavos / 100 : 0
-    valorInput.value = valorEmReais
-    valorFormatado.value = valorEmReais > 0 ? formatarBRL(valorEmReais, false) : ''
-    quemPaga.value = newG.compradorId || ''
-    activeMethod.value = newG.method === 'card' ? 'card' : 'pix'
-    
-    let cardIdResolved: string | null = null
-    if (newG.method === 'card') {
-      if (newG.faturaId && props.faturas) {
-        const fat = props.faturas.find(f => f.id === newG.faturaId)
-        if (fat) {
-          cardIdResolved = fat.cartaoId
-        }
-      }
-      if (!cardIdResolved && newG.cardOwner) {
-        const card = props.cartoes.find(c => c.id === newG.cardOwner || c.responsavelPadraoId === newG.cardOwner)
-        if (card) {
-          cardIdResolved = card.id
-        }
-      }
-    }
-    activeCardOwner.value = cardIdResolved
+// ── Form initialization from Gasto entity ──
 
-    selectedSplit.value = newG.divisoes ? newG.divisoes.map(d => d.membroId) : []
-    installmentsInput.value = newG.installments || 1
+/** Resolve the card ID from a Gasto's faturaId or cardOwner references. */
+function resolveCardId(
+  gasto: Gasto,
+  faturas: { id: string; cartaoId: string }[],
+  cartoes: { id: string; responsavelPadraoId: string }[]
+): string | null {
+  if (gasto.method !== 'card') return null
+
+  if (gasto.faturaId) {
+    const fat = faturas.find(f => f.id === gasto.faturaId)
+    if (fat) return fat.cartaoId
   }
+
+  if (gasto.cardOwner) {
+    const card = cartoes.find(c => c.id === gasto.cardOwner || c.responsavelPadraoId === gasto.cardOwner)
+    if (card) return card.id
+  }
+
+  return null
+}
+
+/** Populate form refs from a Gasto entity snapshot. */
+function populateFormFromGasto(
+  gasto: Gasto,
+  form: {
+    descInput: ReturnType<typeof ref<string>>
+    valorInput: ReturnType<typeof ref<number>>
+    valorFormatado: ReturnType<typeof ref<string>>
+    quemPaga: ReturnType<typeof ref<string>>
+    activeMethod: ReturnType<typeof ref<'pix' | 'card'>>
+    activeCardOwner: ReturnType<typeof ref<string | null>>
+    selectedSplit: ReturnType<typeof ref<string[]>>
+    installmentsInput: ReturnType<typeof ref<number>>
+  },
+  cardIdResolved: string | null
+) {
+  form.descInput.value = gasto.descricao || ''
+  const valorEmReais = gasto.valorTotal?.centavos ? gasto.valorTotal.centavos / 100 : 0
+  form.valorInput.value = valorEmReais
+  form.valorFormatado.value = valorEmReais > 0 ? formatarBRL(valorEmReais, false) : ''
+  form.quemPaga.value = gasto.compradorId || ''
+  form.activeMethod.value = gasto.method === 'card' ? 'card' : 'pix'
+  form.activeCardOwner.value = cardIdResolved
+  form.selectedSplit.value = gasto.divisoes ? gasto.divisoes.map(d => d.membroId) : []
+  form.installmentsInput.value = gasto.installments || 1
+}
+
+watch(() => props.gasto, (newG) => {
+  if (!newG) return
+  const cardIdResolved = resolveCardId(newG, props.faturas ?? [], props.cartoes)
+  populateFormFromGasto(newG, {
+    descInput, valorInput, valorFormatado, quemPaga,
+    activeMethod, activeCardOwner, selectedSplit, installmentsInput
+  }, cardIdResolved)
 }, { immediate: true })
 
 const handleValorInput = (e: Event) => {
@@ -99,65 +126,71 @@ const infoParcelamento = computed(() => {
   return `${installmentsInput.value}x de ${formatarBRL(parcela)}`
 })
 
+// ── Split description helpers ──
+
+function formatInstallmentShareText(
+  n: number,
+  totalMembers: number,
+  valor: number,
+  installments: number,
+  selectedIds: string[],
+  membros: { id: string; nome: string }[]
+): string {
+  const shareTotal = valor / n
+  const shareParcela = shareTotal / installments
+  const formattedTotal = formatarBRL(shareTotal)
+  const formattedParcela = formatarBRL(shareParcela)
+  const suffix = `pagando ${formattedParcela}/mês (${formattedTotal} no total em ${installments}x)`
+
+  if (n === totalMembers) return `Dividido igualmente com todos. Cada um ${suffix}`
+  if (n === 1) {
+    const name = membros.find(m => m.id === selectedIds[0])?.nome || ''
+    return `Só de ${name}. Assume 100% ${suffix}`
+  }
+  const names = selectedIds.map(id => membros.find(m => m.id === id)?.nome).join(' e ')
+  return `Entre ${names}. Cada um ${suffix}`
+}
+
+function formatSinglePaymentShareText(
+  n: number,
+  totalMembers: number,
+  valor: number,
+  selectedIds: string[],
+  membros: { id: string; nome: string }[]
+): string {
+  const share = valor / n
+  const formatted = formatarBRL(share)
+
+  if (n === totalMembers) return `Dividido igualmente com todos. Cada um paga ${formatted}`
+  if (n === 1) {
+    const name = membros.find(m => m.id === selectedIds[0])?.nome || ''
+    return `Só de ${name}. Assume 100% no valor de ${formatted}`
+  }
+  const names = selectedIds.map(id => membros.find(m => m.id === id)?.nome).join(' e ')
+  return `Entre ${names}. Cada um paga ${formatted}`
+}
+
 const calculatedSharesDesc = computed(() => {
   const n = selectedSplit.value.length
   if (n === 0 || valorInput.value <= 0) return 'Digite um valor e selecione participantes'
-  
-  if (installmentsInput.value > 1) {
-    const shareTotal = valorInput.value / n
-    const shareParcela = shareTotal / installmentsInput.value
-    const formattedTotal = formatarBRL(shareTotal)
-    const formattedParcela = formatarBRL(shareParcela)
-    
-    if (n === props.membros.length) {
-      return `Dividido igualmente com todos. Cada um paga ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
-    } else if (n === 1) {
-      const name = props.membros.find(m => m.id === selectedSplit.value[0])?.nome || ''
-      return `Só de ${name}. Assume 100% pagando ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
-    } else {
-      const names = selectedSplit.value.map(id => props.membros.find(m => m.id === id)?.nome).join(' e ')
-      return `Entre ${names}. Cada um paga ${formattedParcela}/mês (${formattedTotal} no total em ${installmentsInput.value}x)`
-    }
-  }
 
-  const share = valorInput.value / n
-  const formatted = formatarBRL(share)
-  
-  if (n === props.membros.length) {
-    return `Dividido igualmente com todos. Cada um paga ${formatted}`
-  } else if (n === 1) {
-    const name = props.membros.find(m => m.id === selectedSplit.value[0])?.nome || ''
-    return `Só de ${name}. Assume 100% no valor de ${formatted}`
-  } else {
-    const names = selectedSplit.value.map(id => props.membros.find(m => m.id === id)?.nome).join(' e ')
-    return `Entre ${names}. Cada um paga ${formatted}`
+  if (installmentsInput.value > 1) {
+    return formatInstallmentShareText(n, props.membros.length, valorInput.value, installmentsInput.value, selectedSplit.value, props.membros)
   }
+  return formatSinglePaymentShareText(n, props.membros.length, valorInput.value, selectedSplit.value, props.membros)
 })
 
-const handleConfirm = () => {
-  if (!descInput.value.trim()) return
-  if (valorInput.value <= 0) return
+// ── Division builder helpers ──
 
-  const totalCents = Math.round(valorInput.value * 100)
-  const floorShare = Math.floor(totalCents / selectedSplit.value.length)
-  const divisoes: DivisaoDeGasto[] = []
-  
-  selectedSplit.value.forEach(mId => {
-    divisoes.push(new DivisaoDeGasto(mId, Dinheiro.deCentavos(floorShare)))
-  })
-
-  let remainder = totalCents - (floorShare * selectedSplit.value.length)
+/** Distribute remaining centavos (after floor division) to members, prioritizing the payer. */
+function distributeRemainder(
+  divisoes: DivisaoDeGasto[],
+  orderedMembers: string[],
+  remainder: number
+): void {
   let idx = 0
-  const order = [...selectedSplit.value]
-  
-  if (quemPaga.value && order.includes(quemPaga.value)) {
-    const index = order.indexOf(quemPaga.value)
-    order.splice(index, 1)
-    order.unshift(quemPaga.value)
-  }
-
   while (remainder > 0) {
-    const targetMemberId = order[idx % order.length]
+    const targetMemberId = orderedMembers[idx % orderedMembers.length]
     const currentDivIdx = divisoes.findIndex(d => d.membroId === targetMemberId)
     if (currentDivIdx > -1) {
       const originalDiv = divisoes[currentDivIdx]
@@ -166,6 +199,32 @@ const handleConfirm = () => {
     remainder--
     idx++
   }
+}
+
+/** Build an ordered member list with the payer first, if present. */
+function orderMembersWithPayerFirst(members: string[], payerId: string): string[] {
+  if (!payerId || !members.includes(payerId)) return [...members]
+  const order = [...members]
+  const index = order.indexOf(payerId)
+  order.splice(index, 1)
+  order.unshift(payerId)
+  return order
+}
+
+const handleConfirm = () => {
+  if (!descInput.value.trim()) return
+  if (valorInput.value <= 0) return
+
+  const totalCents = Math.round(valorInput.value * 100)
+  const floorShare = Math.floor(totalCents / selectedSplit.value.length)
+  const divisoes: DivisaoDeGasto[] = selectedSplit.value.map(mId =>
+    new DivisaoDeGasto(mId, Dinheiro.deCentavos(floorShare))
+  )
+
+  const remainder = totalCents - (floorShare * selectedSplit.value.length)
+  const order = orderMembersWithPayerFirst(selectedSplit.value, quemPaga.value)
+
+  distributeRemainder(divisoes, order, remainder)
 
   emit('save', {
     descricao: descInput.value.trim(),
