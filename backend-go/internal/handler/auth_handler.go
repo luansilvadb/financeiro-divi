@@ -42,7 +42,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			// HTTP 409 is preserved, but the message does not reveal
 			// whether the email already exists or another conflict occurred.
 			log.Printf("tentativa de registro com email existente: %s", req.Email)
-						c.JSON(http.StatusConflict, gin.H{"message": "Nao foi possivel completar o cadastro. Verifique os dados informados e tente novamente."})
+			c.JSON(http.StatusConflict, gin.H{"message": "Nao foi possivel completar o cadastro. Verifique os dados informados e tente novamente."})
 		} else {
 			c.JSON(http.StatusBadRequest, gin.H{"message": userFacingError(err)})
 		}

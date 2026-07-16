@@ -55,18 +55,18 @@ type CreateCartaoRequest struct {
 }
 
 type CreateGastoRequest struct {
-	Descricao          string      `json:"descricao" binding:"required"`
-	ValorTotalCentavos int64       `json:"valorTotalCentavos" binding:"required,min=1"`
-	CompradorID        string      `json:"compradorId" binding:"required"`
-	FaturaID           *string     `json:"faturaId,omitempty"`
-	Installments       *int        `json:"installments,omitempty"`
-	TotalInstallments  *int        `json:"totalInstallments,omitempty"`
-	IsLoan             bool        `json:"isLoan,omitempty"`
-	BorrowerID         *string     `json:"borrowerId,omitempty"`
-	Method             string      `json:"method,omitempty" binding:"omitempty,oneof=pix card cash"`
-	CardOwnerID        *string     `json:"cardOwnerId,omitempty"`
-	IsPrivate          bool        `json:"isPrivate,omitempty"`
-	IsSettlement       bool        `json:"isSettlement,omitempty"`
+	Descricao          string           `json:"descricao" binding:"required"`
+	ValorTotalCentavos int64            `json:"valorTotalCentavos" binding:"required,min=1"`
+	CompradorID        string           `json:"compradorId" binding:"required"`
+	FaturaID           *string          `json:"faturaId,omitempty"`
+	Installments       *int             `json:"installments,omitempty"`
+	TotalInstallments  *int             `json:"totalInstallments,omitempty"`
+	IsLoan             bool             `json:"isLoan,omitempty"`
+	BorrowerID         *string          `json:"borrowerId,omitempty"`
+	Method             string           `json:"method,omitempty" binding:"omitempty,oneof=pix card cash"`
+	CardOwnerID        *string          `json:"cardOwnerId,omitempty"`
+	IsPrivate          bool             `json:"isPrivate,omitempty"`
+	IsSettlement       bool             `json:"isSettlement,omitempty"`
 	SettlementDetails  *json.RawMessage `json:"settlementDetails,omitempty"`
 	GrupoParcelasID    *string          `json:"grupoParcelasId,omitempty"`
 	RecurringBillID    *string          `json:"recurringBillId,omitempty"`
@@ -183,17 +183,17 @@ type UpdateMembroRequest struct {
 }
 
 type UpdateGastoRequest struct {
-	Descricao          *string     `json:"descricao,omitempty"`
-	ValorTotalCentavos *int64      `json:"valorTotalCentavos,omitempty"`
-	CompradorID        *string     `json:"compradorId,omitempty"`
-	FaturaID           *NullString `json:"faturaId,omitempty"`
-	Installments       *int        `json:"installments,omitempty"`
-	TotalInstallments  *int        `json:"totalInstallments,omitempty"`
-	IsLoan             *bool       `json:"isLoan,omitempty"`
-	BorrowerID         *NullString `json:"borrowerId,omitempty"`
-	Method             *string     `json:"method,omitempty" binding:"omitempty,oneof=pix card cash"`
-	CardOwnerID        *NullString `json:"cardOwnerId,omitempty"`
-	IsPrivate          *bool       `json:"isPrivate,omitempty"`
+	Descricao          *string          `json:"descricao,omitempty"`
+	ValorTotalCentavos *int64           `json:"valorTotalCentavos,omitempty"`
+	CompradorID        *string          `json:"compradorId,omitempty"`
+	FaturaID           *NullString      `json:"faturaId,omitempty"`
+	Installments       *int             `json:"installments,omitempty"`
+	TotalInstallments  *int             `json:"totalInstallments,omitempty"`
+	IsLoan             *bool            `json:"isLoan,omitempty"`
+	BorrowerID         *NullString      `json:"borrowerId,omitempty"`
+	Method             *string          `json:"method,omitempty" binding:"omitempty,oneof=pix card cash"`
+	CardOwnerID        *NullString      `json:"cardOwnerId,omitempty"`
+	IsPrivate          *bool            `json:"isPrivate,omitempty"`
 	IsSettlement       *bool            `json:"isSettlement,omitempty"`
 	SettlementDetails  *json.RawMessage `json:"settlementDetails,omitempty"`
 	GrupoParcelasID    *NullString      `json:"grupoParcelasId,omitempty"`
@@ -242,25 +242,25 @@ type MembroResponse struct {
 }
 
 type GastoResponse struct {
-	ID                 string      `json:"id"`
-	Descricao          string      `json:"descricao"`
-	ValorTotalCentavos int64       `json:"valorTotalCentavos"`
-	CompradorID        string      `json:"compradorId"`
-	FaturaID           *string     `json:"faturaId,omitempty"`
-	Installments       int         `json:"installments"`
-	TotalInstallments  int         `json:"totalInstallments"`
-	Method             string      `json:"method"`
-	IsLoan             bool        `json:"isLoan"`
-	IsPrivate          bool        `json:"isPrivate"`
-	BorrowerID         *string     `json:"borrowerId,omitempty"`
-	CardOwnerID        *string     `json:"cardOwnerId,omitempty"`
-	RecurringBillID    *string     `json:"recurringBillId,omitempty"`
-	GrupoParcelasID    *string     `json:"grupoParcelasId,omitempty"`
+	ID                 string           `json:"id"`
+	Descricao          string           `json:"descricao"`
+	ValorTotalCentavos int64            `json:"valorTotalCentavos"`
+	CompradorID        string           `json:"compradorId"`
+	FaturaID           *string          `json:"faturaId,omitempty"`
+	Installments       int              `json:"installments"`
+	TotalInstallments  int              `json:"totalInstallments"`
+	Method             string           `json:"method"`
+	IsLoan             bool             `json:"isLoan"`
+	IsPrivate          bool             `json:"isPrivate"`
+	BorrowerID         *string          `json:"borrowerId,omitempty"`
+	CardOwnerID        *string          `json:"cardOwnerId,omitempty"`
+	RecurringBillID    *string          `json:"recurringBillId,omitempty"`
+	GrupoParcelasID    *string          `json:"grupoParcelasId,omitempty"`
 	IsSettlement       bool             `json:"isSettlement"`
 	SettlementDetails  *json.RawMessage `json:"settlementDetails,omitempty"`
 	CreatedAt          string           `json:"createdAt"`
-	SplitMode          string      `json:"splitMode"`
-	Divisoes           []SplitItem `json:"divisoes,omitempty"`
+	SplitMode          string           `json:"splitMode"`
+	Divisoes           []SplitItem      `json:"divisoes,omitempty"`
 }
 
 type PaginationParams struct {

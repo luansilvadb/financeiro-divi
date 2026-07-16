@@ -165,9 +165,9 @@ func (s *AuthService) GoogleLogin(ctx context.Context, req *dto.GoogleLoginReque
 
 	user, err := s.usuarioRepo.GetByGoogleID(ctx, payload.Subject)
 	if err != nil {
-		userByEmail, err := s.usuarioRepo.GetByEmail(ctx, payload.Email)
-		if err != nil && !errors.Is(err, repository.ErrRecordNotFound) && !errors.Is(err, ErrUserNotFound) {
-			return nil, fmt.Errorf("erro ao verificar email existente: %w", err)
+		userByEmail, lookupErr := s.usuarioRepo.GetByEmail(ctx, payload.Email)
+		if lookupErr != nil && !errors.Is(lookupErr, repository.ErrRecordNotFound) && !errors.Is(lookupErr, ErrUserNotFound) {
+			return nil, fmt.Errorf("erro ao verificar email existente: %w", lookupErr)
 		}
 		if userByEmail != nil {
 			userByEmail.GoogleID = &payload.Subject

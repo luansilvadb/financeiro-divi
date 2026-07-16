@@ -28,8 +28,6 @@ export const CartaoResponseSchema = z.object({
   responsavelPadraoId: z.string(),
 })
 
-export const CartaoListResponseSchema = z.array(CartaoResponseSchema)
-
 // --- Fatura ---
 export const FaturaResponseSchema = z.object({
   id: z.string(),
@@ -40,8 +38,6 @@ export const FaturaResponseSchema = z.object({
   status: z.enum(['ABERTA', 'FECHADA']),
   dataPagamentoBanco: z.string().nullish(),
 })
-
-export const FaturaListResponseSchema = z.array(FaturaResponseSchema)
 
 // --- Gasto ---
 export const GastoResponseSchema = z.object({
@@ -66,8 +62,6 @@ export const GastoResponseSchema = z.object({
   createdAt: z.string().optional(),
 })
 
-export const GastoListResponseSchema = z.array(GastoResponseSchema)
-
 // --- Conta Fixa ---
 const ContaFixaSplitItemSchema = z.object({
   membroId: z.string(),
@@ -82,8 +76,6 @@ export const ContaFixaResponseSchema = z.object({
   defaultSplit: z.array(ContaFixaSplitItemSchema),
   createdAt: z.string().optional(),
 })
-
-export const ContaFixaListResponseSchema = z.array(ContaFixaResponseSchema)
 
 // --- Auth ---
 export const AuthResponseSchema = z.object({

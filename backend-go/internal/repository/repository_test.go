@@ -258,17 +258,6 @@ func TestGormMembroRepo_Update(t *testing.T) {
 	}
 }
 
-func TestGormMembroRepo_Delete(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewGormMembroRepo(db)
-
-	expectDelete(mock, "membros_casa")
-	err := repo.Delete(context.Background(), "m-1", "t-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
 // ---------- Cartao Repository ----------
 
 func TestGormCartaoRepo_Create(t *testing.T) {
@@ -281,23 +270,6 @@ func TestGormCartaoRepo_Create(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestGormCartaoRepo_GetByID(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewGormCartaoRepo(db)
-
-	rows := sqlmock.NewRows([]string{"id", "nome", "dia_fechamento"}).
-		AddRow("c-1", "Nubank", 15)
-	mock.ExpectQuery(`SELECT .+ FROM "cartoes" WHERE`).WillReturnRows(rows)
-
-	cartao, err := repo.GetByID(context.Background(), "c-1", "t-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if cartao.Nome != "Nubank" {
-		t.Errorf("got %s", cartao.Nome)
 	}
 }
 
@@ -408,24 +380,6 @@ func TestGormFaturaRepo_Update(t *testing.T) {
 	}
 }
 
-func TestGormFaturaRepo_ListByCartao(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewGormFaturaRepo(db)
-
-	rows := sqlmock.NewRows([]string{"id", "cartao_id", "mes", "ano", "status"}).
-		AddRow("f-1", "c-1", 1, 2024, "ABERTA").
-		AddRow("f-2", "c-1", 2, 2024, "FECHADA")
-	mock.ExpectQuery(`SELECT .+ FROM "faturas" WHERE`).WillReturnRows(rows)
-
-	list, err := repo.ListByCartao(context.Background(), "c-1", "t-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(list) != 2 {
-		t.Fatalf("expected 2, got %d", len(list))
-	}
-}
-
 // ---------- Gasto Repository ----------
 
 func TestGormGastoRepo_Create(t *testing.T) {
@@ -478,26 +432,6 @@ func TestGormGastoRepo_GetByID(t *testing.T) {
 	}
 	if gasto.Descricao != "Mercado" {
 		t.Errorf("got %s", gasto.Descricao)
-	}
-}
-
-func TestGormGastoRepo_ListByFatura(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewGormGastoRepo(db)
-
-	mock.ExpectQuery(`SELECT .+ FROM "gastos" WHERE`).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "descricao", "fatura_id"}).
-			AddRow("g-1", "Mercado", "f-1").
-			AddRow("g-2", "Uber", "f-1"))
-	mock.ExpectQuery(`SELECT .+ FROM "divisoes_gasto" WHERE`).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "gasto_id", "membro_id", "valor_centavos"}))
-
-	list, err := repo.ListByFatura(context.Background(), "f-1", "t-1")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(list) != 2 {
-		t.Fatalf("expected 2, got %d", len(list))
 	}
 }
 

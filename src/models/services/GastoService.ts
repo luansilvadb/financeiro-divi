@@ -7,6 +7,7 @@ import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import type { Fatura } from '../entities/Fatura'
 import { LancamentoService } from './LancamentoService'
 import { resolverCartao, type CartaoResolvido } from './CartaoResolver'
+import { resolverIdsReaisDeFatura } from '../../shared/utils/resolverFaturaId'
 
 export interface LancarGastoInput {
   flow: 'expense' | 'loan' | 'settlement'
@@ -24,7 +25,7 @@ export interface LancarGastoInput {
   settlementDetails?: {
     fromMemberId: string
     toMemberId: string
-    method: 'pix' | 'cash'
+    method: 'pix' | 'cash' | 'mutual'
   }
 }
 
@@ -43,7 +44,7 @@ export class GastoService {
     private gastoRepo: IGastoRepository,
     private faturaRepo: IFaturaRepository,
     private cartaoRepo: ICartaoRepository,
-    private lancamentoService: LancamentoService = new LancamentoService(gastoRepo, faturaRepo, cartaoRepo)
+    private lancamentoService: LancamentoService
   ) {}
 
   async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
@@ -138,7 +139,6 @@ export class GastoService {
     })
 
     // Delete originals AFTER successful recreation.
-    // If this fails, duplicates exist — the caller should sync to detect them.
     try {
       if (idsParaExcluir.length === 1) await this.gastoRepo.excluir(idsParaExcluir[0])
       else await this.gastoRepo.excluirMuitos(idsParaExcluir)
@@ -186,11 +186,8 @@ export class GastoService {
 
     if (faturasParaSalvar.length > 0) {
       await this.faturaRepo.salvarMuitas(faturasParaSalvar)
-
-      // Re-fetch faturas after saving to resolve composite IDs (cartaoId-mes-ano) to
-      // real backend-generated UUIDs. Using in-memory objects from faturasParaSalvar
-      // would keep frontend-generated composite IDs that don't match the DB rows.
-      await this.remapearIdsCompostosDeFatura(gastosParaSalvar)
+      // Re-fetch faturas to resolve composite IDs to real backend-generated UUIDs.
+      await resolverIdsReaisDeFatura(gastosParaSalvar, this.faturaRepo)
     }
 
     await this.atualizarGastosEmLote(gastosParaSalvar)
@@ -275,41 +272,13 @@ export class GastoService {
     ))
   }
 
-  // ── Helpers extraídos ──────────────────────────────────────────
-
-  /**
-   * Resolve o período (mês/ano) de um gasto a partir da fatura associada,
-   * ou pela data de criação como fallback.
-   */
+  /** Resolve o período de um gasto a partir da fatura associada. */
   private async resolverPeriodoDoGasto(original: Gasto): Promise<{ mes: number; ano: number } | undefined> {
     if (original.faturaId) {
       const fatura = await this.faturaRepo.buscarPorId(original.faturaId)
       return fatura?.periodo
     }
     return { mes: original.createdAt.getMonth() + 1, ano: original.createdAt.getFullYear() }
-  }
-
-  /**
-   * Substitui IDs compostos de fatura (cartaoId-mes-ano) pelos UUIDs reais
-   * gerados pelo backend após a persistência.
-   */
-  private async remapearIdsCompostosDeFatura(gastos: Gasto[]): Promise<void> {
-    const faturasReais = await this.faturaRepo.listarTodas()
-    const idRealPorComposto = new Map<string, string>()
-    for (const f of faturasReais) {
-      const chave = `${f.cartaoId}-${f.periodo.mes}-${f.periodo.ano}`
-      idRealPorComposto.set(chave, f.id)
-    }
-    // Composite IDs have the format: <cartao-uuid>-<mes>-<ano> (3 segments, last two are numbers).
-    const compositoPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{1,2}-\d{4}$/
-    for (const g of gastos) {
-      if (g.faturaId && compositoPattern.test(g.faturaId)) {
-        const realId = idRealPorComposto.get(g.faturaId)
-        if (realId) {
-          ;(g as { faturaId: string | null }).faturaId = realId
-        }
-      }
-    }
   }
 
   /** Atualiza múltiplos gastos individualmente, acumulando erros. */

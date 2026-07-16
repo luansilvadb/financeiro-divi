@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"strings"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -16,28 +14,12 @@ func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 	}
 
 	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
-		// AllowAllOrigins + AllowCredentials: gin-contrib/cors reflects the
-		// request's Origin header back instead of returning "*", which satisfies
-		// the browser requirement that credentialed requests use a specific origin.
 		cfg.AllowAllOrigins = true
+		// CORS spec forbids credentials with wildcard origin; disable them.
+		cfg.AllowCredentials = false
 	} else {
 		cfg.AllowOrigins = allowedOrigins
 	}
 
 	return cors.New(cfg)
-}
-
-func ParseCORSOrigins(raw string) []string {
-	parts := strings.Split(raw, ",")
-	origins := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			origins = append(origins, p)
-		}
-	}
-	if len(origins) == 0 {
-		return []string{"*"}
-	}
-	return origins
 }

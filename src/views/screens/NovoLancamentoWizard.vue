@@ -38,6 +38,16 @@ const toast = useToast()
 
 const isSubmitting = ref(false)
 
+const cartaoSelecionado = computed(() =>
+  wizCardOwner.value ? cartoes.value.find(c => c.id === wizCardOwner.value) : undefined
+)
+
+const nomeResponsavelCartao = computed(() => {
+  const cartao = cartaoSelecionado.value
+  if (!cartao?.responsavelPadraoId) return 'Desconhecido'
+  return membrosLocais.value.find(m => m.id === cartao.responsavelPadraoId)?.nome || 'Desconhecido'
+})
+
 onMounted(async () => {
   if (props.isPrivate && currentMembro.value && !compradorSelecionadoId.value) {
     compradorSelecionadoId.value = currentMembro.value.id
@@ -60,12 +70,19 @@ const wizFlow = ref<'expense' | 'loan' | 'loan_given' | 'loan_taken' | null>(nul
 const wizPayment = ref<'pix' | 'card' | null>(null)
 const wizCardOwner = ref<string | null>(null)
 
+const FLOW_STEP_MAP: Record<string, WizardState[]> = {
+  loan:       ['LENDER_SELECTION', 'BORROWER_SELECTION', 'VALUE', 'DESCRIPTION'],
+  loan_given: ['BORROWER_SELECTION', 'VALUE', 'DESCRIPTION'],
+  loan_taken: ['LENDER_SELECTION', 'VALUE', 'DESCRIPTION'],
+}
+
 const steps = computed<WizardState[]>(() => {
   const stepList: WizardState[] = ['FLOW_SELECTION']
-  
-  if (!wizFlow.value) return stepList
-  
-  if (wizFlow.value === 'expense') {
+
+  const flow = wizFlow.value
+  if (!flow) return stepList
+
+  if (flow === 'expense') {
     stepList.push('PAYMENT_METHOD_SELECTION')
     if (wizPayment.value === 'pix' && !props.isPrivate) {
       stepList.push('BUYER_SELECTION')
@@ -74,14 +91,14 @@ const steps = computed<WizardState[]>(() => {
     if (!props.isPrivate) {
       stepList.push('SPLIT')
     }
-  } else if (wizFlow.value === 'loan') {
-    stepList.push('LENDER_SELECTION', 'BORROWER_SELECTION', 'VALUE', 'DESCRIPTION')
-  } else if (wizFlow.value === 'loan_given') {
-    stepList.push('BORROWER_SELECTION', 'VALUE', 'DESCRIPTION')
-  } else if (wizFlow.value === 'loan_taken') {
-    stepList.push('LENDER_SELECTION', 'VALUE', 'DESCRIPTION')
+    return stepList
   }
-  
+
+  const base = FLOW_STEP_MAP[flow]
+  if (base) {
+    stepList.push(...base)
+  }
+
   return stepList
 })
 
@@ -170,80 +187,106 @@ const handleAdicionarExterno = (nome: string) => {
   }
 }
 
+function buildDivisions(
+  flow: string | null,
+  splitType: string,
+  isPrivate: boolean,
+  total: Dinheiro,
+  currentMembroId: string,
+  borrowerId: string | null,
+  participantes: string[],
+  membrosLocais: { id: string; nome: string; rendaCentavos?: number }[],
+  proporcionalDisponivel: boolean,
+): DivisaoDeGasto[] | null {
+  const isLoanLike = flow === 'loan' || flow === 'loan_given' || flow === 'loan_taken'
+
+  if (isLoanLike) {
+    const finalBorrower = flow === 'loan_taken' ? currentMembroId : (borrowerId || currentMembroId)
+    return [new DivisaoDeGasto(finalBorrower, total)]
+  }
+
+  if (splitType === 'proportional') {
+    if (!proporcionalDisponivel) return null
+    const valoresDivisoes = calcularRateioProporcionalCentavos(
+      total.centavos,
+      participantes.map(id => {
+        const m = membrosLocais.find(memb => memb.id === id)
+        return { id, rendaCentavos: Number(m?.rendaCentavos || 0) }
+      }),
+    )
+    return participantes.map(id => new DivisaoDeGasto(id, Dinheiro.deCentavos(valoresDivisoes[id])))
+  }
+
+  if (isPrivate) {
+    return [new DivisaoDeGasto(currentMembroId, total)]
+  }
+
+  return participantes.map((id, i) => new DivisaoDeGasto(id, total.valorNoIndice(participantes.length, i)))
+}
+
+function resolveCompradorId(
+  flow: string | null,
+  isPrivate: boolean,
+  currentMembroId: string,
+  compradorSelecionadoId: string,
+  cartaoEncontrado: { responsavelPadraoId: string } | undefined,
+): string {
+  if (flow === 'loan_given') return currentMembroId
+  if (isPrivate && flow === 'expense') return currentMembroId
+  if (cartaoEncontrado) return cartaoEncontrado.responsavelPadraoId
+  return compradorSelecionadoId
+}
+
+function resolveSplitMode(flow: string | null, isPrivate: boolean, splitType: string) {
+  if (flow === 'loan' || flow === 'loan_given' || flow === 'loan_taken') return 'custom'
+  if (isPrivate) return 'custom'
+  return splitType === 'proportional' ? 'income' : 'equal'
+}
+
 const handleGravar = async () => {
   isSubmitting.value = true
   try {
-    const dValor = Dinheiro.deReais(Number(valor.value))
-    let divisoes: DivisaoDeGasto[] = []
-    
-    const backendFlow = (wizFlow.value === 'loan_given' || wizFlow.value === 'loan_taken') ? 'loan' : wizFlow.value!
-    const isLoanLike = backendFlow === 'loan'
-
     const currentMembroId = currentMembro.value?.id
     if (!currentMembroId) {
       toast.show('Erro: membro atual não identificado. Recarregue a página.', 'error')
       return
     }
 
-    if (isLoanLike) {
-      const finalBorrower = wizFlow.value === 'loan_taken' ? currentMembroId : (borrowerId.value || currentMembroId)
-      divisoes = [new DivisaoDeGasto(finalBorrower, dValor)]
-    } else if (splitType.value === 'proportional') {
-      if (!proporcionalDisponivel.value) {
-        toast.show('Informe a renda de todos os participantes ou escolha a divisão igual.', 'error')
-        return
-      }
-
-      const participantesComRenda = participantesDivisao.value.map(id => {
-        const m = membrosLocais.value.find(memb => memb.id === id)
-        const renda = Number(m?.rendaCentavos || 0)
-        return { id, renda }
-      })
-
-      const valoresDivisoes = calcularRateioProporcionalCentavos(
-        dValor.centavos,
-        participantesComRenda.map(participante => ({
-          id: participante.id,
-          rendaCentavos: participante.renda,
-        })),
-      )
-
-      divisoes = participantesDivisao.value.map(id => new DivisaoDeGasto(id, Dinheiro.deCentavos(valoresDivisoes[id])))
-    } else if (props.isPrivate) {
-      divisoes = [new DivisaoDeGasto(currentMembroId, dValor)]
-    } else {
-      divisoes = participantesDivisao.value.map((id, i) => new DivisaoDeGasto(id, dValor.valorNoIndice(participantesDivisao.value.length, i)))
-    }
-
-    const cartaoEncontrado = (wizPayment.value === 'card' && wizCardOwner.value)
-      ? cartoes.value.find(c => c.id === wizCardOwner.value)
-      : undefined
-
-    const finalCompradorId = wizFlow.value === 'loan_given' ? currentMembroId :
-                             (props.isPrivate && wizFlow.value === 'expense') ? currentMembroId :
-                             cartaoEncontrado ? cartaoEncontrado.responsavelPadraoId :
-                             compradorSelecionadoId.value
-
-    const finalBorrowerId = wizFlow.value === 'loan_taken' ? currentMembroId : borrowerId.value
-
     if (!wizPayment.value) {
       toast.show('Selecione um método de pagamento.', 'error')
       return
     }
 
+    const total = Dinheiro.deReais(Number(valor.value))
+    const divisoes = buildDivisions(
+      wizFlow.value, splitType.value, props.isPrivate, total,
+      currentMembroId, borrowerId.value,
+      participantesDivisao.value, membrosLocais.value, proporcionalDisponivel.value,
+    )
+
+    if (divisoes === null) {
+      toast.show('Informe a renda de todos os participantes ou escolha a divisão igual.', 'error')
+      return
+    }
+
+    const backendFlow = (wizFlow.value === 'loan_given' || wizFlow.value === 'loan_taken') ? 'loan' : wizFlow.value!
+    const cartaoEncontrado = (wizPayment.value === 'card' && wizCardOwner.value)
+      ? cartoes.value.find(c => c.id === wizCardOwner.value)
+      : undefined
+
     await gastoService.lancarGastoOuEmprestimo({
       flow: backendFlow,
       paymentMethod: wizPayment.value,
-      compradorId: finalCompradorId,
+      compradorId: resolveCompradorId(wizFlow.value, props.isPrivate, currentMembroId, compradorSelecionadoId.value, cartaoEncontrado),
       valor: Number(valor.value),
       descricao: descricao.value,
       divisoes,
       installments: installments.value,
       cardOwnerId: wizCardOwner.value,
-      borrowerId: finalBorrowerId,
+      borrowerId: wizFlow.value === 'loan_taken' ? currentMembroId : borrowerId.value,
       periodo: obterPeriodoSelecionado(),
       isPrivate: props.isPrivate,
-      splitMode: isLoanLike ? 'custom' : (props.isPrivate ? 'custom' : (splitType.value === 'proportional' ? 'income' : 'equal'))
+      splitMode: resolveSplitMode(wizFlow.value, props.isPrivate, splitType.value),
     })
     emit('salvar')
   } catch (error: unknown) {
@@ -284,7 +327,7 @@ const handleGravar = async () => {
         <p class="text-[11px] font-semibold text-sky leading-tight">
           O crédito de reembolso será atribuído ao dono do cartão: 
           <strong>
-            {{ cartoes.find(c => c.id === wizCardOwner)?.responsavelPadraoId ? (membrosLocais.find(m => m.id === cartoes.find(c => c.id === wizCardOwner)?.responsavelPadraoId)?.nome || 'Desconhecido') : 'Desconhecido' }}
+            {{ nomeResponsavelCartao }}
           </strong>
         </p>
       </div>

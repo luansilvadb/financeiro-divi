@@ -4,6 +4,86 @@ import { Cartao } from '../models/entities/Cartao'
 import { formatarMesAno, NOMES_MESES } from '../shared/utils/meses'
 import { obterPeriodoSelecionado, salvarPeriodoSelecionado } from '../shared/utils/periodoStorage'
 
+// ── Pure helpers ──
+
+function criarFaturaVirtual(p: { mes: number; ano: number }, cartaoId: string, responsavelId: string): Fatura {
+  return new Fatura({
+    id: `${cartaoId}-${p.mes}-${p.ano}`,
+    cartaoId,
+    periodo: { mes: p.mes, ano: p.ano },
+    responsavelId,
+    status: 'ABERTA'
+  })
+}
+
+function findNearestInvoice(faturas: Fatura[], mesAtual: number, anoAtual: number): Fatura | undefined {
+  if (faturas.length === 0) return undefined
+  return faturas.reduce((melhor, f) => {
+    const diffMelhor = Math.abs((melhor.periodo.ano - anoAtual) * 12 + (melhor.periodo.mes - mesAtual))
+    const diffAtual = Math.abs((f.periodo.ano - anoAtual) * 12 + (f.periodo.mes - mesAtual))
+    return diffAtual < diffMelhor ? f : melhor
+  })
+}
+
+function buscarFaturasNoPeriodo(
+  p: { mes: number; ano: number },
+  abertas: Fatura[],
+  fechadas: Fatura[]
+): Fatura[] {
+  const abertasNoPeriodo = abertas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+  const fechadasNoPeriodo = fechadas.filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
+  return [...abertasNoPeriodo, ...fechadasNoPeriodo]
+}
+
+function resolverFaturaPix(
+  p: { mes: number; ano: number },
+  faturasExistentes: Fatura[],
+  membros: { id: string }[],
+  forceOwner?: string
+): Fatura[] {
+  const pixExistente = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
+  if (pixExistente) return [pixExistente]
+  const fallbackOwner = forceOwner || (membros.length > 0 ? membros[0].id : 'virtual-member')
+  return [criarFaturaVirtual(p, 'PIX_DEFAULT_ID', fallbackOwner)]
+}
+
+function resolverFaturasDeCartoes(
+  p: { mes: number; ano: number },
+  faturasExistentes: Fatura[],
+  todosCartoes: Cartao[],
+  membros: { id: string }[]
+): Fatura[] {
+  return todosCartoes.map(cartao => {
+    const existente = faturasExistentes.find(f => f.cartaoId === cartao.id)
+    if (existente) return existente
+    const defaultOwner = cartao.responsavelPadraoId || (membros.length > 0 ? membros[0].id : 'virtual-member')
+    return criarFaturaVirtual(p, cartao.id, defaultOwner)
+  })
+}
+
+function resolverFaturasOrfas(
+  faturasExistentes: Fatura[],
+  listaAtual: Fatura[],
+  todosCartoes: Cartao[]
+): Fatura[] {
+  const orfas: Fatura[] = []
+  for (const fatura of faturasExistentes) {
+    if (fatura.cartaoId === 'PIX_DEFAULT_ID') continue
+    const jaIncluida = listaAtual.some(f => f.id === fatura.id)
+    const cartaoAindaExiste = todosCartoes.some(cartao => cartao.id === fatura.cartaoId)
+    if (!jaIncluida && !cartaoAindaExiste) {
+      orfas.push(fatura)
+    }
+  }
+  return orfas
+}
+
+function sortFaturasPixLast(a: Fatura, b: Fatura): number {
+  if (a.cartaoId === 'PIX_DEFAULT_ID') return 1
+  if (b.cartaoId === 'PIX_DEFAULT_ID') return -1
+  return a.cartaoId.localeCompare(b.cartaoId)
+}
+
 export function useDashboardPeriodos(
   getFaturasAbertas: () => Fatura[],
   getFaturasFechadas: () => Fatura[],
@@ -16,15 +96,9 @@ export function useDashboardPeriodos(
     const mesAtual = hoje.getMonth() + 1
     const anoAtual = hoje.getFullYear()
 
-    // Prioriza a fatura aberta mais próxima do mês atual (evita faturas espúrias de períodos futuros)
     const faturasAbertas = getFaturasAbertas() || []
-    const faturaProxima = faturasAbertas.length > 0
-      ? faturasAbertas.reduce((melhor, f) => {
-          const diffMelhor = Math.abs((melhor.periodo.ano - anoAtual) * 12 + (melhor.periodo.mes - mesAtual))
-          const diffAtual = Math.abs((f.periodo.ano - anoAtual) * 12 + (f.periodo.mes - mesAtual))
-          return diffAtual < diffMelhor ? f : melhor
-        })
-      : getFaturasFechadas()?.[0]
+    const faturaProxima = findNearestInvoice(faturasAbertas, mesAtual, anoAtual)
+      ?? getFaturasFechadas()?.[0]
 
     const fallback = faturaProxima?.periodo
       ? { mes: faturaProxima.periodo.mes, ano: faturaProxima.periodo.ano }
@@ -38,58 +112,14 @@ export function useDashboardPeriodos(
     salvarPeriodoSelecionado(novos)
   }, { deep: true, immediate: true })
 
-  const buscarFaturasNoPeriodo = (p: { mes: number; ano: number }) => {
-    const abertas = getFaturasAbertas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    const fechadas = getFaturasFechadas().filter(f => f.periodo.mes === p.mes && f.periodo.ano === p.ano)
-    
-    return [...abertas, ...fechadas]
-  }
-
-  const criarFaturaVirtual = (p: { mes: number; ano: number }, cartaoId: string, responsavelId: string): Fatura => {
-    return new Fatura({
-      id: `${cartaoId}-${p.mes}-${p.ano}`,
-      cartaoId,
-      periodo: { mes: p.mes, ano: p.ano },
-      responsavelId,
-      status: 'ABERTA'
-    })
-  }
-
-  const resolverFaturaPix = (p: { mes: number; ano: number }, faturasExistentes: Fatura[], membros: { id: string }[], forceOwner?: string): Fatura[] => {
-    const pixExistente = faturasExistentes.find(f => f.cartaoId === 'PIX_DEFAULT_ID')
-    if (pixExistente) return [pixExistente]
-    const fallbackOwner = forceOwner || (membros.length > 0 ? membros[0].id : 'virtual-member')
-    return [criarFaturaVirtual(p, 'PIX_DEFAULT_ID', fallbackOwner)]
-  }
-
-  const resolverFaturasDeCartoes = (p: { mes: number; ano: number }, faturasExistentes: Fatura[], todosCartoes: Cartao[], membros: { id: string }[]): Fatura[] => {
-    return todosCartoes.map(cartao => {
-      const existente = faturasExistentes.find(f => f.cartaoId === cartao.id)
-      if (existente) return existente
-      const defaultOwner = cartao.responsavelPadraoId || (membros.length > 0 ? membros[0].id : 'virtual-member')
-      return criarFaturaVirtual(p, cartao.id, defaultOwner)
-    })
-  }
-
-  const resolverFaturasOrfas = (faturasExistentes: Fatura[], listaAtual: Fatura[], todosCartoes: Cartao[]): Fatura[] => {
-    const orfas: Fatura[] = []
-    for (const fatura of faturasExistentes) {
-      if (fatura.cartaoId === 'PIX_DEFAULT_ID') continue
-      const jaIncluida = listaAtual.some(f => f.id === fatura.id)
-      const cartaoAindaExiste = todosCartoes.some(cartao => cartao.id === fatura.cartaoId)
-      if (!jaIncluida && !cartaoAindaExiste) {
-        orfas.push(fatura)
-      }
-    }
-    return orfas
-  }
-
   const faturasPeriodoSelecionado = computed(() => {
     const p = periodoSelecionado.value
-    const faturasExistentes = buscarFaturasNoPeriodo(p)
+    const abertas = getFaturasAbertas()
+    const fechadas = getFaturasFechadas()
+    const faturasExistentes = buscarFaturasNoPeriodo(p, abertas, fechadas)
     const todosCartoes = getCartoes()
     const membros = getMembros()
-    
+
     if (todosCartoes.length === 0) {
       const pix = resolverFaturaPix(p, faturasExistentes, membros)
       return [...faturasExistentes.filter(f => f.cartaoId !== 'PIX_DEFAULT_ID'), ...pix]
@@ -99,13 +129,7 @@ export function useDashboardPeriodos(
     const pix = resolverFaturaPix(p, faturasExistentes, membros, 'PIX_SYSTEM_OWNER')
     const orfas = resolverFaturasOrfas(faturasExistentes, faturasCartoes, todosCartoes)
 
-    const listaFinal = [...faturasCartoes, ...pix, ...orfas]
-
-    return listaFinal.sort((a, b) => {
-      if (a.cartaoId === 'PIX_DEFAULT_ID') return 1
-      if (b.cartaoId === 'PIX_DEFAULT_ID') return -1
-      return a.cartaoId.localeCompare(b.cartaoId)
-    })
+    return [...faturasCartoes, ...pix, ...orfas].sort(sortFaturasPixLast)
   })
 
   const faturaPixPeriodoSelecionado = computed(() => {

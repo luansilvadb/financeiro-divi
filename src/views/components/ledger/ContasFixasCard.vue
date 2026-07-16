@@ -82,7 +82,7 @@ const cancelInteraction = () => {
 }
 
 const onPointerDown = (e: PointerEvent) => {
-  if (props.isReadOnly) return
+  if (props.isReadOnly || props.isMonthClosed) return
   const card = cardRef.value
   if (!card) return
 
@@ -134,7 +134,7 @@ const onPointerDown = (e: PointerEvent) => {
 }
 
 const onPointerUp = () => {
-  if (props.isReadOnly) return
+  if (props.isReadOnly || props.isMonthClosed) return
   if (!isHolding || hasTriggered) {
     isHolding = false
     return
@@ -183,7 +183,7 @@ onUnmounted(() => {
     class="relative overflow-hidden group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 select-none"
     :class="[
       gasto ? 'bg-meadow/5 border-meadow/20' : 'bg-canvas border-stone',
-      { 'cursor-pointer hover:border-ember/30': !props.isReadOnly }
+      { 'cursor-pointer hover:border-ember/30': !props.isReadOnly && !props.isMonthClosed }
     ]"
     :data-testid="`conta-fixa-card-${bill.id}`"
   >

@@ -1,4 +1,4 @@
-export interface ContaFixaSplitItem {
+interface ContaFixaSplitItem {
   membroId: string
   valorCentavos: number
 }

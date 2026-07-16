@@ -11,11 +11,8 @@ export function calcularContextoParcela(
   installments: number,
   totalInstallments: number
 ): { divisor: number; index: number } {
-  // Guard against zero, negative, or NaN values
-  const safeTotal = Number.isFinite(totalInstallments) && totalInstallments > 0 ? totalInstallments : 1
-  const safeCurrent = Number.isFinite(installments) && installments > 0 ? installments : 1
-  const divisor = safeTotal
-  const index = Math.max(0, divisor - safeCurrent)
+  const divisor = totalInstallments > 0 ? totalInstallments : (installments > 0 ? installments : 1)
+  const index = Math.max(0, divisor - installments)
   return { divisor, index }
 }
 

@@ -41,6 +41,20 @@ import (
 // @in header
 // @name Authorization
 
+// repos holds all repository instances initialized at startup.
+type repos struct {
+	tenantRepo     repository.TenantRepository
+	usuarioRepo    repository.UsuarioRepository
+	membroRepo     repository.MembroRepository
+	cartaoRepo     repository.CartaoRepository
+	faturaRepo     repository.FaturaRepository
+	gastoRepo      repository.GastoRepository
+	contaFixaRepo  repository.ContaFixaRepository
+	auditRepo      repository.AuditLogRepository
+	validationRepo repository.ProductValidationRepository
+	resetRepo      repository.PasswordResetTokenRepository
+}
+
 func createUpgrader(origins []string) gorillaWS.Upgrader {
 	return gorillaWS.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -49,12 +63,7 @@ func createUpgrader(origins []string) gorillaWS.Upgrader {
 				return false
 			}
 			for _, allowed := range origins {
-				if allowed == "*" || allowed == origin {
-					return true
-				}
-				// Match localhost variants: http://localhost:PORT is equivalent to
-				// http://127.0.0.1:PORT and http://[::1]:PORT in development.
-				if isLocalhostVariant(allowed, origin) {
+				if allowed == "*" || allowed == origin || isLocalhostVariant(allowed, origin) {
 					return true
 				}
 			}
@@ -64,18 +73,11 @@ func createUpgrader(origins []string) gorillaWS.Upgrader {
 	}
 }
 
-// isLocalhostVariant checks whether two origins differ only in the localhost
-// representation (localhost vs 127.0.0.1 vs [::1]) while sharing the same
-// scheme and port. This prevents spurious CheckOrigin failures when the
-// frontend is accessed via a different localhost alias.
 func isLocalhostVariant(a, b string) bool {
-	// Fast path: exact match is handled by the caller.
 	if a == b {
 		return true
 	}
-	// Replace known localhost hostnames with a canonical form for comparison.
 	canonical := func(origin string) string {
-		// Remove scheme prefix to extract host:port.
 		var scheme, rest string
 		switch {
 		case strings.HasPrefix(origin, "http://"):
@@ -85,7 +87,6 @@ func isLocalhostVariant(a, b string) bool {
 		default:
 			return origin
 		}
-		// Split host:port
 		hostPart, port, hasPort := strings.Cut(rest, ":")
 		if !hasPort {
 			return origin
@@ -99,20 +100,22 @@ func isLocalhostVariant(a, b string) bool {
 	return canonical(a) == canonical(b)
 }
 
-func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("warning: .env file not found: %v", err)
+func initRepositories(db *gorm.DB) repos {
+	return repos{
+		tenantRepo:     repository.NewGormTenantRepo(db),
+		usuarioRepo:    repository.NewGormUsuarioRepo(db),
+		membroRepo:     repository.NewGormMembroRepo(db),
+		cartaoRepo:     repository.NewGormCartaoRepo(db),
+		faturaRepo:     repository.NewGormFaturaRepo(db),
+		gastoRepo:      repository.NewGormGastoRepo(db),
+		contaFixaRepo:  repository.NewGormContaFixaRepo(db),
+		auditRepo:      repository.NewGormAuditLogRepo(db),
+		validationRepo: repository.NewGormProductValidationRepo(db),
+		resetRepo:      repository.NewGormPasswordResetTokenRepo(db),
 	}
-	cfg := config.Load()
+}
 
-	if cfg.JWTSecret == "" {
-		log.Fatal("JWT_SECRET is not defined. Application cannot start.")
-	}
-
-	if len(cfg.CORSOrigins) == 1 && cfg.CORSOrigins[0] == "*" {
-		log.Println("warning: CORS_ORIGINS is set to '*', accepting all origins")
-	}
-
+func setupDatabase(cfg *config.Config) *gorm.DB {
 	if err := database.EnsureDatabaseExists(cfg.DatabaseURL); err != nil {
 		log.Fatalf("failed to ensure database exists: %v", err)
 	}
@@ -138,11 +141,14 @@ func main() {
 		log.Fatalf("failed to migrate: %v", err)
 	}
 
-	// Ensure the unique constraint required for fatura ON CONFLICT upserts
-	// exists as a named constraint. GORM's uniqueIndex tag previously created
-	// idx_fatura_unica as a unique index (not a constraint), which cannot be
-	// targeted by ON CONFLICT ON CONSTRAINT. We now use a proper PostgreSQL
-	// constraint and drop the legacy index to avoid duplicate-key ambiguity.
+	ensureFaturaConstraint(db)
+	dropLegacyIndex(db)
+	runMigrations(db)
+
+	return db
+}
+
+func ensureFaturaConstraint(db *gorm.DB) {
 	if err := db.Exec(`
 		DO $$
 		BEGIN
@@ -158,72 +164,47 @@ func main() {
 	`).Error; err != nil {
 		log.Fatalf("failed to ensure fatura unique constraint: %v", err)
 	}
+}
 
-	// Drop the legacy unique index created by GORM's old uniqueIndex tag.
-	// We now rely exclusively on faturas_tenant_cartao_mes_ano_key (above)
-	// for ON CONFLICT upserts. Keeping both causes ambiguity that breaks
-	// ON CONFLICT resolution.
+func dropLegacyIndex(db *gorm.DB) {
 	if err := db.Exec(`DROP INDEX IF EXISTS idx_fatura_unica`).Error; err != nil {
 		log.Printf("warning: failed to drop legacy index idx_fatura_unica: %v", err)
 	}
+}
 
-	// Run raw SQL migrations for operations GORM AutoMigrate can't express.
-	// Path is relative to the working directory; use an absolute path or
-	// embed the files for production deployments.
+func runMigrations(db *gorm.DB) {
 	if err := database.RunSQLMigrations(db, "migrations"); err != nil {
 		log.Printf("warning: raw SQL migrations failed: %v", err)
 	}
-	tenantRepo := repository.NewGormTenantRepo(db)
-	usuarioRepo := repository.NewGormUsuarioRepo(db)
-	membroRepo := repository.NewGormMembroRepo(db)
-	cartaoRepo := repository.NewGormCartaoRepo(db)
-	faturaRepo := repository.NewGormFaturaRepo(db)
-	gastoRepo := repository.NewGormGastoRepo(db)
-	contaFixaRepo := repository.NewGormContaFixaRepo(db)
-	auditRepo := repository.NewGormAuditLogRepo(db)
-	validationRepo := repository.NewGormProductValidationRepo(db)
-	resetRepo := repository.NewGormPasswordResetTokenRepo(db)
+}
 
+func setupServices(cfg *config.Config, db *gorm.DB, r repos, wsHub *ws.Hub) (*service.AuthService, *service.FinanceiroService) {
 	emailSvc := service.NewEmailService(cfg)
-
-	wsHub := ws.NewHub()
-
-	upgrader := createUpgrader(cfg.CORSOrigins)
-
-	authSvc := service.NewAuthService(cfg, db, usuarioRepo, tenantRepo, membroRepo, resetRepo, emailSvc)
+	authSvc := service.NewAuthService(cfg, db, r.usuarioRepo, r.tenantRepo, r.membroRepo, r.resetRepo, emailSvc)
 	financeiroSvc := service.NewFinanceiroService(
 		db,
-		membroRepo, cartaoRepo, faturaRepo, gastoRepo,
-		contaFixaRepo, auditRepo, validationRepo, tenantRepo, wsHub,
+		r.membroRepo, r.cartaoRepo, r.faturaRepo, r.gastoRepo,
+		r.contaFixaRepo, r.auditRepo, r.validationRepo, r.tenantRepo, wsHub,
 	)
+	return authSvc, financeiroSvc
+}
 
-	if err := financeiroSvc.LoadPermissions(context.Background()); err != nil {
-		log.Printf("warning: failed to load tenant permissions: %v", err)
-	}
-
-	authHandler := handler.NewAuthHandler(authSvc)
-	financeiroHandler := handler.NewFinanceiroHandler(financeiroSvc)
-
-	validator.RegisterGinValidators()
-
-	r := gin.Default()
-
+func setupRoutes(
+	r *gin.Engine,
+	cfg *config.Config,
+	authHandler *handler.AuthHandler,
+	financeiroHandler *handler.FinanceiroHandler,
+	membroRepo repository.MembroRepository,
+	upgrader gorillaWS.Upgrader,
+	wsHub *ws.Hub,
+) {
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigins))
 
 	r.GET("/health", handler.HealthCheck)
-	r.GET("/health/deep", handler.DeepHealthCheck(db))
-	// Swagger documentation is disabled by default in production.
-	// Set SWAGGER_ENABLED=true in .env to enable it.
+
 	if cfg.EnableSwagger {
-		swaggerHandler := ginSwagger.WrapHandler(swaggerFiles.Handler)
-		r.GET("/swagger/*any", func(c *gin.Context) {
-			if c.Param("any") == "/" {
-				c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
-				return
-			}
-			swaggerHandler(c)
-		})
+		setupSwagger(r)
 	}
 
 	inviteRateLimit := middleware.RateLimit(10, time.Minute)
@@ -231,143 +212,167 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		auth := api.Group("/auth")
-		{
-			authRateLimit := middleware.RateLimit(5, time.Minute)
-			auth.POST("/register", authRateLimit, authHandler.Register)
-			auth.POST("/login", authRateLimit, authHandler.Login)
-			auth.POST("/google", authRateLimit, authHandler.GoogleLogin)
-			auth.POST("/forgot-password", authRateLimit, authHandler.ForgotPassword)
-			auth.POST("/reset-password", authRateLimit, authHandler.ResetPassword)
-		}
-
-		protected := api.Group("")
-		protected.Use(middleware.JWTAuth(cfg.JWTSecret))
-		protected.Use(middleware.CSRFToken())
-		{
-			protected.GET("/auth/me", authHandler.Session)
-			protected.POST("/tenants", authHandler.CreateTenant)
-			protected.POST("/tenants/join", authHandler.JoinTenant)
-
-			tenant := protected.Group("")
-			tenant.Use(middleware.TenantRequired(membroRepo))
-			{
-				tenant.GET("/membros", financeiroHandler.ListMembros)
-
-				tenant.GET("/cartoes", financeiroHandler.ListCartoes)
-
-				tenant.GET("/contas-fixas", financeiroHandler.ListContasFixas)
-
-				tenant.GET("/faturas", financeiroHandler.ListFaturas)
-
-				tenant.GET("/gastos", financeiroHandler.ListGastos)
-
-				tenant.GET("/audit-logs", financeiroHandler.GetAuditLogs)
-				tenant.GET("/tenants/permissions", financeiroHandler.GetPermissions)
-
-				write := tenant.Group("")
-				write.Use(middleware.RoleRequired(model.RoleAdmin, model.RoleMorador))
-				write.Use(middleware.RateLimit(60, time.Minute))
-				{
-					write.POST("/membros/with-account", financeiroHandler.CreateMembroWithAccount)
-
-					write.POST("/membros", financeiroHandler.CreateMembro)
-					write.PUT("/membros/:id", financeiroHandler.UpdateMembro)
-
-					write.POST("/cartoes", financeiroHandler.CreateCartao)
-					write.DELETE("/cartoes/:id", financeiroHandler.DeleteCartao)
-
-					write.POST("/contas-fixas", financeiroHandler.CreateContaFixa)
-					write.PUT("/contas-fixas/:id", financeiroHandler.UpdateContaFixa)
-					write.DELETE("/contas-fixas/:id", financeiroHandler.DeleteContaFixa)
-
-					write.POST("/faturas", financeiroHandler.CreateFatura)
-					write.POST("/faturas/batch", financeiroHandler.CreateFaturaBatch)
-
-					write.POST("/gastos", financeiroHandler.CreateGasto)
-					write.PUT("/gastos/:id", financeiroHandler.UpdateGasto)
-					write.POST("/gastos/batch", financeiroHandler.CreateGastoBatch)
-					write.DELETE("/gastos/:id", financeiroHandler.DeleteGasto)
-					write.POST("/gastos/delete-batch", financeiroHandler.DeleteGastoBatch)
-
-					write.POST("/validation-events", financeiroHandler.RecordValidationEvent)
-				}
-
-				// Permission management is restricted to ADMIN only â€”
-				// MORADOR should not be able to escalate privileges.
-				admin := tenant.Group("")
-				admin.Use(middleware.RoleRequired(model.RoleAdmin))
-				admin.Use(middleware.RateLimit(60, time.Minute))
-				{
-					admin.PATCH("/tenants/permissions/:role", financeiroHandler.UpdatePermissions)
-				}
-			}
-		}
+		setupAuthRoutes(api, authHandler)
+		setupProtectedRoutes(api, cfg, authHandler, financeiroHandler, membroRepo)
 	}
 
+	setupWebSocket(r, cfg, membroRepo, upgrader, wsHub)
+}
+
+func setupSwagger(r *gin.Engine) {
+	swaggerHandler := ginSwagger.WrapHandler(swaggerFiles.Handler)
+	r.GET("/swagger/*any", func(c *gin.Context) {
+		if c.Param("any") == "/" {
+			c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+			return
+		}
+		swaggerHandler(c)
+	})
+}
+
+func setupAuthRoutes(api *gin.RouterGroup, authHandler *handler.AuthHandler) {
+	auth := api.Group("/auth")
+	authRateLimit := middleware.RateLimit(5, time.Minute)
+	auth.POST("/register", authRateLimit, authHandler.Register)
+	auth.POST("/login", authRateLimit, authHandler.Login)
+	auth.POST("/google", authRateLimit, authHandler.GoogleLogin)
+	auth.POST("/forgot-password", authRateLimit, authHandler.ForgotPassword)
+	auth.POST("/reset-password", authRateLimit, authHandler.ResetPassword)
+}
+
+func setupProtectedRoutes(
+	api *gin.RouterGroup,
+	cfg *config.Config,
+	authHandler *handler.AuthHandler,
+	financeiroHandler *handler.FinanceiroHandler,
+	membroRepo repository.MembroRepository,
+) {
+	protected := api.Group("")
+	protected.Use(middleware.JWTAuth(cfg.JWTSecret))
+	protected.Use(middleware.CSRFToken())
+
+	protected.GET("/auth/me", authHandler.Session)
+	protected.POST("/tenants", authHandler.CreateTenant)
+	protected.POST("/tenants/join", authHandler.JoinTenant)
+
+	tenant := protected.Group("")
+	tenant.Use(middleware.TenantRequired(membroRepo))
+
+	setupTenantReadRoutes(tenant, financeiroHandler)
+	setupTenantWriteRoutes(tenant, financeiroHandler)
+	setupTenantAdminRoutes(tenant, financeiroHandler)
+}
+
+func setupTenantReadRoutes(tenant *gin.RouterGroup, h *handler.FinanceiroHandler) {
+	tenant.GET("/membros", h.ListMembros)
+	tenant.GET("/cartoes", h.ListCartoes)
+	tenant.GET("/contas-fixas", h.ListContasFixas)
+	tenant.GET("/faturas", h.ListFaturas)
+	tenant.GET("/gastos", h.ListGastos)
+	tenant.GET("/audit-logs", h.GetAuditLogs)
+	tenant.GET("/tenants/permissions", h.GetPermissions)
+}
+
+func setupTenantWriteRoutes(tenant *gin.RouterGroup, h *handler.FinanceiroHandler) {
+	write := tenant.Group("")
+	write.Use(middleware.RoleRequired(model.RoleAdmin, model.RoleMorador))
+	write.Use(middleware.RateLimit(60, time.Minute))
+
+	write.POST("/membros/with-account", h.CreateMembroWithAccount)
+	write.POST("/membros", h.CreateMembro)
+	write.PUT("/membros/:id", h.UpdateMembro)
+
+	write.POST("/cartoes", h.CreateCartao)
+	write.DELETE("/cartoes/:id", h.DeleteCartao)
+
+	write.POST("/contas-fixas", h.CreateContaFixa)
+	write.PUT("/contas-fixas/:id", h.UpdateContaFixa)
+	write.DELETE("/contas-fixas/:id", h.DeleteContaFixa)
+
+	write.POST("/faturas", h.CreateFatura)
+	write.POST("/faturas/batch", h.CreateFaturaBatch)
+
+	write.POST("/gastos", h.CreateGasto)
+	write.PUT("/gastos/:id", h.UpdateGasto)
+	write.POST("/gastos/batch", h.CreateGastoBatch)
+	write.DELETE("/gastos/:id", h.DeleteGasto)
+	write.POST("/gastos/delete-batch", h.DeleteGastoBatch)
+
+	write.POST("/validation-events", h.RecordValidationEvent)
+}
+
+func setupTenantAdminRoutes(tenant *gin.RouterGroup, h *handler.FinanceiroHandler) {
+	admin := tenant.Group("")
+	admin.Use(middleware.RoleRequired(model.RoleAdmin))
+	admin.Use(middleware.RateLimit(60, time.Minute))
+	admin.PATCH("/tenants/permissions/:role", h.UpdatePermissions)
+}
+
+// wsAuth holds the authenticated WebSocket connection context.
+type wsAuth struct {
+	userID      string
+	tenantID    string
+	tokenSource string
+}
+
+// validateWSAuth extracts and validates the token, then checks tenant membership.
+// Returns the auth context on success; writes an error JSON response and returns nil on failure.
+func validateWSAuth(c *gin.Context, cfg *config.Config, membroRepo repository.MembroRepository) *wsAuth {
+	tokenStr, tokenSource := extractWSToken(c)
+	if tokenStr == "" {
+		log.Printf("websocket: missing token (origin=%s, has_upgrade=%v)",
+			c.GetHeader("Origin"), c.GetHeader("Upgrade") != "")
+		c.JSON(http.StatusBadRequest, gin.H{"message": "token query param, Authorization header, or WebSocket subprotocol required"})
+		return nil
+	}
+
+	tenantID := c.Query("tenant_id")
+	if tenantID == "" {
+		log.Printf("websocket: missing tenant_id")
+		c.JSON(http.StatusBadRequest, gin.H{"message": "tenant_id query param required"})
+		return nil
+	}
+
+	userID, err := middleware.ValidateToken(cfg.JWTSecret, tokenStr)
+	if err != nil {
+		log.Printf("websocket: invalid token (source=%s, tenant=%s): %v", tokenSource, tenantID, err)
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "token inválido"})
+		return nil
+	}
+
+	membro, err := membroRepo.GetByUserID(c.Request.Context(), tenantID, userID)
+	if err != nil {
+		log.Printf("websocket: membership lookup error (user=%s, tenant=%s, source=%s): %v",
+			userID, tenantID, tokenSource, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "erro interno ao verificar acesso"})
+		return nil
+	}
+	if membro == nil {
+		log.Printf("websocket: membership denied (user=%s, tenant=%s, source=%s): not a member",
+			userID, tenantID, tokenSource)
+		c.JSON(http.StatusForbidden, gin.H{"message": "acesso negado a este núcleo"})
+		return nil
+	}
+
+	return &wsAuth{userID: userID, tenantID: tenantID, tokenSource: tokenSource}
+}
+
+func setupWebSocket(
+	r *gin.Engine,
+	cfg *config.Config,
+	membroRepo repository.MembroRepository,
+	upgrader gorillaWS.Upgrader,
+	wsHub *ws.Hub,
+) {
 	r.GET("/ws", func(c *gin.Context) {
-		// Token extraction priority (most secure first):
-		// 1. Authorization: Bearer <token> header (programmatic clients)
-		// 2. Sec-WebSocket-Protocol: divi.<token> subprotocol (browser clients)
-		// 3. ?token= query param (legacy fallback, logged by proxies)
-		tokenSource := "none"
-		tokenStr := c.Query("token")
-		if tokenStr != "" {
-			tokenSource = "query"
-		}
-		if authHeader := c.GetHeader("Authorization"); authHeader != "" {
-			if strings.HasPrefix(authHeader, "Bearer ") {
-				tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
-				tokenSource = "header"
-			}
-		}
-		if tokenStr == "" {
-			if proto := c.GetHeader("Sec-WebSocket-Protocol"); strings.HasPrefix(proto, "divi.") {
-				tokenStr = strings.TrimPrefix(proto, "divi.")
-				tokenSource = "subprotocol"
-			}
-		}
-		if tokenStr == "" {
-			log.Printf("websocket: missing token (origin=%s, has_upgrade=%v)",
-				c.GetHeader("Origin"),
-				c.GetHeader("Upgrade") != "")
-			c.JSON(http.StatusBadRequest, gin.H{"message": "token query param, Authorization header, or WebSocket subprotocol required"})
-			return
-		}
-
-		tenantID := c.Query("tenant_id")
-		if tenantID == "" {
-			log.Printf("websocket: missing tenant_id")
-			c.JSON(http.StatusBadRequest, gin.H{"message": "tenant_id query param required"})
-			return
-		}
-
-		userID, err := middleware.ValidateToken(cfg.JWTSecret, tokenStr)
-		if err != nil {
-			log.Printf("websocket: invalid token (source=%s, tenant=%s): %v", tokenSource, tenantID, err)
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "token invÃ¡lido"})
-			return
-		}
-
-		membro, err := membroRepo.GetByUserID(c.Request.Context(), tenantID, userID)
-		if err != nil {
-			log.Printf("websocket: membership lookup error (user=%s, tenant=%s, source=%s): %v",
-				userID, tenantID, tokenSource, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "erro interno ao verificar acesso"})
-			return
-		}
-		if membro == nil {
-			log.Printf("websocket: membership denied (user=%s, tenant=%s, source=%s): not a member",
-				userID, tenantID, tokenSource)
-			c.JSON(http.StatusForbidden, gin.H{"message": "acesso negado a este nÃºcleo"})
+		auth := validateWSAuth(c, cfg, membroRepo)
+		if auth == nil {
 			return
 		}
 
 		log.Printf("websocket: auth OK (user=%s, tenant=%s, source=%s, origin=%s)",
-			userID, tenantID, tokenSource, c.GetHeader("Origin"))
+			auth.userID, auth.tenantID, auth.tokenSource, c.GetHeader("Origin"))
 
-		// Se nÃ£o for uma requisiÃ§Ã£o de handshake de WebSocket (como a chamada preflight do frontend),
-		// respondemos com 200 OK para evitar um erro 400 Bad Request estÃ©tico no console do navegador.
 		if !strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
 			c.Status(http.StatusOK)
 			return
@@ -376,7 +381,7 @@ func main() {
 		log.Printf("websocket: upgrading connection")
 
 		var upgradeHeader http.Header
-		if tokenSource == "subprotocol" {
+		if auth.tokenSource == "subprotocol" {
 			upgradeHeader = make(http.Header)
 			upgradeHeader.Set("Sec-WebSocket-Protocol", c.GetHeader("Sec-WebSocket-Protocol"))
 		}
@@ -384,14 +389,40 @@ func main() {
 		conn, upErr := upgrader.Upgrade(c.Writer, c.Request, upgradeHeader)
 		if upErr != nil {
 			log.Printf("websocket: upgrade failed (user=%s, tenant=%s, origin=%s): %v",
-				userID, tenantID, c.GetHeader("Origin"), upErr)
+				auth.userID, auth.tenantID, c.GetHeader("Origin"), upErr)
 			return
 		}
 
-		log.Printf("websocket: connected (user=%s, tenant=%s)", userID, tenantID)
-		ws.HandleClient(wsHub, conn, tenantID)
+		log.Printf("websocket: connected (user=%s, tenant=%s)", auth.userID, auth.tenantID)
+		ws.HandleClient(wsHub, conn, auth.tenantID)
 	})
+}
 
+func extractWSToken(c *gin.Context) (tokenStr, source string) {
+	source = "none"
+
+	if tokenStr = c.Query("token"); tokenStr != "" {
+		source = "query"
+	}
+
+	if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
+			source = "header"
+		}
+	}
+
+	if tokenStr == "" {
+		if proto := c.GetHeader("Sec-WebSocket-Protocol"); strings.HasPrefix(proto, "divi.") {
+			tokenStr = strings.TrimPrefix(proto, "divi.")
+			source = "subprotocol"
+		}
+	}
+
+	return
+}
+
+func startServer(r *gin.Engine, cfg *config.Config) {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	srv := &http.Server{
 		Addr:         addr,
@@ -429,4 +460,43 @@ func main() {
 	}
 
 	log.Println("Server exited gracefully")
+}
+
+func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Printf("warning: .env file not found: %v", err)
+	}
+	cfg := config.Load()
+
+	if cfg.JWTSecret == "" {
+		log.Fatal("JWT_SECRET is not defined. Application cannot start.")
+	}
+
+	if len(cfg.CORSOrigins) == 1 && cfg.CORSOrigins[0] == "*" {
+		log.Println("warning: CORS_ORIGINS is set to '*', accepting all origins")
+	}
+
+	db := setupDatabase(cfg)
+	r := initRepositories(db)
+	upgrader := createUpgrader(cfg.CORSOrigins)
+	wsHub := ws.NewHub()
+
+	authSvc, financeiroSvc := setupServices(cfg, db, r, wsHub)
+
+	if err := financeiroSvc.LoadPermissions(context.Background()); err != nil {
+		log.Printf("warning: failed to load tenant permissions: %v", err)
+	}
+
+	authHandler := handler.NewAuthHandler(authSvc)
+	financeiroHandler := handler.NewFinanceiroHandler(financeiroSvc)
+
+	validator.RegisterGinValidators()
+
+	router := gin.Default()
+	setupRoutes(router, cfg, authHandler, financeiroHandler, r.membroRepo, upgrader, wsHub)
+
+	// Inject db for deep health check (replaces the nil passed earlier).
+	router.GET("/health/deep", handler.DeepHealthCheck(db))
+
+	startServer(router, cfg)
 }

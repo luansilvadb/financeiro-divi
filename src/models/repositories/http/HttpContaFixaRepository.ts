@@ -1,5 +1,5 @@
 import { HttpBaseRepository } from './HttpBaseRepository'
-import type { ContaFixa, ContaFixaSplitItem } from '../../entities/ContaFixa'
+import type { ContaFixa } from '../../entities/ContaFixa'
 import type { IContaFixaRepository } from '../IContaFixaRepository'
 import {
   ContaFixaFlexibleListResponseSchema,

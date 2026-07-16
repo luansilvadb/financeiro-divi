@@ -103,27 +103,3 @@ func TestCORSMiddleware_SpecificOrigins(t *testing.T) {
 		t.Fatalf("expected 'true' for specific origins, got '%s'", allowCredentials)
 	}
 }
-
-func TestParseCORSOrigins_Empty(t *testing.T) {
-	origins := ParseCORSOrigins("")
-	if len(origins) != 1 || origins[0] != "*" {
-		t.Fatalf("expected ['*'], got %v", origins)
-	}
-}
-
-func TestParseCORSOrigins_Multiple(t *testing.T) {
-	origins := ParseCORSOrigins("http://a.com, http://b.com")
-	if len(origins) != 2 {
-		t.Fatalf("expected 2 origins, got %d", len(origins))
-	}
-	if origins[0] != "http://a.com" {
-		t.Fatalf("expected 'http://a.com', got '%s'", origins[0])
-	}
-}
-
-func TestParseCORSOrigins_SingleWithSpaces(t *testing.T) {
-	origins := ParseCORSOrigins("  http://example.com  ")
-	if len(origins) != 1 || origins[0] != "http://example.com" {
-		t.Fatalf("expected ['http://example.com'], got %v", origins)
-	}
-}

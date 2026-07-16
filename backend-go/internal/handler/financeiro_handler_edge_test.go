@@ -239,8 +239,6 @@ type mockWSHubFHEdge struct{}
 
 func (h *mockWSHubFHEdge) Broadcast(tenantID string, msg dto.WSMessage) {}
 
-func (h *mockWSHubFHEdge) BroadcastAll(msg dto.WSMessage) {}
-
 func TestListMembrosHandler_NoTenantReturnsEmpty(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setup := func() *FinanceiroHandler {

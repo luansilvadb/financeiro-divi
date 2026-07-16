@@ -24,9 +24,9 @@ type Config struct {
 	GoogleOAuthID string
 	CORSOrigins   []string
 
-	TLSCertFile    string
-	TLSKeyFile     string
-	EnableSwagger  bool
+	TLSCertFile   string
+	TLSKeyFile    string
+	EnableSwagger bool
 }
 
 func Load() *Config {

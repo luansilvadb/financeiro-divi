@@ -32,12 +32,10 @@ type MembroRepository interface {
 	ListByTenantPaginated(ctx context.Context, tenantID string, offset, limit int) ([]model.MembroCasa, int64, error)
 	ListByUserID(ctx context.Context, userID string) ([]model.MembroCasa, error)
 	Update(ctx context.Context, membro *model.MembroCasa) error
-	Delete(ctx context.Context, id, tenantID string) error
 }
 
 type CartaoRepository interface {
 	Create(ctx context.Context, cartao *model.Cartao) error
-	GetByID(ctx context.Context, id, tenantID string) (*model.Cartao, error)
 	ListByTenant(ctx context.Context, tenantID string) ([]model.Cartao, error)
 	ListByTenantPaginated(ctx context.Context, tenantID string, offset, limit int) ([]model.Cartao, int64, error)
 	Update(ctx context.Context, cartao *model.Cartao) error
@@ -50,7 +48,6 @@ type FaturaRepository interface {
 	GetByID(ctx context.Context, id, tenantID string) (*model.Fatura, error)
 	ListByTenant(ctx context.Context, tenantID string) ([]model.Fatura, error)
 	ListByTenantPaginated(ctx context.Context, tenantID string, offset, limit int) ([]model.Fatura, int64, error)
-	ListByCartao(ctx context.Context, cartaoID, tenantID string) ([]model.Fatura, error)
 	Update(ctx context.Context, fatura *model.Fatura) error
 }
 
@@ -59,7 +56,6 @@ type GastoRepository interface {
 	GetByID(ctx context.Context, id, tenantID string) (*model.Gasto, error)
 	ListByTenant(ctx context.Context, tenantID string) ([]model.Gasto, error)
 	ListByTenantPaginated(ctx context.Context, tenantID string, offset, limit int) ([]model.Gasto, int64, error)
-	ListByFatura(ctx context.Context, faturaID, tenantID string) ([]model.Gasto, error)
 	Update(ctx context.Context, gasto *model.Gasto) error
 	Delete(ctx context.Context, id, tenantID string) error
 	DeleteDivisoes(ctx context.Context, gastoID, tenantID string) error

@@ -154,10 +154,6 @@ func (h *mockWSHub) Broadcast(tenantID string, msg dto.WSMessage) {
 	h.broadcasts = append(h.broadcasts, msg)
 }
 
-func (h *mockWSHub) BroadcastAll(msg dto.WSMessage) {
-	h.broadcasts = append(h.broadcasts, msg)
-}
-
 func TestFinanceiroService_CreateMembro(t *testing.T) {
 	membroRepo := &mockMembroRepoForFinanceiro{membros: make(map[string]*model.MembroCasa)}
 	cartaoRepo := &mockCartaoRepoForFinanceiro{cartoes: make(map[string]*model.Cartao)}

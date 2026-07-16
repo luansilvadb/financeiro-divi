@@ -280,8 +280,6 @@ type mockWSHubFH struct{}
 
 func (h *mockWSHubFH) Broadcast(tenantID string, msg dto.WSMessage) {}
 
-func (h *mockWSHubFH) BroadcastAll(msg dto.WSMessage) {}
-
 func setupFinanceiroHandler() *FinanceiroHandler {
 	membroRepo := &mockMembroRepoFH{membros: make(map[string]*model.MembroCasa)}
 	cartaoRepo := &mockCartaoRepoFH{cartoes: make(map[string]*model.Cartao)}

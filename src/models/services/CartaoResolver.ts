@@ -35,14 +35,15 @@ export function resolverCartao(
     }
   }
 
-  // No card matched — if there's exactly one card, use it as a reasonable default.
-  // Otherwise return null cardId so callers can handle the missing-card case.
-  if (todosCartoes.length === 1) {
-    const unico = todosCartoes[0]
+  // No card matched — use the first available card for cartaoId only.
+  // cardOwner stays null and responsavelFaturaId stays with compradorId
+  // since no explicit card owner was designated.
+  const primeiroCartao = todosCartoes[0]
+  if (primeiroCartao) {
     return {
-      cartaoId: unico.id,
-      cardOwner: unico.responsavelPadraoId,
-      responsavelFaturaId: unico.responsavelPadraoId,
+      cartaoId: primeiroCartao.id,
+      cardOwner: null,
+      responsavelFaturaId: compradorId,
     }
   }
   return {

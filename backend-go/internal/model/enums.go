@@ -8,14 +8,6 @@ const (
 	RoleVisualizador Role = "VISUALIZADOR"
 )
 
-type PaymentMethod string
-
-const (
-	PaymentMethodPix  PaymentMethod = "pix"
-	PaymentMethodCard PaymentMethod = "card"
-	PaymentMethodCash PaymentMethod = "cash"
-)
-
 type SplitMode string
 
 const (
@@ -25,11 +17,3 @@ const (
 )
 
 type ValidationEventType string
-
-const (
-	EventTenantCreated            ValidationEventType = "TENANT_CREATED"
-	EventSecondLinkedMemberJoined ValidationEventType = "SECOND_LINKED_MEMBER_JOINED"
-	EventFirstExpenseCreated      ValidationEventType = "FIRST_EXPENSE_CREATED"
-	EventPeriodClosed             ValidationEventType = "PERIOD_CLOSED"
-	EventFirstSettlementRecorded  ValidationEventType = "FIRST_SETTLEMENT_RECORDED"
-)

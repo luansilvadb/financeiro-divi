@@ -154,10 +154,6 @@ func (r *GormMembroRepo) Update(ctx context.Context, m *model.MembroCasa) error 
 	return r.db.WithContext(ctx).Save(m).Error
 }
 
-func (r *GormMembroRepo) Delete(ctx context.Context, id, tenantID string) error {
-	return r.db.WithContext(ctx).Delete(&model.MembroCasa{}, "id = ? AND tenant_id = ?", id, tenantID).Error
-}
-
 type GormCartaoRepo struct{ db *gorm.DB }
 
 func NewGormCartaoRepo(db *gorm.DB) CartaoRepository {
@@ -166,15 +162,6 @@ func NewGormCartaoRepo(db *gorm.DB) CartaoRepository {
 
 func (r *GormCartaoRepo) Create(ctx context.Context, c *model.Cartao) error {
 	return r.db.WithContext(ctx).Create(c).Error
-}
-
-func (r *GormCartaoRepo) GetByID(ctx context.Context, id, tenantID string) (*model.Cartao, error) {
-	var c model.Cartao
-	err := r.db.WithContext(ctx).First(&c, "id = ? AND tenant_id = ?", id, tenantID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, ErrRecordNotFound
-	}
-	return &c, err
 }
 
 func (r *GormCartaoRepo) ListByTenant(ctx context.Context, tenantID string) ([]model.Cartao, error) {
@@ -218,7 +205,7 @@ func (r *GormFaturaRepo) CreateOrUpdate(ctx context.Context, tx *gorm.DB, f *mod
 	}
 	return tx.WithContext(ctx).Clauses(clause.OnConflict{
 		OnConstraint: "faturas_tenant_cartao_mes_ano_key",
-		DoUpdates:  clause.AssignmentColumns([]string{"status", "responsavel_id", "data_pagamento_banco"}),
+		DoUpdates:    clause.AssignmentColumns([]string{"status", "responsavel_id", "data_pagamento_banco"}),
 	}).Create(f).Error
 }
 
@@ -246,12 +233,6 @@ func (r *GormFaturaRepo) ListByTenantPaginated(ctx context.Context, tenantID str
 	}
 	err := db.Offset(offset).Limit(limit).Find(&list).Error
 	return list, total, err
-}
-
-func (r *GormFaturaRepo) ListByCartao(ctx context.Context, cartaoID, tenantID string) ([]model.Fatura, error) {
-	var list []model.Fatura
-	err := r.db.WithContext(ctx).Where("cartao_id = ? AND tenant_id = ?", cartaoID, tenantID).Find(&list).Error
-	return list, err
 }
 
 func (r *GormFaturaRepo) Update(ctx context.Context, f *model.Fatura) error {
@@ -292,12 +273,6 @@ func (r *GormGastoRepo) ListByTenantPaginated(ctx context.Context, tenantID stri
 	}
 	err := db.Preload("Divisoes").Offset(offset).Limit(limit).Order("created_at DESC").Find(&list).Error
 	return list, total, err
-}
-
-func (r *GormGastoRepo) ListByFatura(ctx context.Context, faturaID, tenantID string) ([]model.Gasto, error) {
-	var list []model.Gasto
-	err := r.db.WithContext(ctx).Preload("Divisoes").Where("fatura_id = ? AND tenant_id = ?", faturaID, tenantID).Find(&list).Error
-	return list, err
 }
 
 func (r *GormGastoRepo) Update(ctx context.Context, g *model.Gasto) error {

@@ -7,6 +7,7 @@ import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import { Fatura } from '../entities/Fatura'
 import type { LancarGastoInput } from './GastoService'
 import { resolverCartao } from './CartaoResolver'
+import { resolverIdsPorSplit } from '../../shared/utils/resolverFaturaId'
 
 export class LancamentoService {
   constructor(
@@ -16,7 +17,6 @@ export class LancamentoService {
   ) {}
 
   async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
-    // Basic validation: divisoes must have valid-looking member IDs
     if (!dados.divisoes || dados.divisoes.length === 0) {
       throw new Error('É necessário informar ao menos um participante na divisão.')
     }
@@ -49,23 +49,30 @@ export class LancamentoService {
     }
   }
 
+  private validateSettlement(dados: LancarGastoInput): void {
+    if (!dados.settlementDetails) return
+
+    const { fromMemberId, toMemberId } = dados.settlementDetails
+    const involvesExternal = fromMemberId.startsWith('externo:') || toMemberId.startsWith('externo:')
+
+    const invalidations = [
+      fromMemberId === toMemberId,
+      dados.valor <= 0,
+      dados.paymentMethod === 'card',
+      dados.installments !== 1,
+      involvesExternal && !dados.isPrivate,
+    ]
+
+    if (invalidations.some(Boolean)) {
+      throw new Error('Dados do acerto são inválidos')
+    }
+  }
+
   private async processarAcerto(dados: LancarGastoInput, total: Dinheiro): Promise<void> {
     if (!dados.settlementDetails) {
       throw new Error('Dados do acerto são inválidos')
     }
-
-    const involvesExternal = dados.settlementDetails.fromMemberId.startsWith('externo:') || dados.settlementDetails.toMemberId.startsWith('externo:')
-    const isPrivateInvalid = involvesExternal ? !dados.isPrivate : false
-
-    if (
-      dados.settlementDetails.fromMemberId === dados.settlementDetails.toMemberId ||
-      dados.valor <= 0 ||
-      dados.paymentMethod === 'card' ||
-      dados.installments !== 1 ||
-      isPrivateInvalid
-    ) {
-      throw new Error('Dados do acerto são inválidos')
-    }
+    this.validateSettlement(dados)
 
     await this.gastoRepo.salvar(new Gasto({
       id: crypto.randomUUID(),
@@ -87,18 +94,47 @@ export class LancamentoService {
     }))
   }
 
+  private criarPropsParcela(
+    dados: LancarGastoInput,
+    total: Dinheiro,
+    grupoParcelasId: string,
+    resolvedCardOwner: string | null,
+    faturaId: string,
+    installments: number,
+    totalInstallments: number,
+    divisoes = dados.divisoes,
+  ) {
+    return {
+      id: crypto.randomUUID(),
+      faturaId,
+      descricao: dados.descricao,
+      valorTotal: total,
+      compradorId: dados.compradorId,
+      divisoes,
+      installments,
+      totalInstallments,
+      isLoan: false,
+      method: 'card' as const,
+      cardOwner: resolvedCardOwner,
+      grupoParcelasId,
+      isPrivate: dados.isPrivate || false,
+      splitMode: dados.splitMode,
+    }
+  }
+
   private async processarCompraParcelada(
     dados: LancarGastoInput,
     total: Dinheiro,
     resolvedCardOwner: string | null,
     faturaAtiva: Fatura | null,
-    responsavelFaturaId: string
+    responsavelFaturaId: string,
   ): Promise<void> {
     if (!faturaAtiva) throw new Error('Não foi possível obter fatura para compra parcelada em cartão')
     const grupoParcelasId = crypto.randomUUID()
     const faturasParaSalvar: Fatura[] = []
     const gastosParaSalvar: Gasto[] = [
-      new Gasto({ id: crypto.randomUUID(), faturaId: faturaAtiva.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode })
+      new Gasto(this.criarPropsParcela(dados, total, grupoParcelasId, resolvedCardOwner,
+        faturaAtiva.id, dados.installments, dados.installments)),
     ]
 
     let { mes, ano } = faturaAtiva.periodo
@@ -106,31 +142,20 @@ export class LancamentoService {
 
     for (let i = 2; i <= dados.installments; i++) {
       if (++mes > 12) { mes = 1; ano++ }
-      const faturaFutura = await this.obterOuCriarFaturaMemoria(faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas)
-      gastosParaSalvar.push(new Gasto({ id: crypto.randomUUID(), faturaId: faturaFutura.id, descricao: dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: [...dados.divisoes], installments: dados.installments - i + 1, totalInstallments: dados.installments, isLoan: false, method: 'card', cardOwner: resolvedCardOwner, grupoParcelasId, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode }))
+      const faturaFutura = await this.obterOuCriarFaturaMemoria(
+        faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas,
+      )
+      gastosParaSalvar.push(new Gasto(this.criarPropsParcela(
+        dados, total, grupoParcelasId, resolvedCardOwner,
+        faturaFutura.id, dados.installments - i + 1, dados.installments,
+        [...dados.divisoes],
+      )))
     }
 
     if (faturasParaSalvar.length > 0) {
       await this.faturaRepo.salvarMuitas(faturasParaSalvar)
-      // Re-fetch faturas to resolve composite IDs (cartaoId-mes-ano) to real
-      // backend-generated UUIDs so gastos reference valid fatura rows.
       const faturasReais = await this.faturaRepo.listarTodas()
-      const idRealPorComposto = new Map<string, string>()
-      for (const f of faturasReais) {
-        const chave = `${f.cartaoId}-${f.periodo.mes}-${f.periodo.ano}`
-        idRealPorComposto.set(chave, f.id)
-      }
-      for (const g of gastosParaSalvar) {
-        // Only resolve if it looks like a composite ID (contains two hyphens
-        // matching the cartaoId-mes-ano pattern). Real UUIDs won't match.
-        const partes = g.faturaId?.split('-')
-        if (partes && partes.length >= 3) {
-          const realId = idRealPorComposto.get(g.faturaId!)
-          if (realId) {
-            ;(g as { faturaId: string | null }).faturaId = realId
-          }
-        }
-      }
+      resolverIdsPorSplit(gastosParaSalvar, faturasReais)
     }
     await this.gastoRepo.salvarMuitos(gastosParaSalvar)
   }
@@ -141,14 +166,32 @@ export class LancamentoService {
     resolvedCardOwner: string | null,
     faturaAtiva: Fatura | null
   ): Promise<void> {
+    const descricaoEfetiva = dados.flow === 'loan'
+      ? (dados.descricao.trim() || 'Empréstimo Pessoal')
+      : dados.descricao
+
     await this.gastoRepo.salvar(new Gasto({
-      id: crypto.randomUUID(), faturaId: faturaAtiva?.id ?? null, descricao: dados.flow === 'loan' ? (dados.descricao.trim() || 'Empréstimo Pessoal') : dados.descricao, valorTotal: total, compradorId: dados.compradorId, divisoes: dados.divisoes, installments: dados.installments, totalInstallments: dados.installments, isLoan: dados.flow === 'loan', borrowerId: dados.borrowerId, method: dados.paymentMethod, cardOwner: resolvedCardOwner, grupoParcelasId: null, isPrivate: dados.isPrivate || false, splitMode: dados.splitMode
+      id: crypto.randomUUID(),
+      faturaId: faturaAtiva?.id ?? null,
+      descricao: descricaoEfetiva,
+      valorTotal: total,
+      compradorId: dados.compradorId,
+      divisoes: dados.divisoes,
+      installments: dados.installments,
+      totalInstallments: dados.installments,
+      isLoan: dados.flow === 'loan',
+      borrowerId: dados.borrowerId,
+      method: dados.paymentMethod,
+      cardOwner: resolvedCardOwner,
+      grupoParcelasId: null,
+      isPrivate: dados.isPrivate || false,
+      splitMode: dados.splitMode,
     }))
   }
 
   async obterOuCriarFaturaMemoria(cartaoId: string, mes: number, ano: number, responsavelId: string, acumuladorMemoria: Fatura[], todasFaturasPersistidas: Fatura[]): Promise<Fatura> {
     const finder = (f: Fatura) => f.cartaoId === cartaoId && f.periodo.mes === mes && f.periodo.ano === ano
-    let fatura = todasFaturasPersistidas.find(finder) || acumuladorMemoria.find(finder)
+    const fatura = todasFaturasPersistidas.find(finder) || acumuladorMemoria.find(finder)
     if (fatura) return fatura
 
     const novaFatura = new Fatura({ id: `${cartaoId}-${mes}-${ano}`, cartaoId, periodo: { mes, ano }, responsavelId, status: 'ABERTA' })

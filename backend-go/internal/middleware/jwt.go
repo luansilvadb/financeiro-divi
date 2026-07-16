@@ -75,20 +75,3 @@ func ValidateToken(secret, tokenStr string) (string, error) {
 
 	return sub, nil
 }
-
-//nolint:unused // utility kept for potential reuse by future middleware that needs raw claims
-func parseClaims(secret, tokenStr string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
-	}, jwt.WithValidMethods([]string{"HS256"}))
-	if err != nil {
-		return nil, err
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return nil, ErrTokenInvalido
-	}
-
-	return claims, nil
-}

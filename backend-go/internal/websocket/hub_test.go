@@ -12,7 +12,6 @@ import (
 
 func TestHub_Broadcast(t *testing.T) {
 	hub := NewHub()
-	go hub.Run()
 
 	client := &Client{
 		TenantID: "tenant-1",
@@ -306,11 +305,6 @@ func TestTrySend_FullChannel(t *testing.T) {
 	if ok {
 		t.Fatal("expected trySend to return false for full channel")
 	}
-}
-
-func TestHub_Run_DoesNotPanic(t *testing.T) {
-	hub := NewHub()
-	hub.Run()
 }
 
 func TestHub_UnregisterIdempotent(t *testing.T) {

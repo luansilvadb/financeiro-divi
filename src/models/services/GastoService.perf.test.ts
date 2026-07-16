@@ -4,6 +4,7 @@ import { Gasto } from '../entities/Gasto'
 import { Dinheiro } from '../entities/Dinheiro'
 import { DivisaoDeGasto } from '../entities/DivisaoDeGasto'
 import { logger } from '../../shared/utils/logger'
+import type { LancamentoService } from './LancamentoService'
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -31,14 +32,19 @@ describe('GastoService Performance', () => {
         await delay(LATENCY)
       }),
       salvarMuitos: vi.fn(async () => {
-        await delay(LATENCY) // Batch save should take about the same as one single save
+        await delay(LATENCY)
+      }),
+      atualizar: vi.fn(async () => {
+        await delay(LATENCY)
       }),
       buscarPorId: vi.fn(),
       excluir: vi.fn(),
       excluirMuitos: vi.fn()
     }
 
-    const service = new GastoService(mockGastoRepo as any, {} as any, {} as any)
+    const mockLancamento = { lancarGastoOuEmprestimo: vi.fn(), lancarGastoContaFixa: vi.fn(), obterOuCriarFaturaMemoria: vi.fn() } as unknown as LancamentoService
+
+    const service = new GastoService(mockGastoRepo as any, {} as any, {} as any, mockLancamento)
 
     const start = performance.now()
     await service.removerAssociacaoContaFixa('fixed1')
@@ -47,7 +53,9 @@ describe('GastoService Performance', () => {
 
     logger.info(`Execution time with ${NUM_GASTOS} items and ${LATENCY}ms latency: ${duration.toFixed(2)}ms`)
 
-    expect(mockGastoRepo.salvarMuitos).toHaveBeenCalledTimes(1)
+    // Uses individual atualizar calls in parallel (Promise.all), not batch salvarMuitos
+    expect(mockGastoRepo.atualizar).toHaveBeenCalledTimes(NUM_GASTOS)
+    expect(mockGastoRepo.salvarMuitos).not.toHaveBeenCalled()
     expect(mockGastoRepo.salvar).not.toHaveBeenCalled()
     expect(duration).toBeLessThan(NUM_GASTOS * LATENCY / 2)
   })

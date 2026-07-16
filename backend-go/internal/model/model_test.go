@@ -39,25 +39,6 @@ func TestSplitModeConstants(t *testing.T) {
 		}
 	}
 }
-
-func TestValidationEventTypeConstants(t *testing.T) {
-	tests := []struct {
-		et   ValidationEventType
-		want string
-	}{
-		{EventTenantCreated, "TENANT_CREATED"},
-		{EventSecondLinkedMemberJoined, "SECOND_LINKED_MEMBER_JOINED"},
-		{EventFirstExpenseCreated, "FIRST_EXPENSE_CREATED"},
-		{EventPeriodClosed, "PERIOD_CLOSED"},
-		{EventFirstSettlementRecorded, "FIRST_SETTLEMENT_RECORDED"},
-	}
-	for _, tt := range tests {
-		if string(tt.et) != tt.want {
-			t.Errorf("expected %q, got %q", tt.want, string(tt.et))
-		}
-	}
-}
-
 func TestTenantTableName(t *testing.T) {
 	var t2 Tenant
 	if t2.TableName() != "tenants" {
@@ -268,14 +249,14 @@ func TestGastoSplitModeDefault(t *testing.T) {
 func TestProductValidationEventFields(t *testing.T) {
 	e := ProductValidationEvent{
 		TenantID:  "t-1",
-		Type:      EventTenantCreated,
 		DedupeKey: "tenant-1",
+		Type:      "TENANT_CREATED",
 	}
 	if e.TenantID != "t-1" || e.DedupeKey != "tenant-1" {
 		t.Errorf("unexpected fields: %+v", e)
 	}
-	if e.Type != EventTenantCreated {
-		t.Errorf("got type %q, want %q", e.Type, EventTenantCreated)
+	if e.Type != "TENANT_CREATED" {
+		t.Errorf("got type %q, want %q", e.Type, "TENANT_CREATED")
 	}
 }
 

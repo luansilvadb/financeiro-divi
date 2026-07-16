@@ -108,44 +108,14 @@ func (h *Hub) Broadcast(tenantID string, msg dto.WSMessage) {
 	}
 }
 
-func (h *Hub) BroadcastAll(msg dto.WSMessage) {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("websocket marshal error: %v", err)
-		return
-	}
-
-	h.mu.RLock()
-	all := make([]*Client, 0)
-	for _, clients := range h.rooms {
-		for client := range clients {
-			all = append(all, client)
-		}
-	}
-	h.mu.RUnlock()
-
-	for _, client := range all {
-		if !client.trySend(data) {
-			h.Unregister(client)
-		}
-	}
-}
-
-// Run starts the hub's background tasks (currently a no-op — the hub is
-// event-driven via Register/Unregister/Broadcast. Kept for future heartbeat
-// or connection health-check functionality).
-func (h *Hub) Run() {
-	// Placeholder for future background tasks (e.g. heartbeat, stale connection cleanup).
-}
-
 func HandleClient(hub *Hub, conn *websocket.Conn, tenantID string) {
 	// Set read limit to prevent memory exhaustion from large messages.
 	conn.SetReadLimit(maxMessageSize)
 	// Set initial read deadline. The pong handler will extend this.
-	conn.SetReadDeadline(time.Now().Add(pongWait))
+	_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 	// Register pong handler to extend read deadline on each pong.
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
@@ -184,7 +154,7 @@ func (c *Client) readPump(hub *Hub) {
 				}
 				c.mu.Unlock()
 				c.writeMu.Lock()
-				c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				_ = c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 				if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 					c.writeMu.Unlock()
 					return
@@ -199,7 +169,7 @@ func (c *Client) readPump(hub *Hub) {
 		if err != nil {
 			return
 		}
-		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	}
 }
 
@@ -226,7 +196,7 @@ func (c *Client) writePump() {
 
 	for msg := range c.Send {
 		c.writeMu.Lock()
-		c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+		_ = c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		err := c.Conn.WriteMessage(websocket.TextMessage, msg)
 		c.writeMu.Unlock()
 		if err != nil {

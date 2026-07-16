@@ -63,29 +63,29 @@ func ensureCSRFCookie(c *gin.Context) {
 func generateCSRFToken() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback: mix crypto/rand with time to produce a non-deterministic token
-		// when the system entropy pool is exhausted. Using a zero-filled buffer
-		// would produce the same token for every client, defeating CSRF protection.
-		now := time.Now().UnixNano()
-		fallback := make([]byte, 32)
-		// XOR the current timestamp into the buffer so concurrent calls within the
-		// same nanosecond still get different values (time moves forward).
-		for i := range fallback {
-			fallback[i] = byte(now >> (8 * (i % 8)))
-		}
-		// Additionally try to read whatever entropy is available (partial read).
-		// If this also fails, we still have the time-based bytes as a last resort.
-		if _, fallbackErr := rand.Read(fallback); fallbackErr != nil {
-			// As a final safety net, mix in nanosecond precision from the monotonic
-			// clock — even if crypto/rand is completely dead, this gives us
-			// different tokens per call within the same process lifetime.
-			fallback[0] ^= byte(now)
-			fallback[1] ^= byte(now >> 8)
-			fallback[31] ^= byte(now>>16) ^ byte(now>>32) ^ byte(now>>48)
-		}
-		return hex.EncodeToString(fallback)
+		return hex.EncodeToString(fallbackCSRFToken())
 	}
 	return hex.EncodeToString(b)
+}
+
+// fallbackCSRFToken produces a non-deterministic token when crypto/rand is unavailable.
+// It first attempts rand.Read — if that succeeds we get proper entropy.
+// If even the fallback read fails, we derive bytes from the monotonic clock,
+// mixing in nanosecond precision so concurrent calls get different tokens.
+func fallbackCSRFToken() []byte {
+	now := time.Now().UnixNano()
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err == nil {
+		return buf
+	}
+	// crypto/rand is completely dead — derive from monotonic clock.
+	for i := range buf {
+		buf[i] = byte(now >> (8 * (i % 8)))
+	}
+	buf[0] ^= byte(now)
+	buf[1] ^= byte(now >> 8)
+	buf[31] ^= byte(now>>16) ^ byte(now>>32) ^ byte(now>>48)
+	return buf
 }
 
 func hmacEqual(a, b string) bool {

@@ -99,7 +99,7 @@ describe('ContasFixasPanel', () => {
     vi.useRealTimers()
   })
 
-  it('mantem eventos de contas fixas disponiveis quando o periodo esta fechado', async () => {
+  it('bloqueia eventos de contas fixas quando o periodo esta fechado', async () => {
     vi.useFakeTimers()
 
     const wrapper = mount(ContasFixasPanel, {
@@ -116,11 +116,12 @@ describe('ContasFixasPanel', () => {
     await cardEnergia.trigger('pointerup')
     await vi.advanceTimersByTimeAsync(300)
 
-    await wrapper.find('[data-testid="nova-conta-fixa"]').trigger('click')
+    // Botão "Adicionar Nova Conta" não deve existir quando período está fechado
+    expect(wrapper.find('[data-testid="nova-conta-fixa"]').exists()).toBe(false)
 
-    expect(wrapper.emitted('lancar')?.[0]).toEqual([contasFixas[1]])
-    expect(wrapper.emitted('novo')).toHaveLength(1)
-    expect(wrapper.text()).not.toContain('Reabra o mês')
+    // Eventos de lançar/estornar não devem ser emitidos com período fechado
+    expect(wrapper.emitted('lancar')).toBeUndefined()
+    expect(wrapper.emitted('novo')).toBeUndefined()
 
     vi.useRealTimers()
   })
