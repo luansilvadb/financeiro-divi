@@ -24,25 +24,26 @@ interface SaldoPessoalPendencia {
 
 // ── Helpers privados ──
 
-/** Retorna quanto o membro pagou e consumiu em um gasto privado. */
-function calcularValoresPessoais(g: Gasto, membroId: string): { pagos: number; consumidos: number } {
-  if (g.isLoan) {
-    const vp = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments).centavos
-    return {
-      pagos: g.compradorId === membroId ? vp : 0,
-      consumidos: g.borrowerId === membroId ? vp : 0,
-    }
+/** Retorna quanto o membro pagou e consumiu em um empréstimo. */
+function calcularValoresEmprestimo(g: Gasto, membroId: string): { pagos: number; consumidos: number } {
+  const vp = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments).centavos
+  return {
+    pagos: g.compradorId === membroId ? vp : 0,
+    consumidos: g.borrowerId === membroId ? vp : 0,
   }
+}
 
-  if (g.isSettlement && g.settlementDetails) {
-    const vp = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments).centavos
-    return {
-      pagos: g.settlementDetails.fromMemberId === membroId ? vp : 0,
-      consumidos: g.settlementDetails.toMemberId === membroId ? vp : 0,
-    }
+/** Retorna quanto o membro pagou e consumiu em um acerto (settlement). */
+function calcularValoresAcerto(g: Gasto, membroId: string): { pagos: number; consumidos: number } {
+  const vp = valorParcelaAtual(g.valorTotal, g.installments, g.totalInstallments).centavos
+  return {
+    pagos: g.settlementDetails!.fromMemberId === membroId ? vp : 0,
+    consumidos: g.settlementDetails!.toMemberId === membroId ? vp : 0,
   }
+}
 
-  // Gasto comum privado
+/** Retorna quanto o membro pagou e consumiu em um gasto comum privado. */
+function calcularValoresGastoComum(g: Gasto, membroId: string): { pagos: number; consumidos: number } {
   const pagadorId = (g.method === 'card' && g.cardOwner) ? g.cardOwner : g.compradorId
   let totalDebitos = 0
   let consumidos = 0
@@ -56,6 +57,13 @@ function calcularValoresPessoais(g: Gasto, membroId: string): { pagos: number; c
     pagos: pagadorId === membroId ? totalDebitos : 0,
     consumidos,
   }
+}
+
+/** Retorna quanto o membro pagou e consumiu em um gasto privado. */
+function calcularValoresPessoais(g: Gasto, membroId: string): { pagos: number; consumidos: number } {
+  if (g.isLoan) return calcularValoresEmprestimo(g, membroId)
+  if (g.isSettlement && g.settlementDetails) return calcularValoresAcerto(g, membroId)
+  return calcularValoresGastoComum(g, membroId)
 }
 
 /** Ajusta saldos de pendências para um gasto privado (loan ou settlement). */

@@ -532,62 +532,26 @@ func (s *AuthService) maybeJoinByInvite(ctx context.Context, user *model.Usuario
 }
 
 func (s *AuthService) joinTenantByInvite(ctx context.Context, user *model.Usuario, inviteCode string) {
+	_, err := s.upsertMemberInTenant(ctx, inviteCode, user, model.RoleMorador, false /* alreadyMemberIsError */)
+	if err != nil {
+		log.Printf("joinTenantByInvite: %v", err)
+	}
+}
+
+// upsertMemberInTenant finds a tenant by invite code and ensures the user
+// is an active member. If the member already exists and is active, it returns
+// ErrAlreadyMember when alreadyMemberIsError is true, or nil otherwise.
+func (s *AuthService) upsertMemberInTenant(ctx context.Context, inviteCode string, user *model.Usuario, role model.Role, alreadyMemberIsError bool) (*model.Tenant, error) {
 	tenant, err := s.tenantRepo.GetByInviteCode(ctx, inviteCode)
 	if err != nil {
-		log.Printf("joinTenantByInvite: invalid invite code %q: %v", inviteCode, err)
-		return
+		return nil, fmt.Errorf("código de convite inválido: %w", err)
 	}
 
 	existing, err := s.membroRepo.GetByUserID(ctx, tenant.ID, user.ID)
 	if err != nil {
-		log.Printf("joinTenantByInvite: error checking membership for user %s in tenant %s: %v", user.ID, tenant.ID, err)
-		return
-	}
-
-	// Member already exists — reactivate if inactive, then done.
-	if existing != nil {
-		if !existing.Ativo {
-			existing.Ativo = true
-			if err := s.membroRepo.Update(ctx, existing); err != nil {
-				log.Printf("joinTenantByInvite: error reactivating member %s: %v", existing.ID, err)
-				return
-			}
-			s.broadcastMemberChange(tenant.ID, existing)
-		}
-		return
-	}
-
-	// Create new member for this tenant.
-	membro := &model.MembroCasa{
-		ID:       uuid.New().String(),
-		TenantID: tenant.ID,
-		Nome:     user.Nome,
-		Avatar:   "default",
-		Role:     model.RoleMorador,
-		UserID:   &user.ID,
-	}
-	if err := s.membroRepo.Create(ctx, membro); err != nil {
-		log.Printf("joinTenantByInvite: error creating member for user %s in tenant %s: %v", user.ID, tenant.ID, err)
-		return
-	}
-	s.broadcastMemberChange(tenant.ID, membro)
-}
-
-func (s *AuthService) JoinTenant(ctx context.Context, inviteCode, userID string) (*model.Tenant, error) {
-	tenant, err := s.tenantRepo.GetByInviteCode(ctx, inviteCode)
-	if err != nil {
-		return nil, errors.New("código de convite inválido")
-	}
-
-	user, err := s.usuarioRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	existing, err := s.membroRepo.GetByUserID(ctx, tenant.ID, userID)
-	if err != nil {
 		return nil, fmt.Errorf("erro ao verificar membresia: %w", err)
 	}
+
 	if existing != nil {
 		if !existing.Ativo {
 			existing.Ativo = true
@@ -597,7 +561,10 @@ func (s *AuthService) JoinTenant(ctx context.Context, inviteCode, userID string)
 			s.broadcastMemberChange(tenant.ID, existing)
 			return tenant, nil
 		}
-		return nil, errors.New("você já é membro deste núcleo")
+		if alreadyMemberIsError {
+			return nil, errors.New("você já é membro deste núcleo")
+		}
+		return tenant, nil
 	}
 
 	membro := &model.MembroCasa{
@@ -605,17 +572,22 @@ func (s *AuthService) JoinTenant(ctx context.Context, inviteCode, userID string)
 		TenantID: tenant.ID,
 		Nome:     user.Nome,
 		Avatar:   "default",
-		Role:     model.RoleMorador,
+		Role:     role,
 		UserID:   &user.ID,
 	}
-
 	if err := s.membroRepo.Create(ctx, membro); err != nil {
 		return nil, err
 	}
-
 	s.broadcastMemberChange(tenant.ID, membro)
-
 	return tenant, nil
+}
+
+func (s *AuthService) JoinTenant(ctx context.Context, inviteCode, userID string) (*model.Tenant, error) {
+	user, err := s.usuarioRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	return s.upsertMemberInTenant(ctx, inviteCode, user, model.RoleMorador, true /* alreadyMemberIsError */)
 }
 
 // broadcastMemberChange envia um evento WebSocket para notificar outros membros
