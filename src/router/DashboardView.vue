@@ -86,7 +86,6 @@ const handleSalvarTransacao = () => {
         @openSettings="currentView = 'settings'"
         @periodoStatusChanged="handlePeriodoStatusChanged"
         @open-periodo="handleOpenPeriodo"
-        @open-settings="currentView = 'settings'"
       />
     </main>
 

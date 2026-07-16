@@ -13,7 +13,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'open-periodo'): void
-  (e: 'open-settings'): void
+  (e: 'openSettings'): void
 }>()
 
 // ─── DOM Refs (Direct DOM Mutation Pattern) ───────────────────────────────────
@@ -228,7 +228,7 @@ onUnmounted(() => {
         ref="rightBtnRef"
         class="flex items-center gap-2.5 text-right group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-4 rounded-2xl px-3 py-1.5 cursor-pointer active:scale-95 origin-right border border-stone/20"
         aria-label="Abrir ajustes"
-        @click="emit('open-settings')"
+        @click="emit('openSettings')"
       >
         <div ref="rightLabelRef" class="flex flex-col text-right right-label-stack">
           <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember whitespace-nowrap transition-colors duration-300">Conta</span>
