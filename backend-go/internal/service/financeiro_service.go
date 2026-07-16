@@ -22,6 +22,32 @@ import (
 var ErrEventAlreadyRegistered = errors.New("evento já registrado")
 var ErrContaFixaNotFound = errors.New("conta fixa nao encontrada")
 
+// ── Generic pointer helpers ────────────────────────────────────────────────
+
+// setIfNotNil copies *src to *dest when src is non-nil.
+// Useful for applying partial-update DTOs onto model structs.
+func setIfNotNil[T any](dest *T, src *T) {
+	if src != nil {
+		*dest = *src
+	}
+}
+
+// setNullStringIfNotNil unpacks a dto.NullString wrapper into a *string dest,
+// preserving the nil-as-unset semantics (src.Value may itself be nil).
+func setNullStringIfNotNil(dest **string, src *dto.NullString) {
+	if src != nil {
+		*dest = src.Value
+	}
+}
+
+// setPtrIfNotNil assigns *src to *dest when src is non-nil.
+// Use when dest is already a pointer field (e.g. **bool ← *bool).
+func setPtrIfNotNil[T any](dest **T, src *T) {
+	if src != nil {
+		*dest = src
+	}
+}
+
 // ── JSON helpers ────────────────────────────────────────────────────────────
 
 // rawMessageToString converts a *json.RawMessage to *string for model storage
@@ -147,30 +173,14 @@ func defaultPermissions() map[string]dto.RolePermissions {
 
 // mergePermissionFields applies non-nil partial permission fields onto existing.
 func mergePermissionFields(existing *dto.RolePermissions, partial dto.RolePermissions) {
-	if partial.AllowLancarGasto != nil {
-		existing.AllowLancarGasto = partial.AllowLancarGasto
-	}
-	if partial.AllowGerenciarCartoes != nil {
-		existing.AllowGerenciarCartoes = partial.AllowGerenciarCartoes
-	}
-	if partial.AllowGerenciarContasFixas != nil {
-		existing.AllowGerenciarContasFixas = partial.AllowGerenciarContasFixas
-	}
-	if partial.AllowRegistrarNetting != nil {
-		existing.AllowRegistrarNetting = partial.AllowRegistrarNetting
-	}
-	if partial.AllowVerAuditLogs != nil {
-		existing.AllowVerAuditLogs = partial.AllowVerAuditLogs
-	}
-	if partial.AllowFecharPeriodo != nil {
-		existing.AllowFecharPeriodo = partial.AllowFecharPeriodo
-	}
-	if partial.AllowAlterarRenda != nil {
-		existing.AllowAlterarRenda = partial.AllowAlterarRenda
-	}
-	if partial.AllowAlterarNome != nil {
-		existing.AllowAlterarNome = partial.AllowAlterarNome
-	}
+	setPtrIfNotNil(&existing.AllowLancarGasto, partial.AllowLancarGasto)
+	setPtrIfNotNil(&existing.AllowGerenciarCartoes, partial.AllowGerenciarCartoes)
+	setPtrIfNotNil(&existing.AllowGerenciarContasFixas, partial.AllowGerenciarContasFixas)
+	setPtrIfNotNil(&existing.AllowRegistrarNetting, partial.AllowRegistrarNetting)
+	setPtrIfNotNil(&existing.AllowVerAuditLogs, partial.AllowVerAuditLogs)
+	setPtrIfNotNil(&existing.AllowFecharPeriodo, partial.AllowFecharPeriodo)
+	setPtrIfNotNil(&existing.AllowAlterarRenda, partial.AllowAlterarRenda)
+	setPtrIfNotNil(&existing.AllowAlterarNome, partial.AllowAlterarNome)
 }
 
 // clonePermissionsMap returns a shallow copy of a defaults map merged with tenant overrides.
@@ -607,50 +617,27 @@ func (s *FinanceiroService) UpdateGasto(ctx context.Context, tenantID string, ga
 
 // applyGastoFieldUpdates applies all scalar field updates from the request to the gasto model.
 func applyGastoFieldUpdates(gasto *model.Gasto, req *dto.UpdateGastoRequest) {
-	if req.Descricao != nil {
-		gasto.Descricao = *req.Descricao
-	}
-	if req.ValorTotalCentavos != nil {
-		gasto.ValorTotalCentavos = *req.ValorTotalCentavos
-	}
-	if req.CompradorID != nil {
-		gasto.CompradorID = *req.CompradorID
-	}
-	if req.FaturaID != nil {
-		gasto.FaturaID = req.FaturaID.Value
-	}
-	if req.Installments != nil {
-		gasto.Installments = *req.Installments
-	}
-	if req.TotalInstallments != nil {
-		gasto.TotalInstallments = *req.TotalInstallments
-	}
-	if req.IsLoan != nil {
-		gasto.IsLoan = *req.IsLoan
-	}
-	if req.BorrowerID != nil {
-		gasto.BorrowerID = req.BorrowerID.Value
-	}
-	if req.Method != nil {
-		gasto.Method = *req.Method
-	}
-	if req.CardOwnerID != nil {
-		gasto.CardOwnerID = req.CardOwnerID.Value
-	}
-	if req.IsPrivate != nil {
-		gasto.IsPrivate = *req.IsPrivate
-	}
-	if req.IsSettlement != nil {
-		gasto.IsSettlement = *req.IsSettlement
-	}
+	// Scalar fields — direct pointer dereference
+	setIfNotNil(&gasto.Descricao, req.Descricao)
+	setIfNotNil(&gasto.ValorTotalCentavos, req.ValorTotalCentavos)
+	setIfNotNil(&gasto.CompradorID, req.CompradorID)
+	setIfNotNil(&gasto.Installments, req.Installments)
+	setIfNotNil(&gasto.TotalInstallments, req.TotalInstallments)
+	setIfNotNil(&gasto.IsLoan, req.IsLoan)
+	setIfNotNil(&gasto.Method, req.Method)
+	setIfNotNil(&gasto.IsPrivate, req.IsPrivate)
+	setIfNotNil(&gasto.IsSettlement, req.IsSettlement)
+
+	// Optional foreign-key IDs — unpack NullString wrapper
+	setNullStringIfNotNil(&gasto.FaturaID, req.FaturaID)
+	setNullStringIfNotNil(&gasto.BorrowerID, req.BorrowerID)
+	setNullStringIfNotNil(&gasto.CardOwnerID, req.CardOwnerID)
+	setNullStringIfNotNil(&gasto.GrupoParcelasID, req.GrupoParcelasID)
+	setNullStringIfNotNil(&gasto.RecurringBillID, req.RecurringBillID)
+
+	// Fields needing type conversion
 	if req.SettlementDetails != nil {
 		gasto.SettlementDetails = rawMessageToString(req.SettlementDetails)
-	}
-	if req.GrupoParcelasID != nil {
-		gasto.GrupoParcelasID = req.GrupoParcelasID.Value
-	}
-	if req.RecurringBillID != nil {
-		gasto.RecurringBillID = req.RecurringBillID.Value
 	}
 	if req.SplitMode != nil && *req.SplitMode != "" {
 		gasto.SplitMode = model.SplitMode(*req.SplitMode)
@@ -942,13 +929,8 @@ func parseDataPagamento(raw *string) (*time.Time, error) {
 	return &t, nil
 }
 
-func (s *FinanceiroService) CreateFatura(ctx context.Context, tenantID string, req *dto.CreateFaturaRequest) (*model.Fatura, error) {
-	dataPgto, err := parseDataPagamento(req.DataPagamentoBanco)
-	if err != nil {
-		return nil, err
-	}
-
-	fatura := &model.Fatura{
+func buildFaturaModel(tenantID string, req *dto.CreateFaturaRequest, dataPgto *time.Time) *model.Fatura {
+	return &model.Fatura{
 		ID:                 uuid.New().String(),
 		TenantID:           tenantID,
 		CartaoID:           req.CartaoID,
@@ -958,6 +940,15 @@ func (s *FinanceiroService) CreateFatura(ctx context.Context, tenantID string, r
 		Status:             req.Status,
 		DataPagamentoBanco: dataPgto,
 	}
+}
+
+func (s *FinanceiroService) CreateFatura(ctx context.Context, tenantID string, req *dto.CreateFaturaRequest) (*model.Fatura, error) {
+	dataPgto, err := parseDataPagamento(req.DataPagamentoBanco)
+	if err != nil {
+		return nil, err
+	}
+
+	fatura := buildFaturaModel(tenantID, req, dataPgto)
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if createErr := s.faturaRepo.CreateOrUpdate(ctx, tx, fatura); createErr != nil {
@@ -994,18 +985,8 @@ func (s *FinanceiroService) CreateFaturaBatch(ctx context.Context, tenantID stri
 				return err
 			}
 
-			fatura := model.Fatura{
-				ID:                 uuid.New().String(),
-				TenantID:           tenantID,
-				CartaoID:           req.CartaoID,
-				Mes:                req.Mes,
-				Ano:                req.Ano,
-				ResponsavelID:      req.ResponsavelID,
-				Status:             req.Status,
-				DataPagamentoBanco: dataPgto,
-			}
-
-			if err := s.faturaRepo.CreateOrUpdate(ctx, tx, &fatura); err != nil {
+			fatura := buildFaturaModel(tenantID, req, dataPgto)
+			if err := s.faturaRepo.CreateOrUpdate(ctx, tx, fatura); err != nil {
 				return err
 			}
 		}

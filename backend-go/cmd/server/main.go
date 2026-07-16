@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -77,27 +79,21 @@ func isLocalhostVariant(a, b string) bool {
 	if a == b {
 		return true
 	}
-	canonical := func(origin string) string {
-		var scheme, rest string
-		switch {
-		case strings.HasPrefix(origin, "http://"):
-			scheme, rest = "http", origin[len("http://"):]
-		case strings.HasPrefix(origin, "https://"):
-			scheme, rest = "https", origin[len("https://"):]
-		default:
-			return origin
-		}
-		hostPart, port, hasPort := strings.Cut(rest, ":")
-		if !hasPort {
-			return origin
-		}
-		switch hostPart {
-		case "localhost", "127.0.0.1", "[::1]":
-			hostPart = "localhost"
-		}
-		return scheme + "://" + hostPart + ":" + port
+	return canonicalOrigin(a) == canonicalOrigin(b)
+}
+
+// canonicalOrigin normalizes localhost/127.0.0.1/[::1] variants to a common
+// hostname for WebSocket origin checks, preserving scheme and port.
+func canonicalOrigin(origin string) string {
+	u, err := url.Parse(origin)
+	if err != nil || u.Scheme == "" || u.Port() == "" {
+		return origin
 	}
-	return canonical(a) == canonical(b)
+	switch u.Hostname() {
+	case "localhost", "127.0.0.1", "::1":
+		u.Host = net.JoinHostPort("localhost", u.Port())
+	}
+	return u.String()
 }
 
 func initRepositories(db *gorm.DB) repos {

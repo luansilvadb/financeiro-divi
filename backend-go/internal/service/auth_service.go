@@ -530,18 +530,21 @@ func (s *AuthService) joinTenantByInvite(ctx context.Context, user *model.Usuari
 		log.Printf("joinTenantByInvite: error checking membership for user %s in tenant %s: %v", user.ID, tenant.ID, err)
 		return
 	}
+
+	// Member already exists — reactivate if inactive, then done.
 	if existing != nil {
 		if !existing.Ativo {
 			existing.Ativo = true
 			if err := s.membroRepo.Update(ctx, existing); err != nil {
 				log.Printf("joinTenantByInvite: error reactivating member %s: %v", existing.ID, err)
-			} else {
-				s.broadcastMemberChange(tenant.ID, existing)
+				return
 			}
+			s.broadcastMemberChange(tenant.ID, existing)
 		}
 		return
 	}
 
+	// Create new member for this tenant.
 	membro := &model.MembroCasa{
 		ID:       uuid.New().String(),
 		TenantID: tenant.ID,
@@ -550,12 +553,11 @@ func (s *AuthService) joinTenantByInvite(ctx context.Context, user *model.Usuari
 		Role:     model.RoleMorador,
 		UserID:   &user.ID,
 	}
-
 	if err := s.membroRepo.Create(ctx, membro); err != nil {
 		log.Printf("joinTenantByInvite: error creating member for user %s in tenant %s: %v", user.ID, tenant.ID, err)
-	} else {
-		s.broadcastMemberChange(tenant.ID, membro)
+		return
 	}
+	s.broadcastMemberChange(tenant.ID, membro)
 }
 
 func (s *AuthService) JoinTenant(ctx context.Context, inviteCode, userID string) (*model.Tenant, error) {

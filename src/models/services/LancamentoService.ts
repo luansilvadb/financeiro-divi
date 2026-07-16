@@ -17,13 +17,8 @@ export class LancamentoService {
   ) {}
 
   async lancarGastoOuEmprestimo(dados: LancarGastoInput): Promise<void> {
-    if (!dados.divisoes || dados.divisoes.length === 0) {
-      throw new Error('É necessário informar ao menos um participante na divisão.')
-    }
-    const divisoesInvalidas = dados.divisoes.filter(d => !d.membroId || d.membroId.trim() === '')
-    if (divisoesInvalidas.length > 0) {
-      throw new Error('Um ou mais participantes da divisão possuem ID inválido.')
-    }
+    this.validarDivisoes(dados.divisoes)
+
     const total = Dinheiro.deReais(dados.valor)
     const todosCartoes = dados.paymentMethod === 'card'
       ? await this.cartaoRepo.listarTodos()
@@ -48,6 +43,16 @@ export class LancamentoService {
       await this.processarCompraParcelada(dados, total, resolvedCardOwner, faturaAtiva, responsavelFaturaId)
     } else {
       await this.processarGastoSimples(dados, total, resolvedCardOwner, faturaAtiva)
+    }
+  }
+
+  private validarDivisoes(divisoes: DivisaoDeGasto[]): void {
+    if (!divisoes || divisoes.length === 0) {
+      throw new Error('É necessário informar ao menos um participante na divisão.')
+    }
+    const divisoesInvalidas = divisoes.filter(d => !d.membroId || d.membroId.trim() === '')
+    if (divisoesInvalidas.length > 0) {
+      throw new Error('Um ou mais participantes da divisão possuem ID inválido.')
     }
   }
 
@@ -134,22 +139,20 @@ export class LancamentoService {
     if (!faturaAtiva) throw new Error('Não foi possível obter fatura para compra parcelada em cartão')
     const grupoParcelasId = crypto.randomUUID()
     const faturasParaSalvar: Fatura[] = []
+    const todasFaturas = await this.faturaRepo.listarTodas()
+
     const gastosParaSalvar: Gasto[] = [
       new Gasto(this.criarPropsParcela(dados, total, grupoParcelasId, resolvedCardOwner,
         faturaAtiva.id, dados.installments, dados.installments)),
     ]
 
-    let { mes, ano } = faturaAtiva.periodo
-    const todasFaturas = await this.faturaRepo.listarTodas()
-
-    for (let i = 2; i <= dados.installments; i++) {
-      if (++mes > 12) { mes = 1; ano++ }
+    for (const periodo of this.gerarPeriodosFuturos(faturaAtiva.periodo, dados.installments - 1)) {
       const faturaFutura = await this.obterOuCriarFaturaMemoria(
-        faturaAtiva.cartaoId!, mes, ano, responsavelFaturaId, faturasParaSalvar, todasFaturas,
+        faturaAtiva.cartaoId!, periodo.mes, periodo.ano, responsavelFaturaId, faturasParaSalvar, todasFaturas,
       )
       gastosParaSalvar.push(new Gasto(this.criarPropsParcela(
         dados, total, grupoParcelasId, resolvedCardOwner,
-        faturaFutura.id, dados.installments - i + 1, dados.installments,
+        faturaFutura.id, dados.installments - gastosParaSalvar.length, dados.installments,
         [...dados.divisoes],
       )))
     }
@@ -160,6 +163,18 @@ export class LancamentoService {
       resolverIdsPorSplit(gastosParaSalvar, faturasReais)
     }
     await this.gastoRepo.salvarMuitos(gastosParaSalvar)
+  }
+
+  /** Gera períodos mensais consecutivos a partir de um período inicial. */
+  private *gerarPeriodosFuturos(
+    inicio: { mes: number; ano: number },
+    quantidade: number
+  ): Generator<{ mes: number; ano: number }> {
+    let { mes, ano } = inicio
+    for (let i = 0; i < quantidade; i++) {
+      if (++mes > 12) { mes = 1; ano++ }
+      yield { mes, ano }
+    }
   }
 
   private async processarGastoSimples(
