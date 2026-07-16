@@ -1,7 +1,7 @@
 <!-- src/views/components/ledger/dashboard/DashboardHeader.vue -->
 <script setup lang="ts">
 import { useTemplateRef, onMounted, onUnmounted } from 'vue'
-import { Home, Wallet } from 'lucide-vue-next'
+import { Calendar, User, House } from 'lucide-vue-next'
 import IllustrationMascot from '../../ui/IllustrationMascot.vue'
 import AppBar from '../../ui/AppBar.vue'
 import type { TenantSummary } from '../../../../models/services/TenantSessionService'
@@ -12,8 +12,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'navigate-home'): void
-  (e: 'navigate-pessoal'): void
+  (e: 'open-periodo'): void
+  (e: 'open-settings'): void
 }>()
 
 // ─── DOM Refs (Direct DOM Mutation Pattern) ───────────────────────────────────
@@ -21,7 +21,7 @@ const appBarRef = useTemplateRef<InstanceType<typeof AppBar>>('appBarRef')
 const leftBtnRef = useTemplateRef<HTMLElement>('leftBtnRef')
 const leftLabelRef = useTemplateRef<HTMLElement>('leftLabelRef')
 const rightBtnRef = useTemplateRef<HTMLElement>('rightBtnRef')
-const rightLabelRef = useTemplateRef<HTMLElement>('rightLabelRef')
+const rightLabelRef = useTemplateRef<HTMLElement>('rightLabelRef') // eslint-disable-line @typescript-eslint/no-unused-vars
 const centerRef = useTemplateRef<HTMLElement>('centerRef')
 const mascotRef = useTemplateRef<HTMLElement>('mascotRef')
 const tenantNameRef = useTemplateRef<HTMLElement>('tenantNameRef')
@@ -143,20 +143,20 @@ onUnmounted(() => {
     CSS transitions nessas propriedades estão removidas — exceto one-shot snap transition.
   -->
   <AppBar ref="appBarRef" class="mb-4">
-    <!-- Slot Esquerdo: Botão Casa (navega para tab "hoje") -->
+    <!-- Slot Esquerdo: Botão Período -->
     <template #left>
       <button
         ref="leftBtnRef"
         class="flex items-center gap-2.5 text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-4 rounded-2xl px-3 py-1.5 cursor-pointer active:scale-95 origin-left border border-stone/20"
-        aria-label="Ir para Casa"
-        @click="$emit('navigate-home')"
+        aria-label="Selecionar período"
+        @click="emit('open-periodo')"
       >
         <div class="w-8 h-8 rounded-full bg-ember/10 flex items-center justify-center group-hover:bg-ember/20 group-hover:text-ember transition-colors duration-300">
-          <Home class="w-4 h-4 text-ember group-hover:scale-110 transition-transform duration-500 ease-jelly" aria-hidden="true" />
+          <Calendar class="w-4 h-4 text-ember group-hover:scale-110 transition-transform duration-500 ease-jelly" aria-hidden="true" />
         </div>
         <div ref="leftLabelRef" class="flex flex-col left-label-stack">
-          <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember transition-colors duration-300">Navegar</span>
-          <span class="text-base font-bold tracking-tight leading-none text-charcoal group-hover:text-ember transition-colors duration-300">Casa</span>
+          <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember transition-colors duration-300">Seletor</span>
+          <span class="text-base font-bold tracking-tight leading-none text-charcoal group-hover:text-ember transition-colors duration-300">Período</span>
         </div>
       </button>
     </template>
@@ -188,7 +188,7 @@ onUnmounted(() => {
           ref="tenantNameRef"
           class="relative mb-1.5 text-[8.5px] font-bold uppercase tracking-[0.2em] whitespace-nowrap flex items-center gap-2 justify-center text-ember"
         >
-          <Home class="w-2 h-2 text-ember/40" aria-hidden="true" />
+          <House class="w-2 h-2 text-ember/40" aria-hidden="true" />
           <span>{{ activeTenantObj.name }}</span>
         </div>
 
@@ -222,20 +222,20 @@ onUnmounted(() => {
       </div>
     </template>
 
-    <!-- Slot Direito: Notificações / Atividade -->
+    <!-- Slot Direito: Ajustes -->
     <template #right>
       <button
         ref="rightBtnRef"
         class="flex items-center gap-2.5 text-right group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-4 rounded-2xl px-3 py-1.5 cursor-pointer active:scale-95 origin-right border border-stone/20"
-        aria-label="Ir para gastos pessoais"
-        @click="emit('navigate-pessoal')"
+        aria-label="Abrir ajustes"
+        @click="emit('open-settings')"
       >
         <div ref="rightLabelRef" class="flex flex-col text-right right-label-stack">
-          <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember whitespace-nowrap transition-colors duration-300">Navegar</span>
-          <span class="text-xs font-bold text-charcoal leading-none whitespace-nowrap">Pessoal</span>
+          <span class="text-[7.5px] font-bold uppercase tracking-[0.2em] mb-0.5 text-ash/60 group-hover:text-ember whitespace-nowrap transition-colors duration-300">Conta</span>
+          <span class="text-xs font-bold text-charcoal leading-none whitespace-nowrap">Ajustes</span>
         </div>
         <div class="w-8 h-8 rounded-full bg-white/40 flex items-center justify-center group-hover:bg-ember/10 group-hover:text-ember transition-colors duration-300">
-          <Wallet class="w-4 h-4 group-hover:scale-110 transition-transform duration-500 ease-jelly" aria-hidden="true" />
+          <User class="w-4 h-4 group-hover:scale-110 transition-transform duration-500 ease-jelly" aria-hidden="true" />
         </div>
       </button>
     </template>
