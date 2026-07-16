@@ -42,12 +42,8 @@ const handlePeriodoStatusChanged = (fechado: boolean) => {
 }
 
 const handleTabChange = (tab: Tab) => {
-  if (tab === 'perfil') {
-    currentView.value = 'settings'
-  } else {
-    activeTab.value = tab
-    currentView.value = 'dashboard'
-  }
+  activeTab.value = tab
+  currentView.value = 'dashboard'
 }
 
 const dashboardRef = ref<InstanceType<typeof DashboardSaldos> | null>(null)
@@ -89,8 +85,7 @@ const handleSalvarTransacao = () => {
         :is-read-only="state.isReadOnly.value"
         @openSettings="currentView = 'settings'"
         @periodoStatusChanged="handlePeriodoStatusChanged"
-        @navigate-home="activeTab = 'hoje'"
-        @navigate-pessoal="activeTab = 'pessoal'"
+        @open-periodo="handleOpenPeriodo"
       />
     </main>
 
@@ -128,7 +123,6 @@ const handleSalvarTransacao = () => {
       :is-read-only="state.isLancarGastoBloqueado.value"
       @update:model-value="handleTabChange"
       @click-fab="handleFabClick"
-      @open-periodo="handleOpenPeriodo"
     />
   </div>
 </template>

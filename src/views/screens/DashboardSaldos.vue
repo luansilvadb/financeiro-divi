@@ -31,7 +31,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['periodoStatusChanged', 'navigate-home', 'navigate-pessoal'])
+const emit = defineEmits(['periodoStatusChanged', 'open-periodo', 'openSettings'])
 
 const vm = useDashboardViewModel(props, emit)
 
@@ -140,8 +140,8 @@ defineExpose({
         @open-historico="vm.abrirModal('historico')"
         @open-casas="vm.abrirModal('casas')"
         @open-audit-logs="abrirAuditLogs"
-        @navigate-home="emit('navigate-home')"
-        @navigate-pessoal="emit('navigate-pessoal')"
+        @open-periodo="emit('open-periodo')"
+        @openSettings="emit('openSettings')"
       />
 
       <!-- Container Estabilizado -->
