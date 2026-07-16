@@ -4,6 +4,7 @@ import DashboardSaldos from '../views/screens/DashboardSaldos.vue'
 import NovoLancamentoWizard from '../views/screens/NovoLancamentoWizard.vue'
 import ConfiguracoesMembros from '../views/screens/ConfiguracoesMembros.vue'
 import BottomSheet from '../views/components/ui/BottomSheet.vue'
+import Drawer from '../views/components/ui/Drawer.vue'
 import BottomTabBar, { type Tab } from '../views/components/ui/BottomTabBar.vue'
 import { useToast } from '../composables/useToast'
 import { mensagemErro } from '../shared/utils/mensagemErro'
@@ -105,18 +106,17 @@ const handleSalvarTransacao = async () => {
       />
     </BottomSheet>
 
-    <BottomSheet
+    <Drawer
       :model-value="currentView === 'settings'"
       @update:model-value="(val: boolean) => { if (!val) currentView = 'dashboard' }"
-      width-class="md:w-[560px]"
-      max-height="90dvh"
+      width-class="md:max-w-[480px]"
       content-class="p-0 h-full"
     >
       <ConfiguracoesMembros
         @voltar="currentView = 'dashboard'"
         @logout="$emit('logout')"
       />
-    </BottomSheet>
+    </Drawer>
 
     <BottomTabBar
       :model-value="activeTab"

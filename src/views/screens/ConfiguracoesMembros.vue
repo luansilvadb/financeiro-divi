@@ -39,38 +39,44 @@ onMounted(async () => {
       <p class="text-xs sm:text-sm text-ash font-bold mt-2 uppercase tracking-[0.2em]">Configure quem mora aqui e como cada um contribui</p>
     </div>
 
-    <!-- Navegação Floating Island -->
-    <div v-if="!isModoFoco" class="shrink-0 flex justify-center px-6 mb-6 overflow-x-auto no-scrollbar">
-      <div class="inline-flex p-1 bg-stone/10 backdrop-blur-md rounded-2xl border border-stone/30 relative whitespace-nowrap">
-        <button
-          @click="activeTab = 'perfil'"
-          class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
-          :class="activeTab === 'perfil' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
-        >
-          Meu Perfil
-        </button>
-        <button
-          @click="activeTab = 'acesso'"
-          class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
-          :class="activeTab === 'acesso' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
-        >
-          Acessos
-        </button>
-        <button
-          @click="activeTab = 'casas'"
-          class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
-          :class="activeTab === 'casas' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
-        >
-          Casas
-        </button>
-        <button
-          v-if="isAdmin"
-          @click="activeTab = 'casa'"
-          class="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-all duration-300 relative z-10 select-none"
-          :class="activeTab === 'casa' ? 'bg-white text-charcoal shadow-subtle' : 'bg-transparent text-ash hover:text-charcoal'"
-        >
-          Permissões
-        </button>
+    <!-- Navegação de Abas -->
+    <div v-if="!isModoFoco" class="shrink-0 relative mb-6">
+      <!-- Fade indicators para scroll -->
+      <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-canvas to-transparent z-20 pointer-events-none sm:hidden" />
+      <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-canvas z-20 pointer-events-none sm:hidden" />
+      
+      <div class="flex px-4 sm:justify-center overflow-x-auto no-scrollbar scroll-smooth">
+        <div class="inline-flex p-1 bg-white rounded-pill border border-stone/20 shadow-sm whitespace-nowrap">
+          <button
+            @click="activeTab = 'perfil'"
+            class="px-5 py-3 min-h-[44px] rounded-[24px] font-bold text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest cursor-pointer border-none transition-all duration-500 ease-jelly relative z-10 select-none active:scale-95"
+            :class="activeTab === 'perfil' ? 'bg-white text-ember shadow-[0_2px_12px_rgba(255,62,0,0.12)]' : 'bg-transparent text-ash hover:text-charcoal'"
+          >
+            Meu Perfil
+          </button>
+          <button
+            @click="activeTab = 'acesso'"
+            class="px-5 py-3 min-h-[44px] rounded-[24px] font-bold text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest cursor-pointer border-none transition-all duration-500 ease-jelly relative z-10 select-none active:scale-95"
+            :class="activeTab === 'acesso' ? 'bg-white text-ember shadow-[0_2px_12px_rgba(255,62,0,0.12)]' : 'bg-transparent text-ash hover:text-charcoal'"
+          >
+            Acessos
+          </button>
+          <button
+            @click="activeTab = 'casas'"
+            class="px-5 py-3 min-h-[44px] rounded-[24px] font-bold text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest cursor-pointer border-none transition-all duration-500 ease-jelly relative z-10 select-none active:scale-95"
+            :class="activeTab === 'casas' ? 'bg-white text-ember shadow-[0_2px_12px_rgba(255,62,0,0.12)]' : 'bg-transparent text-ash hover:text-charcoal'"
+          >
+            Casas
+          </button>
+          <button
+            v-if="isAdmin"
+            @click="activeTab = 'casa'"
+            class="px-5 py-3 min-h-[44px] rounded-[24px] font-bold text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest cursor-pointer border-none transition-all duration-500 ease-jelly relative z-10 select-none active:scale-95"
+            :class="activeTab === 'casa' ? 'bg-white text-ember shadow-[0_2px_12px_rgba(255,62,0,0.12)]' : 'bg-transparent text-ash hover:text-charcoal'"
+          >
+            Permissões
+          </button>
+        </div>
       </div>
     </div>
 
