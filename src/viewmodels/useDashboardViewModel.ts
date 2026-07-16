@@ -144,27 +144,39 @@ export const useDashboardViewModel = (
       }
     },
     
-    confirmarAjusteGasto: async (dados: ConfirmarAjusteGastoInput) => { 
-      await cartoesEFaturas.atualizarGasto(ui.gastoParaAjustar.value!.id, dados)
-      ui.fecharModal('ajustar-gasto')
-      ui.gastoParaAjustar.value = null 
+    confirmarAjusteGasto: async (dados: ConfirmarAjusteGastoInput) => {
+      ui.isSubmittingAjusteGasto.value = true
+      try {
+        await cartoesEFaturas.atualizarGasto(ui.gastoParaAjustar.value!.id, dados)
+        ui.fecharModal('ajustar-gasto')
+        ui.gastoParaAjustar.value = null
+      } finally {
+        ui.isSubmittingAjusteGasto.value = false
+      }
     },
     
-    confirmarLancarBill: async (dados: ConfirmarLancarBillInput) => { 
-      await contasFixas.lancarGastoContaFixa(periodosState.faturaPixPeriodoSelecionado.value!.id, ui.billSelecionada.value!, dados.valorCentavos, dados.compradorId, dados.splitIds)
-      ui.fecharModal('lancar-conta-fixa')
-      await cartoesEFaturas.inicializar() 
+    confirmarLancarBill: async (dados: ConfirmarLancarBillInput) => {
+      ui.isSubmittingLancarBill.value = true
+      try {
+        await contasFixas.lancarGastoContaFixa(periodosState.faturaPixPeriodoSelecionado.value!.id, ui.billSelecionada.value!, dados.valorCentavos, dados.compradorId, dados.splitIds)
+        ui.fecharModal('lancar-conta-fixa')
+        await cartoesEFaturas.inicializar()
+      } finally {
+        ui.isSubmittingLancarBill.value = false
+      }
     },
     
     confirmarSalvarTemplate: async (t: ContaFixa) => {
+      ui.isSubmittingSalvarTemplate.value = true
       try {
         await contasFixas.salvarContaFixa(t)
+        ui.fecharModal('configurar-conta-fixa')
       } catch (e) {
         console.error('Erro ao salvar template:', e)
         toast.show('Erro ao salvar conta fixa. Tente novamente.', 'error')
-        return
+      } finally {
+        ui.isSubmittingSalvarTemplate.value = false
       }
-      ui.fecharModal('configurar-conta-fixa')
     },
     
     confirmarNovoPeriodo: async () => {

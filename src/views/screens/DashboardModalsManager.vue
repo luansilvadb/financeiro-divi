@@ -4,7 +4,6 @@ import PopupLancarContaFixa from '../components/ledger/PopupLancarContaFixa.vue'
 import BottomSheetConfigurarContaFixa from '../components/ledger/BottomSheetConfigurarContaFixa.vue'
 import BottomSheetAjustarGasto from '../components/ledger/BottomSheetAjustarGasto.vue'
 import BottomSheetConfirmacaoEstorno from '../components/ledger/BottomSheetConfirmacaoEstorno.vue'
-import BottomSheetNovoPeriodo from '../components/ledger/dashboard/BottomSheetNovoPeriodo.vue'
 import BottomSheetHistorico from '../components/ledger/dashboard/BottomSheetHistorico.vue'
 import BottomSheetCasas from '../components/ledger/dashboard/BottomSheetCasas.vue'
 import BottomSheetAcertoCompensacao from '../components/ledger/dashboard/BottomSheetAcertoCompensacao.vue'
@@ -27,6 +26,7 @@ const props = defineProps<{
   faturasAbertas: Fatura[]
   faturasFechadas: Fatura[]
   casasMultitenant: CasasModalView
+  isFecharPeriodoBloqueado?: boolean
 }>()
 
 const isModalNoTopo = (nome: string) => props.vm.isModalNoTopo(nome)
@@ -50,6 +50,7 @@ const itemEstornoValor = computed(() => {
       :visible="isModalNoTopo('lancar-conta-fixa')"
       :bill="unref(vm.billSelecionada)"
       :membros="membrosAtivos"
+      :loading="unref(vm.isSubmittingLancarBill)"
       @confirm="vm.confirmarLancarBill"
       @cancel="vm.fecharModal('lancar-conta-fixa')"
     />
@@ -58,16 +59,10 @@ const itemEstornoValor = computed(() => {
       :visible="isModalNoTopo('configurar-conta-fixa')"
       :bill="unref(vm.billSelecionada)"
       :membros="membrosAtivos"
+      :loading="unref(vm.isSubmittingSalvarTemplate)"
       @save="vm.confirmarSalvarTemplate"
       @delete="vm.abrirConfirmacaoEstornoBill"
       @cancel="vm.fecharModal('configurar-conta-fixa')"
-    />
-
-    <BottomSheetNovoPeriodo
-      :visible="isModalNoTopo('novo-periodo')"
-      :vm="vm"
-      @close="vm.fecharModal('novo-periodo')"
-      @confirm="vm.confirmarNovoPeriodo"
     />
 
     <BottomSheetAjustarGasto 
@@ -76,6 +71,7 @@ const itemEstornoValor = computed(() => {
       :membros="membrosAtivos"
       :cartoes="cartoes"
       :faturas="[...faturasAbertas, ...faturasFechadas]"
+      :loading="unref(vm.isSubmittingAjusteGasto)"
       @cancel="vm.fecharModal('ajustar-gasto')"
       @save="vm.confirmarAjusteGasto"
     />
@@ -84,6 +80,7 @@ const itemEstornoValor = computed(() => {
       :visible="isModalNoTopo('historico')"
       :vm="vm"
       :faturas-fechadas="faturasFechadas"
+      :is-fechar-periodo-bloqueado="isFecharPeriodoBloqueado"
       @close="vm.fecharModal('historico')"
     />
 

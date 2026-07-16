@@ -102,6 +102,7 @@
           variant="secondary"
           @click="$emit('cancel')"
           class="h-12 text-[10px] font-bold uppercase tracking-widest"
+          :disabled="loading"
         >
           Cancelar
         </Button>
@@ -109,7 +110,8 @@
           @click="confirmar"
           class="h-12 text-[10px] font-bold uppercase tracking-widest"
           variant="primary"
-          :disabled="valorReal <= 0 || !compradorId || splitIds.length === 0"
+          :disabled="valorReal <= 0 || !compradorId || splitIds.length === 0 || loading"
+          :loading="loading"
           data-testid="confirmar-conta-fixa"
         >
           Confirmar Lançamento
@@ -132,6 +134,7 @@ const props = defineProps<{
   visible: boolean
   bill: ContaFixa | null
   membros: { id: string; nome: string }[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits(['confirm', 'cancel'])

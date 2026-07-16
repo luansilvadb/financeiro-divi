@@ -4,10 +4,9 @@ import DashboardSaldos from '../views/screens/DashboardSaldos.vue'
 import NovoLancamentoWizard from '../views/screens/NovoLancamentoWizard.vue'
 import ConfiguracoesMembros from '../views/screens/ConfiguracoesMembros.vue'
 import BottomSheet from '../views/components/ui/BottomSheet.vue'
+import Drawer from '../views/components/ui/Drawer.vue'
 import BottomTabBar, { type Tab } from '../views/components/ui/BottomTabBar.vue'
 import { useToast } from '../composables/useToast'
-import { mensagemErro } from '../shared/utils/mensagemErro'
-import { logger } from '../shared/utils/logger'
 import { ref, type Ref } from 'vue'
 import type { Membro } from '../models/entities/Membro'
 import type { Cartao } from '../models/entities/Cartao'
@@ -47,6 +46,7 @@ const handleTabChange = (tab: Tab) => {
     currentView.value = 'settings'
   } else {
     activeTab.value = tab
+    currentView.value = 'dashboard'
   }
 }
 
@@ -62,14 +62,10 @@ const handleFabClick = () => {
   currentView.value = 'wizard'
 }
 
-const handleSalvarTransacao = async () => {
-  try {
-    await state.sincronizarDados()
-    currentView.value = 'dashboard'
-  } catch (error: unknown) {
-    logger.error('Erro ao recarregar cartões após salvar transação:', error)
-    toast.show(mensagemErro(error, 'Erro ao sincronizar dados com o servidor'), 'error')
-  }
+const handleSalvarTransacao = () => {
+  // Fecha o wizard imediatamente — o socket 'gastos_alterados' dispara
+  // a sincronização em background (~300ms), sem bloquear a UI.
+  currentView.value = 'dashboard'
 }
 </script>
 
@@ -86,6 +82,8 @@ const handleSalvarTransacao = async () => {
         :is-read-only="state.isReadOnly.value"
         @openSettings="currentView = 'settings'"
         @periodoStatusChanged="handlePeriodoStatusChanged"
+        @navigate-home="activeTab = 'hoje'"
+        @navigate-pessoal="activeTab = 'pessoal'"
       />
     </main>
 
@@ -105,18 +103,17 @@ const handleSalvarTransacao = async () => {
       />
     </BottomSheet>
 
-    <BottomSheet
+    <Drawer
       :model-value="currentView === 'settings'"
       @update:model-value="(val: boolean) => { if (!val) currentView = 'dashboard' }"
-      width-class="md:w-[560px]"
-      max-height="90dvh"
+      width-class="md:max-w-[480px]"
       content-class="p-0 h-full"
     >
       <ConfiguracoesMembros
         @voltar="currentView = 'dashboard'"
         @logout="$emit('logout')"
       />
-    </BottomSheet>
+    </Drawer>
 
     <BottomTabBar
       :model-value="activeTab"
