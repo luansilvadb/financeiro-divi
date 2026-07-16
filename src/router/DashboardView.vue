@@ -48,6 +48,7 @@ const handleTabChange = (tab: Tab) => {
     currentView.value = 'settings'
   } else {
     activeTab.value = tab
+    currentView.value = 'dashboard'
   }
 }
 

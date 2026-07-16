@@ -26,8 +26,8 @@
           :class="widthClass"
           :style="{ maxHeight, minHeight }"
           style="touch-action: none"
-          @touchstart.prevent="onTouchStart"
-          @touchmove.prevent="onTouchMove"
+          @touchstart="onTouchStart"
+          @touchmove="onTouchMove"
           @touchend="onTouchEnd"
           @mousedown="onMouseDown"
         >
