@@ -1,5 +1,6 @@
 import { logger } from '../../shared/utils/logger'
 import { z } from 'zod'
+import { obterHeadersCsrf, definirCsrfToken } from '../../shared/utils/csrf'
 import {
   AuthResponseSchema,
   SessionResponseSchema,
@@ -240,7 +241,8 @@ export class TenantSessionService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.jwtToken}`
+        'Authorization': `Bearer ${this.jwtToken}`,
+        ...obterHeadersCsrf(),
       },
       body: JSON.stringify({ name: nome })
     })
@@ -268,7 +270,8 @@ export class TenantSessionService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.jwtToken}`
+        'Authorization': `Bearer ${this.jwtToken}`,
+        ...obterHeadersCsrf(),
       },
       body: JSON.stringify({ inviteCode })
     })
@@ -298,6 +301,10 @@ export class TenantSessionService {
           'Authorization': `Bearer ${this.jwtToken}`
         }
       })
+
+      // Captura o token CSRF do header para requisições POST subsequentes
+      const csrfHeader = response.headers?.get?.('X-CSRF-Token') ?? null
+      if (csrfHeader) definirCsrfToken(csrfHeader)
 
       if (response.status === 401) {
         await this.logout()

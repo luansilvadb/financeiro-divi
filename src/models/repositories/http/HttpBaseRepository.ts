@@ -1,11 +1,11 @@
 import { logger } from '../../../shared/utils/logger'
 import type { z } from 'zod'
+import { lerCsrfToken, definirCsrfToken, limparCsrfToken } from '../../../shared/utils/csrf'
 
 // ---------------------------------------------------------------------------
 // CSRF token state — module-scoped (session lifetime, not persisted)
 // ---------------------------------------------------------------------------
 
-let csrfToken: string | null = null
 let csrfRefreshPromise: Promise<string> | null = null
 
 function isMutatingMethod(method: string): boolean {
@@ -46,12 +46,12 @@ export class HttpBaseRepository {
    * has been obtained yet. The token is primed by normal GET responses
    * (captured from the X-CSRF-Token header) during the app lifecycle.
    *
-   * No proactive network call — the first mutating request after a fresh
-   * page load will normally have the token already cached from prior GETs
-   * (login, dashboard). If not, the 403 retry handler calls refreshCsrfToken().
+   * Falls back to reading the csrf_token cookie (httpOnly=false) when the
+   * in-memory cache is empty — this covers the case where the first
+   * mutating request happens before any GET response populates the cache.
    */
   private getCsrfToken(): string {
-    return csrfToken ?? ''
+    return lerCsrfToken()
   }
 
   /**
@@ -76,7 +76,7 @@ export class HttpBaseRepository {
 
         const newToken = response.headers?.get('X-CSRF-Token') ?? null
         if (newToken) {
-          csrfToken = newToken
+          definirCsrfToken(newToken)
           return newToken
         }
 
@@ -159,7 +159,7 @@ export class HttpBaseRepository {
     if (method === 'GET' && response.ok) {
       const newToken = response.headers?.get('X-CSRF-Token') ?? null
       if (newToken) {
-        csrfToken = newToken
+        definirCsrfToken(newToken)
       }
     }
 
@@ -167,7 +167,7 @@ export class HttpBaseRepository {
     if (response.status === 403) {
       const errBody = await response.json().catch(() => ({}))
       if (/csrf token/i.test(errBody.message || '')) {
-        csrfToken = null
+        limparCsrfToken()
         if (!csrfRetry) {
           logger.warn('CSRF token expirado ou ausente, renovando...')
           await this.refreshCsrfToken()

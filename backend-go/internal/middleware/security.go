@@ -19,6 +19,11 @@ func SecurityHeaders() gin.HandlerFunc {
 		}
 		c.Header("Server", "")
 
+		// Cross-Origin-Opener-Policy: same-origin-allow-popups permite que popups
+		// (ex: Google OAuth) mantenham acesso à janela opener via window.postMessage.
+		// Necessário para o fluxo de login com Google Identity Services.
+		c.Header("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+
 		// Content-Security-Policy for the API (frontend is served separately by Vite).
 		// Restrictive defaults: no external resources, no frames, no form actions.
 		// Swagger UI needs relaxed CSP to load its own CSS/JS/images.
