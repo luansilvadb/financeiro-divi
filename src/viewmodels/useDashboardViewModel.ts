@@ -199,14 +199,18 @@ export const useDashboardViewModel = (
     confirmarEstorno: async () => {
       const i = ui.itemParaEstornar.value!
       const t = ui.itemTypeParaEstornar.value
-      ui.fecharModal('confirmacao-estorno')
-      ui.itemParaEstornar.value = null
-
+      
       if (t === 'Lançamento') {
+        ui.fecharModal('confirmacao-estorno')
+        ui.itemParaEstornar.value = null
         await estornarLancamento(i as Gasto, toast, gastoService, cartoesEFaturas)
       } else {
-        await contasFixas.excluirContaFixa(i.id)
+        // Fecha ambos os modais no mesmo tick para evitar flicker visual:
+        // o confirmacao-estorno está sobre o configurar-conta-fixa na stack.
         ui.fecharModal('configurar-conta-fixa')
+        ui.fecharModal('confirmacao-estorno')
+        ui.itemParaEstornar.value = null
+        await contasFixas.excluirContaFixa(i.id)
         toast.show('Conta removida', 'success')
       }
     },
