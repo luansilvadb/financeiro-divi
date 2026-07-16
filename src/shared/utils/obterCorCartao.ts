@@ -1,3 +1,24 @@
+const CORES_POR_MARCA: Array<{ padrao: string; cor: string }> = [
+  { padrao: 'nubank', cor: '#a855f7' },
+  { padrao: 'nu ',    cor: '#a855f7' },
+  { padrao: 'c6',     cor: '#1e1b18' },
+  { padrao: 'carbon', cor: '#1e1b18' },
+  { padrao: 'black',  cor: '#1e1b18' },
+  { padrao: 'inter',  cor: '#f97316' },
+  { padrao: 'laranja',cor: '#f97316' },
+  { padrao: 'itau',   cor: '#3b82f6' },
+  { padrao: 'itaú',   cor: '#3b82f6' },
+  { padrao: 'azul',   cor: '#3b82f6' },
+  { padrao: 'bradesco',  cor: '#ef4444' },
+  { padrao: 'vermelho',  cor: '#ef4444' },
+  { padrao: 'santander', cor: '#ef4444' },
+  { padrao: 'neon',   cor: '#10b981' },
+  { padrao: 'verde',  cor: '#10b981' },
+]
+
+// Cores de fallback usadas para gerar uma cor consistente via hash do nome.
+const CORES_FALLBACK = ['#a855f7', '#3b82f6', '#f97316', '#10b981', '#ef4444', '#474645']
+
 /**
  * Retorna uma cor institucional em formato Hexadecimal baseada no nome do cartão.
  * @param nome Nome do cartão (ex: Nubank, C6 Carbon, Inter, etc.)
@@ -7,40 +28,14 @@ export function obterCorCartao(nome: string): string {
 
   const nomeLimpo = nome.trim().toLowerCase()
 
-  if (nomeLimpo.includes('nubank') || nomeLimpo.includes('nu ')) {
-    return '#a855f7' // Roxo Nubank
-  }
-  if (nomeLimpo.includes('c6') || nomeLimpo.includes('carbon') || nomeLimpo.includes('black')) {
-    return '#1e1b18' // Preto C6 Carbon / Black
-  }
-  if (nomeLimpo.includes('inter') || nomeLimpo.includes('laranja')) {
-    return '#f97316' // Laranja Banco Inter
-  }
-  if (nomeLimpo.includes('itau') || nomeLimpo.includes('itaú') || nomeLimpo.includes('azul')) {
-    return '#3b82f6' // Azul Itaú
-  }
-  if (nomeLimpo.includes('bradesco') || nomeLimpo.includes('vermelho') || nomeLimpo.includes('santander')) {
-    return '#ef4444' // Vermelho Bradesco / Santander
-  }
-  if (nomeLimpo.includes('neon') || nomeLimpo.includes('verde')) {
-    return '#10b981' // Verde Neon / Sicredi
+  for (const { padrao, cor } of CORES_POR_MARCA) {
+    if (nomeLimpo.includes(padrao)) return cor
   }
 
-  // Gera uma cor consistente baseada no hash do nome do cartão para outras marcas
+  // Gera uma cor consistente baseada no hash do nome para outras marcas.
   let hash = 0
   for (let i = 0; i < nomeLimpo.length; i++) {
     hash = nomeLimpo.charCodeAt(i) + ((hash << 5) - hash)
   }
-  
-  const coresConsistentes = [
-    '#a855f7', // Roxo
-    '#3b82f6', // Azul
-    '#f97316', // Laranja
-    '#10b981', // Verde
-    '#ef4444', // Vermelho
-    '#474645'  // Grafite
-  ]
-  
-  const index = Math.abs(hash) % coresConsistentes.length
-  return coresConsistentes[index]
+  return CORES_FALLBACK[Math.abs(hash) % CORES_FALLBACK.length]
 }

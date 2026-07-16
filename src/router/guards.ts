@@ -1,16 +1,19 @@
 import type { Router } from 'vue-router'
 import { tenantSessionService } from '../shared/container'
 
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password']
+const isPublic = (path: string) => PUBLIC_PATHS.some(p => path.startsWith(p))
+
 export function setupRouterGuards(router: Router) {
   router.beforeEach(async (to, _from, next) => {
     const isAuthed = tenantSessionService.isAuthenticated()
     const hasTenant = !!tenantSessionService.getActiveTenantId()
 
-    if (!isAuthed && !to.path.startsWith('/login') && !to.path.startsWith('/forgot-password') && !to.path.startsWith('/reset-password')) {
+    if (!isAuthed && !isPublic(to.path)) {
       return next('/login')
     }
 
-    if (isAuthed && !hasTenant && !to.path.startsWith('/select-tenant') && to.path !== '/login' && to.path !== '/forgot-password' && to.path !== '/reset-password') {
+    if (isAuthed && !hasTenant && to.path !== '/select-tenant' && !isPublic(to.path)) {
       return next('/select-tenant')
     }
 

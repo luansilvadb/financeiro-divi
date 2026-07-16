@@ -115,28 +115,8 @@ export class GastoService {
     const periodo = await this.resolverPeriodoDoGasto(original)
     if (!periodo) throw new Error(`Fatura ou período original não encontrado para o gasto ${original.id}`)
 
-    // Create replacement gasto(s) FIRST. If this fails, nothing is lost.
-    await this.lancarGastoOuEmprestimo({
-      flow: original.isSettlement ? 'settlement' : original.isLoan ? 'loan' : 'expense',
-      paymentMethod: dados.method,
-      compradorId: dados.compradorId,
-      valor: dados.valorTotal.centavos / 100,
-      descricao: dados.descricao,
-      divisoes: dados.divisoes,
-      installments: dados.installments,
-      cardOwnerId: dados.cardOwner,
-      borrowerId: original.borrowerId,
-      periodo: periodo,
-      isPrivate: original.isPrivate,
-      splitMode: original.splitMode,
-      settlementDetails: original.settlementDetails
-        ? {
-            fromMemberId: original.settlementDetails.fromMemberId,
-            toMemberId: original.settlementDetails.toMemberId,
-            method: original.settlementDetails.method,
-          }
-        : undefined
-    })
+    // Create replacement gasto FIRST — if this fails, nothing is lost.
+    await this.lancarGastoOuEmprestimo(this.construirLancamentoSubstituto(original, dados, periodo))
 
     // Delete originals AFTER successful recreation.
     try {
@@ -151,46 +131,87 @@ export class GastoService {
     }
   }
 
+  /** Constrói o input de lançamento substituto preservando os metadados do gasto original. */
+  private construirLancamentoSubstituto(
+    original: Gasto,
+    dados: AtualizarGastoDados,
+    periodo: { mes: number; ano: number }
+  ): LancarGastoInput {
+    return {
+      flow: original.isSettlement ? 'settlement' : original.isLoan ? 'loan' : 'expense',
+      paymentMethod: dados.method,
+      compradorId: dados.compradorId,
+      valor: dados.valorTotal.centavos / 100,
+      descricao: dados.descricao,
+      divisoes: dados.divisoes,
+      installments: dados.installments,
+      cardOwnerId: dados.cardOwner,
+      borrowerId: original.borrowerId,
+      periodo,
+      isPrivate: original.isPrivate,
+      splitMode: original.splitMode,
+      settlementDetails: original.settlementDetails
+        ? {
+            fromMemberId: original.settlementDetails.fromMemberId,
+            toMemberId: original.settlementDetails.toMemberId,
+            method: original.settlementDetails.method,
+          }
+        : undefined,
+    }
+  }
+
   private async salvarParcelasAtualizadas(
     gastos: Gasto[],
     dados: AtualizarGastoDados,
     cartaoResolvido: CartaoResolvido
   ): Promise<void> {
     const faturasParaSalvar: Fatura[] = []
-    const gastosParaSalvar: Gasto[] = []
     const faturasPersistidas = await this.faturaRepo.listarTodas()
 
+    const gastosParaSalvar: Gasto[] = []
     for (const gasto of gastos) {
-      const faturaAtual = gasto.faturaId ? (faturasPersistidas.find(f => f.id === gasto.faturaId) ?? null) : null
-      let faturaId = gasto.faturaId
-      if (faturaAtual && cartaoResolvido.cartaoId) {
-        const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(
-          cartaoResolvido.cartaoId,
-          faturaAtual.periodo.mes,
-          faturaAtual.periodo.ano,
-          cartaoResolvido.responsavelFaturaId,
-          faturasParaSalvar,
-          faturasPersistidas
-        )
-        faturaId = novaFatura.id
-      }
-      gastosParaSalvar.push(this.criarGastoAtualizado(
-        gasto,
-        dados,
-        faturaId,
-        cartaoResolvido.cardOwner,
-        gasto.installments,
-        gasto.totalInstallments
-      ))
+      gastosParaSalvar.push(
+        await this.atualizarParcela(gasto, dados, cartaoResolvido, faturasParaSalvar, faturasPersistidas)
+      )
     }
 
     if (faturasParaSalvar.length > 0) {
       await this.faturaRepo.salvarMuitas(faturasParaSalvar)
-      // Re-fetch faturas to resolve composite IDs to real backend-generated UUIDs.
       await resolverIdsReaisDeFatura(gastosParaSalvar, this.faturaRepo)
     }
 
     await this.atualizarGastosEmLote(gastosParaSalvar)
+  }
+
+  /** Atualiza uma parcela individual, resolvendo fatura e aplicando os novos dados. */
+  private async atualizarParcela(
+    gasto: Gasto,
+    dados: AtualizarGastoDados,
+    cartaoResolvido: CartaoResolvido,
+    faturasParaSalvar: Fatura[],
+    faturasPersistidas: Fatura[]
+  ): Promise<Gasto> {
+    const faturaAtual = gasto.faturaId
+      ? (faturasPersistidas.find(f => f.id === gasto.faturaId) ?? null)
+      : null
+    let faturaId = gasto.faturaId
+    if (faturaAtual && cartaoResolvido.cartaoId) {
+      const novaFatura = await this.lancamentoService.obterOuCriarFaturaMemoria(
+        cartaoResolvido.cartaoId,
+        faturaAtual.periodo.mes,
+        faturaAtual.periodo.ano,
+        cartaoResolvido.responsavelFaturaId,
+        faturasParaSalvar,
+        faturasPersistidas
+      )
+      faturaId = novaFatura.id
+    }
+    return this.criarGastoAtualizado(
+      gasto, dados, faturaId,
+      cartaoResolvido.cardOwner,
+      gasto.installments,
+      gasto.totalInstallments
+    )
   }
 
   private async atualizarGastoIndividual(
