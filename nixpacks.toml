@@ -1,0 +1,15 @@
+# Nixpacks configuration for Easypanel deploy
+# The project has both a Node.js frontend (package.json at root) and a Go backend (backend-go/).
+# This config forces Nixpacks to build and run only the Go backend.
+
+[phases.setup]
+# Install Go (version detected automatically from backend-go/go.mod: 1.23)
+nixPkgs = ["go"]
+
+[phases.build]
+# Build the Go binary inside backend-go/
+cmds = ["cd backend-go && go build -ldflags='-s -w' -o server ./cmd/server/"]
+
+[start]
+# Run from backend-go/ so that relative paths like "migrations/" resolve correctly
+cmd = "cd backend-go && ./server"
